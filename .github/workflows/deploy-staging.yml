@@ -1,0 +1,35 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Assets
+        run: npm run build
+
+      - name: Deploy to Staging Server
+        uses: easingthemes/ssh-deploy@v5.0.0
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.KINSTA_SSH_KEY }}
+          ARGS: "-rlgoDzvc -i --delete"
+          SOURCE: "/"
+          REMOTE_HOST: ${{ secrets.KINSTA_HOST }}
+          REMOTE_USER: ${{ secrets.KINSTA_USER }}
+          REMOTE_PORT: ${{ secrets.KINSTA_PORT }}
+          TARGET: ${{ secrets.KINSTA_PLUGINS_BASE }}/hp-react-widgets/
+          EXCLUDE: "/node_modules/, /.git/, /.github/, /src/"

@@ -1,0 +1,13 @@
+# Node
+node_modules/
+dist/
+assets/dist/
+.env
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Build
+*.log
