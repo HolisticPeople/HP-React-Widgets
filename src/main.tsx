@@ -30,11 +30,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Mount My Account Header Widget
     const myAccountHeaderRoot = document.getElementById('hp-my-account-header-root');
     if (myAccountHeaderRoot) {
-        const props = JSON.parse(myAccountHeaderRoot.dataset.props || '{}');
+        const propsStr = myAccountHeaderRoot.dataset.props || '{}';
+        console.log('[HP-React-Widgets] MyAccountHeader raw props:', propsStr);
+        const props = JSON.parse(propsStr);
+        console.log('[HP-React-Widgets] MyAccountHeader parsed props:', props);
         ReactDOM.createRoot(myAccountHeaderRoot).render(
             <React.StrictMode>
                 <MyAccountHeader {...props} />
             </React.StrictMode>,
         )
+    } else {
+        console.warn('[HP-React-Widgets] Could not find #hp-my-account-header-root');
     }
 });

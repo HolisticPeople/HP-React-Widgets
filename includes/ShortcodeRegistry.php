@@ -78,35 +78,50 @@ class ShortcodeRegistry
         $user = wp_get_current_user();
 
         // Build nav items from WooCommerce My Account pages
-        $nav_items = [
-            [
-                'id' => 'orders',
-                'label' => 'Orders',
-                'icon' => 'orders',
-                'href' => wc_get_account_endpoint_url('orders')
-            ],
-            [
-                'id' => 'addresses',
-                'label' => 'Addresses',
-                'icon' => 'addresses',
-                'href' => wc_get_account_endpoint_url('edit-address')
-            ],
-            [
-                'id' => 'profile',
-                'label' => 'Profile',
-                'icon' => 'profile',
-                'href' => wc_get_account_endpoint_url('edit-account')
-            ],
-        ];
+        $nav_items = [];
 
-        // Optional: Add custom nav items
-        if (shortcode_exists('my_points_rewards')) {
-            $nav_items[] = [
-                'id' => 'points',
-                'label' => 'My Points',
-                'icon' => 'points',
-                'href' => wc_get_account_endpoint_url('points-and-rewards')
+        // Check if WooCommerce is active
+        if (function_exists('wc_get_account_endpoint_url')) {
+            $nav_items = [
+                [
+                    'id' => 'orders',
+                    'label' => 'Orders',
+                    'icon' => 'orders',
+                    'href' => wc_get_account_endpoint_url('orders')
+                ],
+                [
+                    'id' => 'addresses',
+                    'label' => 'Addresses',
+                    'icon' => 'addresses',
+                    'href' => wc_get_account_endpoint_url('edit-address')
+                ],
+                [
+                    'id' => 'profile',
+                    'label' => 'Profile',
+                    'icon' => 'profile',
+                    'href' => wc_get_account_endpoint_url('edit-account')
+                ],
             ];
+
+            // Optional: Add custom nav items
+            if (shortcode_exists('my_points_rewards')) {
+                $nav_items[] = [
+                    'id' => 'points',
+                    'label' => 'My Points',
+                    'icon' => 'points',
+                    'href' => wc_get_account_endpoint_url('points-and-rewards')
+                ];
+            }
+
+            $logout_url = wc_get_account_endpoint_url('customer-logout');
+        } else {
+            // Fallback if WooCommerce not available
+            $nav_items = [
+                ['id' => 'orders', 'label' => 'Orders', 'icon' => 'orders', 'href' => '/my-account/orders/'],
+                ['id' => 'addresses', 'label' => 'Addresses', 'icon' => 'addresses', 'href' => '/my-account/edit-address/'],
+                ['id' => 'profile', 'label' => 'Profile', 'icon' => 'profile', 'href' => '/my-account/edit-account/'],
+            ];
+            $logout_url = '/my-account/customer-logout/';
         }
 
         $props = [
@@ -114,7 +129,7 @@ class ShortcodeRegistry
             'avatarUrl' => get_avatar_url($user_id),
             'navItems' => $nav_items,
             'activeNavId' => '', // Could be determined from current page
-            'logoutUrl' => wc_get_account_endpoint_url('customer-logout')
+            'logoutUrl' => $logout_url
         ];
 
         return sprintf(
