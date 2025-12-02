@@ -4,17 +4,31 @@ on:
   push:
     branches:
       - production
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    env:
+      KINSTAPROD_HOST: ${{ secrets.KINSTAPROD_HOST }}
+      KINSTAPROD_USER: ${{ secrets.KINSTAPROD_USER }}
+      KINSTAPROD_PORT: ${{ secrets.KINSTAPROD_PORT }}
+      KINSTAPROD_SSH_KEY: ${{ secrets.KINSTAPROD_SSH_KEY }}
+      KINSTAPROD_PLUGINS_BASE: ${{ secrets.KINSTAPROD_PLUGINS_BASE }}
 
-      - name: Setup Node.js
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Install Dependencies
         run: npm ci
@@ -22,14 +36,30 @@ jobs:
       - name: Build Assets
         run: npm run build
 
-      - name: Deploy to Production Server
-        uses: easingthemes/ssh-deploy@v5.0.0
+      - name: Add SSH key
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          SSH_PRIVATE_KEY: ${{ secrets.KINSTAPROD_SSH_KEY }}
-          ARGS: "-rlgoDzvc -i --delete -o StrictHostKeyChecking=no"
-          SOURCE: "/"
-          REMOTE_HOST: ${{ secrets.KINSTAPROD_HOST }}
-          REMOTE_USER: ${{ secrets.KINSTAPROD_USER }}
-          REMOTE_PORT: ${{ secrets.KINSTAPROD_PORT }}
-          TARGET: ${{ secrets.KINSTAPROD_PLUGINS_BASE }}/hp-react-widgets/
-          EXCLUDE: "/node_modules/, /.git/, /.github/, /src/"
+          ssh-private-key: ${{ env.KINSTAPROD_SSH_KEY }}
+
+      - name: Add known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "${KINSTAPROD_PORT:-22}" "${KINSTAPROD_HOST}" >> ~/.ssh/known_hosts
+
+      - name: Resolve deploy path
+        run: |
+          REMOTE_PATH="${KINSTAPROD_PLUGINS_BASE%/}/hp-react-widgets"
+          echo "Deploying plugin to: ${REMOTE_PATH}"
+          echo "REMOTE_PATH=$REMOTE_PATH" >> $GITHUB_ENV
+          # Ensure remote dir exists
+          ssh -p "${KINSTAPROD_PORT:-22}" "${KINSTAPROD_USER}@${KINSTAPROD_HOST}" "mkdir -p '${REMOTE_PATH}'"
+
+      - name: Rsync to Kinsta production
+        run: |
+          rsync -avz --delete \
+            --exclude='node_modules' \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='src' \
+            -e "ssh -p ${KINSTAPROD_PORT:-22}" \
+            ./ "${KINSTAPROD_USER}@${KINSTAPROD_HOST}:${REMOTE_PATH}/"

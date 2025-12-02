@@ -4,17 +4,31 @@ on:
   push:
     branches:
       - dev
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    env:
+      KINSTA_HOST: ${{ secrets.KINSTA_HOST }}
+      KINSTA_USER: ${{ secrets.KINSTA_USER }}
+      KINSTA_PORT: ${{ secrets.KINSTA_PORT }}
+      KINSTA_SSH_KEY: ${{ secrets.KINSTA_SSH_KEY }}
+      KINSTA_PLUGINS_BASE: ${{ secrets.KINSTA_PLUGINS_BASE }}
 
-      - name: Setup Node.js
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Install Dependencies
         run: npm ci
@@ -22,14 +36,30 @@ jobs:
       - name: Build Assets
         run: npm run build
 
-      - name: Deploy to Staging Server
-        uses: easingthemes/ssh-deploy@v5.0.0
+      - name: Add SSH key
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          SSH_PRIVATE_KEY: ${{ secrets.KINSTA_SSH_KEY }}
-          ARGS: "-rlgoDzvc -i --delete -o StrictHostKeyChecking=no"
-          SOURCE: "/"
-          REMOTE_HOST: ${{ secrets.KINSTA_HOST }}
-          REMOTE_USER: ${{ secrets.KINSTA_USER }}
-          REMOTE_PORT: ${{ secrets.KINSTA_PORT }}
-          TARGET: ${{ secrets.KINSTA_PLUGINS_BASE }}/hp-react-widgets/
-          EXCLUDE: "/node_modules/, /.git/, /.github/, /src/"
+          ssh-private-key: ${{ env.KINSTA_SSH_KEY }}
+
+      - name: Add known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "${KINSTA_PORT:-22}" "${KINSTA_HOST}" >> ~/.ssh/known_hosts
+
+      - name: Resolve deploy path
+        run: |
+          REMOTE_PATH="${KINSTA_PLUGINS_BASE%/}/hp-react-widgets"
+          echo "Deploying plugin to: ${REMOTE_PATH}"
+          echo "REMOTE_PATH=$REMOTE_PATH" >> $GITHUB_ENV
+          # Ensure remote dir exists
+          ssh -p "${KINSTA_PORT:-22}" "${KINSTA_USER}@${KINSTA_HOST}" "mkdir -p '${REMOTE_PATH}'"
+
+      - name: Rsync to Kinsta staging
+        run: |
+          rsync -avz --delete \
+            --exclude='node_modules' \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='src' \
+            -e "ssh -p ${KINSTA_PORT:-22}" \
+            ./ "${KINSTA_USER}@${KINSTA_HOST}:${REMOTE_PATH}/"
