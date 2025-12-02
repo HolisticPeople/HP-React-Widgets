@@ -1,3 +1,104 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* HolisticPeople Dark Theme - WooCommerce Integration */
+
+@layer base {
+    :root {
+        --background: 0 0% 7%;
+        --foreground: 0 0% 95%;
+
+        --card: 0 0% 10%;
+        --card-foreground: 0 0% 95%;
+
+        --popover: 0 0% 10%;
+        --popover-foreground: 0 0% 95%;
+
+        --primary: 270 100% 64%;
+        --primary-foreground: 0 0% 100%;
+
+        --secondary: 0 0% 15%;
+        --secondary-foreground: 0 0% 95%;
+
+        --muted: 0 0% 20%;
+        --muted-foreground: 0 0% 65%;
+
+        --accent: 270 100% 64%;
+        --accent-foreground: 0 0% 100%;
+
+        --destructive: 0 70% 50%;
+        --destructive-foreground: 0 0% 100%;
+
+        --border: 270 50% 40%;
+        --input: 0 0% 20%;
+        --ring: 270 100% 64%;
+
+        --radius: 0.5rem;
+
+        /* Custom tokens */
+        --nav-icon-bg: 0 0% 12%;
+        --nav-icon-border: 270 50% 40%;
+        --success: 142 76% 36%;
+        --warning: 38 92% 50%;
+    }
+
+    .dark {
+        --background: 0 0% 7%;
+        --foreground: 0 0% 95%;
+        --card: 0 0% 10%;
+        --card-foreground: 0 0% 95%;
+        --popover: 0 0% 10%;
+        --popover-foreground: 0 0% 95%;
+        --primary: 270 100% 64%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 0 0% 15%;
+        --secondary-foreground: 0 0% 95%;
+        --muted: 0 0% 20%;
+        --muted-foreground: 0 0% 65%;
+        --accent: 270 100% 64%;
+        --accent-foreground: 0 0% 100%;
+        --destructive: 0 70% 50%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 270 50% 40%;
+        --input: 0 0% 20%;
+        --ring: 270 100% 64%;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+}
+
+@layer components {
+    .nav-icon-button {
+        @apply flex flex-col items-center justify-center gap-2 p-4 rounded-lg border border-border bg-card transition-all duration-200 hover:border-primary hover:bg-secondary cursor-pointer;
+    }
+
+    .nav-icon-button.active {
+        @apply border-primary bg-secondary;
+    }
+
+    .nav-icon-button svg {
+        @apply w-6 h-6 text-primary;
+    }
+
+    .nav-icon-button span {
+        @apply text-xs text-foreground;
+    }
+
+    .address-card {
+        @apply p-4 rounded-lg border border-border bg-card;
+    }
+
+    .address-card-primary {
+        @apply border-primary;
+    }
+}

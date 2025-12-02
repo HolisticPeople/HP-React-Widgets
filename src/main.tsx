@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import './index.css'
 import { MultiAddress } from './components/MultiAddress'
+import { MyAccountHeader } from '@/components/MyAccountHeader'
 
 // Global settings injected by PHP
 declare global {
@@ -22,6 +23,17 @@ document.addEventListener('DOMContentLoaded', () => {
         ReactDOM.createRoot(multiAddressRoot).render(
             <React.StrictMode>
                 <MultiAddress {...props} />
+            </React.StrictMode>,
+        )
+    }
+
+    // Mount My Account Header Widget
+    const myAccountHeaderRoot = document.getElementById('hp-my-account-header-root');
+    if (myAccountHeaderRoot) {
+        const props = JSON.parse(myAccountHeaderRoot.dataset.props || '{}');
+        ReactDOM.createRoot(myAccountHeaderRoot).render(
+            <React.StrictMode>
+                <MyAccountHeader {...props} />
             </React.StrictMode>,
         )
     }

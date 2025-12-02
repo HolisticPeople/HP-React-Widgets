@@ -13,6 +13,7 @@ class ShortcodeRegistry
     public function register()
     {
         add_shortcode('hp_multi_address', [$this, 'renderMultiAddress']);
+        add_shortcode('hp_my_account_header', [$this, 'renderMyAccountHeader']);
     }
 
     public function renderMultiAddress($atts)
@@ -63,6 +64,61 @@ class ShortcodeRegistry
 
         return sprintf(
             '<div id="hp-multi-address-root" data-props="%s"></div>',
+            htmlspecialchars(json_encode($props), ENT_QUOTES, 'UTF-8')
+        );
+    }
+
+    public function renderMyAccountHeader($atts)
+    {
+        // Ensure assets are enqueued when this shortcode is used
+        wp_enqueue_script(AssetLoader::HANDLE);
+
+        // Hydration: Fetch user and nav data
+        $user_id = get_current_user_id();
+        $user = wp_get_current_user();
+
+        // Build nav items from WooCommerce My Account pages
+        $nav_items = [
+            [
+                'id' => 'orders',
+                'label' => 'Orders',
+                'icon' => 'orders',
+                'href' => wc_get_account_endpoint_url('orders')
+            ],
+            [
+                'id' => 'addresses',
+                'label' => 'Addresses',
+                'icon' => 'addresses',
+                'href' => wc_get_account_endpoint_url('edit-address')
+            ],
+            [
+                'id' => 'profile',
+                'label' => 'Profile',
+                'icon' => 'profile',
+                'href' => wc_get_account_endpoint_url('edit-account')
+            ],
+        ];
+
+        // Optional: Add custom nav items
+        if (shortcode_exists('my_points_rewards')) {
+            $nav_items[] = [
+                'id' => 'points',
+                'label' => 'My Points',
+                'icon' => 'points',
+                'href' => wc_get_account_endpoint_url('points-and-rewards')
+            ];
+        }
+
+        $props = [
+            'userName' => $user->display_name ?: 'Guest',
+            'avatarUrl' => get_avatar_url($user_id),
+            'navItems' => $nav_items,
+            'activeNavId' => '', // Could be determined from current page
+            'logoutUrl' => wc_get_account_endpoint_url('customer-logout')
+        ];
+
+        return sprintf(
+            '<div id="hp-my-account-header-root" data-props="%s"></div>',
             htmlspecialchars(json_encode($props), ENT_QUOTES, 'UTF-8')
         );
     }
