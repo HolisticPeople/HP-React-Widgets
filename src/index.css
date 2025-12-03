@@ -68,37 +68,60 @@
 
 @layer base {
     * {
-        @apply border-border;
+        border-color: hsl(var(--border));
     }
 
     body {
-        @apply bg-background text-foreground;
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
 }
 
 @layer components {
     .nav-icon-button {
-        @apply flex flex-col items-center justify-center gap-2 p-4 rounded-lg border border-border bg-card transition-all duration-200 hover:border-primary hover:bg-secondary cursor-pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid hsl(var(--border));
+        background-color: hsl(var(--card));
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+
+    .nav-icon-button:hover {
+        border-color: hsl(var(--primary));
+        background-color: hsl(var(--secondary));
     }
 
     .nav-icon-button.active {
-        @apply border-primary bg-secondary;
+        border-color: hsl(var(--primary));
+        background-color: hsl(var(--secondary));
     }
 
     .nav-icon-button svg {
-        @apply w-6 h-6 text-primary;
+        width: 1.5rem;
+        height: 1.5rem;
+        color: hsl(var(--primary));
     }
 
     .nav-icon-button span {
-        @apply text-xs text-foreground;
+        font-size: 0.75rem;
+        color: hsl(var(--foreground));
     }
 
     .address-card {
-        @apply p-4 rounded-lg border border-border bg-card;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid hsl(var(--border));
+        background-color: hsl(var(--card));
     }
 
     .address-card-primary {
-        @apply border-primary;
+        border-color: hsl(var(--primary));
     }
 }
