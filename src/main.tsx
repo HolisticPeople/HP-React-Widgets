@@ -12,34 +12,46 @@ declare global {
             nonce: string;
             user_id: number;
         }
+        hpReactWidgets?: Record<string, React.ComponentType<any>>;
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Mount Multi-Address Widget
-    const multiAddressRoot = document.getElementById('hp-multi-address-root');
-    if (multiAddressRoot) {
-        const props = JSON.parse(multiAddressRoot.dataset.props || '{}');
-        ReactDOM.createRoot(multiAddressRoot).render(
-            <React.StrictMode>
-                <MultiAddress {...props} />
-            </React.StrictMode>,
-        )
-    }
+// Ensure a global registry of available widgets exists.
+const widgetRegistry: Record<string, React.ComponentType<any>> = window.hpReactWidgets || {};
+window.hpReactWidgets = widgetRegistry;
 
-    // Mount My Account Header Widget
-    const myAccountHeaderRoot = document.getElementById('hp-my-account-header-root');
-    if (myAccountHeaderRoot) {
-        const propsStr = myAccountHeaderRoot.dataset.props || '{}';
-        console.log('[HP-React-Widgets] MyAccountHeader raw props:', propsStr);
-        const props = JSON.parse(propsStr);
-        console.log('[HP-React-Widgets] MyAccountHeader parsed props:', props);
-        ReactDOM.createRoot(myAccountHeaderRoot).render(
+// Register built-in widgets.
+widgetRegistry.MultiAddress = MultiAddress;
+widgetRegistry.MyAccountHeader = MyAccountHeader;
+
+document.addEventListener('DOMContentLoaded', () => {
+    const nodes = document.querySelectorAll<HTMLElement>('[data-hp-widget=\"1\"]');
+
+    nodes.forEach((node) => {
+        const componentName = node.dataset.component;
+        if (!componentName) {
+            console.warn('[HP-React-Widgets] data-component is missing on widget node', node);
+            return;
+        }
+
+        const Component = window.hpReactWidgets?.[componentName];
+        if (!Component) {
+            console.warn('[HP-React-Widgets] No component registered for', componentName);
+            return;
+        }
+
+        let props: any = {};
+        const rawProps = node.dataset.props || '{}';
+        try {
+            props = JSON.parse(rawProps);
+        } catch (e) {
+            console.error('[HP-React-Widgets] Failed to parse data-props JSON for', componentName, e);
+        }
+
+        ReactDOM.createRoot(node).render(
             <React.StrictMode>
-                <MyAccountHeader {...props} />
+                <Component {...props} />
             </React.StrictMode>,
-        )
-    } else {
-        console.warn('[HP-React-Widgets] Could not find #hp-my-account-header-root');
-    }
+        );
+    });
 });

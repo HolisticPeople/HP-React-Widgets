@@ -7,6 +7,7 @@ class Plugin
      * Option name used to store which shortcodes are enabled.
      */
     private const OPTION_ENABLED_SHORTCODES = 'hp_rw_enabled_shortcodes';
+    private const OPTION_CUSTOM_SHORTCODES  = 'hp_rw_custom_shortcodes';
 
     /**
      * Registry of all shortcodes this plugin can provide.
@@ -21,11 +22,15 @@ class Plugin
             'label'       => 'My Account Multi-Address',
             'description' => 'Replaces the WooCommerce My Account addresses section with a React-based multi-address UI.',
             'example'     => '[hp_multi_address]',
+            'component'   => 'MultiAddress',
+            'root_id'     => 'hp-multi-address-root',
         ],
         'hp_my_account_header' => [
             'label'       => 'My Account Header',
             'description' => 'Displays the My Account header widget with avatar, name and navigation icons.',
             'example'     => '[hp_my_account_header]',
+            'component'   => 'MyAccountHeader',
+            'root_id'     => 'hp-my-account-header-root',
         ],
     ];
 
@@ -54,7 +59,7 @@ class Plugin
         // If no option is stored yet, enable all known shortcodes by default.
         $stored = get_option(self::OPTION_ENABLED_SHORTCODES, null);
         if ($stored === null) {
-            update_option(self::OPTION_ENABLED_SHORTCODES, array_keys(self::SHORTCODES));
+            update_option(self::OPTION_ENABLED_SHORTCODES, array_keys(self::get_builtin_shortcodes()));
         }
     }
 
@@ -65,12 +70,17 @@ class Plugin
      */
     public static function get_shortcodes(): array
     {
+        $shortcodes = array_merge(
+            self::get_builtin_shortcodes(),
+            self::get_custom_shortcodes()
+        );
+
         /**
          * Filter the list of available HP React Widgets shortcodes.
          *
          * @param array $shortcodes Associative array of shortcode slug => metadata.
          */
-        return apply_filters('hp_rw_shortcodes', self::SHORTCODES);
+        return apply_filters('hp_rw_shortcodes', $shortcodes);
     }
 
     /**
@@ -112,6 +122,38 @@ class Plugin
         $shortcodeSlugs = array_values(array_unique(array_intersect($allShortcodes, $shortcodeSlugs)));
 
         update_option(self::OPTION_ENABLED_SHORTCODES, $shortcodeSlugs);
+    }
+
+    /**
+     * Built-in shortcodes that ship with the plugin.
+     *
+     * @return array<string,array<string,string>>
+     */
+    public static function get_builtin_shortcodes(): array
+    {
+        return self::SHORTCODES;
+    }
+
+    /**
+     * Custom shortcodes created via the wizard.
+     *
+     * @return array<string,array<string,string>>
+     */
+    public static function get_custom_shortcodes(): array
+    {
+        $stored = get_option(self::OPTION_CUSTOM_SHORTCODES, []);
+
+        return is_array($stored) ? $stored : [];
+    }
+
+    /**
+     * Persist custom shortcode metadata.
+     *
+     * @param array<string,array<string,string>> $shortcodes
+     */
+    public static function set_custom_shortcodes(array $shortcodes): void
+    {
+        update_option(self::OPTION_CUSTOM_SHORTCODES, $shortcodes);
     }
 }
 
