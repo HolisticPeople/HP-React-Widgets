@@ -277,7 +277,7 @@ class SettingsPage
             <p><?php echo esc_html('At a high level, creating a new shortcode involves:'); ?></p>
 
             <p>
-                <a class="button" href="<?php echo esc_url(HP_RW_URL . 'SHORTCODES_DEVELOPER_GUIDE.md'); ?>" target="_blank" rel="noopener noreferrer">
+                <a class="button" href="<?php echo esc_url(HP_RW_URL . 'SHORTCODES_DEVELOPER_GUIDE.md'); ?>" download="HP-React-Widgets-Shortcodes-Guide.md">
                     <?php echo esc_html('Download developer guide (Markdown)'); ?>
                 </a>
             </p>
@@ -287,7 +287,6 @@ class SettingsPage
                 <li><?php echo esc_html('(Optional but recommended) Create a hydrator PHP class in includes/Shortcodes/YourWidgetShortcode.php that queries WooCommerce / WordPress and returns a hydrated <div> markup.'); ?></li>
                 <li><?php echo esc_html('Use the wizard above to register the shortcode tag, component name and root DOM ID. This only updates configuration and uses the files you have added; no core plugin PHP files are modified.'); ?></li>
                 <li><?php echo esc_html('Place the new shortcode (for example [hp_my_new_widget]) inside Elementor or any content area.'); ?></li>
-                <li><?php echo esc_html('When you change the core plugin code (not just configuration), bump the plugin version, commit on the dev branch, and push so the staging deploy runs.'); ?></li>
             </ol>
         </div>
         <?php
