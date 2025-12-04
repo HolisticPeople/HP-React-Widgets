@@ -235,11 +235,14 @@ class SettingsPage
                             <td><?php echo esc_html($desc); ?></td>
                             <td><code><?php echo esc_html($example); ?></code></td>
                             <td>
+                                <?php
+                                $baseUrl = menu_page_url('hp-react-widgets', false);
+                                $editUrl = add_query_arg(['hp_rw_edit' => $slug], $baseUrl);
+                                ?>
+                                <a href="<?php echo esc_url($editUrl); ?>" class="dashicons dashicons-admin-generic" title="<?php echo esc_attr__('Edit shortcode', 'hp-react-widgets'); ?>"></a>
                                 <?php if (!$isBuiltin) : ?>
                                     <?php
-                                    $baseUrl     = menu_page_url('hp-react-widgets', false);
-                                    $editUrl     = add_query_arg(['hp_rw_edit' => $slug], $baseUrl);
-                                    $deleteUrl   = add_query_arg(
+                                    $deleteUrl = add_query_arg(
                                         [
                                             'hp_rw_action' => 'delete',
                                             'hp_rw_slug'   => $slug,
@@ -248,12 +251,11 @@ class SettingsPage
                                     );
                                     $deleteUrl = wp_nonce_url($deleteUrl, 'hp_rw_delete_shortcode_' . $slug);
                                     ?>
-                                    <a href="<?php echo esc_url($editUrl); ?>" class="dashicons dashicons-admin-generic" title="<?php echo esc_attr__('Edit shortcode', 'hp-react-widgets'); ?>"></a>
                                     <a href="<?php echo esc_url($deleteUrl); ?>" class="dashicons dashicons-trash"
                                        onclick="return confirm('<?php echo esc_js(__('Are you sure you want to delete this shortcode? This cannot be undone.', 'hp-react-widgets')); ?>');"
                                        title="<?php echo esc_attr__('Delete shortcode', 'hp-react-widgets'); ?>"></a>
                                 <?php else : ?>
-                                    <span class="description"><?php echo esc_html__('Core', 'hp-react-widgets'); ?></span>
+                                    <span class="description"><?php echo esc_html__('Core shortcode (cannot be deleted)', 'hp-react-widgets'); ?></span>
                                 <?php endif; ?>
                             </td>
                         </tr>
