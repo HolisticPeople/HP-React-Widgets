@@ -10,10 +10,20 @@ class ShortcodeRegistry
         $this->assetLoader = $assetLoader;
     }
 
-    public function register()
+    /**
+     * Register shortcodes based on which ones are enabled in settings.
+     */
+    public function register(): void
     {
-        add_shortcode('hp_multi_address', [$this, 'renderMultiAddress']);
-        add_shortcode('hp_my_account_header', [$this, 'renderMyAccountHeader']);
+        $enabled = Plugin::get_enabled_shortcodes();
+
+        if (in_array('hp_multi_address', $enabled, true)) {
+            add_shortcode('hp_multi_address', [$this, 'renderMultiAddress']);
+        }
+
+        if (in_array('hp_my_account_header', $enabled, true)) {
+            add_shortcode('hp_my_account_header', [$this, 'renderMyAccountHeader']);
+        }
     }
 
     public function renderMultiAddress($atts)
@@ -22,44 +32,42 @@ class ShortcodeRegistry
         wp_enqueue_script(AssetLoader::HANDLE);
 
         // Hydration: Fetch addresses server-side
-        $user_id = get_current_user_id();
+        $user_id   = get_current_user_id();
         $addresses = [];
 
         if ($user_id) {
             $customer = new \WC_Customer($user_id);
-            // This is a simplified example. In reality, WC stores billing/shipping.
-            // For a "Multi-Address" feature, you might be using a plugin or custom meta.
-            // For this POC, we'll just send the standard billing/shipping as the initial list.
+            // For this POC, we expose the standard billing/shipping addresses.
 
             $addresses[] = [
-                'id' => 'billing',
-                'type' => 'billing',
+                'id'         => 'billing',
+                'type'       => 'billing',
                 'first_name' => $customer->get_billing_first_name(),
-                'last_name' => $customer->get_billing_last_name(),
-                'address_1' => $customer->get_billing_address_1(),
-                'city' => $customer->get_billing_city(),
-                'state' => $customer->get_billing_state(),
-                'postcode' => $customer->get_billing_postcode(),
-                'country' => $customer->get_billing_country(),
-                'phone' => $customer->get_billing_phone(),
+                'last_name'  => $customer->get_billing_last_name(),
+                'address_1'  => $customer->get_billing_address_1(),
+                'city'       => $customer->get_billing_city(),
+                'state'      => $customer->get_billing_state(),
+                'postcode'   => $customer->get_billing_postcode(),
+                'country'    => $customer->get_billing_country(),
+                'phone'      => $customer->get_billing_phone(),
             ];
 
             $addresses[] = [
-                'id' => 'shipping',
-                'type' => 'shipping',
+                'id'         => 'shipping',
+                'type'       => 'shipping',
                 'first_name' => $customer->get_shipping_first_name(),
-                'last_name' => $customer->get_shipping_last_name(),
-                'address_1' => $customer->get_shipping_address_1(),
-                'city' => $customer->get_shipping_city(),
-                'state' => $customer->get_shipping_state(),
-                'postcode' => $customer->get_shipping_postcode(),
-                'country' => $customer->get_shipping_country(),
+                'last_name'  => $customer->get_shipping_last_name(),
+                'address_1'  => $customer->get_shipping_address_1(),
+                'city'       => $customer->get_shipping_city(),
+                'state'      => $customer->get_shipping_state(),
+                'postcode'   => $customer->get_shipping_postcode(),
+                'country'    => $customer->get_shipping_country(),
             ];
         }
 
         $props = [
-            'addresses' => $addresses,
-            'isLoggedIn' => $user_id > 0
+            'addresses'  => $addresses,
+            'isLoggedIn' => $user_id > 0,
         ];
 
         return sprintf(
@@ -75,7 +83,7 @@ class ShortcodeRegistry
 
         // Hydration: Fetch user and nav data
         $user_id = get_current_user_id();
-        $user = wp_get_current_user();
+        $user    = wp_get_current_user();
 
         // Build nav items from WooCommerce My Account pages
         $nav_items = [];
@@ -84,32 +92,32 @@ class ShortcodeRegistry
         if (function_exists('wc_get_account_endpoint_url')) {
             $nav_items = [
                 [
-                    'id' => 'orders',
+                    'id'    => 'orders',
                     'label' => 'Orders',
-                    'icon' => 'orders',
-                    'href' => wc_get_account_endpoint_url('orders')
+                    'icon'  => 'orders',
+                    'href'  => wc_get_account_endpoint_url('orders'),
                 ],
                 [
-                    'id' => 'addresses',
+                    'id'    => 'addresses',
                     'label' => 'Addresses',
-                    'icon' => 'addresses',
-                    'href' => wc_get_account_endpoint_url('edit-address')
+                    'icon'  => 'addresses',
+                    'href'  => wc_get_account_endpoint_url('edit-address'),
                 ],
                 [
-                    'id' => 'profile',
+                    'id'    => 'profile',
                     'label' => 'Profile',
-                    'icon' => 'profile',
-                    'href' => wc_get_account_endpoint_url('edit-account')
+                    'icon'  => 'profile',
+                    'href'  => wc_get_account_endpoint_url('edit-account'),
                 ],
             ];
 
             // Optional: Add custom nav items
             if (shortcode_exists('my_points_rewards')) {
                 $nav_items[] = [
-                    'id' => 'points',
+                    'id'    => 'points',
                     'label' => 'My Points',
-                    'icon' => 'points',
-                    'href' => wc_get_account_endpoint_url('points-and-rewards')
+                    'icon'  => 'points',
+                    'href'  => wc_get_account_endpoint_url('points-and-rewards'),
                 ];
             }
 
@@ -117,19 +125,34 @@ class ShortcodeRegistry
         } else {
             // Fallback if WooCommerce not available
             $nav_items = [
-                ['id' => 'orders', 'label' => 'Orders', 'icon' => 'orders', 'href' => '/my-account/orders/'],
-                ['id' => 'addresses', 'label' => 'Addresses', 'icon' => 'addresses', 'href' => '/my-account/edit-address/'],
-                ['id' => 'profile', 'label' => 'Profile', 'icon' => 'profile', 'href' => '/my-account/edit-account/'],
+                [
+                    'id'    => 'orders',
+                    'label' => 'Orders',
+                    'icon'  => 'orders',
+                    'href'  => '/my-account/orders/',
+                ],
+                [
+                    'id'    => 'addresses',
+                    'label' => 'Addresses',
+                    'icon'  => 'addresses',
+                    'href'  => '/my-account/edit-address/',
+                ],
+                [
+                    'id'    => 'profile',
+                    'label' => 'Profile',
+                    'icon'  => 'profile',
+                    'href'  => '/my-account/edit-account/',
+                ],
             ];
             $logout_url = '/my-account/customer-logout/';
         }
 
         $props = [
-            'userName' => $user->display_name ?: 'Guest',
-            'avatarUrl' => get_avatar_url($user_id),
-            'navItems' => $nav_items,
-            'activeNavId' => '', // Could be determined from current page
-            'logoutUrl' => $logout_url
+            'userName'    => $user->display_name ?: 'Guest',
+            'avatarUrl'   => get_avatar_url($user_id),
+            'navItems'    => $nav_items,
+            'activeNavId' => '',
+            'logoutUrl'   => $logout_url,
         ];
 
         return sprintf(
@@ -138,3 +161,5 @@ class ShortcodeRegistry
         );
     }
 }
+
+
