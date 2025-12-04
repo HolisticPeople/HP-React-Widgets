@@ -155,6 +155,14 @@ class Plugin
     {
         update_option(self::OPTION_CUSTOM_SHORTCODES, $shortcodes);
     }
+
+    /**
+     * Check if a shortcode slug refers to a built-in shortcode.
+     */
+    public static function is_builtin_shortcode(string $slug): bool
+    {
+        return isset(self::SHORTCODES[$slug]);
+    }
 }
 
 
