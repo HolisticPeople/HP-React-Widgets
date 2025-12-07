@@ -18,17 +18,20 @@ class ShortcodeRegistry
         $enabled       = Plugin::get_enabled_shortcodes();
         $allShortcodes = Plugin::get_shortcodes();
 
-        foreach ($enabled as $slug) {
-            if (!isset($allShortcodes[$slug])) {
-                continue;
-            }
+        foreach ($allShortcodes as $slug => $config) {
+            // Register every known shortcode so Elementor/WP never shows the raw [shortcode] text.
+            // Rendering logic checks whether it is enabled, and if not, returns an empty string.
+            add_shortcode(
+                $slug,
+                function ($atts = []) use ($slug, $config, $enabled) {
+                    if (!in_array($slug, $enabled, true)) {
+                        // Shortcode is configured but disabled → render nothing and do not enqueue assets.
+                        return '';
+                    }
 
-            // All shortcodes are handled via the generic renderer and optional hydrator class.
-            $config = $allShortcodes[$slug];
-
-            add_shortcode($slug, function ($atts = []) use ($config) {
-                return $this->renderGeneric($config, (array) $atts);
-            });
+                    return $this->renderGeneric($config, (array) $atts);
+                }
+            );
         }
     }
 
