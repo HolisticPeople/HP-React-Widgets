@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { AddressCardPickerProps, Address } from '@/types/address';
+import { AddressCardPickerProps, Address, AddressType } from '@/types/address';
 import { AddressCard } from './AddressCard';
 import { cn } from '@/lib/utils';
 
@@ -48,11 +48,24 @@ export const AddressCardPicker = ({
   onCopy,
   showActions = true,
   title,
+  editUrl,
 }: AddressCardPickerProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [visibleCards, setVisibleCards] = useState(3);
   const sliderRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Local, mutable list so REST actions can update UI without a full page reload.
+  const [items, setItems] = useState<Address[]>(addresses);
+  const [activeId, setActiveId] = useState<string | undefined>(selectedId);
+
+  useEffect(() => {
+    setItems(addresses);
+  }, [addresses]);
+
+  useEffect(() => {
+    setActiveId(selectedId);
+  }, [selectedId]);
 
   // Calculate visible cards based on container width
   useEffect(() => {
@@ -74,7 +87,7 @@ export const AddressCardPicker = ({
     return () => window.removeEventListener('resize', updateVisibleCards);
   }, []);
 
-  const maxIndex = Math.max(0, addresses.length - visibleCards);
+  const maxIndex = Math.max(0, items.length - visibleCards);
   const canScrollLeft = currentIndex > 0;
   const canScrollRight = currentIndex < maxIndex;
 
@@ -98,13 +111,115 @@ export const AddressCardPicker = ({
   const handleNext = () => scrollTo(currentIndex + 1);
 
   const handleSelect = (address: Address) => {
+    setActiveId(address.id);
     onSelect?.(address);
+  };
+
+  const apiFetch = useCallback(
+    async (endpoint: string, payload: any) => {
+      if (typeof window === 'undefined' || !window.hpReactSettings) {
+        console.warn('[HP-React-Widgets] hpReactSettings is not available on window.');
+        return null;
+      }
+
+      const { root, nonce } = window.hpReactSettings;
+
+      const response = await fetch(`${root}hp-rw/v1/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': nonce,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        console.error('[HP-React-Widgets] Address API request failed', response.status);
+        return null;
+      }
+
+      return response.json();
+    },
+    []
+  );
+
+  const handleDeleteAddress = async (address: Address) => {
+    if (onDelete) {
+      onDelete(address);
+      return;
+    }
+
+    // Prevent deleting the primary WooCommerce address.
+    if (address.id.endsWith('_primary')) {
+      return;
+    }
+
+    if (!window.confirm('Delete this address? This cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const result = await apiFetch('address/delete', { type, id: address.id });
+      if (result && result.success && Array.isArray(result.addresses)) {
+        setItems(result.addresses);
+        setActiveId(result.selectedId ?? activeId);
+      }
+    } catch (e) {
+      console.error('[HP-React-Widgets] Failed to delete address', e);
+    }
+  };
+
+  const handleSetDefault = async (address: Address) => {
+    if (onSetDefault) {
+      onSetDefault(address);
+      return;
+    }
+
+    try {
+      const result = await apiFetch('address/set-default', { type, id: address.id });
+      if (result && result.success && Array.isArray(result.addresses)) {
+        setItems(result.addresses);
+        setActiveId(result.selectedId ?? activeId);
+      }
+    } catch (e) {
+      console.error('[HP-React-Widgets] Failed to set default address', e);
+    }
+  };
+
+  const handleCopy = async (address: Address, targetType: AddressType) => {
+    if (onCopy) {
+      onCopy(address, targetType);
+      return;
+    }
+
+    try {
+      await apiFetch('address/copy', {
+        fromType: type,
+        toType: targetType,
+        id: address.id,
+      });
+      // For now we do not rehydrate the other address type's slider;
+      // copy primarily affects checkout / backend logic.
+    } catch (e) {
+      console.error('[HP-React-Widgets] Failed to copy address', e);
+    }
+  };
+
+  const handleEdit = (address: Address) => {
+    if (onEdit) {
+      onEdit(address);
+      return;
+    }
+
+    if (editUrl) {
+      window.location.href = editUrl;
+    }
   };
 
   const typeLabel = type === 'billing' ? 'Billing' : 'Shipping';
   const displayTitle = title || `${typeLabel} Addresses`;
 
-  if (addresses.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="rounded-xl border border-border/50 bg-card/50 p-8 text-center">
         <div className="flex flex-col items-center gap-3">
@@ -122,15 +237,14 @@ export const AddressCardPicker = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-          <HpMapPinIcon />
           {displayTitle}
           <span className="text-sm font-normal text-muted-foreground">
-            ({addresses.length})
+            ({items.length})
           </span>
         </h3>
 
         {/* Navigation Arrows - Desktop */}
-        {addresses.length > visibleCards && (
+        {items.length > visibleCards && (
           <div className="hidden sm:flex items-center gap-2">
             <button
               className="slider-nav-btn"
@@ -170,7 +284,7 @@ export const AddressCardPicker = ({
             scrollSnapType: 'x mandatory',
           }}
         >
-          {addresses.map((address, index) => (
+          {items.map((address, index) => (
             <div
               key={address.id}
               className="animate-fade-up h-full"
@@ -182,12 +296,12 @@ export const AddressCardPicker = ({
               <AddressCard
                 address={address}
                 type={type}
-                isSelected={selectedId === address.id}
+                isSelected={activeId === address.id}
                 onSelect={() => handleSelect(address)}
-                onEdit={() => onEdit?.(address)}
-                onDelete={() => onDelete?.(address)}
-                onSetDefault={() => onSetDefault?.(address)}
-                onCopy={() => onCopy?.(address, type === 'billing' ? 'shipping' : 'billing')}
+                onEdit={() => handleEdit(address)}
+                onDelete={() => handleDeleteAddress(address)}
+                onSetDefault={() => handleSetDefault(address)}
+                onCopy={() => handleCopy(address, type === 'billing' ? 'shipping' : 'billing')}
                 showActions={showActions}
               />
             </div>
@@ -196,9 +310,9 @@ export const AddressCardPicker = ({
       </div>
 
       {/* Pagination Dots - Mobile */}
-      {addresses.length > visibleCards && (
+      {items.length > visibleCards && (
         <div className="flex justify-center gap-2 pt-2 sm:hidden">
-          {Array.from({ length: Math.ceil(addresses.length / visibleCards) }).map((_, i) => (
+          {Array.from({ length: Math.ceil(items.length / visibleCards) }).map((_, i) => (
             <button
               key={i}
               className={cn(
@@ -213,7 +327,7 @@ export const AddressCardPicker = ({
       )}
 
       {/* Mobile Navigation */}
-      {addresses.length > visibleCards && (
+      {items.length > visibleCards && (
         <div className="flex sm:hidden items-center justify-center gap-4">
           <button
             className="slider-nav-btn"
@@ -224,7 +338,7 @@ export const AddressCardPicker = ({
             <HpArrowLeftIcon />
           </button>
           <span className="text-sm text-muted-foreground">
-            {currentIndex + 1} - {Math.min(currentIndex + visibleCards, addresses.length)} of {addresses.length}
+            {currentIndex + 1} - {Math.min(currentIndex + visibleCards, items.length)} of {items.length}
           </span>
           <button
             className="slider-nav-btn"

@@ -40,12 +40,19 @@ class AddressCardPickerShortcode
         // Hydrate addresses for the current user.
         $addresses = $this->get_user_addresses($user_id, $atts['type']);
 
+        // Build edit URL for the native WooCommerce "Edit address" screen.
+        $edit_url = '';
+        if (function_exists('wc_get_endpoint_url') && function_exists('wc_get_page_permalink')) {
+            $edit_url = wc_get_endpoint_url('edit-address', $atts['type'], wc_get_page_permalink('myaccount'));
+        }
+
         $props = [
             'addresses'   => $addresses,
             'type'        => $atts['type'],
             'showActions' => $atts['show_actions'] === 'true',
             'title'       => $atts['title'] ?: null,
             'selectedId'  => $this->get_default_address_id($addresses),
+            'editUrl'     => $edit_url,
         ];
 
         // Use a per-instance container ID so multiple instances can exist on a page.
@@ -62,7 +69,12 @@ class AddressCardPickerShortcode
     /**
      * Get user addresses from WooCommerce + ThemeHigh Multi-Address meta.
      */
-    private function get_user_addresses(int $user_id, string $type): array
+    /**
+     * Retrieve all addresses for a given user + type.
+     *
+     * Made public so REST handlers can reuse the same normalization logic.
+     */
+    public function get_user_addresses(int $user_id, string $type): array
     {
         $addresses = [];
         $customer = new \WC_Customer($user_id);
@@ -153,7 +165,12 @@ class AddressCardPickerShortcode
         return $countries[$country_code] ?? $country_code;
     }
 
-    private function get_default_address_id(array $addresses): ?string
+    /**
+     * Determine default address ID from a hydrated list.
+     *
+     * Exposed for reuse by REST handlers when returning updated data.
+     */
+    public function get_default_address_id(array $addresses): ?string
     {
         foreach ($addresses as $address) {
             if (!empty($address['isDefault'])) {

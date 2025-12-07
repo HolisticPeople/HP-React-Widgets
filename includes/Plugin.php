@@ -55,6 +55,10 @@ class Plugin
         $assetLoader = new AssetLoader();
         $assetLoader->register();
 
+        // Register REST API endpoints for widget interactions.
+        $addressApi = new AddressApi();
+        $addressApi->register();
+
         // Register shortcodes based on current settings.
         $shortcodeRegistry = new ShortcodeRegistry($assetLoader);
         $shortcodeRegistry->register();
