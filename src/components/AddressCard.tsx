@@ -36,7 +36,7 @@ export const AddressCard = ({
   return (
     <div
       className={cn(
-        'address-card group cursor-pointer min-w-[280px] max-w-[320px] flex-shrink-0',
+        'address-card group cursor-pointer min-w-[280px] max-w-[320px] flex-shrink-0 h-full flex flex-col',
         isSelected && 'selected',
         address.isDefault && 'is-default'
       )}
@@ -62,7 +62,7 @@ export const AddressCard = ({
       )}
 
       {/* Address Content */}
-      <div className={cn('space-y-2 pt-2', address.isDefault && 'pt-4')}>
+      <div className={cn('space-y-2 pt-2 flex-grow', address.isDefault && 'pt-4')}>
         <p className="font-semibold text-foreground text-base leading-tight">
           {fullName}
         </p>

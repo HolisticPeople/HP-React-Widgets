@@ -140,7 +140,7 @@ export const AddressCardPicker = ({
           {addresses.map((address, index) => (
             <div
               key={address.id}
-              className="animate-fade-up"
+              className="animate-fade-up h-full"
               style={{
                 scrollSnapAlign: 'start',
                 animationDelay: `${index * 50}ms`,
