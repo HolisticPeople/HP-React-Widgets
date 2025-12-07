@@ -44,7 +44,7 @@ export const AddressCard = ({
     >
       {/* Default Badge */}
       {address.isDefault && (
-        <div className="absolute -top-2.5 left-4">
+        <div className="absolute top-2 left-4">
           <span className="default-badge">
             <Star
               className="h-3 w-3 fill-current"
