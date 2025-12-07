@@ -1,8 +1,41 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
 import { AddressCardPickerProps, Address } from '@/types/address';
 import { AddressCard } from './AddressCard';
 import { cn } from '@/lib/utils';
+
+// Local inline SVG icons for navigation and headings.
+const HpArrowLeftIcon = () => (
+  <svg
+    className="hp-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+  >
+    <path d="M14 5L8 11L14 17" />
+    <path d="M8 11H20" />
+  </svg>
+);
+
+const HpArrowRightIcon = () => (
+  <svg
+    className="hp-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+  >
+    <path d="M10 5L16 11L10 17" />
+    <path d="M4 11H16" />
+  </svg>
+);
+
+const HpMapPinIcon = () => (
+  <svg
+    className="hp-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+  >
+    <path d="M12 2C8.7 2 6 4.7 6 8C6 11.9 10.3 16.7 11.6 18.1C11.8 18.3 12.2 18.3 12.4 18.1C13.7 16.7 18 11.9 18 8C18 4.7 15.3 2 12 2Z" />
+    <circle cx="12" cy="8" r="2.5" />
+  </svg>
+);
 
 export const AddressCardPicker = ({
   addresses,
@@ -76,10 +109,7 @@ export const AddressCardPicker = ({
       <div className="rounded-xl border border-border/50 bg-card/50 p-8 text-center">
         <div className="flex flex-col items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-            <MapPin
-              className="h-6 w-6 text-muted-foreground"
-              style={{ width: '1.5rem', height: '1.5rem' }}
-            />
+            <HpMapPinIcon />
           </div>
           <p className="text-muted-foreground">No {type} addresses found</p>
         </div>
@@ -92,10 +122,7 @@ export const AddressCardPicker = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-          <MapPin
-            className="h-5 w-5 text-primary"
-            style={{ width: '1.2rem', height: '1.2rem' }}
-          />
+          <HpMapPinIcon />
           {displayTitle}
           <span className="text-sm font-normal text-muted-foreground">
             ({addresses.length})
@@ -111,10 +138,7 @@ export const AddressCardPicker = ({
               disabled={!canScrollLeft}
               aria-label="Previous addresses"
             >
-              <ChevronLeft
-                className="h-5 w-5"
-                style={{ width: '1.25rem', height: '1.25rem' }}
-              />
+              <HpArrowLeftIcon />
             </button>
             <button
               className="slider-nav-btn"
@@ -122,10 +146,7 @@ export const AddressCardPicker = ({
               disabled={!canScrollRight}
               aria-label="Next addresses"
             >
-              <ChevronRight
-                className="h-5 w-5"
-                style={{ width: '1.25rem', height: '1.25rem' }}
-              />
+              <HpArrowRightIcon />
             </button>
           </div>
         )}
@@ -200,10 +221,7 @@ export const AddressCardPicker = ({
             disabled={!canScrollLeft}
             aria-label="Previous addresses"
           >
-            <ChevronLeft
-              className="h-5 w-5"
-              style={{ width: '1.25rem', height: '1.25rem' }}
-            />
+            <HpArrowLeftIcon />
           </button>
           <span className="text-sm text-muted-foreground">
             {currentIndex + 1} - {Math.min(currentIndex + visibleCards, addresses.length)} of {addresses.length}
@@ -214,10 +232,7 @@ export const AddressCardPicker = ({
             disabled={!canScrollRight}
             aria-label="Next addresses"
           >
-            <ChevronRight
-              className="h-5 w-5"
-              style={{ width: '1.25rem', height: '1.25rem' }}
-            />
+            <HpArrowRightIcon />
           </button>
         </div>
       )}

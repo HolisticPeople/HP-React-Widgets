@@ -1,11 +1,65 @@
 import { Address, AddressType } from '@/types/address';
-import { Pencil, Trash2, Star, Copy, Check } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+
+// Local inline SVG icons with filled shapes to avoid theme conflicts.
+const HpEditIcon = () => (
+  <svg
+    className="hp-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+  >
+    <path d="M4 17.5L4.5 20L7 19.5L18 8.5L15.5 6L4.5 17Z" />
+    <path d="M14.5 5.5L16.5 3.5L20.5 7.5L18.5 9.5Z" />
+  </svg>
+);
+
+const HpDeleteIcon = () => (
+  <svg
+    className="hp-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+  >
+    <rect x="5" y="7" width="14" height="13" rx="1.5" />
+    <rect x="9" y="3" width="6" height="3" rx="1" />
+    <path d="M4 7H20" />
+  </svg>
+);
+
+const HpStarIcon = () => (
+  <svg
+    className="hp-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+  >
+    <path d="M12 3L14.9 8.3L21 9.2L16.5 13.3L17.6 19.4L12 16.6L6.4 19.4L7.5 13.3L3 9.2L9.1 8.3L12 3Z" />
+  </svg>
+);
+
+const HpCopyIcon = () => (
+  <svg
+    className="hp-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+  >
+    <rect x="8" y="8" width="11" height="12" rx="2" />
+    <rect x="5" y="4" width="11" height="12" rx="2" />
+  </svg>
+);
+
+const HpCheckIcon = () => (
+  <svg
+    className="hp-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+  >
+    <path d="M5 13L10 18L19 7" />
+  </svg>
+);
 
 interface AddressCardProps {
   address: Address;
@@ -46,10 +100,7 @@ export const AddressCard = ({
       {address.isDefault && (
         <div className="absolute top-2 left-4">
           <span className="default-badge">
-            <Star
-              className="h-3 w-3 fill-current"
-              style={{ width: '0.75rem', height: '0.75rem' }}
-            />
+            <HpStarIcon />
             Default
           </span>
         </div>
@@ -59,10 +110,7 @@ export const AddressCard = ({
       {isSelected && (
         <div className="absolute top-3 right-3">
           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <Check
-              className="h-4 w-4"
-              style={{ width: '1.1rem', height: '1.1rem' }}
-            />
+            <HpCheckIcon />
           </div>
         </div>
       )}
@@ -101,10 +149,7 @@ export const AddressCard = ({
                 }}
                 aria-label="Edit address"
               >
-                <Pencil
-                  className="h-4 w-4"
-                  style={{ width: '1.25rem', height: '1.25rem' }}
-                />
+                <HpEditIcon />
               </button>
             </TooltipTrigger>
             <TooltipContent className="tooltip-content">
@@ -122,10 +167,7 @@ export const AddressCard = ({
                 }}
                 aria-label="Delete address"
               >
-                <Trash2
-                  className="h-4 w-4"
-                  style={{ width: '1.25rem', height: '1.25rem' }}
-                />
+                <HpDeleteIcon />
               </button>
             </TooltipTrigger>
             <TooltipContent className="tooltip-content">
@@ -147,13 +189,7 @@ export const AddressCard = ({
                 aria-label="Set as default"
                 disabled={address.isDefault}
               >
-                <Star
-                  className={cn(
-                    'h-4 w-4',
-                    address.isDefault && 'fill-current'
-                  )}
-                  style={{ width: '1.25rem', height: '1.25rem' }}
-                />
+                <HpStarIcon />
               </button>
             </TooltipTrigger>
             <TooltipContent className="tooltip-content">
@@ -171,10 +207,7 @@ export const AddressCard = ({
                 }}
                 aria-label={copyTooltip}
               >
-                <Copy
-                  className="h-4 w-4"
-                  style={{ width: '1.25rem', height: '1.25rem' }}
-                />
+                <HpCopyIcon />
               </button>
             </TooltipTrigger>
             <TooltipContent className="tooltip-content">
