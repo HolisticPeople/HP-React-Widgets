@@ -127,7 +127,6 @@
     .address-card:hover {
         border-color: hsl(var(--primary));
         box-shadow: 0 8px 24px -4px hsl(var(--primary) / 0.3);
-        transform: translateY(-2px);
     }
 
     .address-card.selected {
@@ -164,9 +163,11 @@
 
     .action-btn svg,
     .slider-nav-btn svg {
-        width: 1rem;
-        height: 1rem;
-        stroke-width: 2.25;
+        width: 1.25rem;
+        height: 1.25rem;
+        stroke-width: 2.5;
+        stroke: currentColor;
+        fill: none;
     }
 
     .slider-nav-btn {
