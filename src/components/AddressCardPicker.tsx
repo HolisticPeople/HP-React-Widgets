@@ -37,6 +37,13 @@ const HpMapPinIcon = () => (
   </svg>
 );
 
+interface AddressCopiedEventDetail {
+  fromType: AddressType;
+  toType: AddressType;
+  addresses: Address[];
+  selectedId?: string;
+}
+
 export const AddressCardPicker = ({
   addresses,
   type,
@@ -66,6 +73,26 @@ export const AddressCardPicker = ({
   useEffect(() => {
     setActiveId(selectedId);
   }, [selectedId]);
+
+  // Listen for copy events dispatched from any AddressCardPicker instance
+  // and update this slider if it's the target type.
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const custom = event as CustomEvent<AddressCopiedEventDetail>;
+      if (!custom.detail) return;
+      if (custom.detail.toType !== type) return;
+
+      if (Array.isArray(custom.detail.addresses)) {
+        setItems(custom.detail.addresses);
+        if (custom.detail.selectedId) {
+          setActiveId(custom.detail.selectedId);
+        }
+      }
+    };
+
+    window.addEventListener('hpRWAddressCopied' as any, handler);
+    return () => window.removeEventListener('hpRWAddressCopied' as any, handler);
+  }, [type]);
 
   // Calculate visible cards based on container width
   useEffect(() => {
@@ -198,9 +225,18 @@ export const AddressCardPicker = ({
         toType: targetType,
         id: address.id,
       });
-      if (result && result.success) {
-        // Reload so both billing and shipping sliders reflect the copied data.
-        window.location.reload();
+      if (result && result.success && Array.isArray(result.addresses)) {
+        // Notify any AddressCardPicker instance with matching type so it can
+        // update its list immediately without a full page reload.
+        const event = new CustomEvent<AddressCopiedEventDetail>('hpRWAddressCopied', {
+          detail: {
+            fromType: type,
+            toType: targetType,
+            addresses: result.addresses,
+            selectedId: result.selectedId,
+          },
+        });
+        window.dispatchEvent(event);
       }
     } catch (e) {
       console.error('[HP-React-Widgets] Failed to copy address', e);
