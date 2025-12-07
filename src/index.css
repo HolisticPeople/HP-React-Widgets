@@ -142,6 +142,13 @@
         border-color: hsl(var(--primary));
     }
 
+    /* Prevent theme badges / triangles from appearing on default cards */
+    .address-card.is-default::before,
+    .address-card.is-default::after {
+        content: none !important;
+        border: 0 !important;
+    }
+
     .action-btn {
         display: flex;
         align-items: center;

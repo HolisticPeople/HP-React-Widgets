@@ -158,11 +158,14 @@ class AddressApi
         $hydrator  = new AddressCardPickerShortcode();
         $addresses = $hydrator->get_user_addresses($user_id, $type);
 
-        $chosen = null;
+        $chosen        = null;
+        $currentFlight = null;
         foreach ($addresses as $address) {
             if (isset($address['id']) && (string) $address['id'] === $id) {
                 $chosen = $address;
-                break;
+            }
+            if (!empty($address['isDefault'])) {
+                $currentFlight = $address;
             }
         }
 
@@ -170,7 +173,44 @@ class AddressApi
             return new WP_Error('hp_rw_not_found', 'Address not found.', ['status' => 404]);
         }
 
-        // Map normalized address array back into WooCommerce user meta fields.
+        // Preserve the existing default by appending it to ThemeHigh's custom addresses
+        // so users never lose an address when promoting another one to default.
+        if ($currentFlight && isset($currentFlight['id']) && (string) $currentFlight['id'] !== (string) $chosen['id']) {
+            $meta_key = 'thwma_custom_address';
+            $meta     = get_user_meta($user_id, $meta_key, true);
+            if (!is_array($meta)) {
+                $meta = [
+                    'billing'  => [],
+                    'shipping' => [],
+                ];
+            }
+
+            if (!isset($meta[$type]) || !is_array($meta[$type])) {
+                $meta[$type] = [];
+            }
+
+            $prefix = $type . '_';
+
+            $entry = [
+                $prefix . 'first_name' => $currentFlight['firstName'] ?? '',
+                $prefix . 'last_name'  => $currentFlight['lastName'] ?? '',
+                $prefix . 'company'    => $currentFlight['company'] ?? '',
+                $prefix . 'address_1'  => $currentFlight['address1'] ?? '',
+                $prefix . 'address_2'  => $currentFlight['address2'] ?? '',
+                $prefix . 'city'       => $currentFlight['city'] ?? '',
+                $prefix . 'state'      => $currentFlight['state'] ?? '',
+                $prefix . 'postcode'   => $currentFlight['postcode'] ?? '',
+                $prefix . 'country'    => $currentFlight['country'] ?? '',
+                $prefix . 'phone'      => $currentFlight['phone'] ?? '',
+                $prefix . 'email'      => $currentFlight['email'] ?? '',
+                $prefix . 'address_title' => $currentFlight['address1'] ?? '',
+            ];
+
+            $meta[$type][] = $entry;
+            update_user_meta($user_id, $meta_key, $meta);
+        }
+
+        // Map normalized address array for the newly chosen default back into WooCommerce user meta fields.
         $field_map = [
             'firstName' => 'first_name',
             'lastName'  => 'last_name',
