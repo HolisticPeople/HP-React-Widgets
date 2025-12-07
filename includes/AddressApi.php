@@ -158,16 +158,51 @@ class AddressApi
         $hydrator  = new AddressCardPickerShortcode();
         $addresses = $hydrator->get_user_addresses($user_id, $type);
 
-        $chosen = null;
+        $chosen   = null;
+        $current  = null;
         foreach ($addresses as $address) {
             if (isset($address['id']) && (string) $address['id'] === $id) {
                 $chosen = $address;
-                break;
+            }
+            if (!empty($address['isDefault'])) {
+                $current = $address;
             }
         }
 
         if (!$chosen) {
             return new WP_Error('hp_rw_not_found', 'Address not found.', ['status' => 404]);
+        }
+
+        // If the chosen address comes from ThemeHigh (th_{type}_{key}), perform a true swap:
+        //  - Chosen address becomes the new WooCommerce default
+        //  - Previous default is written back into the same ThemeHigh slot
+        if ($current && isset($chosen['id']) && preg_match('/^th_' . preg_quote($type, '/') . '_(.+)$/', (string) $chosen['id'], $m)) {
+            $th_key   = $m[1];
+            $meta_key = 'thwma_custom_address';
+            $meta     = get_user_meta($user_id, $meta_key, true);
+
+            if (is_array($meta) && isset($meta[$type][$th_key])) {
+                $prefix = $type . '_';
+
+                // Build a ThemeHigh-style entry from the current default address.
+                $entry = [
+                    $prefix . 'first_name' => $current['firstName'] ?? '',
+                    $prefix . 'last_name'  => $current['lastName'] ?? '',
+                    $prefix . 'company'    => $current['company'] ?? '',
+                    $prefix . 'address_1'  => $current['address1'] ?? '',
+                    $prefix . 'address_2'  => $current['address2'] ?? '',
+                    $prefix . 'city'       => $current['city'] ?? '',
+                    $prefix . 'state'      => $current['state'] ?? '',
+                    $prefix . 'postcode'   => $current['postcode'] ?? '',
+                    $prefix . 'country'    => $current['country'] ?? '',
+                    $prefix . 'phone'      => $current['phone'] ?? '',
+                    $prefix . 'email'      => $current['email'] ?? '',
+                ];
+
+                // Replace, instead of appending, so the total number of addresses stays constant.
+                $meta[$type][$th_key] = $entry;
+                update_user_meta($user_id, $meta_key, $meta);
+            }
         }
 
         // Map normalized address array for the newly chosen default back into WooCommerce user meta fields.
