@@ -275,8 +275,25 @@ class SettingsPage
 
             <hr />
 
-            <h2><?php echo esc_html('Add a new shortcode (wizard)'); ?></h2>
-            <p><?php echo esc_html('Follow these steps to register a new React widget shortcode. The wizard will validate file locations and wire up mounting automatically.'); ?></p>
+            <?php $isEditing = ($editingSlug !== ''); ?>
+            <h2>
+                <?php
+                echo esc_html(
+                    $isEditing
+                        ? sprintf('Edit shortcode: %s', $editingSlug)
+                        : 'Add a new shortcode (wizard)'
+                );
+                ?>
+            </h2>
+            <p>
+                <?php
+                echo esc_html(
+                    $isEditing
+                        ? 'Update the configuration for this React widget shortcode. The wizard validates file locations and wiring.'
+                        : 'Follow these steps to register a new React widget shortcode. The wizard will validate file locations and wire up mounting automatically.'
+                );
+                ?>
+            </p>
 
             <form method="post" style="max-width: 900px;">
                 <?php wp_nonce_field('hp_rw_new_shortcode'); ?>
@@ -344,8 +361,14 @@ class SettingsPage
                 <p>
                     <input type="hidden" name="hp_rw_editing_slug" value="<?php echo esc_attr($editingSlug); ?>" />
                     <button type="submit" class="button button-secondary">
-                        <?php echo esc_html('Register shortcode'); ?>
+                        <?php echo esc_html($isEditing ? 'Save changes' : 'Register shortcode'); ?>
                     </button>
+                    <?php if ($isEditing) : ?>
+                        <?php $cancelUrl = menu_page_url('hp-react-widgets', false); ?>
+                        <a href="<?php echo esc_url($cancelUrl); ?>" class="button">
+                            <?php echo esc_html('Cancel'); ?>
+                        </a>
+                    <?php endif; ?>
                 </p>
             </form>
 
