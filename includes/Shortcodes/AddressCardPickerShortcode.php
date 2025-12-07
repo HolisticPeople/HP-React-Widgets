@@ -90,6 +90,7 @@ class AddressCardPickerShortcode
         $th_addresses = get_user_meta($user_id, 'thwma_custom_address', true);
 
         if (is_array($th_addresses) && !empty($th_addresses[$type])) {
+            $counter = 1;
             foreach ($th_addresses[$type] as $key => $addr_data) {
                 // Determine prefix based on type (ThemeHigh usually prefixes fields with billing_ or shipping_)
                 $prefix = $type . '_';
@@ -115,7 +116,7 @@ class AddressCardPickerShortcode
                     'phone'     => $addr_data[$prefix . 'phone'] ?? '',
                     'email'     => $addr_data[$prefix . 'email'] ?? '',
                     'isDefault' => false,
-                    'label'     => sprintf('#%d', ((int) $key) + 1),
+                    'label'     => sprintf('#%d', $counter++),
                 ];
             }
         }

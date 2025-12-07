@@ -279,7 +279,7 @@ export const AddressCardPicker = ({
         {/* Cards Slider */}
         <div
           ref={sliderRef}
-          className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2 -mx-2 px-2"
+          className="address-slider flex gap-4 overflow-x-auto scroll-smooth pb-2 -mx-2 px-2"
           style={{
             scrollSnapType: 'x mandatory',
           }}
