@@ -36,7 +36,7 @@ export const AddressCard = ({
   return (
     <div
       className={cn(
-        'address-card group cursor-pointer min-w-[280px] max-w-[320px] flex-shrink-0 h-full flex flex-col',
+        'address-card group cursor-pointer min-w-[280px] max-w-[320px] flex-shrink-0 h-full min-h-[260px] flex flex-col',
         isSelected && 'selected',
         address.isDefault && 'is-default'
       )}
