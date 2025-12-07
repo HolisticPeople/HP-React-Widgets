@@ -182,27 +182,25 @@ export const AddressCard = ({
             </TooltipContent>
           </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                className={cn(
-                  'action-btn',
-                  address.isDefault && 'bg-primary/20 text-primary'
-                )}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSetDefault?.();
-                }}
-                aria-label="Set as default"
-                disabled={address.isDefault}
-              >
-                <HpStarIcon />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent className="tooltip-content">
-              <p>{address.isDefault ? 'Default address' : 'Set as default'}</p>
-            </TooltipContent>
-          </Tooltip>
+          {!address.isDefault && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  className="action-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSetDefault?.();
+                  }}
+                  aria-label="Set as default"
+                >
+                  <HpStarIcon />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="tooltip-content">
+                <p>Set as default</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
 
           <Tooltip>
             <TooltipTrigger asChild>

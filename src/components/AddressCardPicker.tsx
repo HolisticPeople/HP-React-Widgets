@@ -193,13 +193,15 @@ export const AddressCardPicker = ({
     }
 
     try {
-      await apiFetch('address/copy', {
+      const result = await apiFetch('address/copy', {
         fromType: type,
         toType: targetType,
         id: address.id,
       });
-      // For now we do not rehydrate the other address type's slider;
-      // copy primarily affects checkout / backend logic.
+      if (result && result.success) {
+        // Reload so both billing and shipping sliders reflect the copied data.
+        window.location.reload();
+      }
     } catch (e) {
       console.error('[HP-React-Widgets] Failed to copy address', e);
     }
