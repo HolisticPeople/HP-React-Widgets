@@ -224,7 +224,6 @@ class SettingsPage
                         $label     = isset($meta['label']) ? $meta['label'] : $slug;
                         $desc      = isset($meta['description']) ? $meta['description'] : '';
                         $example   = isset($meta['example']) ? $meta['example'] : '[' . $slug . ']';
-                        $isBuiltin = Plugin::is_builtin_shortcode($slug);
                         ?>
                         <tr>
                             <td>
@@ -248,23 +247,19 @@ class SettingsPage
                                 $editUrl = add_query_arg(['hp_rw_edit' => $slug], $baseUrl);
                                 ?>
                                 <a href="<?php echo esc_url($editUrl); ?>" class="dashicons dashicons-admin-generic" title="<?php echo esc_attr__('Edit shortcode', 'hp-react-widgets'); ?>"></a>
-                                <?php if (!$isBuiltin) : ?>
-                                    <?php
-                                    $deleteUrl = add_query_arg(
-                                        [
-                                            'hp_rw_action' => 'delete',
-                                            'hp_rw_slug'   => $slug,
-                                        ],
-                                        $baseUrl
-                                    );
-                                    $deleteUrl = wp_nonce_url($deleteUrl, 'hp_rw_delete_shortcode_' . $slug);
-                                    ?>
-                                    <a href="<?php echo esc_url($deleteUrl); ?>" class="dashicons dashicons-trash"
-                                       onclick="return confirm('<?php echo esc_js(__('Are you sure you want to delete this shortcode? This cannot be undone.', 'hp-react-widgets')); ?>');"
-                                       title="<?php echo esc_attr__('Delete shortcode', 'hp-react-widgets'); ?>"></a>
-                                <?php else : ?>
-                                    <span class="description"><?php echo esc_html__('Core shortcode (cannot be deleted)', 'hp-react-widgets'); ?></span>
-                                <?php endif; ?>
+                                <?php
+                                $deleteUrl = add_query_arg(
+                                    [
+                                        'hp_rw_action' => 'delete',
+                                        'hp_rw_slug'   => $slug,
+                                    ],
+                                    $baseUrl
+                                );
+                                $deleteUrl = wp_nonce_url($deleteUrl, 'hp_rw_delete_shortcode_' . $slug);
+                                ?>
+                                <a href="<?php echo esc_url($deleteUrl); ?>" class="dashicons dashicons-trash"
+                                   onclick="return confirm('<?php echo esc_js(__('Are you sure you want to delete this shortcode? This cannot be undone.', 'hp-react-widgets')); ?>');"
+                                   title="<?php echo esc_attr__('Delete shortcode', 'hp-react-widgets'); ?>"></a>
                             </td>
                         </tr>
                     <?php endforeach; ?>
