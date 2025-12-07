@@ -60,38 +60,48 @@ class AddressCardPickerShortcode
     }
 
     /**
-     * Get user addresses from WooCommerce + optional multi-address meta.
+     * Get user addresses from WooCommerce + ThemeHigh Multi-Address meta.
      */
     private function get_user_addresses(int $user_id, string $type): array
     {
         $addresses = [];
-
         $customer = new \WC_Customer($user_id);
 
-        // Primary/default address from WooCommerce core.
+        // 1. Primary/default address from WooCommerce core.
         $primary = $this->format_wc_address($customer, $type, true);
         if ($primary) {
             $addresses[] = $primary;
         }
 
-        // Additional addresses from user meta (hp_billing_addresses / hp_shipping_addresses).
-        $additional_addresses = get_user_meta($user_id, "hp_{$type}_addresses", true);
+        // 2. Additional addresses from ThemeHigh Multi-Address (thwma_custom_address)
+        // Structure: ['billing' => ['key' => [...fields...]], 'shipping' => [...]]
+        $th_addresses = get_user_meta($user_id, 'thwma_custom_address', true);
 
-        if (is_array($additional_addresses)) {
-            foreach ($additional_addresses as $index => $addr_data) {
+        if (is_array($th_addresses) && !empty($th_addresses[$type])) {
+            foreach ($th_addresses[$type] as $key => $addr_data) {
+                // Determine prefix based on type (ThemeHigh usually prefixes fields with billing_ or shipping_)
+                $prefix = $type . '_';
+
+                // Skip if main address fields are missing
+                if (empty($addr_data[$prefix . 'address_1']) && empty($addr_data[$prefix . 'first_name'])) {
+                    continue;
+                }
+
+                $country_code = $addr_data[$prefix . 'country'] ?? '';
+
                 $addresses[] = [
-                    'id'        => "{$type}_additional_{$index}",
-                    'firstName' => $addr_data['first_name'] ?? '',
-                    'lastName'  => $addr_data['last_name'] ?? '',
-                    'company'   => $addr_data['company'] ?? '',
-                    'address1'  => $addr_data['address_1'] ?? '',
-                    'address2'  => $addr_data['address_2'] ?? '',
-                    'city'      => $addr_data['city'] ?? '',
-                    'state'     => $addr_data['state'] ?? '',
-                    'postcode'  => $addr_data['postcode'] ?? '',
-                    'country'   => $this->get_country_name($addr_data['country'] ?? ''),
-                    'phone'     => $addr_data['phone'] ?? '',
-                    'email'     => $addr_data['email'] ?? '',
+                    'id'        => "th_{$type}_{$key}",
+                    'firstName' => $addr_data[$prefix . 'first_name'] ?? '',
+                    'lastName'  => $addr_data[$prefix . 'last_name'] ?? '',
+                    'company'   => $addr_data[$prefix . 'company'] ?? '',
+                    'address1'  => $addr_data[$prefix . 'address_1'] ?? '',
+                    'address2'  => $addr_data[$prefix . 'address_2'] ?? '',
+                    'city'      => $addr_data[$prefix . 'city'] ?? '',
+                    'state'     => $addr_data[$prefix . 'state'] ?? '',
+                    'postcode'  => $addr_data[$prefix . 'postcode'] ?? '',
+                    'country'   => $this->get_country_name($country_code),
+                    'phone'     => $addr_data[$prefix . 'phone'] ?? '',
+                    'email'     => $addr_data[$prefix . 'email'] ?? '',
                     'isDefault' => false,
                 ];
             }
@@ -154,5 +164,3 @@ class AddressCardPickerShortcode
         return !empty($addresses[0]['id']) ? $addresses[0]['id'] : null;
     }
 }
-
-
