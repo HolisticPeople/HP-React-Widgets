@@ -27,6 +27,7 @@ class Plugin
             'example'     => '[hp_multi_address]',
             'component'   => 'MultiAddress',
             'root_id'     => 'hp-multi-address-root',
+            'hydrator_class' => 'MultiAddressShortcode',
         ],
         'hp_my_account_header' => [
             'label'       => 'My Account Header',
@@ -34,6 +35,7 @@ class Plugin
             'example'     => '[hp_my_account_header]',
             'component'   => 'MyAccountHeader',
             'root_id'     => 'hp-my-account-header-root',
+            'hydrator_class' => 'MyAccountHeaderShortcode',
         ],
     ];
 
@@ -76,14 +78,22 @@ class Plugin
     {
         $stored = get_option(self::OPTION_SHORTCODES, null);
 
-        // First run: seed the option with the default shortcodes.
-        if ($stored === null) {
-            $stored = self::DEFAULT_SHORTCODES;
-            update_option(self::OPTION_SHORTCODES, $stored);
-        }
-
         if (!is_array($stored)) {
             $stored = [];
+        }
+
+        // Ensure default shortcodes always exist and pick up new metadata.
+        foreach (self::DEFAULT_SHORTCODES as $slug => $meta) {
+            if (isset($stored[$slug]) && is_array($stored[$slug])) {
+                $stored[$slug] = array_merge($meta, $stored[$slug]);
+            } else {
+                $stored[$slug] = $meta;
+            }
+        }
+
+        // If the option was missing entirely, persist the seeded defaults.
+        if (get_option(self::OPTION_SHORTCODES, null) === null) {
+            update_option(self::OPTION_SHORTCODES, $stored);
         }
 
         /**
