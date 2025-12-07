@@ -7,7 +7,10 @@ class Plugin
      * Option name used to store which shortcodes are enabled.
      */
     private const OPTION_ENABLED_SHORTCODES = 'hp_rw_enabled_shortcodes';
-    private const OPTION_CUSTOM_SHORTCODES  = 'hp_rw_custom_shortcodes';
+    /**
+     * Option name used to store all shortcode metadata (both initial and wizard-created).
+     */
+    private const OPTION_SHORTCODES = 'hp_rw_shortcodes';
 
     /**
      * Registry of all shortcodes this plugin can provide.
@@ -17,7 +20,7 @@ class Plugin
      *
      * @var array<string,array<string,string>>
      */
-    private const SHORTCODES = [
+    private const DEFAULT_SHORTCODES = [
         'hp_multi_address' => [
             'label'       => 'My Account Multi-Address',
             'description' => 'Replaces the WooCommerce My Account addresses section with a React-based multi-address UI.',
@@ -56,10 +59,11 @@ class Plugin
      */
     public static function activate(): void
     {
-        // If no option is stored yet, enable all known shortcodes by default.
+        // If no "enabled" option is stored yet, enable all known shortcodes by default.
         $stored = get_option(self::OPTION_ENABLED_SHORTCODES, null);
         if ($stored === null) {
-            update_option(self::OPTION_ENABLED_SHORTCODES, array_keys(self::get_builtin_shortcodes()));
+            $shortcodes = array_keys(self::get_shortcodes());
+            update_option(self::OPTION_ENABLED_SHORTCODES, $shortcodes);
         }
     }
 
@@ -70,17 +74,24 @@ class Plugin
      */
     public static function get_shortcodes(): array
     {
-        $shortcodes = array_merge(
-            self::get_builtin_shortcodes(),
-            self::get_custom_shortcodes()
-        );
+        $stored = get_option(self::OPTION_SHORTCODES, null);
+
+        // First run: seed the option with the default shortcodes.
+        if ($stored === null) {
+            $stored = self::DEFAULT_SHORTCODES;
+            update_option(self::OPTION_SHORTCODES, $stored);
+        }
+
+        if (!is_array($stored)) {
+            $stored = [];
+        }
 
         /**
          * Filter the list of available HP React Widgets shortcodes.
          *
          * @param array $shortcodes Associative array of shortcode slug => metadata.
          */
-        return apply_filters('hp_rw_shortcodes', $shortcodes);
+        return apply_filters('hp_rw_shortcodes', $stored);
     }
 
     /**
@@ -125,43 +136,13 @@ class Plugin
     }
 
     /**
-     * Built-in shortcodes that ship with the plugin.
+     * Persist all shortcode metadata.
      *
      * @return array<string,array<string,string>>
      */
-    public static function get_builtin_shortcodes(): array
+    public static function set_shortcodes(array $shortcodes): void
     {
-        return self::SHORTCODES;
-    }
-
-    /**
-     * Custom shortcodes created via the wizard.
-     *
-     * @return array<string,array<string,string>>
-     */
-    public static function get_custom_shortcodes(): array
-    {
-        $stored = get_option(self::OPTION_CUSTOM_SHORTCODES, []);
-
-        return is_array($stored) ? $stored : [];
-    }
-
-    /**
-     * Persist custom shortcode metadata.
-     *
-     * @param array<string,array<string,string>> $shortcodes
-     */
-    public static function set_custom_shortcodes(array $shortcodes): void
-    {
-        update_option(self::OPTION_CUSTOM_SHORTCODES, $shortcodes);
-    }
-
-    /**
-     * Check if a shortcode slug refers to a built-in shortcode.
-     */
-    public static function is_builtin_shortcode(string $slug): bool
-    {
-        return isset(self::SHORTCODES[$slug]);
+        update_option(self::OPTION_SHORTCODES, $shortcodes);
     }
 }
 

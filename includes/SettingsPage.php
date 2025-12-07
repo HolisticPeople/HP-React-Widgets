@@ -50,14 +50,14 @@ class SettingsPage
             $savedNotice = '<div class="notice notice-success is-dismissible"><p>HP React Widgets settings saved.</p></div>';
         }
 
-        // Handle shortcode deletion (custom shortcodes only).
+        // Handle shortcode deletion.
         if (isset($_GET['hp_rw_action'], $_GET['hp_rw_slug']) && $_GET['hp_rw_action'] === 'delete') {
             $slug = sanitize_key((string) $_GET['hp_rw_slug']);
-            if (!Plugin::is_builtin_shortcode($slug) && wp_verify_nonce((string) ($_GET['_wpnonce'] ?? ''), 'hp_rw_delete_shortcode_' . $slug)) {
-                $custom = Plugin::get_custom_shortcodes();
-                if (isset($custom[$slug])) {
-                    unset($custom[$slug]);
-                    Plugin::set_custom_shortcodes($custom);
+            if (wp_verify_nonce((string) ($_GET['_wpnonce'] ?? ''), 'hp_rw_delete_shortcode_' . $slug)) {
+                $shortcodes = Plugin::get_shortcodes();
+                if (isset($shortcodes[$slug])) {
+                    unset($shortcodes[$slug]);
+                    Plugin::set_shortcodes($shortcodes);
 
                     // Also remove from enabled list.
                     $enabled = Plugin::get_enabled_shortcodes();
@@ -82,12 +82,14 @@ class SettingsPage
             $root_id    = isset($_POST['hp_rw_new_root_id']) ? sanitize_html_class((string) $_POST['hp_rw_new_root_id']) : '';
             $hydrator   = isset($_POST['hp_rw_new_hydrator']) ? preg_replace('/[^A-Za-z0-9_\\\\]/', '', (string) $_POST['hp_rw_new_hydrator']) : '';
 
+            $editingSlug = isset($_POST['hp_rw_editing_slug']) ? sanitize_key((string) $_POST['hp_rw_editing_slug']) : '';
+
             if ($slug === '' || strpos($slug, 'hp_') !== 0) {
                 $errors[] = 'Shortcode tag is required and must start with the "hp_" prefix (for example: hp_my_new_widget).';
             }
 
             $allShortcodes = Plugin::get_shortcodes();
-            if ($slug && isset($allShortcodes[$slug])) {
+            if ($slug && isset($allShortcodes[$slug]) && $slug !== $editingSlug) {
                 $errors[] = sprintf('The shortcode "%s" is already registered. Please choose a different tag.', esc_html($slug));
             }
 
@@ -119,8 +121,14 @@ class SettingsPage
             }
 
             if (empty($errors)) {
-                $custom = Plugin::get_custom_shortcodes();
-                $custom[$slug] = [
+                $shortcodes = Plugin::get_shortcodes();
+
+                // If we are renaming an existing shortcode, remove the old key first.
+                if ($editingSlug && $editingSlug !== $slug && isset($shortcodes[$editingSlug])) {
+                    unset($shortcodes[$editingSlug]);
+                }
+
+                $shortcodes[$slug] = [
                     'label'          => $label !== '' ? $label : $slug,
                     'description'    => $desc,
                     'example'        => '[' . $slug . ']',
@@ -129,7 +137,7 @@ class SettingsPage
                     'hydrator_class' => $hydrator !== '' ? $hydrator : '',
                 ];
 
-                Plugin::set_custom_shortcodes($custom);
+                Plugin::set_shortcodes($shortcodes);
 
                 // Auto-enable the new shortcode.
                 $enabled = Plugin::get_enabled_shortcodes();
@@ -339,6 +347,7 @@ class SettingsPage
                 </table>
 
                 <p>
+                    <input type="hidden" name="hp_rw_editing_slug" value="<?php echo esc_attr($editingSlug); ?>" />
                     <button type="submit" class="button button-secondary">
                         <?php echo esc_html('Register shortcode'); ?>
                     </button>
