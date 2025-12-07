@@ -168,25 +168,22 @@
 
     .action-btn svg,
     .slider-nav-btn svg {
+        /* Reset any weird theme styles on SVGs within our buttons */
+        all: unset;
         display: inline-block !important;
-        opacity: 1 !important;
-        visibility: visible !important;
         width: 1.25rem !important;
         height: 1.25rem !important;
+        stroke: #ffffff !important;
         stroke-width: 2.5 !important;
-        stroke: #ffffff !important; /* Force white stroke */
         fill: none !important;
     }
 
-    /* Extremely defensive overrides for Lucide icons in case theme CSS hides them */
-    .action-btn svg.lucide,
-    .slider-nav-btn svg.lucide {
-        display: inline-block !important;
-    }
-
-    .action-btn svg.lucide *,
-    .slider-nav-btn svg.lucide * {
+    /* Extremely defensive overrides for Lucide icon internals */
+    .action-btn svg *,
+    .slider-nav-btn svg * {
+        all: unset;
         stroke: #ffffff !important;
+        stroke-width: 2.5 !important;
         fill: none !important;
     }
 
