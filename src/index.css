@@ -162,6 +162,13 @@
         color: hsl(var(--destructive-foreground));
     }
 
+    .action-btn svg,
+    .slider-nav-btn svg {
+        width: 1rem;
+        height: 1rem;
+        stroke-width: 2.25;
+    }
+
     .slider-nav-btn {
         display: flex;
         align-items: center;
@@ -209,5 +216,13 @@
     .slider-dot.active {
         width: 1.5rem;
         background-color: hsl(var(--primary));
+    }
+
+    .tooltip-content {
+        border-radius: 0.5rem;
+        background-color: hsl(var(--popover));
+        color: hsl(var(--popover-foreground));
+        border: 1px solid hsl(var(--border));
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.75);
     }
 }
