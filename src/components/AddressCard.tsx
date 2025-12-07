@@ -36,7 +36,7 @@ export const AddressCard = ({
   return (
     <div
       className={cn(
-        'address-card group cursor-pointer min-w-[280px] max-w-[320px] flex-shrink-0 h-full min-h-[260px] flex flex-col',
+        'address-card group cursor-pointer min-w-[280px] max-w-[320px] flex-shrink-0 h-full min-h-[320px] flex flex-col',
         isSelected && 'selected',
         address.isDefault && 'is-default'
       )}
@@ -46,7 +46,10 @@ export const AddressCard = ({
       {address.isDefault && (
         <div className="absolute -top-2.5 left-4">
           <span className="default-badge">
-            <Star className="h-3 w-3 fill-current" />
+            <Star
+              className="h-3 w-3 fill-current"
+              style={{ width: '0.75rem', height: '0.75rem' }}
+            />
             Default
           </span>
         </div>
@@ -56,7 +59,10 @@ export const AddressCard = ({
       {isSelected && (
         <div className="absolute top-3 right-3">
           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <Check className="h-4 w-4" />
+            <Check
+              className="h-4 w-4"
+              style={{ width: '1.1rem', height: '1.1rem' }}
+            />
           </div>
         </div>
       )}
@@ -95,7 +101,10 @@ export const AddressCard = ({
                 }}
                 aria-label="Edit address"
               >
-                <Pencil className="h-4 w-4" />
+                <Pencil
+                  className="h-4 w-4"
+                  style={{ width: '1.25rem', height: '1.25rem' }}
+                />
               </button>
             </TooltipTrigger>
             <TooltipContent className="tooltip-content">
@@ -113,7 +122,10 @@ export const AddressCard = ({
                 }}
                 aria-label="Delete address"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2
+                  className="h-4 w-4"
+                  style={{ width: '1.25rem', height: '1.25rem' }}
+                />
               </button>
             </TooltipTrigger>
             <TooltipContent className="tooltip-content">
@@ -140,6 +152,7 @@ export const AddressCard = ({
                     'h-4 w-4',
                     address.isDefault && 'fill-current'
                   )}
+                  style={{ width: '1.25rem', height: '1.25rem' }}
                 />
               </button>
             </TooltipTrigger>
@@ -158,7 +171,10 @@ export const AddressCard = ({
                 }}
                 aria-label={copyTooltip}
               >
-                <Copy className="h-4 w-4" />
+                <Copy
+                  className="h-4 w-4"
+                  style={{ width: '1.25rem', height: '1.25rem' }}
+                />
               </button>
             </TooltipTrigger>
             <TooltipContent className="tooltip-content">

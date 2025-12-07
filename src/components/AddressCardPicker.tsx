@@ -76,7 +76,10 @@ export const AddressCardPicker = ({
       <div className="rounded-xl border border-border/50 bg-card/50 p-8 text-center">
         <div className="flex flex-col items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-            <MapPin className="h-6 w-6 text-muted-foreground" />
+            <MapPin
+              className="h-6 w-6 text-muted-foreground"
+              style={{ width: '1.5rem', height: '1.5rem' }}
+            />
           </div>
           <p className="text-muted-foreground">No {type} addresses found</p>
         </div>
@@ -89,7 +92,10 @@ export const AddressCardPicker = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-          <MapPin className="h-5 w-5 text-primary" />
+          <MapPin
+            className="h-5 w-5 text-primary"
+            style={{ width: '1.2rem', height: '1.2rem' }}
+          />
           {displayTitle}
           <span className="text-sm font-normal text-muted-foreground">
             ({addresses.length})
@@ -105,7 +111,10 @@ export const AddressCardPicker = ({
               disabled={!canScrollLeft}
               aria-label="Previous addresses"
             >
-              <ChevronLeft className="h-5 w-5" />
+              <ChevronLeft
+                className="h-5 w-5"
+                style={{ width: '1.25rem', height: '1.25rem' }}
+              />
             </button>
             <button
               className="slider-nav-btn"
@@ -113,7 +122,10 @@ export const AddressCardPicker = ({
               disabled={!canScrollRight}
               aria-label="Next addresses"
             >
-              <ChevronRight className="h-5 w-5" />
+              <ChevronRight
+                className="h-5 w-5"
+                style={{ width: '1.25rem', height: '1.25rem' }}
+              />
             </button>
           </div>
         )}
@@ -188,7 +200,10 @@ export const AddressCardPicker = ({
             disabled={!canScrollLeft}
             aria-label="Previous addresses"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft
+              className="h-5 w-5"
+              style={{ width: '1.25rem', height: '1.25rem' }}
+            />
           </button>
           <span className="text-sm text-muted-foreground">
             {currentIndex + 1} - {Math.min(currentIndex + visibleCards, addresses.length)} of {addresses.length}
@@ -199,7 +214,10 @@ export const AddressCardPicker = ({
             disabled={!canScrollRight}
             aria-label="Next addresses"
           >
-            <ChevronRight className="h-5 w-5" />
+            <ChevronRight
+              className="h-5 w-5"
+              style={{ width: '1.25rem', height: '1.25rem' }}
+            />
           </button>
         </div>
       )}
