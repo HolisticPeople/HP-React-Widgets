@@ -4,6 +4,7 @@ import './index.css'
 import { MultiAddress } from './components/MultiAddress'
 import { MyAccountHeader } from '@/components/MyAccountHeader'
 import { AddressCardPicker } from '@/components/AddressCardPicker'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 // Global settings injected by PHP
 declare global {
@@ -52,7 +53,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         ReactDOM.createRoot(node).render(
             <React.StrictMode>
-                <Component {...props} />
+                <TooltipProvider>
+                    <Component {...props} />
+                </TooltipProvider>
             </React.StrictMode>,
         );
     });
