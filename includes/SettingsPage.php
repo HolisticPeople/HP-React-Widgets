@@ -364,9 +364,9 @@ class SettingsPage
                         <?php echo esc_html($isEditing ? 'Save changes' : 'Register shortcode'); ?>
                     </button>
                     <?php if ($isEditing) : ?>
-                        <?php $cancelUrl = menu_page_url('hp-react-widgets', false); ?>
-                        <a href="<?php echo esc_url($cancelUrl); ?>" class="button">
-                            <?php echo esc_html('Cancel'); ?>
+                        <?php $newUrl = menu_page_url('hp-react-widgets', false); ?>
+                        <a href="<?php echo esc_url($newUrl); ?>" class="button">
+                            <?php echo esc_html('Add new shortcode'); ?>
                         </a>
                     <?php endif; ?>
                 </p>
