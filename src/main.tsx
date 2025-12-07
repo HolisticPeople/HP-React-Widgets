@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import './index.css'
 import { MultiAddress } from './components/MultiAddress'
 import { MyAccountHeader } from '@/components/MyAccountHeader'
+import { AddressCardPicker } from '@/components/AddressCardPicker'
 
 // Global settings injected by PHP
 declare global {
@@ -23,6 +24,7 @@ window.hpReactWidgets = widgetRegistry;
 // Register built-in widgets.
 widgetRegistry.MultiAddress = MultiAddress;
 widgetRegistry.MyAccountHeader = MyAccountHeader;
+widgetRegistry.AddressCardPicker = AddressCardPicker;
 
 document.addEventListener('DOMContentLoaded', () => {
     const nodes = document.querySelectorAll<HTMLElement>('[data-hp-widget=\"1\"]');

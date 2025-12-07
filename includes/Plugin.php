@@ -37,6 +37,14 @@ class Plugin
             'root_id'     => 'hp-my-account-header-root',
             'hydrator_class' => 'MyAccountHeaderShortcode',
         ],
+        'hp_address_card_picker' => [
+            'label'       => 'Address Card Picker',
+            'description' => 'Slick horizontal slider for managing billing/shipping addresses.',
+            'example'     => '[hp_address_card_picker]',
+            'component'   => 'AddressCardPicker',
+            'root_id'     => 'hp-address-card-picker-root',
+            'hydrator_class' => 'AddressCardPickerShortcode',
+        ],
     ];
 
     /**

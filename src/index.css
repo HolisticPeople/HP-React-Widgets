@@ -114,14 +114,100 @@
         color: hsl(var(--foreground));
     }
 
+    /* Address card + slider styles shared with AddressCardPicker */
     .address-card {
-        padding: 1rem;
-        border-radius: 0.5rem;
+        position: relative;
+        border-radius: 0.75rem;
         border: 1px solid hsl(var(--border));
         background-color: hsl(var(--card));
+        padding: 1.25rem;
+        transition: all 0.2s ease-out;
     }
 
-    .address-card-primary {
+    .address-card:hover {
         border-color: hsl(var(--primary));
+        box-shadow: 0 8px 24px -4px hsl(var(--primary) / 0.3);
+        transform: translateY(-2px);
+    }
+
+    .address-card.selected {
+        border-color: hsl(var(--primary));
+        box-shadow: 0 0 0 1px hsl(var(--primary));
+    }
+
+    .address-card.is-default {
+        border-color: hsl(var(--primary));
+    }
+
+    .action-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 0.75rem;
+        background-color: hsla(var(--secondary), 0.8);
+        color: hsl(var(--muted-foreground));
+        transition: all 0.2s ease-out;
+    }
+
+    .action-btn:hover {
+        background-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        transform: scale(1.08);
+    }
+
+    .action-btn.destructive:hover {
+        background-color: hsl(var(--destructive));
+        color: hsl(var(--destructive-foreground));
+    }
+
+    .slider-nav-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 9999px;
+        background-color: hsl(var(--card));
+        border: 1px solid hsl(var(--border) / 0.5);
+        color: hsl(var(--muted-foreground));
+        transition: all 0.2s ease-out;
+    }
+
+    .slider-nav-btn:hover:not(:disabled) {
+        background-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        border-color: hsl(var(--primary));
+    }
+
+    .slider-nav-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+    }
+
+    .default-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        border-radius: 9999px;
+        padding: 0.25rem 0.625rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        background-color: hsla(var(--primary), 0.2);
+        color: hsl(var(--primary));
+    }
+
+    .slider-dot {
+        width: 0.5rem;
+        height: 0.5rem;
+        border-radius: 9999px;
+        background-color: hsl(var(--muted));
+        transition: all 0.2s ease-out;
+    }
+
+    .slider-dot.active {
+        width: 1.5rem;
+        background-color: hsl(var(--primary));
     }
 }
