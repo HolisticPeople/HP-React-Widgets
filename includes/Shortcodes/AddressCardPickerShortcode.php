@@ -115,6 +115,7 @@ class AddressCardPickerShortcode
                     'phone'     => $addr_data[$prefix . 'phone'] ?? '',
                     'email'     => $addr_data[$prefix . 'email'] ?? '',
                     'isDefault' => false,
+                    'label'     => sprintf('#%d', ((int) $key) + 1),
                 ];
             }
         }

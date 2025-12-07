@@ -117,9 +117,16 @@ export const AddressCard = ({
 
       {/* Address Content */}
       <div className={cn('space-y-2 pt-2 flex-grow', address.isDefault && 'pt-4')}>
-        <p className="font-semibold text-foreground text-base leading-tight">
-          {fullName}
-        </p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="font-semibold text-foreground text-base leading-tight">
+            {fullName}
+          </p>
+          {address.label && !address.isDefault && (
+            <span className="text-xs text-muted-foreground font-medium">
+              {address.label}
+            </span>
+          )}
+        </div>
         {address.company && (
           <p className="text-sm text-muted-foreground">{address.company}</p>
         )}

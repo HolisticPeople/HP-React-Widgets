@@ -12,6 +12,10 @@ export interface Address {
   phone?: string;
   email?: string;
   isDefault: boolean;
+  /**
+   * Optional human-friendly label/number (for example ThemeHigh address index).
+   */
+  label?: string;
 }
 
 export type AddressType = 'billing' | 'shipping';
