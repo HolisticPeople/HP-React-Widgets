@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       HP React Widgets
  * Description:       Container plugin for React-based widgets (Side Cart, Multi-Address, etc.) integrated via Shortcodes.
- * Version:           0.0.70
+ * Version:           0.0.71
  * Author:            Holistic People
  * Text Domain:       hp-react-widgets
  */
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('HP_RW_VERSION', '0.0.70');
+define('HP_RW_VERSION', '0.0.71');
 define('HP_RW_FILE', __FILE__);
 define('HP_RW_PATH', plugin_dir_path(__FILE__));
 define('HP_RW_URL', plugin_dir_url(__FILE__));
@@ -118,36 +118,61 @@ add_action('plugins_loaded', function () {
 
 // Diagnostic tool to see actual data structure
 add_action('init', function () {
-    // Diagnostic: show raw data for user 8375
+    // Diagnostic: show raw data for user
     if (isset($_GET['hp_diagnose_addresses']) && current_user_can('manage_options')) {
         global $wpdb;
         
         $user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 8375;
         
+        echo "<h1>Full Address Diagnostic for User $user_id</h1>";
+        
+        // 1. Check ALL user meta for this user that contains arrays
+        echo "<h2>1. All WooCommerce Address Meta Fields:</h2>";
+        $wc_meta_keys = [
+            'billing_first_name', 'billing_last_name', 'billing_company',
+            'billing_address_1', 'billing_address_2', 'billing_city',
+            'billing_state', 'billing_postcode', 'billing_country',
+            'billing_phone', 'billing_email',
+            'shipping_first_name', 'shipping_last_name', 'shipping_company',
+            'shipping_address_1', 'shipping_address_2', 'shipping_city',
+            'shipping_state', 'shipping_postcode', 'shipping_country',
+            'shipping_phone'
+        ];
+        
+        foreach ($wc_meta_keys as $meta_key) {
+            $value = get_user_meta($user_id, $meta_key, true);
+            $type_str = gettype($value);
+            if (is_array($value)) {
+                echo "<p style='color:red; font-weight:bold'>⚠️ ARRAY in $meta_key: " . htmlspecialchars(print_r($value, true)) . "</p>";
+            } else {
+                echo "<p>$meta_key ($type_str) = " . htmlspecialchars((string)$value) . "</p>";
+            }
+        }
+        
+        // 2. Check thwma_custom_address
+        echo "<h2>2. ThemeHigh Custom Addresses (thwma_custom_address):</h2>";
         $meta_value = $wpdb->get_var($wpdb->prepare(
             "SELECT meta_value FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key = 'thwma_custom_address' LIMIT 1",
             $user_id
         ));
         
-        echo "<h2>Raw meta_value for user $user_id:</h2>";
-        echo "<pre>" . htmlspecialchars($meta_value) . "</pre>";
+        echo "<h3>Raw:</h3>";
+        echo "<pre style='background:#f0f0f0; padding:10px; overflow:auto; max-height:200px;'>" . htmlspecialchars($meta_value) . "</pre>";
         
-        echo "<h2>Unserialized:</h2>";
         $unserialized = maybe_unserialize($meta_value);
-        echo "<pre>" . htmlspecialchars(print_r($unserialized, true)) . "</pre>";
         
-        // Check for arrays in values
-        echo "<h2>Checking for array values:</h2>";
         if (is_array($unserialized)) {
             foreach (['billing', 'shipping'] as $type) {
                 if (isset($unserialized[$type]) && is_array($unserialized[$type])) {
+                    echo "<h3>$type addresses:</h3>";
                     foreach ($unserialized[$type] as $key => $addr) {
-                        echo "<h3>$type / $key:</h3>";
+                        $key_type = is_numeric($key) ? "<span style='color:red'>NUMERIC KEY!</span>" : "string key";
+                        echo "<h4>Key: '$key' ($key_type)</h4>";
                         if (is_array($addr)) {
                             foreach ($addr as $field => $value) {
                                 $type_str = gettype($value);
                                 if (is_array($value)) {
-                                    echo "<p style='color:red'><strong>ARRAY FOUND:</strong> $field = " . htmlspecialchars(print_r($value, true)) . "</p>";
+                                    echo "<p style='color:red; font-weight:bold'>⚠️ ARRAY: $field = " . htmlspecialchars(print_r($value, true)) . "</p>";
                                 } else {
                                     echo "<p>$field ($type_str) = " . htmlspecialchars((string)$value) . "</p>";
                                 }
@@ -156,6 +181,24 @@ add_action('init', function () {
                     }
                 }
             }
+        }
+        
+        // 3. Check other ThemeHigh meta
+        echo "<h2>3. Other ThemeHigh Meta:</h2>";
+        $th_meta = $wpdb->get_results($wpdb->prepare(
+            "SELECT meta_key, meta_value FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key LIKE 'thwma%'",
+            $user_id
+        ));
+        foreach ($th_meta as $row) {
+            if ($row->meta_key === 'thwma_custom_address') continue;
+            $value = maybe_unserialize($row->meta_value);
+            echo "<p><strong>{$row->meta_key}:</strong> ";
+            if (is_array($value)) {
+                echo "<pre>" . htmlspecialchars(print_r($value, true)) . "</pre>";
+            } else {
+                echo htmlspecialchars((string)$value);
+            }
+            echo "</p>";
         }
         
         wp_die();
