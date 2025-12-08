@@ -302,10 +302,10 @@ export const AddressCardPicker = ({
   }
 
   return (
-    <div ref={containerRef} className="space-y-1">
+    <div ref={containerRef}>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2 leading-none">
           {displayTitle}
           <span className="text-sm font-normal text-muted-foreground">
             ({items.length})
