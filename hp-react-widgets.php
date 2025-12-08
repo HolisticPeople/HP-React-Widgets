@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       HP React Widgets
  * Description:       Container plugin for React-based widgets (Side Cart, Multi-Address, etc.) integrated via Shortcodes.
- * Version:           0.0.72
+ * Version:           0.0.73
  * Author:            Holistic People
  * Text Domain:       hp-react-widgets
  */
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('HP_RW_VERSION', '0.0.72');
+define('HP_RW_VERSION', '0.0.73');
 define('HP_RW_FILE', __FILE__);
 define('HP_RW_PATH', plugin_dir_path(__FILE__));
 define('HP_RW_URL', plugin_dir_url(__FILE__));
@@ -279,6 +279,28 @@ add_action('init', function () {
                 }
                 
                 $raw_value[$type] = $new_addresses;
+            }
+            
+            // Fix 4: Clean up invalid default_billing/default_shipping references
+            foreach (['default_billing' => 'billing', 'default_shipping' => 'shipping'] as $default_key => $type) {
+                if (isset($raw_value[$default_key])) {
+                    $default_value = $raw_value[$default_key];
+                    // Check if the default points to a valid address key
+                    if (!empty($default_value) && isset($raw_value[$type]) && is_array($raw_value[$type])) {
+                        if (!isset($raw_value[$type][$default_value])) {
+                            // Invalid reference - clear it or set to first valid key
+                            $valid_keys = array_keys($raw_value[$type]);
+                            if (!empty($valid_keys)) {
+                                $raw_value[$default_key] = $valid_keys[0];
+                                $details[] = "User {$row->user_id}: Fixed $default_key from '$default_value' to '{$valid_keys[0]}'";
+                            } else {
+                                unset($raw_value[$default_key]);
+                                $details[] = "User {$row->user_id}: Removed invalid $default_key '$default_value'";
+                            }
+                            $needs_repair = true;
+                        }
+                    }
+                }
             }
             
             if ($needs_repair) {
