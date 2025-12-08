@@ -66,20 +66,18 @@ const HpMapPinIcon = () => (
   </svg>
 );
 
-const HpPlusIcon = ({ size = 16 }: { size?: number }) => (
+const HpPlusIcon = () => (
   <svg
-    width={size}
-    height={size}
+    className="hp-icon"
     viewBox="0 0 24 24"
-    fill="none"
     aria-hidden="true"
-    style={{ display: 'block' }}
   >
     <line
       x1="12"
       y1="5"
       x2="12"
       y2="19"
+      fill="none"
       stroke="currentColor"
       strokeWidth="2.5"
       strokeLinecap="round"
@@ -89,6 +87,7 @@ const HpPlusIcon = ({ size = 16 }: { size?: number }) => (
       y1="12"
       x2="19"
       y2="12"
+      fill="none"
       stroke="currentColor"
       strokeWidth="2.5"
       strokeLinecap="round"
@@ -329,23 +328,26 @@ export const AddressCardPicker = ({
   };
 
   const handleAddNew = () => {
-    // Create an empty address template for the add modal
-    const emptyAddress: Address = {
+    // Find the default address to prefill the form
+    const defaultAddress = items.find((addr) => addr.isDefault);
+    
+    // Create a new address prefilled with default address values (but with new id)
+    const newAddress: Address = {
       id: 'new',
-      firstName: '',
-      lastName: '',
-      company: '',
-      address1: '',
-      address2: '',
-      city: '',
-      state: '',
-      postcode: '',
-      country: '',
-      phone: '',
-      email: '',
+      firstName: defaultAddress?.firstName || '',
+      lastName: defaultAddress?.lastName || '',
+      company: defaultAddress?.company || '',
+      address1: defaultAddress?.address1 || '',
+      address2: defaultAddress?.address2 || '',
+      city: defaultAddress?.city || '',
+      state: defaultAddress?.state || '',
+      postcode: defaultAddress?.postcode || '',
+      country: defaultAddress?.country || '',
+      phone: defaultAddress?.phone || '',
+      email: defaultAddress?.email || '',
       isDefault: false,
     };
-    setEditingAddress(emptyAddress);
+    setEditingAddress(newAddress);
     setIsAddMode(true);
     setIsEditOpen(true);
   };
@@ -364,16 +366,12 @@ export const AddressCardPicker = ({
             <p className="text-muted-foreground">No {type} addresses found</p>
             {showActions && (
               <button
-                className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
-                style={{
-                  backgroundColor: 'rgba(139, 92, 246, 0.25)',
-                  color: '#a78bfa',
-                  border: '1px solid rgba(139, 92, 246, 0.4)',
-                }}
+                className="action-btn"
                 onClick={handleAddNew}
+                style={{ padding: '8px 16px', gap: '8px' }}
               >
-                <HpPlusIcon size={16} />
-                <span>Add Address</span>
+                <HpPlusIcon />
+                <span style={{ fontSize: '14px' }}>Add Address</span>
               </button>
             )}
           </div>
@@ -455,19 +453,12 @@ export const AddressCardPicker = ({
           {/* Add New Address Button */}
           {showActions && (
             <button
-              className="flex items-center justify-center rounded-full transition-colors"
-              style={{
-                width: '28px',
-                height: '28px',
-                backgroundColor: 'rgba(139, 92, 246, 0.25)',
-                color: '#a78bfa',
-                border: '1px solid rgba(139, 92, 246, 0.4)',
-              }}
+              className="action-btn"
               onClick={handleAddNew}
               aria-label="Add new address"
               title="Add new address"
             >
-              <HpPlusIcon size={18} />
+              <HpPlusIcon />
             </button>
           )}
         </div>

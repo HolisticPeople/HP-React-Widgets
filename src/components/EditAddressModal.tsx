@@ -250,7 +250,10 @@ export const EditAddressModal = ({
                 <SelectTrigger className={cn(errors.country && 'border-destructive')}>
                   <SelectValue placeholder="Select country" />
                 </SelectTrigger>
-                <SelectContent className="max-h-[300px]">
+                <SelectContent 
+                  className="max-h-[300px]"
+                  style={{ backgroundColor: 'hsl(var(--card))', opacity: 1 }}
+                >
                   {countries.map((country) => (
                     <SelectItem key={country.isoCode} value={country.isoCode}>
                       {country.flag} {country.name}
@@ -273,7 +276,10 @@ export const EditAddressModal = ({
                   <SelectTrigger className={cn(errors.state && 'border-destructive')}>
                     <SelectValue placeholder="Select state" />
                   </SelectTrigger>
-                  <SelectContent className="max-h-[300px]">
+                  <SelectContent 
+                    className="max-h-[300px]"
+                    style={{ backgroundColor: 'hsl(var(--card))', opacity: 1 }}
+                  >
                     {states.map((state) => (
                       <SelectItem key={state.isoCode} value={state.isoCode}>
                         {state.name}
