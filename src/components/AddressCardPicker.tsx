@@ -331,6 +331,24 @@ export const AddressCardPicker = ({
     // Find the default address to prefill the form
     const defaultAddress = items.find((addr) => addr.isDefault);
     
+    // Get the country code to check if it has states
+    let countryCode = defaultAddress?.country || '';
+    let stateValue = defaultAddress?.state || '';
+    
+    // If country is a 2-letter code, check if it has states
+    // Countries without states should not have a state value prefilled
+    if (countryCode && countryCode.length === 2) {
+      // Import dynamically would be better, but for now just clear state
+      // for common countries without states
+      const countriesWithoutStates = [
+        'IL', 'SG', 'HK', 'MC', 'VA', 'SM', 'LI', 'AD', 'MT', 'LU',
+        'IS', 'CY', 'BH', 'QA', 'KW', 'BN', 'MV', 'GI', 'JE', 'GG', 'IM'
+      ];
+      if (countriesWithoutStates.includes(countryCode.toUpperCase())) {
+        stateValue = '';
+      }
+    }
+    
     // Create a new address prefilled with default address values (but with new id)
     const newAddress: Address = {
       id: 'new',
@@ -340,9 +358,9 @@ export const AddressCardPicker = ({
       address1: defaultAddress?.address1 || '',
       address2: defaultAddress?.address2 || '',
       city: defaultAddress?.city || '',
-      state: defaultAddress?.state || '',
+      state: stateValue,
       postcode: defaultAddress?.postcode || '',
-      country: defaultAddress?.country || '',
+      country: countryCode,
       phone: defaultAddress?.phone || '',
       email: defaultAddress?.email || '',
       isDefault: false,

@@ -91,37 +91,96 @@ class AddressCardPickerShortcode
 
         if (is_array($th_addresses) && !empty($th_addresses[$type])) {
             $counter = 1;
+            $needs_repair = false;
+            
             foreach ($th_addresses[$type] as $key => $addr_data) {
                 // Determine prefix based on type (ThemeHigh usually prefixes fields with billing_ or shipping_)
                 $prefix = $type . '_';
 
+                // Sanitize all fields - ensure they are strings, not arrays
+                $sanitized = $this->sanitize_address_data($addr_data, $prefix);
+                
+                // Check if we had to repair any data
+                if ($sanitized !== $addr_data) {
+                    $th_addresses[$type][$key] = $sanitized;
+                    $needs_repair = true;
+                }
+
                 // Skip if main address fields are missing
-                if (empty($addr_data[$prefix . 'address_1']) && empty($addr_data[$prefix . 'first_name'])) {
+                if (empty($sanitized[$prefix . 'address_1']) && empty($sanitized[$prefix . 'first_name'])) {
                     continue;
                 }
 
-                $country_code = $addr_data[$prefix . 'country'] ?? '';
+                $country_code = $sanitized[$prefix . 'country'] ?? '';
 
                 $addresses[] = [
                     'id'        => "th_{$type}_{$key}",
-                    'firstName' => $addr_data[$prefix . 'first_name'] ?? '',
-                    'lastName'  => $addr_data[$prefix . 'last_name'] ?? '',
-                    'company'   => $addr_data[$prefix . 'company'] ?? '',
-                    'address1'  => $addr_data[$prefix . 'address_1'] ?? '',
-                    'address2'  => $addr_data[$prefix . 'address_2'] ?? '',
-                    'city'      => $addr_data[$prefix . 'city'] ?? '',
-                    'state'     => $addr_data[$prefix . 'state'] ?? '',
-                    'postcode'  => $addr_data[$prefix . 'postcode'] ?? '',
+                    'firstName' => $sanitized[$prefix . 'first_name'] ?? '',
+                    'lastName'  => $sanitized[$prefix . 'last_name'] ?? '',
+                    'company'   => $sanitized[$prefix . 'company'] ?? '',
+                    'address1'  => $sanitized[$prefix . 'address_1'] ?? '',
+                    'address2'  => $sanitized[$prefix . 'address_2'] ?? '',
+                    'city'      => $sanitized[$prefix . 'city'] ?? '',
+                    'state'     => $sanitized[$prefix . 'state'] ?? '',
+                    'postcode'  => $sanitized[$prefix . 'postcode'] ?? '',
                     'country'   => $this->get_country_name($country_code),
-                    'phone'     => $addr_data[$prefix . 'phone'] ?? '',
-                    'email'     => $addr_data[$prefix . 'email'] ?? '',
+                    'phone'     => $sanitized[$prefix . 'phone'] ?? '',
+                    'email'     => $sanitized[$prefix . 'email'] ?? '',
                     'isDefault' => false,
                     'label'     => sprintf('#%d', $counter++),
                 ];
             }
+            
+            // Auto-repair corrupted data in database
+            if ($needs_repair) {
+                update_user_meta($user_id, 'thwma_custom_address', $th_addresses);
+            }
         }
 
         return $addresses;
+    }
+    
+    /**
+     * Sanitize address data to ensure all values are strings.
+     * This fixes corrupted data where arrays were saved instead of strings.
+     */
+    private function sanitize_address_data(array $addr_data, string $prefix): array
+    {
+        $fields = [
+            'first_name', 'last_name', 'company', 'address_1', 'address_2',
+            'city', 'state', 'postcode', 'country', 'phone', 'email'
+        ];
+        
+        foreach ($fields as $field) {
+            $key = $prefix . $field;
+            if (isset($addr_data[$key])) {
+                $addr_data[$key] = $this->ensure_string($addr_data[$key]);
+            }
+        }
+        
+        return $addr_data;
+    }
+    
+    /**
+     * Ensure a value is a string (not an array or object).
+     */
+    private function ensure_string($value): string
+    {
+        if (is_array($value)) {
+            // If it's an array, try to get the first string element or return empty
+            foreach ($value as $v) {
+                if (is_string($v) && !empty($v)) {
+                    return $v;
+                }
+            }
+            return '';
+        }
+
+        if (is_object($value)) {
+            return '';
+        }
+
+        return (string) $value;
     }
 
     /**

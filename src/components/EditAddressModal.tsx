@@ -92,7 +92,18 @@ export const EditAddressModal = ({
   // Reset form when address changes or modal opens
   useEffect(() => {
     if (isOpen) {
-      setFormData(address);
+      // Get the country code to check if it has states
+      const countryCode = getCountryCode(address.country);
+      const countryStates = countryCode ? State.getStatesOfCountry(countryCode) : [];
+      
+      // If country doesn't have states, clear the state value
+      const cleanedAddress = {
+        ...address,
+        country: countryCode || address.country,
+        state: countryStates.length > 0 ? address.state : '',
+      };
+      
+      setFormData(cleanedAddress);
       setErrors({});
     }
   }, [address, isOpen]);
