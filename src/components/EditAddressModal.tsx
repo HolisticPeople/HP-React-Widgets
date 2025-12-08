@@ -18,6 +18,8 @@ export interface EditAddressModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (updated: Address) => void;
+  /** When true, modal is in "Add" mode vs "Edit" mode */
+  isAddMode?: boolean;
 }
 
 interface FormErrors {
@@ -37,6 +39,7 @@ export const EditAddressModal = ({
   isOpen,
   onClose,
   onSubmit,
+  isAddMode = false,
 }: EditAddressModalProps) => {
   const [formData, setFormData] = useState<Address>(address);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -119,13 +122,14 @@ export const EditAddressModal = ({
   };
 
   const typeLabel = type === 'billing' ? 'Billing' : 'Shipping';
+  const modalTitle = isAddMode ? `Add New ${typeLabel} Address` : `Edit ${typeLabel} Address`;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleCancel()}>
       <DialogContent className="max-w-2xl bg-card border-border">
         <DialogHeader>
           <DialogTitle className="text-foreground">
-            Edit {typeLabel} Address
+            {modalTitle}
           </DialogTitle>
         </DialogHeader>
 
@@ -283,7 +287,7 @@ export const EditAddressModal = ({
               type="submit"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Saving...' : 'Save changes'}
+              {isSubmitting ? 'Saving...' : isAddMode ? 'Add Address' : 'Save Changes'}
             </Button>
           </DialogFooter>
         </form>

@@ -120,6 +120,26 @@ class AddressApi
                 ],
             ]
         );
+
+        register_rest_route(
+            'hp-rw/v1',
+            '/address/create',
+            [
+                'methods'             => 'POST',
+                'callback'            => [$this, 'handle_create'],
+                'permission_callback' => function () {
+                    return is_user_logged_in();
+                },
+                'args'                => [
+                    'type' => [
+                        'required'          => true,
+                        'validate_callback' => function ($value): bool {
+                            return in_array($value, ['billing', 'shipping'], true);
+                        },
+                    ],
+                ],
+            ]
+        );
     }
 
     /**
@@ -471,6 +491,82 @@ class AddressApi
             'type'       => $type,
             'addresses'  => $addresses,
             'selectedId' => $selected,
+        ];
+    }
+
+    /**
+     * Create a new ThemeHigh additional address for the current user.
+     */
+    public function handle_create(WP_REST_Request $request)
+    {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new WP_Error('hp_rw_not_logged_in', 'You must be logged in to manage addresses.', ['status' => 401]);
+        }
+
+        $type = (string) $request->get_param('type');
+
+        if (!in_array($type, ['billing', 'shipping'], true)) {
+            return new WP_Error('hp_rw_invalid_type', 'Invalid address type.', ['status' => 400]);
+        }
+
+        $payload = [
+            'firstName' => (string) $request->get_param('firstName'),
+            'lastName'  => (string) $request->get_param('lastName'),
+            'company'   => (string) $request->get_param('company'),
+            'address1'  => (string) $request->get_param('address1'),
+            'address2'  => (string) $request->get_param('address2'),
+            'city'      => (string) $request->get_param('city'),
+            'state'     => (string) $request->get_param('state'),
+            'postcode'  => (string) $request->get_param('postcode'),
+            'country'   => (string) $request->get_param('country'),
+            'phone'     => (string) $request->get_param('phone'),
+            'email'     => (string) $request->get_param('email'),
+        ];
+
+        // Create a new ThemeHigh entry.
+        $meta_key = 'thwma_custom_address';
+        $meta     = get_user_meta($user_id, $meta_key, true);
+
+        if (!is_array($meta)) {
+            $meta = [];
+        }
+        if (!isset($meta[$type])) {
+            $meta[$type] = [];
+        }
+
+        // Generate a unique key for the new address using timestamp + random.
+        $new_key = 'addr_' . time() . '_' . wp_rand(1000, 9999);
+
+        $prefix = $type . '_';
+
+        $entry = [
+            $prefix . 'first_name' => $this->ensure_string($payload['firstName']),
+            $prefix . 'last_name'  => $this->ensure_string($payload['lastName']),
+            $prefix . 'company'    => $this->ensure_string($payload['company']),
+            $prefix . 'address_1'  => $this->ensure_string($payload['address1']),
+            $prefix . 'address_2'  => $this->ensure_string($payload['address2']),
+            $prefix . 'city'       => $this->ensure_string($payload['city']),
+            $prefix . 'state'      => $this->ensure_string($payload['state']),
+            $prefix . 'postcode'   => $this->ensure_string($payload['postcode']),
+            $prefix . 'country'    => $this->get_country_code($payload['country']),
+            $prefix . 'phone'      => $this->ensure_string($payload['phone']),
+            $prefix . 'email'      => $this->ensure_string($payload['email']),
+        ];
+
+        $meta[$type][$new_key] = $entry;
+        update_user_meta($user_id, $meta_key, $meta);
+
+        // Re-hydrate updated list and return the newly created address ID.
+        $hydrator     = new AddressCardPickerShortcode();
+        $addresses    = $hydrator->get_user_addresses($user_id, $type);
+        $new_addr_id  = 'th_' . $type . '_' . $new_key;
+
+        return [
+            'success'    => true,
+            'type'       => $type,
+            'addresses'  => $addresses,
+            'selectedId' => $new_addr_id,
         ];
     }
 

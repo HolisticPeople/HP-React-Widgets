@@ -66,6 +66,33 @@ const HpMapPinIcon = () => (
   </svg>
 );
 
+const HpPlusIcon = () => (
+  <svg
+    className="hp-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+  >
+    <line
+      x1="12"
+      y1="5"
+      x2="12"
+      y2="19"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+    <line
+      x1="5"
+      y1="12"
+      x2="19"
+      y2="12"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
 interface AddressCopiedEventDetail {
   fromType: AddressType;
   toType: AddressType;
@@ -96,6 +123,7 @@ export const AddressCardPicker = ({
   const [activeId, setActiveId] = useState<string | undefined>(selectedId);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+  const [isAddMode, setIsAddMode] = useState(false);
 
   useEffect(() => {
     setItems(addresses);
@@ -293,6 +321,29 @@ export const AddressCardPicker = ({
 
     // Prefer inline edit modal; fall back to native WC edit URL if provided.
     setEditingAddress(address);
+    setIsAddMode(false);
+    setIsEditOpen(true);
+  };
+
+  const handleAddNew = () => {
+    // Create an empty address template for the add modal
+    const emptyAddress: Address = {
+      id: 'new',
+      firstName: '',
+      lastName: '',
+      company: '',
+      address1: '',
+      address2: '',
+      city: '',
+      state: '',
+      postcode: '',
+      country: '',
+      phone: '',
+      email: '',
+      isDefault: false,
+    };
+    setEditingAddress(emptyAddress);
+    setIsAddMode(true);
     setIsEditOpen(true);
   };
 
@@ -301,13 +352,82 @@ export const AddressCardPicker = ({
 
   if (items.length === 0) {
     return (
-      <div className="rounded-xl border border-border/50 bg-card/50 p-8 text-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-            <HpMapPinIcon />
+      <div ref={containerRef}>
+        <div className="rounded-xl border border-border/50 bg-card/50 p-8 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <HpMapPinIcon />
+            </div>
+            <p className="text-muted-foreground">No {type} addresses found</p>
+            {showActions && (
+              <button
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
+                onClick={handleAddNew}
+              >
+                <HpPlusIcon />
+                <span>Add Address</span>
+              </button>
+            )}
           </div>
-          <p className="text-muted-foreground">No {type} addresses found</p>
         </div>
+        
+        {editingAddress && (
+          <EditAddressModal
+            address={editingAddress}
+            type={type}
+            isOpen={isEditOpen}
+            isAddMode={isAddMode}
+            onClose={() => {
+              setIsEditOpen(false);
+              setEditingAddress(null);
+              setIsAddMode(false);
+            }}
+            onSubmit={async (updated) => {
+              try {
+                const result = await apiFetch('address/create', {
+                  type,
+                  firstName: updated.firstName,
+                  lastName: updated.lastName,
+                  company: updated.company,
+                  address1: updated.address1,
+                  address2: updated.address2,
+                  city: updated.city,
+                  state: updated.state,
+                  postcode: updated.postcode,
+                  country: updated.country,
+                  phone: updated.phone,
+                  email: updated.email,
+                });
+
+                if (result && result.success && Array.isArray(result.addresses)) {
+                  setItems(result.addresses);
+                  setActiveId(result.selectedId);
+                  
+                  const newAddress = result.addresses.find(
+                    (addr: Address) => addr.id === result.selectedId
+                  );
+                  if (newAddress) {
+                    window.dispatchEvent(
+                      new CustomEvent('hpAddressSelected', {
+                        detail: {
+                          address: newAddress,
+                          type,
+                          addressId: result.selectedId,
+                        },
+                      })
+                    );
+                  }
+                }
+              } catch (e) {
+                console.error('[HP-React-Widgets] Failed to create address', e);
+              } finally {
+                setIsEditOpen(false);
+                setEditingAddress(null);
+                setIsAddMode(false);
+              }
+            }}
+          />
+        )}
       </div>
     );
   }
@@ -316,12 +436,26 @@ export const AddressCardPicker = ({
     <div ref={containerRef}>
       {/* Header */}
       <div className="flex items-center justify-between" style={{ marginBottom: '4px' }}>
-        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2" style={{ lineHeight: 1, margin: 0 }}>
-          {displayTitle}
-          <span className="text-sm font-normal text-muted-foreground">
-            ({items.length})
-          </span>
-        </h3>
+        <div className="flex items-center gap-3">
+          <h3 className="text-lg font-semibold text-foreground flex items-center gap-2" style={{ lineHeight: 1, margin: 0 }}>
+            {displayTitle}
+            <span className="text-sm font-normal text-muted-foreground">
+              ({items.length})
+            </span>
+          </h3>
+          
+          {/* Add New Address Button */}
+          {showActions && (
+            <button
+              className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
+              onClick={handleAddNew}
+              aria-label="Add new address"
+              title="Add new address"
+            >
+              <HpPlusIcon />
+            </button>
+          )}
+        </div>
 
         {/* Navigation Arrows - Desktop */}
         {items.length > visibleCards && (
@@ -436,13 +570,17 @@ export const AddressCardPicker = ({
           address={editingAddress}
           type={type}
           isOpen={isEditOpen}
+          isAddMode={isAddMode}
           onClose={() => {
             setIsEditOpen(false);
             setEditingAddress(null);
+            setIsAddMode(false);
           }}
           onSubmit={async (updated) => {
             try {
-              const result = await apiFetch('address/update', {
+              // Use different endpoint for create vs update
+              const endpoint = isAddMode ? 'address/create' : 'address/update';
+              const result = await apiFetch(endpoint, {
                 type,
                 id: updated.id,
                 firstName: updated.firstName,
@@ -460,39 +598,46 @@ export const AddressCardPicker = ({
 
               if (result && result.success && Array.isArray(result.addresses)) {
                 setItems(result.addresses);
-                // Always keep the edited address selected (user intent)
-                setActiveId(updated.id);
+                // For add mode, select the newly created address
+                // For edit mode, keep the edited address selected
+                const selectedId = isAddMode ? result.selectedId : updated.id;
+                setActiveId(selectedId);
                 
-                // Dispatch event so checkout fields update with the edited address
-                const editedAddress = result.addresses.find((addr: Address) => addr.id === updated.id);
-                if (editedAddress) {
+                // Dispatch event so checkout fields update with the address
+                const targetAddress = result.addresses.find(
+                  (addr: Address) => addr.id === selectedId
+                );
+                if (targetAddress) {
                   window.dispatchEvent(
                     new CustomEvent('hpAddressSelected', {
                       detail: {
-                        address: editedAddress,
+                        address: targetAddress,
                         type,
-                        addressId: updated.id,
+                        addressId: selectedId,
                       },
                     })
                   );
                 }
-              } else {
-                // Fallback optimistic update if API did not return the expected shape.
+              } else if (!isAddMode) {
+                // Fallback optimistic update only for edit mode
                 setItems((prev) =>
                   prev.map((addr) => (addr.id === updated.id ? { ...addr, ...updated } : addr))
                 );
                 setActiveId(updated.id);
               }
             } catch (e) {
-              console.error('[HP-React-Widgets] Failed to update address', e);
-              // Keep local optimistic update so the user sees their change.
-              setItems((prev) =>
-                prev.map((addr) => (addr.id === updated.id ? { ...addr, ...updated } : addr))
-              );
-              setActiveId(updated.id);
+              console.error(`[HP-React-Widgets] Failed to ${isAddMode ? 'create' : 'update'} address`, e);
+              if (!isAddMode) {
+                // Keep local optimistic update so the user sees their change.
+                setItems((prev) =>
+                  prev.map((addr) => (addr.id === updated.id ? { ...addr, ...updated } : addr))
+                );
+                setActiveId(updated.id);
+              }
             } finally {
               setIsEditOpen(false);
               setEditingAddress(null);
+              setIsAddMode(false);
             }
           }}
         />
