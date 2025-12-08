@@ -151,7 +151,9 @@ class AddressCardPickerShortcode
             'state'     => call_user_func([$customer, $getter_prefix . 'state']),
             'postcode'  => call_user_func([$customer, $getter_prefix . 'postcode']),
             'country'   => $this->get_country_name($country_code),
-            'phone'     => $type === 'billing' ? $customer->get_billing_phone() : '',
+            // Phone is required for shipping; billing returns billing_phone, shipping returns shipping_phone.
+            'phone'     => $type === 'billing' ? $customer->get_billing_phone() : $customer->get_shipping_phone(),
+            // Email is only meaningful for billing; we keep it empty for shipping.
             'email'     => $type === 'billing' ? $customer->get_billing_email() : '',
             'isDefault' => $isDefault,
         ];
