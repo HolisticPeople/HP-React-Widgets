@@ -70,9 +70,10 @@ class SettingsPage
         }
 
         // Handle "Add new shortcode" wizard submission.
-        // Use $_REQUEST instead of $_POST so the handler still works if another
-        // admin plugin rewrites the form method to GET.
-        if (isset($_REQUEST['hp_rw_new_shortcode_submitted'])) {
+        // Detect by presence of the slug field instead of a hidden flag so this
+        // still works if another admin plugin rewrites the form method or strips
+        // hidden inputs.
+        if (isset($_REQUEST['hp_rw_new_slug']) && $_REQUEST['hp_rw_new_slug'] !== '') {
             check_admin_referer('hp_rw_new_shortcode');
 
             $errors = [];
