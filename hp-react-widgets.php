@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       HP React Widgets
  * Description:       Container plugin for React-based widgets (Side Cart, Multi-Address, etc.) integrated via Shortcodes.
- * Version:           0.0.73
+ * Version:           0.0.74
  * Author:            Holistic People
  * Text Domain:       hp-react-widgets
  */
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('HP_RW_VERSION', '0.0.73');
+define('HP_RW_VERSION', '0.0.74');
 define('HP_RW_FILE', __FILE__);
 define('HP_RW_PATH', plugin_dir_path(__FILE__));
 define('HP_RW_URL', plugin_dir_url(__FILE__));
@@ -342,6 +342,37 @@ add_action('init', function () {
         delete_transient('hp_rw_address_repaired_' . $user_id);
         
         wp_die("Cache cleared for user $user_id. <a href='" . remove_query_arg(['hp_clear_user_cache', 'user_id']) . "'>Go back</a>");
+    }
+    
+    // Fix invalid state for primary WooCommerce address
+    if (isset($_GET['hp_fix_primary_state']) && current_user_can('manage_options')) {
+        $user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 8375;
+        $details = [];
+        
+        foreach (['billing', 'shipping'] as $type) {
+            $country = get_user_meta($user_id, $type . '_country', true);
+            $state = get_user_meta($user_id, $type . '_state', true);
+            
+            if (!empty($country) && !empty($state)) {
+                // Check if country has states
+                $valid_states = WC()->countries->get_states($country);
+                
+                if (empty($valid_states)) {
+                    // Country has no states - clear the state
+                    update_user_meta($user_id, $type . '_state', '');
+                    $details[] = "Cleared $type state '$state' (country $country has no states)";
+                } elseif (!isset($valid_states[$state])) {
+                    // State is not valid for this country - clear it
+                    update_user_meta($user_id, $type . '_state', '');
+                    $details[] = "Cleared invalid $type state '$state' for country $country";
+                }
+            }
+        }
+        
+        clean_user_cache($user_id);
+        
+        $result = $details ? implode("<br>", $details) : "No invalid states found.";
+        wp_die("HP React Widgets: $result <br><br><a href='" . remove_query_arg(['hp_fix_primary_state', 'user_id']) . "'>Go back</a>");
     }
 });
 

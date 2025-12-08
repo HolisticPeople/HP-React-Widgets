@@ -415,6 +415,16 @@ class AddressApi
 
             $setter_prefix = $type === 'billing' ? 'set_billing_' : 'set_shipping_';
 
+            // Convert country to code if needed
+            $country_code = $this->get_country_code($payload['country']);
+            $payload['country'] = $country_code;
+            
+            // Clear state if country doesn't have states
+            $states = WC()->countries->get_states($country_code);
+            if (empty($states)) {
+                $payload['state'] = '';
+            }
+
             $map = [
                 'firstName' => 'first_name',
                 'lastName'  => 'last_name',
@@ -428,11 +438,10 @@ class AddressApi
             ];
 
             foreach ($map as $source => $suffix) {
-                if ($payload[$source] !== '') {
-                    $method = $setter_prefix . $suffix;
-                    if (is_callable([$customer, $method])) {
-                        $customer->$method($payload[$source]);
-                    }
+                // Always set the value, even if empty (to clear old values like state)
+                $method = $setter_prefix . $suffix;
+                if (is_callable([$customer, $method])) {
+                    $customer->$method($payload[$source]);
                 }
             }
 
