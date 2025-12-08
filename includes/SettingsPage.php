@@ -78,9 +78,10 @@ class SettingsPage
 
             $errors = [];
 
+            // WordPress adds magic quotes to REQUEST data; wp_unslash() removes them.
             $slug       = isset($_REQUEST['hp_rw_new_slug']) ? sanitize_key((string) $_REQUEST['hp_rw_new_slug']) : '';
-            $label      = isset($_REQUEST['hp_rw_new_label']) ? sanitize_text_field((string) $_REQUEST['hp_rw_new_label']) : '';
-            $desc       = isset($_REQUEST['hp_rw_new_description']) ? sanitize_textarea_field((string) $_REQUEST['hp_rw_new_description']) : '';
+            $label      = isset($_REQUEST['hp_rw_new_label']) ? sanitize_text_field(wp_unslash((string) $_REQUEST['hp_rw_new_label'])) : '';
+            $desc       = isset($_REQUEST['hp_rw_new_description']) ? sanitize_textarea_field(wp_unslash((string) $_REQUEST['hp_rw_new_description'])) : '';
             $component  = isset($_REQUEST['hp_rw_new_component']) ? preg_replace('/[^A-Za-z0-9_]/', '', (string) $_REQUEST['hp_rw_new_component']) : '';
             $root_id    = isset($_REQUEST['hp_rw_new_root_id']) ? sanitize_html_class((string) $_REQUEST['hp_rw_new_root_id']) : '';
             $hydrator   = isset($_REQUEST['hp_rw_new_hydrator']) ? preg_replace('/[^A-Za-z0-9_\\\\]/', '', (string) $_REQUEST['hp_rw_new_hydrator']) : '';
