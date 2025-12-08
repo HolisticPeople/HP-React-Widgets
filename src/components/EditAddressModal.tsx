@@ -10,13 +10,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Country, State, ICountry, IState } from 'country-state-city';
 
@@ -280,27 +273,22 @@ export const EditAddressModal = ({
               required
               error={errors.country}
             >
-              <Select
+              <select
                 value={selectedCountryCode}
-                onValueChange={handleCountryChange}
+                onChange={(e) => handleCountryChange(e.target.value)}
+                className={cn(
+                  "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                  errors.country && 'border-destructive'
+                )}
+                style={{ backgroundColor: 'hsl(var(--card))' }}
               >
-                <SelectTrigger className={cn(errors.country && 'border-destructive')}>
-                  <SelectValue placeholder="Select country" />
-                </SelectTrigger>
-                <SelectContent 
-                  className="max-h-[300px]"
-                  style={{ backgroundColor: 'hsl(var(--card))' }}
-                  position="popper"
-                  sideOffset={4}
-                  usePortal={false}
-                >
-                  {countries.map((country) => (
-                    <SelectItem key={country.isoCode} value={country.isoCode}>
-                      {country.flag} {country.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <option value="">Select country</option>
+                {countries.map((country) => (
+                  <option key={country.isoCode} value={country.isoCode}>
+                    {country.flag} {country.name}
+                  </option>
+                ))}
+              </select>
             </FormField>
 
             {hasStates && (
@@ -309,27 +297,22 @@ export const EditAddressModal = ({
                 required
                 error={errors.state}
               >
-                <Select
+                <select
                   value={formData.state || ''}
-                  onValueChange={handleStateChange}
+                  onChange={(e) => handleStateChange(e.target.value)}
+                  className={cn(
+                    "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                    errors.state && 'border-destructive'
+                  )}
+                  style={{ backgroundColor: 'hsl(var(--card))' }}
                 >
-                  <SelectTrigger className={cn(errors.state && 'border-destructive')}>
-                    <SelectValue placeholder="Select state" />
-                  </SelectTrigger>
-                  <SelectContent 
-                    className="max-h-[300px]"
-                    style={{ backgroundColor: 'hsl(var(--card))' }}
-                    position="popper"
-                    sideOffset={4}
-                    usePortal={false}
-                  >
-                    {states.map((state) => (
-                      <SelectItem key={state.isoCode} value={state.isoCode}>
-                        {state.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <option value="">Select state</option>
+                  {states.map((state) => (
+                    <option key={state.isoCode} value={state.isoCode}>
+                      {state.name}
+                    </option>
+                  ))}
+                </select>
               </FormField>
             )}
           </div>
