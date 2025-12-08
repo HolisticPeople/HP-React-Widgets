@@ -12,8 +12,8 @@ class MultiAddressShortcode
      */
     public function render(array $atts = []): string
     {
-        // Ensure assets are enqueued when this shortcode is used.
-        wp_enqueue_script(AssetLoader::HANDLE);
+        // Enqueue the React bundle (only loads on pages with this shortcode).
+        AssetLoader::enqueue_bundle();
 
         // Hydration: Fetch addresses server-side.
         $user_id   = get_current_user_id();

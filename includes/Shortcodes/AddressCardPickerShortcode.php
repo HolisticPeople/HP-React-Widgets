@@ -28,8 +28,8 @@ class AddressCardPickerShortcode
             $atts
         );
 
-        // Ensure the React bundle is present.
-        wp_enqueue_script(AssetLoader::HANDLE);
+        // Enqueue the React bundle (only loads on pages with this shortcode).
+        AssetLoader::enqueue_bundle();
 
         $user_id = get_current_user_id();
 

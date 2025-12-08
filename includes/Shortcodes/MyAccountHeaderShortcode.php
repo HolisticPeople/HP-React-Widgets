@@ -12,8 +12,8 @@ class MyAccountHeaderShortcode
      */
     public function render(array $atts = []): string
     {
-        // Ensure assets are enqueued when this shortcode is used.
-        wp_enqueue_script(AssetLoader::HANDLE);
+        // Enqueue the React bundle (only loads on pages with this shortcode).
+        AssetLoader::enqueue_bundle();
 
         $user_id = get_current_user_id();
         $user    = wp_get_current_user();

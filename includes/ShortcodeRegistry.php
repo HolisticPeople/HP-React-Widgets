@@ -43,7 +43,8 @@ class ShortcodeRegistry
      */
     private function renderGeneric(array $config, array $atts): string
     {
-        wp_enqueue_script(AssetLoader::HANDLE);
+        // Enqueue the React bundle (only loads on pages with this shortcode).
+        AssetLoader::enqueue_bundle();
 
         $rootId    = isset($config['root_id']) ? (string) $config['root_id'] : 'hp-generic-widget-root';
         $component = isset($config['component']) ? (string) $config['component'] : '';

@@ -9,7 +9,7 @@
  * WPCode Snippet - Add to your site via WPCode plugin
  * 
  * @package HP_THWMA_Extension
- * @version 1.1.0
+ * @version 1.2.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -34,14 +34,19 @@ class HP_THWMA_Shortcode_Display {
     const THWMA_OPTION_KEY = 'th_multiple_addresses_pro_settings';
 
     /**
+     * Temporary storage for display values during save
+     */
+    private static $pending_display_values = array();
+
+    /**
      * Initialize the extension
      */
     public function __construct() {
-        // Hook BEFORE ThemeHigh saves to capture our custom values
-        add_action( 'admin_init', array( $this, 'intercept_save_before_thwma' ), 1 );
+        // Capture our values from POST before anything else
+        add_action( 'admin_init', array( $this, 'capture_posted_values' ), 1 );
         
-        // Hook AFTER ThemeHigh saves to inject our shortcode_display value back
-        add_action( 'admin_init', array( $this, 'inject_shortcode_display_after_save' ), 999 );
+        // Hook into the option update to inject our values
+        add_filter( 'pre_update_option_' . self::THWMA_OPTION_KEY, array( $this, 'inject_shortcode_display_on_save' ), 10, 3 );
         
         // Hook into admin settings page to add our fields
         add_action( 'admin_footer', array( $this, 'inject_admin_js' ) );
@@ -57,66 +62,73 @@ class HP_THWMA_Shortcode_Display {
     }
 
     /**
-     * Intercept the save BEFORE ThemeHigh processes it
-     * Store our custom values that ThemeHigh will discard
+     * Capture posted values early in admin_init
      */
-    public function intercept_save_before_thwma() {
+    public function capture_posted_values() {
         if ( ! isset( $_POST['save_settings'] ) ) {
             return;
         }
 
-        // Store our custom display type values before ThemeHigh overwrites them
-        $our_settings = array(
+        // Capture the display values from POST
+        self::$pending_display_values = array(
             'billing_display'    => isset( $_POST['i_billing_display'] ) ? sanitize_text_field( $_POST['i_billing_display'] ) : '',
             'shipping_display'   => isset( $_POST['i_shipping_display'] ) ? sanitize_text_field( $_POST['i_shipping_display'] ) : '',
-            'billing_shortcode'  => isset( $_POST['hp_billing_shortcode'] ) ? sanitize_text_field( wp_unslash( $_POST['hp_billing_shortcode'] ) ) : '[hp_address_card_picker type="billing" show_actions="true"]',
-            'shipping_shortcode' => isset( $_POST['hp_shipping_shortcode'] ) ? sanitize_text_field( wp_unslash( $_POST['hp_shipping_shortcode'] ) ) : '[hp_address_card_picker type="shipping" show_actions="true"]',
+            'billing_shortcode'  => isset( $_POST['hp_billing_shortcode'] ) ? sanitize_text_field( wp_unslash( $_POST['hp_billing_shortcode'] ) ) : '',
+            'shipping_shortcode' => isset( $_POST['hp_shipping_shortcode'] ) ? sanitize_text_field( wp_unslash( $_POST['hp_shipping_shortcode'] ) ) : '',
         );
 
-        // Store temporarily
+        // Save our shortcode settings
+        $our_settings = $this->get_settings();
+        if ( ! empty( self::$pending_display_values['billing_shortcode'] ) ) {
+            $our_settings['billing_shortcode'] = self::$pending_display_values['billing_shortcode'];
+        }
+        if ( ! empty( self::$pending_display_values['shipping_shortcode'] ) ) {
+            $our_settings['shipping_shortcode'] = self::$pending_display_values['shipping_shortcode'];
+        }
+        // Also store display type in our settings as backup
+        $our_settings['billing_display'] = self::$pending_display_values['billing_display'];
+        $our_settings['shipping_display'] = self::$pending_display_values['shipping_display'];
+        
         update_option( self::OPTION_KEY, $our_settings );
     }
 
     /**
-     * After ThemeHigh saves, inject our shortcode_display value back into their settings
+     * Inject shortcode_display value when THWMA option is being saved
+     * This filter runs right before the option is written to the database
      */
-    public function inject_shortcode_display_after_save() {
-        if ( ! isset( $_POST['save_settings'] ) ) {
-            return;
+    public function inject_shortcode_display_on_save( $value, $old_value, $option ) {
+        // Check if we have pending values to inject
+        if ( empty( self::$pending_display_values ) ) {
+            // No pending values from current save, check our stored settings
+            $our_settings = $this->get_settings();
+            if ( isset( $our_settings['billing_display'] ) && $our_settings['billing_display'] === 'shortcode_display' ) {
+                if ( isset( $value['settings_billing'] ) ) {
+                    $value['settings_billing']['billing_display'] = 'shortcode_display';
+                }
+            }
+            if ( isset( $our_settings['shipping_display'] ) && $our_settings['shipping_display'] === 'shortcode_display' ) {
+                if ( isset( $value['settings_shipping'] ) ) {
+                    $value['settings_shipping']['shipping_display'] = 'shortcode_display';
+                }
+            }
+            return $value;
         }
-
-        // Get our stored settings
-        $our_settings = get_option( self::OPTION_KEY, array() );
-        
-        // Get THWMA settings (after they saved)
-        $thwma_settings = get_option( self::THWMA_OPTION_KEY, array() );
-        
-        if ( empty( $thwma_settings ) ) {
-            return;
-        }
-
-        $modified = false;
 
         // Inject billing shortcode_display if that's what was selected
-        if ( isset( $our_settings['billing_display'] ) && $our_settings['billing_display'] === 'shortcode_display' ) {
-            if ( isset( $thwma_settings['settings_billing'] ) ) {
-                $thwma_settings['settings_billing']['billing_display'] = 'shortcode_display';
-                $modified = true;
+        if ( self::$pending_display_values['billing_display'] === 'shortcode_display' ) {
+            if ( isset( $value['settings_billing'] ) ) {
+                $value['settings_billing']['billing_display'] = 'shortcode_display';
             }
         }
 
         // Inject shipping shortcode_display if that's what was selected
-        if ( isset( $our_settings['shipping_display'] ) && $our_settings['shipping_display'] === 'shortcode_display' ) {
-            if ( isset( $thwma_settings['settings_shipping'] ) ) {
-                $thwma_settings['settings_shipping']['shipping_display'] = 'shortcode_display';
-                $modified = true;
+        if ( self::$pending_display_values['shipping_display'] === 'shortcode_display' ) {
+            if ( isset( $value['settings_shipping'] ) ) {
+                $value['settings_shipping']['shipping_display'] = 'shortcode_display';
             }
         }
 
-        // Save the modified settings back
-        if ( $modified ) {
-            update_option( self::THWMA_OPTION_KEY, $thwma_settings );
-        }
+        return $value;
     }
 
     /**
@@ -126,6 +138,8 @@ class HP_THWMA_Shortcode_Display {
         return get_option( self::OPTION_KEY, array(
             'billing_shortcode'  => '[hp_address_card_picker type="billing" show_actions="true"]',
             'shipping_shortcode' => '[hp_address_card_picker type="shipping" show_actions="true"]',
+            'billing_display'    => '',
+            'shipping_display'   => '',
         ) );
     }
 
@@ -150,10 +164,17 @@ class HP_THWMA_Shortcode_Display {
      * Check if shortcode display is enabled for a type
      */
     public function is_shortcode_display( $type = 'billing' ) {
+        // First check THWMA settings
         $display_key = $type . '_display';
         $display_value = $this->get_thwma_setting( 'settings_' . $type, $display_key );
         
-        return $display_value === 'shortcode_display';
+        if ( $display_value === 'shortcode_display' ) {
+            return true;
+        }
+        
+        // Fallback: check our own settings (backup)
+        $our_settings = $this->get_settings();
+        return isset( $our_settings[ $display_key ] ) && $our_settings[ $display_key ] === 'shortcode_display';
     }
 
     /**
@@ -179,12 +200,10 @@ class HP_THWMA_Shortcode_Display {
             return;
         }
 
-        // Check billing
         if ( $this->is_shortcode_display( 'billing' ) && $this->is_enabled( 'billing' ) ) {
             $this->remove_thwma_billing_hooks();
         }
 
-        // Check shipping
         if ( $this->is_shortcode_display( 'shipping' ) && $this->is_enabled( 'shipping' ) ) {
             $this->remove_thwma_shipping_hooks();
         }
@@ -331,9 +350,17 @@ class HP_THWMA_Shortcode_Display {
         $billing_shortcode = esc_attr( isset( $settings['billing_shortcode'] ) ? $settings['billing_shortcode'] : '[hp_address_card_picker type="billing" show_actions="true"]' );
         $shipping_shortcode = esc_attr( isset( $settings['shipping_shortcode'] ) ? $settings['shipping_shortcode'] : '[hp_address_card_picker type="shipping" show_actions="true"]' );
         
-        // Check current saved display values
+        // Check current saved display values from THWMA settings
         $billing_display = $this->get_thwma_setting( 'settings_billing', 'billing_display' );
         $shipping_display = $this->get_thwma_setting( 'settings_shipping', 'shipping_display' );
+        
+        // Also check our backup settings
+        if ( $billing_display !== 'shortcode_display' && isset( $settings['billing_display'] ) ) {
+            $billing_display = $settings['billing_display'];
+        }
+        if ( $shipping_display !== 'shortcode_display' && isset( $settings['shipping_display'] ) ) {
+            $shipping_display = $settings['shipping_display'];
+        }
         ?>
         <style>
             .hp-thwma-shortcode-field {
@@ -368,6 +395,9 @@ class HP_THWMA_Shortcode_Display {
             var savedBillingDisplay = '<?php echo esc_js( $billing_display ); ?>';
             var savedShippingDisplay = '<?php echo esc_js( $shipping_display ); ?>';
             
+            console.log('[HP-THWMA] Saved billing display:', savedBillingDisplay);
+            console.log('[HP-THWMA] Saved shipping display:', savedShippingDisplay);
+            
             // Add "Shortcode" option to display type dropdowns
             var $billingDisplay = $('select[name="i_billing_display"]');
             var $shippingDisplay = $('select[name="i_shipping_display"]');
@@ -375,19 +405,19 @@ class HP_THWMA_Shortcode_Display {
             // Add shortcode option to billing dropdown
             if ($billingDisplay.length && !$billingDisplay.find('option[value="shortcode_display"]').length) {
                 $billingDisplay.append('<option value="shortcode_display">Shortcode</option>');
-                // Set the saved value if it was shortcode_display
-                if (savedBillingDisplay === 'shortcode_display') {
-                    $billingDisplay.val('shortcode_display');
-                }
+            }
+            // Set the saved value if it was shortcode_display
+            if (savedBillingDisplay === 'shortcode_display') {
+                $billingDisplay.val('shortcode_display');
             }
             
             // Add shortcode option to shipping dropdown
             if ($shippingDisplay.length && !$shippingDisplay.find('option[value="shortcode_display"]').length) {
                 $shippingDisplay.append('<option value="shortcode_display">Shortcode</option>');
-                // Set the saved value if it was shortcode_display
-                if (savedShippingDisplay === 'shortcode_display') {
-                    $shippingDisplay.val('shortcode_display');
-                }
+            }
+            // Set the saved value if it was shortcode_display
+            if (savedShippingDisplay === 'shortcode_display') {
+                $shippingDisplay.val('shortcode_display');
             }
 
             // Add shortcode input field for billing
@@ -489,9 +519,6 @@ class HP_THWMA_Checkout_Integration {
         (function() {
             'use strict';
 
-            /**
-             * Map of HP address fields to WooCommerce checkout field IDs
-             */
             const fieldMappings = {
                 billing: {
                     firstName: 'billing_first_name',
@@ -520,9 +547,6 @@ class HP_THWMA_Checkout_Integration {
                 }
             };
 
-            /**
-             * Country name to code mapping (common countries)
-             */
             const countryNameToCode = {
                 'United States': 'US',
                 'United Kingdom': 'GB',
@@ -539,9 +563,6 @@ class HP_THWMA_Checkout_Integration {
                 'Israel': 'IL',
             };
 
-            /**
-             * Get country code from country name
-             */
             function getCountryCode(countryName) {
                 if (countryName && countryName.length === 2) {
                     return countryName;
@@ -549,16 +570,12 @@ class HP_THWMA_Checkout_Integration {
                 return countryNameToCode[countryName] || countryName;
             }
 
-            /**
-             * Fill checkout form fields with address data
-             */
             function fillCheckoutFields(address, type) {
                 const mapping = fieldMappings[type];
                 if (!mapping || !address) return;
 
                 console.log('[HP-THWMA] Filling ' + type + ' fields with:', address);
 
-                // Handle country first (needed for state dropdown population)
                 if (address.country) {
                     const countryCode = getCountryCode(address.country);
                     const countryField = document.getElementById(mapping.country);
@@ -576,9 +593,6 @@ class HP_THWMA_Checkout_Integration {
                 fillRemainingFields(address, mapping);
             }
 
-            /**
-             * Fill remaining fields after country is set
-             */
             function fillRemainingFields(address, mapping) {
                 Object.keys(mapping).forEach(function(hpField) {
                     if (hpField === 'country') return;
@@ -596,9 +610,6 @@ class HP_THWMA_Checkout_Integration {
                 jQuery(document.body).trigger('update_checkout');
             }
 
-            /**
-             * Store selected address ID for ThemeHigh plugin compatibility
-             */
             function storeSelectedAddressId(addressId, type) {
                 const hiddenFieldName = 'thwma_hidden_field_' + type;
                 let hiddenField = document.querySelector('input[name="' + hiddenFieldName + '"]');
@@ -613,7 +624,6 @@ class HP_THWMA_Checkout_Integration {
                     }
                 }
 
-                // Convert HP address ID format to THWMA format
                 let thwmaKey = addressId;
                 if (addressId.endsWith('_primary')) {
                     thwmaKey = 'selected_address';
@@ -628,9 +638,6 @@ class HP_THWMA_Checkout_Integration {
                 console.log('[HP-THWMA] Stored address ID:', thwmaKey, 'for', type);
             }
 
-            /**
-             * Listen for HP Address Card Picker selection events
-             */
             window.addEventListener('hpAddressSelected', function(e) {
                 if (e.detail && e.detail.address && e.detail.type) {
                     fillCheckoutFields(e.detail.address, e.detail.type);
@@ -638,7 +645,6 @@ class HP_THWMA_Checkout_Integration {
                 }
             });
 
-            // Also listen for the hpRWAddressCopied event
             window.addEventListener('hpRWAddressCopied', function(e) {
                 if (e.detail && e.detail.addresses && e.detail.toType) {
                     const selectedId = e.detail.selectedId;
