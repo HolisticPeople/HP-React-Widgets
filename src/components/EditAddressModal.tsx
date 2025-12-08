@@ -283,13 +283,16 @@ export const EditAddressModal = ({
               <Select
                 value={selectedCountryCode}
                 onValueChange={handleCountryChange}
+                modal={false}
               >
                 <SelectTrigger className={cn(errors.country && 'border-destructive')}>
                   <SelectValue placeholder="Select country" />
                 </SelectTrigger>
                 <SelectContent 
-                  className="max-h-[300px]"
-                  style={{ backgroundColor: 'hsl(var(--card))', opacity: 1 }}
+                  className="max-h-[300px] z-[100]"
+                  style={{ backgroundColor: 'hsl(var(--card))' }}
+                  position="popper"
+                  sideOffset={4}
                 >
                   {countries.map((country) => (
                     <SelectItem key={country.isoCode} value={country.isoCode}>
@@ -309,13 +312,16 @@ export const EditAddressModal = ({
                 <Select
                   value={formData.state || ''}
                   onValueChange={handleStateChange}
+                  modal={false}
                 >
                   <SelectTrigger className={cn(errors.state && 'border-destructive')}>
                     <SelectValue placeholder="Select state" />
                   </SelectTrigger>
                   <SelectContent 
-                    className="max-h-[300px]"
-                    style={{ backgroundColor: 'hsl(var(--card))', opacity: 1 }}
+                    className="max-h-[300px] z-[100]"
+                    style={{ backgroundColor: 'hsl(var(--card))' }}
+                    position="popper"
+                    sideOffset={4}
                   >
                     {states.map((state) => (
                       <SelectItem key={state.isoCode} value={state.isoCode}>
