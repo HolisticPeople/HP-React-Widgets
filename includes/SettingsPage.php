@@ -61,6 +61,16 @@ class SettingsPage
             return;
         }
 
+        // DEBUG: Output request info at the very top of the page content.
+        $postKeys = array_keys($_POST);
+        $method = $_SERVER['REQUEST_METHOD'] ?? 'unknown';
+        echo '<div style="background:#ffeb3b;color:#000;padding:10px;margin:10px 0;border:2px solid #f57c00;">';
+        echo '<strong>HP RW DEBUG (v0.0.47):</strong> ';
+        echo 'method=' . esc_html($method) . ', ';
+        echo 'POST keys=[' . esc_html(implode(', ', $postKeys) ?: 'none') . '], ';
+        echo 'POST[hp_rw_new_slug]=' . (isset($_POST['hp_rw_new_slug']) ? 'YES(' . esc_html($_POST['hp_rw_new_slug']) . ')' : 'no');
+        echo '</div>';
+
         $savedNotice = '';
         $errorNotice = '';
 
