@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       HP React Widgets
  * Description:       Container plugin for React-based widgets (Side Cart, Multi-Address, etc.) integrated via Shortcodes.
- * Version:           0.0.67
+ * Version:           0.0.68
  * Author:            Holistic People
  * Text Domain:       hp-react-widgets
  */
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('HP_RW_VERSION', '0.0.67');
+define('HP_RW_VERSION', '0.0.68');
 define('HP_RW_FILE', __FILE__);
 define('HP_RW_PATH', plugin_dir_path(__FILE__));
 define('HP_RW_URL', plugin_dir_url(__FILE__));
@@ -39,102 +39,147 @@ add_action('plugins_loaded', function () {
 });
 
 /**
- * Sanitize ThemeHigh address data to fix corrupted entries (arrays instead of strings).
- * This runs on plugins_loaded to repair data before ThemeHigh reads it.
+ * Immediately repair corrupted ThemeHigh address data for ALL users.
+ * This runs once per day and fixes the trim() array error.
  */
 add_action('plugins_loaded', function () {
-    // Hook into user meta retrieval to sanitize on-the-fly
-    add_filter('get_user_metadata', 'hp_rw_sanitize_thwma_meta', 1, 4);
-}, 0);
-
-/**
- * Filter to sanitize thwma_custom_address meta before it's returned.
- */
-function hp_rw_sanitize_thwma_meta($value, $object_id, $meta_key, $single) {
-    // Only intercept thwma_custom_address meta
-    if ($meta_key !== 'thwma_custom_address') {
-        return $value;
+    // Only run repair once per day
+    $last_repair = get_option('hp_rw_thwma_repair_time', 0);
+    if (time() - $last_repair < 86400) {
+        return;
     }
     
-    // Prevent infinite recursion
-    static $is_sanitizing = [];
-    if (isset($is_sanitizing[$object_id])) {
-        return $value;
-    }
-    $is_sanitizing[$object_id] = true;
-    
-    // Get raw value from database directly
     global $wpdb;
-    $meta_row = $wpdb->get_var($wpdb->prepare(
-        "SELECT meta_value FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key = %s LIMIT 1",
-        $object_id,
-        'thwma_custom_address'
-    ));
     
-    unset($is_sanitizing[$object_id]);
+    // Get ALL users with thwma_custom_address meta
+    $results = $wpdb->get_results(
+        "SELECT user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = 'thwma_custom_address'"
+    );
     
-    if (empty($meta_row)) {
-        return $value;
+    if (empty($results)) {
+        update_option('hp_rw_thwma_repair_time', time());
+        return;
     }
     
-    $raw_value = maybe_unserialize($meta_row);
-    
-    if (!is_array($raw_value)) {
-        return $value;
-    }
-    
-    $needs_repair = false;
-    
-    // Sanitize all address fields
-    foreach (['billing', 'shipping'] as $type) {
-        if (!isset($raw_value[$type]) || !is_array($raw_value[$type])) {
+    foreach ($results as $row) {
+        $raw_value = maybe_unserialize($row->meta_value);
+        
+        if (!is_array($raw_value)) {
             continue;
         }
         
-        foreach ($raw_value[$type] as $key => $addr_data) {
-            if (!is_array($addr_data)) {
+        $needs_repair = false;
+        
+        // Sanitize all address fields
+        foreach (['billing', 'shipping'] as $type) {
+            if (!isset($raw_value[$type]) || !is_array($raw_value[$type])) {
                 continue;
             }
             
-            foreach ($addr_data as $field => $field_value) {
-                if (is_array($field_value)) {
-                    // Convert array to string - take first non-empty string value
-                    $string_value = '';
-                    foreach ($field_value as $v) {
-                        if (is_string($v) && !empty($v)) {
-                            $string_value = $v;
-                            break;
+            foreach ($raw_value[$type] as $key => $addr_data) {
+                if (!is_array($addr_data)) {
+                    continue;
+                }
+                
+                foreach ($addr_data as $field => $field_value) {
+                    if (is_array($field_value)) {
+                        // Convert array to string
+                        $string_value = '';
+                        foreach ($field_value as $v) {
+                            if (is_string($v) && !empty($v)) {
+                                $string_value = $v;
+                                break;
+                            }
                         }
+                        $raw_value[$type][$key][$field] = $string_value;
+                        $needs_repair = true;
+                    } elseif (is_object($field_value)) {
+                        $raw_value[$type][$key][$field] = '';
+                        $needs_repair = true;
                     }
-                    $raw_value[$type][$key][$field] = $string_value;
-                    $needs_repair = true;
-                } elseif (is_object($field_value)) {
-                    $raw_value[$type][$key][$field] = '';
-                    $needs_repair = true;
                 }
             }
         }
+        
+        // Update if needed
+        if ($needs_repair) {
+            $wpdb->update(
+                $wpdb->usermeta,
+                ['meta_value' => maybe_serialize($raw_value)],
+                ['user_id' => $row->user_id, 'meta_key' => 'thwma_custom_address'],
+                ['%s'],
+                ['%d', '%s']
+            );
+        }
     }
     
-    // Auto-repair the database if we found corrupted data
-    if ($needs_repair) {
-        $wpdb->update(
-            $wpdb->usermeta,
-            ['meta_value' => maybe_serialize($raw_value)],
-            ['user_id' => $object_id, 'meta_key' => 'thwma_custom_address'],
-            ['%s'],
-            ['%d', '%s']
+    update_option('hp_rw_thwma_repair_time', time());
+}, 0);
+
+// Also add an immediate one-time repair that can be triggered via URL param
+add_action('init', function () {
+    if (isset($_GET['hp_repair_addresses']) && current_user_can('manage_options')) {
+        global $wpdb;
+        
+        $results = $wpdb->get_results(
+            "SELECT user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = 'thwma_custom_address'"
         );
+        
+        $repaired = 0;
+        
+        foreach ($results as $row) {
+            $raw_value = maybe_unserialize($row->meta_value);
+            
+            if (!is_array($raw_value)) {
+                continue;
+            }
+            
+            $needs_repair = false;
+            
+            foreach (['billing', 'shipping'] as $type) {
+                if (!isset($raw_value[$type]) || !is_array($raw_value[$type])) {
+                    continue;
+                }
+                
+                foreach ($raw_value[$type] as $key => $addr_data) {
+                    if (!is_array($addr_data)) {
+                        continue;
+                    }
+                    
+                    foreach ($addr_data as $field => $field_value) {
+                        if (is_array($field_value) || is_object($field_value)) {
+                            $string_value = '';
+                            if (is_array($field_value)) {
+                                foreach ($field_value as $v) {
+                                    if (is_string($v) && !empty($v)) {
+                                        $string_value = $v;
+                                        break;
+                                    }
+                                }
+                            }
+                            $raw_value[$type][$key][$field] = $string_value;
+                            $needs_repair = true;
+                        }
+                    }
+                }
+            }
+            
+            if ($needs_repair) {
+                $wpdb->update(
+                    $wpdb->usermeta,
+                    ['meta_value' => maybe_serialize($raw_value)],
+                    ['user_id' => $row->user_id, 'meta_key' => 'thwma_custom_address'],
+                    ['%s'],
+                    ['%d', '%s']
+                );
+                $repaired++;
+            }
+        }
+        
+        delete_option('hp_rw_thwma_repair_time'); // Reset so automatic repair runs again
+        wp_die("HP React Widgets: Repaired $repaired user address records. <a href='" . remove_query_arg('hp_repair_addresses') . "'>Go back</a>");
     }
-    
-    // Return sanitized value in the format WordPress expects
-    // For get_user_meta with $single=true, return array with single value
-    // For $single=false, return array of arrays
-    if ($single) {
-        return [$raw_value];
-    }
-    return [[$raw_value]];
-}
+});
 
 // Ensure default options are created on activation.
 register_activation_hook(__FILE__, function () {
