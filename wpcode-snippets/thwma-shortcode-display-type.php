@@ -29,9 +29,9 @@ class HP_THWMA_Shortcode_Display {
     const OPTION_KEY = 'hp_thwma_shortcode_settings';
     
     /**
-     * THWMA's option key
+     * THWMA's option key (from THWMA_Utils::OPTION_KEY_THWMA_SETTINGS)
      */
-    const THWMA_OPTION_KEY = 'th_multiple_addresses_pro_settings';
+    const THWMA_OPTION_KEY = 'thwma_general_settings';
 
     /**
      * Temporary storage for display values during save
@@ -331,9 +331,53 @@ class HP_THWMA_Shortcode_Display {
             $shortcode = sprintf( '[hp_address_card_picker type="%s" show_actions="true"]', esc_attr( $type ) );
         }
 
-        echo '<div class="hp-thwma-shortcode-container hp-thwma-shortcode-' . esc_attr( $type ) . '">';
-        echo do_shortcode( $shortcode );
-        echo '</div>';
+        // Get the display text from THWMA settings
+        $display_text = $this->get_thwma_setting( 'settings_' . $type, $type . '_display_text' );
+        if ( empty( $display_text ) ) {
+            $display_text = $type === 'billing' ? 'Select a different billing address' : 'Select a different shipping address';
+        }
+
+        // Get button style settings
+        $styles_settings = $this->get_thwma_setting( 'settings_styles' );
+        $button_style = '';
+        if ( ! empty( $styles_settings ) && isset( $styles_settings['enable_button_styles'] ) && $styles_settings['enable_button_styles'] === 'yes' ) {
+            $bg_color = isset( $styles_settings['button_background_color'] ) ? $styles_settings['button_background_color'] : '#333';
+            $text_color = isset( $styles_settings['button_text_color'] ) ? $styles_settings['button_text_color'] : '#fff';
+            $padding = isset( $styles_settings['button_padding'] ) ? $styles_settings['button_padding'] : '10px 20px';
+            $button_style = sprintf( 'background:%s;color:%s;padding:%s;', esc_attr( $bg_color ), esc_attr( $text_color ), esc_attr( $padding ) );
+        }
+
+        $container_id = 'hp-thwma-' . esc_attr( $type ) . '-' . uniqid();
+        ?>
+        <div class="hp-thwma-wrapper hp-thwma-wrapper-<?php echo esc_attr( $type ); ?>" style="margin: 15px 0;">
+            <!-- Toggle Button -->
+            <button type="button" 
+                    class="hp-thwma-toggle-btn" 
+                    data-target="<?php echo esc_attr( $container_id ); ?>"
+                    style="<?php echo $button_style; ?>border:1px solid #555;border-radius:4px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;<?php echo empty($button_style) ? 'padding:10px 20px;background:#333;color:#fff;' : ''; ?>">
+                <span class="hp-thwma-toggle-icon">▼</span>
+                <?php echo esc_html( $display_text ); ?>
+            </button>
+            
+            <!-- Collapsible Address Picker Container -->
+            <div id="<?php echo esc_attr( $container_id ); ?>" 
+                 class="hp-thwma-shortcode-container hp-thwma-shortcode-<?php echo esc_attr( $type ); ?>" 
+                 style="display:none; margin-top:15px; padding:15px; border:1px solid #444; border-radius:8px; background:rgba(0,0,0,0.2);">
+                <?php
+                $output = do_shortcode( $shortcode );
+                
+                if ( empty( trim( $output ) ) || $output === $shortcode ) {
+                    echo '<div style="padding: 15px; background: #2a2a2a; border: 1px solid #444; border-radius: 8px; color: #ccc;">';
+                    echo '<strong>Address Picker:</strong> The shortcode <code>' . esc_html( $shortcode ) . '</code> is not available. ';
+                    echo 'Make sure the HP React Widgets plugin is active.';
+                    echo '</div>';
+                } else {
+                    echo $output;
+                }
+                ?>
+            </div>
+        </div>
+        <?php
     }
 
     /**
@@ -547,45 +591,77 @@ class HP_THWMA_Checkout_Integration {
                 }
             };
 
-            const countryNameToCode = {
-                'United States': 'US',
-                'United Kingdom': 'GB',
-                'Canada': 'CA',
-                'Australia': 'AU',
-                'Germany': 'DE',
-                'France': 'FR',
-                'Italy': 'IT',
-                'Spain': 'ES',
-                'Netherlands': 'NL',
-                'Belgium': 'BE',
-                'Ireland': 'IE',
-                'New Zealand': 'NZ',
-                'Israel': 'IL',
-            };
-
-            function getCountryCode(countryName) {
-                if (countryName && countryName.length === 2) {
-                    return countryName;
+            /**
+             * Extract country code from various formats:
+             * - "US" (already a code)
+             * - "United States" (full name)
+             * - "United States (US)" (name with code in parentheses)
+             */
+            function getCountryCode(countryValue) {
+                if (!countryValue) return '';
+                
+                // If already a 2-letter code, return as-is
+                if (countryValue.length === 2 && countryValue === countryValue.toUpperCase()) {
+                    return countryValue;
                 }
-                return countryNameToCode[countryName] || countryName;
+                
+                // Check for format "Country Name (XX)" - extract code from parentheses
+                const parenMatch = countryValue.match(/\(([A-Z]{2})\)$/);
+                if (parenMatch) {
+                    return parenMatch[1];
+                }
+                
+                // Fallback: lookup table for common country names
+                const countryNameToCode = {
+                    'United States': 'US',
+                    'United Kingdom': 'GB',
+                    'Canada': 'CA',
+                    'Australia': 'AU',
+                    'Germany': 'DE',
+                    'France': 'FR',
+                    'Italy': 'IT',
+                    'Spain': 'ES',
+                    'Netherlands': 'NL',
+                    'Belgium': 'BE',
+                    'Ireland': 'IE',
+                    'New Zealand': 'NZ',
+                    'Israel': 'IL',
+                    'Mexico': 'MX',
+                    'Brazil': 'BR',
+                    'Japan': 'JP',
+                    'China': 'CN',
+                    'India': 'IN',
+                    'South Korea': 'KR',
+                    'Singapore': 'SG',
+                    'Switzerland': 'CH',
+                    'Austria': 'AT',
+                    'Sweden': 'SE',
+                    'Norway': 'NO',
+                    'Denmark': 'DK',
+                    'Finland': 'FI',
+                    'Poland': 'PL',
+                    'Portugal': 'PT',
+                    'Greece': 'GR',
+                };
+                
+                return countryNameToCode[countryValue] || countryValue;
             }
 
             function fillCheckoutFields(address, type) {
                 const mapping = fieldMappings[type];
                 if (!mapping || !address) return;
 
-                console.log('[HP-THWMA] Filling ' + type + ' fields with:', address);
-
                 if (address.country) {
                     const countryCode = getCountryCode(address.country);
                     const countryField = document.getElementById(mapping.country);
                     if (countryField) {
                         countryField.value = countryCode;
-                        jQuery(countryField).trigger('change');
+                        jQuery(countryField).trigger('change').trigger('input');
                         
+                        // Wait for WooCommerce to update state dropdown, then fill remaining fields
                         setTimeout(function() {
                             fillRemainingFields(address, mapping);
-                        }, 300);
+                        }, 500);
                         return;
                     }
                 }
@@ -607,6 +683,7 @@ class HP_THWMA_Checkout_Integration {
                     }
                 });
 
+                // Trigger WooCommerce checkout update
                 jQuery(document.body).trigger('update_checkout');
             }
 
@@ -666,3 +743,116 @@ class HP_THWMA_Checkout_Integration {
 
 // Initialize checkout integration
 new HP_THWMA_Checkout_Integration();
+
+/**
+ * Add frontend CSS and JS for the collapsible address picker and modal z-index fix
+ */
+add_action( 'wp_footer', function() {
+    if ( ! is_checkout() ) {
+        return;
+    }
+    ?>
+    <style>
+    /* Fix modal z-index - ensure HP React Widgets modals appear above everything */
+    [data-radix-portal],
+    .hp-edit-address-modal,
+    [role="dialog"],
+    .fixed.inset-0 {
+        z-index: 999999 !important;
+    }
+    
+    /* Modal backdrop - DARK overlay */
+    [data-radix-portal] > div:first-child,
+    .fixed.inset-0.bg-black\/80,
+    [data-radix-portal] [data-state="open"] + div,
+    [role="dialog"] ~ div[aria-hidden="true"] {
+        z-index: 999998 !important;
+        background-color: rgba(0, 0, 0, 0.92) !important;
+        backdrop-filter: blur(4px) !important;
+    }
+    
+    /* Force dark backdrop on any overlay/backdrop elements */
+    .bg-black\/80,
+    [class*="bg-black"],
+    [class*="backdrop"] {
+        background-color: rgba(0, 0, 0, 0.92) !important;
+    }
+    
+    /* Modal content */
+    [data-radix-portal] [role="dialog"],
+    .hp-edit-address-modal [role="dialog"] {
+        z-index: 999999 !important;
+    }
+    
+    /* Toggle button hover effect */
+    .hp-thwma-toggle-btn:hover {
+        opacity: 0.9;
+    }
+    
+    /* Toggle icon rotation when expanded */
+    .hp-thwma-toggle-btn.expanded .hp-thwma-toggle-icon {
+        transform: rotate(180deg);
+    }
+    
+    .hp-thwma-toggle-icon {
+        transition: transform 0.2s ease;
+        font-size: 10px;
+    }
+    
+    /* Smooth expand/collapse animation */
+    .hp-thwma-shortcode-container {
+        transition: all 0.3s ease;
+    }
+    </style>
+    
+    <script>
+    (function() {
+        'use strict';
+        
+        // Toggle functionality for address picker containers
+        document.addEventListener('click', function(e) {
+            const toggleBtn = e.target.closest('.hp-thwma-toggle-btn');
+            if (!toggleBtn) return;
+            
+            e.preventDefault();
+            
+            const targetId = toggleBtn.getAttribute('data-target');
+            const container = document.getElementById(targetId);
+            
+            if (!container) return;
+            
+            const isHidden = container.style.display === 'none';
+            
+            if (isHidden) {
+                container.style.display = 'block';
+                toggleBtn.classList.add('expanded');
+            } else {
+                container.style.display = 'none';
+                toggleBtn.classList.remove('expanded');
+            }
+        });
+        
+        // Ensure modals have proper z-index when they open
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                mutation.addedNodes.forEach(function(node) {
+                    if (node.nodeType === 1) {
+                        // Check for portal/modal containers
+                        if (node.hasAttribute && node.hasAttribute('data-radix-portal')) {
+                            node.style.zIndex = '999999';
+                        }
+                        // Check for dialog elements
+                        const dialogs = node.querySelectorAll ? node.querySelectorAll('[role="dialog"]') : [];
+                        dialogs.forEach(function(dialog) {
+                            dialog.style.zIndex = '999999';
+                        });
+                    }
+                });
+            });
+        });
+        
+        observer.observe(document.body, { childList: true, subtree: true });
+    })();
+    </script>
+    <?php
+}, 100 );

@@ -460,12 +460,28 @@ export const AddressCardPicker = ({
 
               if (result && result.success && Array.isArray(result.addresses)) {
                 setItems(result.addresses);
-                setActiveId(result.selectedId ?? updated.id);
+                // Always keep the edited address selected (user intent)
+                setActiveId(updated.id);
+                
+                // Dispatch event so checkout fields update with the edited address
+                const editedAddress = result.addresses.find((addr: Address) => addr.id === updated.id);
+                if (editedAddress) {
+                  window.dispatchEvent(
+                    new CustomEvent('hpAddressSelected', {
+                      detail: {
+                        address: editedAddress,
+                        type,
+                        addressId: updated.id,
+                      },
+                    })
+                  );
+                }
               } else {
                 // Fallback optimistic update if API did not return the expected shape.
                 setItems((prev) =>
                   prev.map((addr) => (addr.id === updated.id ? { ...addr, ...updated } : addr))
                 );
+                setActiveId(updated.id);
               }
             } catch (e) {
               console.error('[HP-React-Widgets] Failed to update address', e);
@@ -473,6 +489,7 @@ export const AddressCardPicker = ({
               setItems((prev) =>
                 prev.map((addr) => (addr.id === updated.id ? { ...addr, ...updated } : addr))
               );
+              setActiveId(updated.id);
             } finally {
               setIsEditOpen(false);
               setEditingAddress(null);
