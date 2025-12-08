@@ -111,7 +111,13 @@ class SettingsPage
         // still works if another admin plugin rewrites the form method or strips
         // hidden inputs.
         if (isset($_REQUEST['hp_rw_new_slug']) && $_REQUEST['hp_rw_new_slug'] !== '') {
+            // DEBUG: We entered the wizard save block
+            echo '<div style="background:#4caf50;color:#fff;padding:10px;margin:10px 0;">WIZARD BLOCK ENTERED</div>';
+
             check_admin_referer('hp_rw_new_shortcode');
+
+            // DEBUG: Nonce passed
+            echo '<div style="background:#2196f3;color:#fff;padding:10px;margin:10px 0;">NONCE CHECK PASSED</div>';
 
             $errors = [];
 
@@ -123,6 +129,9 @@ class SettingsPage
             $hydrator   = isset($_REQUEST['hp_rw_new_hydrator']) ? preg_replace('/[^A-Za-z0-9_\\\\]/', '', (string) $_REQUEST['hp_rw_new_hydrator']) : '';
 
             $editingSlug = isset($_REQUEST['hp_rw_editing_slug']) ? sanitize_key((string) $_REQUEST['hp_rw_editing_slug']) : '';
+
+            // DEBUG: Show parsed values
+            echo '<div style="background:#9c27b0;color:#fff;padding:10px;margin:10px 0;">PARSED: slug=' . esc_html($slug) . ', editingSlug=' . esc_html($editingSlug) . ', desc length=' . strlen($desc) . '</div>';
 
             if ($slug === '' || strpos($slug, 'hp_') !== 0) {
                 $errors[] = 'Shortcode tag is required and must start with the "hp_" prefix (for example: hp_my_new_widget).';
@@ -160,7 +169,13 @@ class SettingsPage
                 }
             }
 
+            // DEBUG: Show errors count
+            echo '<div style="background:#ff9800;color:#000;padding:10px;margin:10px 0;">ERRORS COUNT: ' . count($errors) . (count($errors) > 0 ? ' - ' . esc_html(implode(', ', $errors)) : '') . '</div>';
+
             if (empty($errors)) {
+                // DEBUG: No errors, proceeding to save
+                echo '<div style="background:#8bc34a;color:#000;padding:10px;margin:10px 0;">NO ERRORS - SAVING NOW with desc: ' . esc_html(substr($desc, 0, 50)) . '</div>';
+
                 $shortcodes = Plugin::get_shortcodes();
 
                 // If we are renaming an existing shortcode, remove the old key first.
@@ -178,6 +193,11 @@ class SettingsPage
                 ];
 
                 Plugin::set_shortcodes($shortcodes);
+
+                // DEBUG: Verify what was saved by re-reading
+                $verify = Plugin::get_shortcodes();
+                $savedDesc = isset($verify[$slug]['description']) ? $verify[$slug]['description'] : '(not found)';
+                echo '<div style="background:#00bcd4;color:#000;padding:10px;margin:10px 0;">AFTER SAVE - re-read desc: ' . esc_html(substr($savedDesc, 0, 50)) . '</div>';
 
                 // Auto-enable the new shortcode.
                 $enabled = Plugin::get_enabled_shortcodes();
