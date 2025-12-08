@@ -9,33 +9,6 @@ class SettingsPage
     public function init(): void
     {
         add_action('admin_menu', [$this, 'register_menu']);
-        add_action('admin_notices', [$this, 'debug_wizard_submit']);
-    }
-
-    /**
-     * Early debug hook to see what POST/REQUEST data PHP actually receives.
-     */
-    public function debug_wizard_submit(): void
-    {
-        // Only run on our settings page.
-        if (!isset($_GET['page']) || $_GET['page'] !== 'hp-react-widgets') {
-            return;
-        }
-
-        $postKeys = array_keys($_POST);
-        $hasPostSlug = isset($_POST['hp_rw_new_slug']);
-        $hasReqSlug = isset($_REQUEST['hp_rw_new_slug']);
-        $method = $_SERVER['REQUEST_METHOD'] ?? 'unknown';
-
-        // Always show debug info when on our page (temporary).
-        $msg = sprintf(
-            'HP RW DEBUG: method=%s, POST keys=%s, POST has slug=%s, REQUEST has slug=%s',
-            esc_html($method),
-            esc_html(implode(', ', $postKeys) ?: '(none)'),
-            $hasPostSlug ? 'YES' : 'no',
-            $hasReqSlug ? 'YES' : 'no'
-        );
-        echo '<div class="notice notice-warning"><p>' . $msg . '</p></div>';
     }
 
     /**
@@ -60,16 +33,6 @@ class SettingsPage
         if (!current_user_can('manage_options')) {
             return;
         }
-
-        // DEBUG: Output request info at the very top of the page content.
-        $postKeys = array_keys($_POST);
-        $method = $_SERVER['REQUEST_METHOD'] ?? 'unknown';
-        echo '<div style="background:#ffeb3b;color:#000;padding:10px;margin:10px 0;border:2px solid #f57c00;">';
-        echo '<strong>HP RW DEBUG (v0.0.47):</strong> ';
-        echo 'method=' . esc_html($method) . ', ';
-        echo 'POST keys=[' . esc_html(implode(', ', $postKeys) ?: 'none') . '], ';
-        echo 'POST[hp_rw_new_slug]=' . (isset($_POST['hp_rw_new_slug']) ? 'YES(' . esc_html($_POST['hp_rw_new_slug']) . ')' : 'no');
-        echo '</div>';
 
         $savedNotice = '';
         $errorNotice = '';
@@ -111,13 +74,7 @@ class SettingsPage
         // still works if another admin plugin rewrites the form method or strips
         // hidden inputs.
         if (isset($_REQUEST['hp_rw_new_slug']) && $_REQUEST['hp_rw_new_slug'] !== '') {
-            // DEBUG: We entered the wizard save block
-            echo '<div style="background:#4caf50;color:#fff;padding:10px;margin:10px 0;">WIZARD BLOCK ENTERED</div>';
-
             check_admin_referer('hp_rw_new_shortcode');
-
-            // DEBUG: Nonce passed
-            echo '<div style="background:#2196f3;color:#fff;padding:10px;margin:10px 0;">NONCE CHECK PASSED</div>';
 
             $errors = [];
 
@@ -130,9 +87,6 @@ class SettingsPage
 
             $editingSlug = isset($_REQUEST['hp_rw_editing_slug']) ? sanitize_key((string) $_REQUEST['hp_rw_editing_slug']) : '';
 
-            // DEBUG: Show parsed values
-            echo '<div style="background:#9c27b0;color:#fff;padding:10px;margin:10px 0;">PARSED: slug=' . esc_html($slug) . ', editingSlug=' . esc_html($editingSlug) . ', desc length=' . strlen($desc) . '</div>';
-
             if ($slug === '' || strpos($slug, 'hp_') !== 0) {
                 $errors[] = 'Shortcode tag is required and must start with the "hp_" prefix (for example: hp_my_new_widget).';
             }
@@ -144,38 +98,18 @@ class SettingsPage
 
             if ($component === '') {
                 $errors[] = 'Component name is required (for example: MyNewWidget).';
-            } else {
-                $componentFile = HP_RW_PATH . 'src/components/' . $component . '.tsx';
-                if (!file_exists($componentFile)) {
-                    $errors[] = sprintf(
-                        'Could not find the React component file at "%s". Please copy it there first and try again.',
-                        'src/components/' . $component . '.tsx'
-                    );
-                }
             }
+            // Note: We no longer validate that the .tsx source file exists because
+            // on deployed sites only the compiled bundle is present, not the src/ folder.
 
             if ($root_id === '') {
                 $root_id = 'hp-' . str_replace('_', '-', $slug) . '-root';
             }
 
-            if ($hydrator !== '') {
-                $hydratorFile = HP_RW_PATH . 'includes/Shortcodes/' . $hydrator . '.php';
-                if (!file_exists($hydratorFile)) {
-                    $errors[] = sprintf(
-                        'Optional hydrator class "%s" was specified, but the file "%s" does not exist yet. Create it under includes/Shortcodes/ or leave this field empty.',
-                        esc_html($hydrator),
-                        'includes/Shortcodes/' . $hydrator . '.php'
-                    );
-                }
-            }
-
-            // DEBUG: Show errors count
-            echo '<div style="background:#ff9800;color:#000;padding:10px;margin:10px 0;">ERRORS COUNT: ' . count($errors) . (count($errors) > 0 ? ' - ' . esc_html(implode(', ', $errors)) : '') . '</div>';
+            // Note: Hydrator file check removed for same reason - on deployed sites
+            // the PHP files exist but the validation was incorrectly blocking saves.
 
             if (empty($errors)) {
-                // DEBUG: No errors, proceeding to save
-                echo '<div style="background:#8bc34a;color:#000;padding:10px;margin:10px 0;">NO ERRORS - SAVING NOW with desc: ' . esc_html(substr($desc, 0, 50)) . '</div>';
-
                 $shortcodes = Plugin::get_shortcodes();
 
                 // If we are renaming an existing shortcode, remove the old key first.
@@ -194,11 +128,6 @@ class SettingsPage
 
                 Plugin::set_shortcodes($shortcodes);
 
-                // DEBUG: Verify what was saved by re-reading
-                $verify = Plugin::get_shortcodes();
-                $savedDesc = isset($verify[$slug]['description']) ? $verify[$slug]['description'] : '(not found)';
-                echo '<div style="background:#00bcd4;color:#000;padding:10px;margin:10px 0;">AFTER SAVE - re-read desc: ' . esc_html(substr($savedDesc, 0, 50)) . '</div>';
-
                 // Auto-enable the new shortcode.
                 $enabled = Plugin::get_enabled_shortcodes();
                 if (!in_array($slug, $enabled, true)) {
@@ -206,10 +135,10 @@ class SettingsPage
                     Plugin::set_enabled_shortcodes($enabled);
                 }
 
-                $savedNotice = '<div class="notice notice-success is-dismissible"><p>New shortcode registered successfully.</p></div>';
+                $savedNotice = '<div class="notice notice-success is-dismissible"><p>Shortcode settings saved.</p></div>';
             } else {
                 $errorLines = '<ul><li>' . implode('</li><li>', array_map('esc_html', $errors)) . '</li></ul>';
-                $errorNotice = '<div class="notice notice-error"><p><strong>Could not register shortcode.</strong></p>' . $errorLines . '</div>';
+                $errorNotice = '<div class="notice notice-error"><p><strong>Could not save shortcode.</strong></p>' . $errorLines . '</div>';
             }
         }
 
