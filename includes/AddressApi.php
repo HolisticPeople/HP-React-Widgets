@@ -283,40 +283,42 @@ class AddressApi
             return new WP_Error('hp_rw_not_found', 'Source address not found.', ['status' => 404]);
         }
 
-        // Reuse same mapping logic as set_default but for the target type.
-        $field_map = [
-            'firstName' => 'first_name',
-            'lastName'  => 'last_name',
-            'company'   => 'company',
-            'address1'  => 'address_1',
-            'address2'  => 'address_2',
-            'city'      => 'city',
-            'state'     => 'state',
-            'postcode'  => 'postcode',
-            'country'   => 'country',
+        // Copy should create a NEW ThemeHigh address entry for the target type,
+        // without touching the target's current default WooCommerce address.
+        $meta_key = 'thwma_custom_address';
+        $meta     = get_user_meta($user_id, $meta_key, true);
+        if (!is_array($meta)) {
+            $meta = [
+                'billing'  => [],
+                'shipping' => [],
+            ];
+        }
+
+        if (!isset($meta[$toType]) || !is_array($meta[$toType])) {
+            $meta[$toType] = [];
+        }
+
+        $prefix = $toType . '_';
+
+        // Map normalized address fields into ThemeHigh-style keys.
+        $entry = [
+            $prefix . 'first_name' => $chosen['firstName'] ?? '',
+            $prefix . 'last_name'  => $chosen['lastName'] ?? '',
+            $prefix . 'company'    => $chosen['company'] ?? '',
+            $prefix . 'address_1'  => $chosen['address1'] ?? '',
+            $prefix . 'address_2'  => $chosen['address2'] ?? '',
+            $prefix . 'city'       => $chosen['city'] ?? '',
+            $prefix . 'state'      => $chosen['state'] ?? '',
+            $prefix . 'postcode'   => $chosen['postcode'] ?? '',
+            $prefix . 'country'    => $chosen['country'] ?? '',
+            $prefix . 'phone'      => $chosen['phone'] ?? '',
+            $prefix . 'email'      => $chosen['email'] ?? '',
         ];
 
-        foreach ($field_map as $source_key => $meta_suffix) {
-            if (isset($chosen[$source_key])) {
-                update_user_meta($user_id, $toType . '_' . $meta_suffix, $chosen[$source_key]);
-            }
-        }
+        $meta[$toType][] = $entry;
+        update_user_meta($user_id, $meta_key, $meta);
 
-        // Phone + email nuances: if copying into billing, carry over both; into shipping, just phone.
-        if ($toType === 'billing') {
-            if (isset($chosen['phone'])) {
-                update_user_meta($user_id, 'billing_phone', $chosen['phone']);
-            }
-            if (isset($chosen['email'])) {
-                update_user_meta($user_id, 'billing_email', $chosen['email']);
-            }
-        } else {
-            if (isset($chosen['phone'])) {
-                update_user_meta($user_id, 'shipping_phone', $chosen['phone']);
-            }
-        }
-
-        // Return updated target-type addresses for potential UI refresh.
+        // Return updated target-type addresses (Woo default + ThemeHigh list).
         $targetAddresses = $hydrator->get_user_addresses($user_id, $toType);
         $selected        = $hydrator->get_default_address_id($targetAddresses);
 
