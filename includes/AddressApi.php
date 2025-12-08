@@ -97,6 +97,29 @@ class AddressApi
                 ],
             ]
         );
+
+        register_rest_route(
+            'hp-rw/v1',
+            '/address/update',
+            [
+                'methods'             => 'POST',
+                'callback'            => [$this, 'handle_update'],
+                'permission_callback' => function () {
+                    return is_user_logged_in();
+                },
+                'args'                => [
+                    'type' => [
+                        'required'          => true,
+                        'validate_callback' => function ($value): bool {
+                            return in_array($value, ['billing', 'shipping'], true);
+                        },
+                    ],
+                    'id'   => [
+                        'required' => true,
+                    ],
+                ],
+            ]
+        );
     }
 
     /**
@@ -327,6 +350,124 @@ class AddressApi
             'fromType'   => $fromType,
             'toType'     => $toType,
             'addresses'  => $targetAddresses,
+            'selectedId' => $selected,
+        ];
+    }
+
+    /**
+     * Update an existing address (either the primary Woo address or a ThemeHigh entry).
+     */
+    public function handle_update(WP_REST_Request $request)
+    {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new WP_Error('hp_rw_not_logged_in', 'You must be logged in to manage addresses.', ['status' => 401]);
+        }
+
+        $type = (string) $request->get_param('type');
+        $id   = (string) $request->get_param('id');
+
+        if (!in_array($type, ['billing', 'shipping'], true)) {
+            return new WP_Error('hp_rw_invalid_type', 'Invalid address type.', ['status' => 400]);
+        }
+
+        $payload = [
+            'firstName' => (string) $request->get_param('firstName'),
+            'lastName'  => (string) $request->get_param('lastName'),
+            'company'   => (string) $request->get_param('company'),
+            'address1'  => (string) $request->get_param('address1'),
+            'address2'  => (string) $request->get_param('address2'),
+            'city'      => (string) $request->get_param('city'),
+            'state'     => (string) $request->get_param('state'),
+            'postcode'  => (string) $request->get_param('postcode'),
+            'country'   => (string) $request->get_param('country'),
+            'phone'     => (string) $request->get_param('phone'),
+            'email'     => (string) $request->get_param('email'),
+        ];
+
+        // Update primary WooCommerce address.
+        if (preg_match('/^' . preg_quote($type, '/') . '_primary$/', $id)) {
+            $customer = new \WC_Customer($user_id);
+
+            $setter_prefix = $type === 'billing' ? 'set_billing_' : 'set_shipping_';
+
+            $map = [
+                'firstName' => 'first_name',
+                'lastName'  => 'last_name',
+                'company'   => 'company',
+                'address1'  => 'address_1',
+                'address2'  => 'address_2',
+                'city'      => 'city',
+                'state'     => 'state',
+                'postcode'  => 'postcode',
+                'country'   => 'country',
+            ];
+
+            foreach ($map as $source => $suffix) {
+                if ($payload[$source] !== '') {
+                    $method = $setter_prefix . $suffix;
+                    if (is_callable([$customer, $method])) {
+                        $customer->$method($payload[$source]);
+                    }
+                }
+            }
+
+            // Phone + email
+            if ($type === 'billing') {
+                if ($payload['phone'] !== '') {
+                    $customer->set_billing_phone($payload['phone']);
+                }
+                if ($payload['email'] !== '') {
+                    $customer->set_billing_email($payload['email']);
+                }
+            } else {
+                if ($payload['phone'] !== '') {
+                    $customer->set_shipping_phone($payload['phone']);
+                }
+            }
+
+            $customer->save();
+        } elseif (preg_match('/^th_' . preg_quote($type, '/') . '_(.+)$/', $id, $m)) {
+            // Update ThemeHigh entry for this user.
+            $th_key   = $m[1];
+            $meta_key = 'thwma_custom_address';
+            $meta     = get_user_meta($user_id, $meta_key, true);
+
+            if (!is_array($meta) || !isset($meta[$type][$th_key])) {
+                return new WP_Error('hp_rw_not_found', 'Address not found.', ['status' => 404]);
+            }
+
+            $prefix = $type . '_';
+
+            $entry = [
+                $prefix . 'first_name' => $payload['firstName'],
+                $prefix . 'last_name'  => $payload['lastName'],
+                $prefix . 'company'    => $payload['company'],
+                $prefix . 'address_1'  => $payload['address1'],
+                $prefix . 'address_2'  => $payload['address2'],
+                $prefix . 'city'       => $payload['city'],
+                $prefix . 'state'      => $payload['state'],
+                $prefix . 'postcode'   => $payload['postcode'],
+                $prefix . 'country'    => $payload['country'],
+                $prefix . 'phone'      => $payload['phone'],
+                $prefix . 'email'      => $payload['email'],
+            ];
+
+            $meta[$type][$th_key] = $entry;
+            update_user_meta($user_id, $meta_key, $meta);
+        } else {
+            return new WP_Error('hp_rw_invalid_id', 'Unsupported address ID format.', ['status' => 400]);
+        }
+
+        // Re-hydrate updated list.
+        $hydrator  = new AddressCardPickerShortcode();
+        $addresses = $hydrator->get_user_addresses($user_id, $type);
+        $selected  = $hydrator->get_default_address_id($addresses);
+
+        return [
+            'success'    => true,
+            'type'       => $type,
+            'addresses'  => $addresses,
             'selectedId' => $selected,
         ];
     }

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { AddressCardPickerProps, Address, AddressType } from '@/types/address';
 import { AddressCard } from './AddressCard';
 import { cn } from '@/lib/utils';
+import { EditAddressModal } from './EditAddressModal';
 
 // Local inline SVG icons for navigation and headings.
 const HpArrowLeftIcon = () => (
@@ -65,6 +66,8 @@ export const AddressCardPicker = ({
   // Local, mutable list so REST actions can update UI without a full page reload.
   const [items, setItems] = useState<Address[]>(addresses);
   const [activeId, setActiveId] = useState<string | undefined>(selectedId);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
 
   useEffect(() => {
     setItems(addresses);
@@ -249,9 +252,9 @@ export const AddressCardPicker = ({
       return;
     }
 
-    if (editUrl) {
-      window.location.href = editUrl;
-    }
+    // Prefer inline edit modal; fall back to native WC edit URL if provided.
+    setEditingAddress(address);
+    setIsEditOpen(true);
   };
 
   const typeLabel = type === 'billing' ? 'Billing' : 'Shipping';
@@ -387,6 +390,56 @@ export const AddressCardPicker = ({
             <HpArrowRightIcon />
           </button>
         </div>
+      )}
+
+      {editingAddress && (
+        <EditAddressModal
+          address={editingAddress}
+          type={type}
+          isOpen={isEditOpen}
+          onClose={() => {
+            setIsEditOpen(false);
+            setEditingAddress(null);
+          }}
+          onSubmit={async (updated) => {
+            try {
+              const result = await apiFetch('address/update', {
+                type,
+                id: updated.id,
+                firstName: updated.firstName,
+                lastName: updated.lastName,
+                company: updated.company,
+                address1: updated.address1,
+                address2: updated.address2,
+                city: updated.city,
+                state: updated.state,
+                postcode: updated.postcode,
+                country: updated.country,
+                phone: updated.phone,
+                email: updated.email,
+              });
+
+              if (result && result.success && Array.isArray(result.addresses)) {
+                setItems(result.addresses);
+                setActiveId(result.selectedId ?? updated.id);
+              } else {
+                // Fallback optimistic update if API did not return the expected shape.
+                setItems((prev) =>
+                  prev.map((addr) => (addr.id === updated.id ? { ...addr, ...updated } : addr))
+                );
+              }
+            } catch (e) {
+              console.error('[HP-React-Widgets] Failed to update address', e);
+              // Keep local optimistic update so the user sees their change.
+              setItems((prev) =>
+                prev.map((addr) => (addr.id === updated.id ? { ...addr, ...updated } : addr))
+              );
+            } finally {
+              setIsEditOpen(false);
+              setEditingAddress(null);
+            }
+          }}
+        />
       )}
     </div>
   );
