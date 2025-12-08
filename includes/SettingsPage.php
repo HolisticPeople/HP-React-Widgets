@@ -9,6 +9,33 @@ class SettingsPage
     public function init(): void
     {
         add_action('admin_menu', [$this, 'register_menu']);
+        add_action('admin_notices', [$this, 'debug_wizard_submit']);
+    }
+
+    /**
+     * Early debug hook to see what POST/REQUEST data PHP actually receives.
+     */
+    public function debug_wizard_submit(): void
+    {
+        // Only run on our settings page.
+        if (!isset($_GET['page']) || $_GET['page'] !== 'hp-react-widgets') {
+            return;
+        }
+
+        $postKeys = array_keys($_POST);
+        $hasPostSlug = isset($_POST['hp_rw_new_slug']);
+        $hasReqSlug = isset($_REQUEST['hp_rw_new_slug']);
+        $method = $_SERVER['REQUEST_METHOD'] ?? 'unknown';
+
+        // Always show debug info when on our page (temporary).
+        $msg = sprintf(
+            'HP RW DEBUG: method=%s, POST keys=%s, POST has slug=%s, REQUEST has slug=%s',
+            esc_html($method),
+            esc_html(implode(', ', $postKeys) ?: '(none)'),
+            $hasPostSlug ? 'YES' : 'no',
+            $hasReqSlug ? 'YES' : 'no'
+        );
+        echo '<div class="notice notice-warning"><p>' . $msg . '</p></div>';
     }
 
     /**
