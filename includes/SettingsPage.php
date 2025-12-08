@@ -37,6 +37,15 @@ class SettingsPage
         $savedNotice = '';
         $errorNotice = '';
 
+        // Temporary debugging for shortcode wizard submissions.
+        if (isset($_REQUEST['hp_rw_new_slug']) && $_REQUEST['hp_rw_new_slug'] !== '') {
+            $debugSlug = sanitize_key((string) $_REQUEST['hp_rw_new_slug']);
+            $debugDesc = isset($_REQUEST['hp_rw_new_description']) ? (string) $_REQUEST['hp_rw_new_description'] : '';
+            $savedNotice .= '<div class="notice notice-info"><p>'
+                . esc_html(sprintf('HP RW debug: received wizard submit for "%s" with description length %d.', $debugSlug, strlen($debugDesc)))
+                . '</p></div>';
+        }
+
         // Handle enable/disable submission.
         if (isset($_POST['hp_rw_settings_submitted'])) {
             check_admin_referer('hp_rw_settings');
