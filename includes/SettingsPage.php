@@ -70,19 +70,21 @@ class SettingsPage
         }
 
         // Handle "Add new shortcode" wizard submission.
-        if (isset($_POST['hp_rw_new_shortcode_submitted'])) {
+        // Use $_REQUEST instead of $_POST so the handler still works if another
+        // admin plugin rewrites the form method to GET.
+        if (isset($_REQUEST['hp_rw_new_shortcode_submitted'])) {
             check_admin_referer('hp_rw_new_shortcode');
 
             $errors = [];
 
-            $slug       = isset($_POST['hp_rw_new_slug']) ? sanitize_key((string) $_POST['hp_rw_new_slug']) : '';
-            $label      = isset($_POST['hp_rw_new_label']) ? sanitize_text_field((string) $_POST['hp_rw_new_label']) : '';
-            $desc       = isset($_POST['hp_rw_new_description']) ? sanitize_textarea_field((string) $_POST['hp_rw_new_description']) : '';
-            $component  = isset($_POST['hp_rw_new_component']) ? preg_replace('/[^A-Za-z0-9_]/', '', (string) $_POST['hp_rw_new_component']) : '';
-            $root_id    = isset($_POST['hp_rw_new_root_id']) ? sanitize_html_class((string) $_POST['hp_rw_new_root_id']) : '';
-            $hydrator   = isset($_POST['hp_rw_new_hydrator']) ? preg_replace('/[^A-Za-z0-9_\\\\]/', '', (string) $_POST['hp_rw_new_hydrator']) : '';
+            $slug       = isset($_REQUEST['hp_rw_new_slug']) ? sanitize_key((string) $_REQUEST['hp_rw_new_slug']) : '';
+            $label      = isset($_REQUEST['hp_rw_new_label']) ? sanitize_text_field((string) $_REQUEST['hp_rw_new_label']) : '';
+            $desc       = isset($_REQUEST['hp_rw_new_description']) ? sanitize_textarea_field((string) $_REQUEST['hp_rw_new_description']) : '';
+            $component  = isset($_REQUEST['hp_rw_new_component']) ? preg_replace('/[^A-Za-z0-9_]/', '', (string) $_REQUEST['hp_rw_new_component']) : '';
+            $root_id    = isset($_REQUEST['hp_rw_new_root_id']) ? sanitize_html_class((string) $_REQUEST['hp_rw_new_root_id']) : '';
+            $hydrator   = isset($_REQUEST['hp_rw_new_hydrator']) ? preg_replace('/[^A-Za-z0-9_\\\\]/', '', (string) $_REQUEST['hp_rw_new_hydrator']) : '';
 
-            $editingSlug = isset($_POST['hp_rw_editing_slug']) ? sanitize_key((string) $_POST['hp_rw_editing_slug']) : '';
+            $editingSlug = isset($_REQUEST['hp_rw_editing_slug']) ? sanitize_key((string) $_REQUEST['hp_rw_editing_slug']) : '';
 
             if ($slug === '' || strpos($slug, 'hp_') !== 0) {
                 $errors[] = 'Shortcode tag is required and must start with the "hp_" prefix (for example: hp_my_new_widget).';
