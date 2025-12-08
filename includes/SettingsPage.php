@@ -37,15 +37,6 @@ class SettingsPage
         $savedNotice = '';
         $errorNotice = '';
 
-        // Temporary debugging for shortcode wizard submissions.
-        if (isset($_REQUEST['hp_rw_new_slug']) && $_REQUEST['hp_rw_new_slug'] !== '') {
-            $debugSlug = sanitize_key((string) $_REQUEST['hp_rw_new_slug']);
-            $debugDesc = isset($_REQUEST['hp_rw_new_description']) ? (string) $_REQUEST['hp_rw_new_description'] : '';
-            $savedNotice .= '<div class="notice notice-info"><p>'
-                . esc_html(sprintf('HP RW debug: received wizard submit for "%s" with description length %d.', $debugSlug, strlen($debugDesc)))
-                . '</p></div>';
-        }
-
         // Handle enable/disable submission.
         if (isset($_POST['hp_rw_settings_submitted'])) {
             check_admin_referer('hp_rw_settings');
@@ -165,6 +156,22 @@ class SettingsPage
             }
         }
 
+        // Handle description override form submission (reliable, independent of the wizard).
+        if (isset($_POST['hp_rw_desc_submitted'])) {
+            check_admin_referer('hp_rw_desc_settings');
+
+            $descriptions = [];
+            if (isset($_POST['hp_rw_desc']) && is_array($_POST['hp_rw_desc'])) {
+                foreach ($_POST['hp_rw_desc'] as $slug => $desc) {
+                    $slugKey = sanitize_key((string) $slug);
+                    $descriptions[$slugKey] = sanitize_textarea_field((string) $desc);
+                }
+            }
+
+            Plugin::set_shortcode_descriptions($descriptions);
+            $savedNotice = '<div class="notice notice-success is-dismissible"><p>Shortcode descriptions saved.</p></div>';
+        }
+
         $allShortcodes = Plugin::get_shortcodes();
         $enabled       = Plugin::get_enabled_shortcodes();
 
@@ -281,6 +288,49 @@ class SettingsPage
                 <p>
                     <button type="submit" class="button button-primary">
                         <?php echo esc_html('Save Changes'); ?>
+                    </button>
+                </p>
+            </form>
+
+            <hr />
+
+            <h2><?php echo esc_html('Shortcode descriptions'); ?></h2>
+            <p>
+                <?php echo esc_html('Use this section to override the description text for each shortcode, for example to document usage patterns like billing/shipping variants.'); ?>
+            </p>
+
+            <form method="post" style="max-width: 900px;">
+                <?php wp_nonce_field('hp_rw_desc_settings'); ?>
+                <input type="hidden" name="hp_rw_desc_submitted" value="1" />
+
+                <table class="form-table" role="presentation">
+                    <?php foreach ($allShortcodes as $slug => $meta) : ?>
+                        <?php
+                        $label = isset($meta['label']) ? (string) $meta['label'] : $slug;
+                        $desc  = isset($meta['description']) ? (string) $meta['description'] : '';
+                        ?>
+                        <tr>
+                            <th scope="row">
+                                <label for="hp_rw_desc_<?php echo esc_attr($slug); ?>">
+                                    <?php echo esc_html($label); ?><br />
+                                    <code><?php echo esc_html($slug); ?></code>
+                                </label>
+                            </th>
+                            <td>
+                                <textarea
+                                    name="hp_rw_desc[<?php echo esc_attr($slug); ?>]"
+                                    id="hp_rw_desc_<?php echo esc_attr($slug); ?>"
+                                    class="large-text"
+                                    rows="3"
+                                ><?php echo esc_textarea($desc); ?></textarea>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </table>
+
+                <p>
+                    <button type="submit" class="button button-secondary">
+                        <?php echo esc_html('Save descriptions'); ?>
                     </button>
                 </p>
             </form>

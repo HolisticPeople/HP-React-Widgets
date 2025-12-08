@@ -11,6 +11,10 @@ class Plugin
      * Option name used to store all shortcode metadata (both initial and wizard-created).
      */
     private const OPTION_SHORTCODES = 'hp_rw_shortcodes';
+    /**
+     * Option name used to store custom shortcode description overrides.
+     */
+    private const OPTION_SHORTCODE_DESCRIPTIONS = 'hp_rw_shortcode_descriptions';
 
     /**
      * Registry of all shortcodes this plugin can provide.
@@ -108,6 +112,16 @@ class Plugin
             update_option(self::OPTION_SHORTCODES, $stored);
         }
 
+        // Apply description overrides if any have been configured explicitly.
+        $descriptionOverrides = self::get_shortcode_descriptions();
+        if (is_array($descriptionOverrides) && !empty($descriptionOverrides)) {
+            foreach ($descriptionOverrides as $slug => $description) {
+                if (isset($stored[$slug]) && is_string($description) && $description !== '') {
+                    $stored[$slug]['description'] = $description;
+                }
+            }
+        }
+
         /**
          * Filter the list of available HP React Widgets shortcodes.
          *
@@ -165,6 +179,27 @@ class Plugin
     public static function set_shortcodes(array $shortcodes): void
     {
         update_option(self::OPTION_SHORTCODES, $shortcodes);
+    }
+
+    /**
+     * Get description overrides for shortcodes.
+     *
+     * @return array<string,string>
+     */
+    public static function get_shortcode_descriptions(): array
+    {
+        $stored = get_option(self::OPTION_SHORTCODE_DESCRIPTIONS, []);
+        return is_array($stored) ? $stored : [];
+    }
+
+    /**
+     * Persist description overrides for shortcodes.
+     *
+     * @param array<string,string> $descriptions
+     */
+    public static function set_shortcode_descriptions(array $descriptions): void
+    {
+        update_option(self::OPTION_SHORTCODE_DESCRIPTIONS, $descriptions);
     }
 }
 
