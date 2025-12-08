@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       HP React Widgets
  * Description:       Container plugin for React-based widgets (Side Cart, Multi-Address, etc.) integrated via Shortcodes.
- * Version:           0.0.68
+ * Version:           0.0.69
  * Author:            Holistic People
  * Text Domain:       hp-react-widgets
  */
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('HP_RW_VERSION', '0.0.68');
+define('HP_RW_VERSION', '0.0.69');
 define('HP_RW_FILE', __FILE__);
 define('HP_RW_PATH', plugin_dir_path(__FILE__));
 define('HP_RW_URL', plugin_dir_url(__FILE__));
@@ -116,8 +116,52 @@ add_action('plugins_loaded', function () {
     update_option('hp_rw_thwma_repair_time', time());
 }, 0);
 
-// Also add an immediate one-time repair that can be triggered via URL param
+// Diagnostic tool to see actual data structure
 add_action('init', function () {
+    // Diagnostic: show raw data for user 8375
+    if (isset($_GET['hp_diagnose_addresses']) && current_user_can('manage_options')) {
+        global $wpdb;
+        
+        $user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 8375;
+        
+        $meta_value = $wpdb->get_var($wpdb->prepare(
+            "SELECT meta_value FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key = 'thwma_custom_address' LIMIT 1",
+            $user_id
+        ));
+        
+        echo "<h2>Raw meta_value for user $user_id:</h2>";
+        echo "<pre>" . htmlspecialchars($meta_value) . "</pre>";
+        
+        echo "<h2>Unserialized:</h2>";
+        $unserialized = maybe_unserialize($meta_value);
+        echo "<pre>" . htmlspecialchars(print_r($unserialized, true)) . "</pre>";
+        
+        // Check for arrays in values
+        echo "<h2>Checking for array values:</h2>";
+        if (is_array($unserialized)) {
+            foreach (['billing', 'shipping'] as $type) {
+                if (isset($unserialized[$type]) && is_array($unserialized[$type])) {
+                    foreach ($unserialized[$type] as $key => $addr) {
+                        echo "<h3>$type / $key:</h3>";
+                        if (is_array($addr)) {
+                            foreach ($addr as $field => $value) {
+                                $type_str = gettype($value);
+                                if (is_array($value)) {
+                                    echo "<p style='color:red'><strong>ARRAY FOUND:</strong> $field = " . htmlspecialchars(print_r($value, true)) . "</p>";
+                                } else {
+                                    echo "<p>$field ($type_str) = " . htmlspecialchars((string)$value) . "</p>";
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        wp_die();
+    }
+    
+    // Repair tool
     if (isset($_GET['hp_repair_addresses']) && current_user_can('manage_options')) {
         global $wpdb;
         
@@ -126,6 +170,7 @@ add_action('init', function () {
         );
         
         $repaired = 0;
+        $details = [];
         
         foreach ($results as $row) {
             $raw_value = maybe_unserialize($row->meta_value);
@@ -159,6 +204,7 @@ add_action('init', function () {
                             }
                             $raw_value[$type][$key][$field] = $string_value;
                             $needs_repair = true;
+                            $details[] = "User {$row->user_id}: $type/$key/$field was array";
                         }
                     }
                 }
@@ -176,8 +222,10 @@ add_action('init', function () {
             }
         }
         
-        delete_option('hp_rw_thwma_repair_time'); // Reset so automatic repair runs again
-        wp_die("HP React Widgets: Repaired $repaired user address records. <a href='" . remove_query_arg('hp_repair_addresses') . "'>Go back</a>");
+        delete_option('hp_rw_thwma_repair_time');
+        
+        $detail_html = $details ? "<br><br>Details:<br>" . implode("<br>", $details) : "";
+        wp_die("HP React Widgets: Repaired $repaired user address records. $detail_html <br><br><a href='" . remove_query_arg('hp_repair_addresses') . "'>Go back</a>");
     }
 });
 
