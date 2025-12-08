@@ -80,11 +80,37 @@ export const EditAddressModal = ({
   // Get selected country code
   const selectedCountryCode = getCountryCode(formData.country);
 
-  // Get states for selected country
+  // Countries that WooCommerce considers to have no states (even if country-state-city returns some)
+  const countriesWithoutStates = useMemo(() => new Set([
+    'IL', // Israel
+    'SG', // Singapore
+    'HK', // Hong Kong
+    'MC', // Monaco
+    'VA', // Vatican
+    'SM', // San Marino
+    'LI', // Liechtenstein
+    'AD', // Andorra
+    'MT', // Malta
+    'LU', // Luxembourg
+    'IS', // Iceland
+    'CY', // Cyprus
+    'BH', // Bahrain
+    'QA', // Qatar
+    'KW', // Kuwait
+    'BN', // Brunei
+    'MV', // Maldives
+    'GI', // Gibraltar
+    'JE', // Jersey
+    'GG', // Guernsey
+    'IM', // Isle of Man
+  ]), []);
+
+  // Get states for selected country (only if WooCommerce recognizes states for it)
   const states = useMemo(() => {
     if (!selectedCountryCode) return [];
+    if (countriesWithoutStates.has(selectedCountryCode)) return [];
     return State.getStatesOfCountry(selectedCountryCode);
-  }, [selectedCountryCode]);
+  }, [selectedCountryCode, countriesWithoutStates]);
 
   // Check if country has states
   const hasStates = states.length > 0;
