@@ -179,21 +179,19 @@
         display: inline-block;
     }
 
-    /* Custom HP icons: filled, bright, and independent of theme */
+    /* Custom HP icons: stroked for a refined look */
     .action-btn svg.hp-icon,
     .slider-nav-btn svg.hp-icon {
         all: unset;
         display: inline-block !important;
-        width: 1.25rem !important;
-        height: 1.25rem !important;
-        fill: #ffffff !important;
-        stroke: none !important;
+        width: 1.125rem !important;
+        height: 1.125rem !important;
+        color: currentColor !important;
     }
 
     .action-btn svg.hp-icon *,
     .slider-nav-btn svg.hp-icon * {
-        fill: #ffffff !important;
-        stroke: none !important;
+        stroke: currentColor !important;
     }
 
     .slider-nav-btn {

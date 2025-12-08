@@ -4,15 +4,21 @@ import { AddressCard } from './AddressCard';
 import { cn } from '@/lib/utils';
 import { EditAddressModal } from './EditAddressModal';
 
-// Local inline SVG icons for navigation and headings.
+// Refined inline SVG icons for navigation - stroked for modern look.
 const HpArrowLeftIcon = () => (
   <svg
     className="hp-icon"
     viewBox="0 0 24 24"
     aria-hidden="true"
   >
-    <path d="M14 5L8 11L14 17" />
-    <path d="M8 11H20" />
+    <polyline
+      points="15 18 9 12 15 6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </svg>
 );
 
@@ -22,8 +28,14 @@ const HpArrowRightIcon = () => (
     viewBox="0 0 24 24"
     aria-hidden="true"
   >
-    <path d="M10 5L16 11L10 17" />
-    <path d="M4 11H16" />
+    <polyline
+      points="9 18 15 12 9 6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </svg>
 );
 
@@ -33,8 +45,24 @@ const HpMapPinIcon = () => (
     viewBox="0 0 24 24"
     aria-hidden="true"
   >
-    <path d="M12 2C8.7 2 6 4.7 6 8C6 11.9 10.3 16.7 11.6 18.1C11.8 18.3 12.2 18.3 12.4 18.1C13.7 16.7 18 11.9 18 8C18 4.7 15.3 2 12 2Z" />
-    <circle cx="12" cy="8" r="2.5" />
+    <path
+      d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <circle
+      cx="12"
+      cy="10"
+      r="3"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </svg>
 );
 
@@ -274,7 +302,7 @@ export const AddressCardPicker = ({
   }
 
   return (
-    <div ref={containerRef} className="space-y-4">
+    <div ref={containerRef} className="space-y-2">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
