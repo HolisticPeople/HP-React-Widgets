@@ -208,18 +208,19 @@ class AddressApi
                 $prefix = $type . '_';
 
                 // Build a ThemeHigh-style entry from the current default address.
+                // Note: Convert country name back to code if needed
                 $entry = [
-                    $prefix . 'first_name' => $current['firstName'] ?? '',
-                    $prefix . 'last_name'  => $current['lastName'] ?? '',
-                    $prefix . 'company'    => $current['company'] ?? '',
-                    $prefix . 'address_1'  => $current['address1'] ?? '',
-                    $prefix . 'address_2'  => $current['address2'] ?? '',
-                    $prefix . 'city'       => $current['city'] ?? '',
-                    $prefix . 'state'      => $current['state'] ?? '',
-                    $prefix . 'postcode'   => $current['postcode'] ?? '',
-                    $prefix . 'country'    => $current['country'] ?? '',
-                    $prefix . 'phone'      => $current['phone'] ?? '',
-                    $prefix . 'email'      => $current['email'] ?? '',
+                    $prefix . 'first_name' => $this->ensure_string($current['firstName'] ?? ''),
+                    $prefix . 'last_name'  => $this->ensure_string($current['lastName'] ?? ''),
+                    $prefix . 'company'    => $this->ensure_string($current['company'] ?? ''),
+                    $prefix . 'address_1'  => $this->ensure_string($current['address1'] ?? ''),
+                    $prefix . 'address_2'  => $this->ensure_string($current['address2'] ?? ''),
+                    $prefix . 'city'       => $this->ensure_string($current['city'] ?? ''),
+                    $prefix . 'state'      => $this->ensure_string($current['state'] ?? ''),
+                    $prefix . 'postcode'   => $this->ensure_string($current['postcode'] ?? ''),
+                    $prefix . 'country'    => $this->get_country_code($current['country'] ?? ''),
+                    $prefix . 'phone'      => $this->ensure_string($current['phone'] ?? ''),
+                    $prefix . 'email'      => $this->ensure_string($current['email'] ?? ''),
                 ];
 
                 // Replace, instead of appending, so the total number of addresses stays constant.
@@ -324,18 +325,19 @@ class AddressApi
         $prefix = $toType . '_';
 
         // Map normalized address fields into ThemeHigh-style keys.
+        // Note: Convert country name back to code for THWMA storage
         $entry = [
-            $prefix . 'first_name' => $chosen['firstName'] ?? '',
-            $prefix . 'last_name'  => $chosen['lastName'] ?? '',
-            $prefix . 'company'    => $chosen['company'] ?? '',
-            $prefix . 'address_1'  => $chosen['address1'] ?? '',
-            $prefix . 'address_2'  => $chosen['address2'] ?? '',
-            $prefix . 'city'       => $chosen['city'] ?? '',
-            $prefix . 'state'      => $chosen['state'] ?? '',
-            $prefix . 'postcode'   => $chosen['postcode'] ?? '',
-            $prefix . 'country'    => $chosen['country'] ?? '',
-            $prefix . 'phone'      => $chosen['phone'] ?? '',
-            $prefix . 'email'      => $chosen['email'] ?? '',
+            $prefix . 'first_name' => $this->ensure_string($chosen['firstName'] ?? ''),
+            $prefix . 'last_name'  => $this->ensure_string($chosen['lastName'] ?? ''),
+            $prefix . 'company'    => $this->ensure_string($chosen['company'] ?? ''),
+            $prefix . 'address_1'  => $this->ensure_string($chosen['address1'] ?? ''),
+            $prefix . 'address_2'  => $this->ensure_string($chosen['address2'] ?? ''),
+            $prefix . 'city'       => $this->ensure_string($chosen['city'] ?? ''),
+            $prefix . 'state'      => $this->ensure_string($chosen['state'] ?? ''),
+            $prefix . 'postcode'   => $this->ensure_string($chosen['postcode'] ?? ''),
+            $prefix . 'country'    => $this->get_country_code($chosen['country'] ?? ''),
+            $prefix . 'phone'      => $this->ensure_string($chosen['phone'] ?? ''),
+            $prefix . 'email'      => $this->ensure_string($chosen['email'] ?? ''),
         ];
 
         $meta[$toType][] = $entry;
@@ -440,17 +442,17 @@ class AddressApi
             $prefix = $type . '_';
 
             $entry = [
-                $prefix . 'first_name' => $payload['firstName'],
-                $prefix . 'last_name'  => $payload['lastName'],
-                $prefix . 'company'    => $payload['company'],
-                $prefix . 'address_1'  => $payload['address1'],
-                $prefix . 'address_2'  => $payload['address2'],
-                $prefix . 'city'       => $payload['city'],
-                $prefix . 'state'      => $payload['state'],
-                $prefix . 'postcode'   => $payload['postcode'],
-                $prefix . 'country'    => $payload['country'],
-                $prefix . 'phone'      => $payload['phone'],
-                $prefix . 'email'      => $payload['email'],
+                $prefix . 'first_name' => $this->ensure_string($payload['firstName']),
+                $prefix . 'last_name'  => $this->ensure_string($payload['lastName']),
+                $prefix . 'company'    => $this->ensure_string($payload['company']),
+                $prefix . 'address_1'  => $this->ensure_string($payload['address1']),
+                $prefix . 'address_2'  => $this->ensure_string($payload['address2']),
+                $prefix . 'city'       => $this->ensure_string($payload['city']),
+                $prefix . 'state'      => $this->ensure_string($payload['state']),
+                $prefix . 'postcode'   => $this->ensure_string($payload['postcode']),
+                $prefix . 'country'    => $this->get_country_code($payload['country']),
+                $prefix . 'phone'      => $this->ensure_string($payload['phone']),
+                $prefix . 'email'      => $this->ensure_string($payload['email']),
             ];
 
             $meta[$type][$th_key] = $entry;
@@ -471,6 +473,68 @@ class AddressApi
             'selectedId' => $selected,
         ];
     }
-}
 
+    /**
+     * Ensure a value is a string (not an array or object).
+     *
+     * @param mixed $value The value to convert.
+     * @return string
+     */
+    private function ensure_string($value): string
+    {
+        if (is_array($value)) {
+            // If it's an array, try to get the first string element or return empty
+            foreach ($value as $v) {
+                if (is_string($v) && !empty($v)) {
+                    return $v;
+                }
+            }
+            return '';
+        }
+
+        if (is_object($value)) {
+            return '';
+        }
+
+        return (string) $value;
+    }
+
+    /**
+     * Convert a country name or "Name (CODE)" format to just the country code.
+     *
+     * @param string $country The country value (could be "United States (US)", "US", etc.)
+     * @return string The 2-letter country code
+     */
+    private function get_country_code(string $country): string
+    {
+        $country = $this->ensure_string($country);
+
+        if (empty($country)) {
+            return '';
+        }
+
+        // If already a 2-letter code, return as-is
+        if (strlen($country) === 2 && $country === strtoupper($country)) {
+            return $country;
+        }
+
+        // Check for format "Country Name (XX)" - extract code from parentheses
+        if (preg_match('/\(([A-Z]{2})\)$/', $country, $matches)) {
+            return $matches[1];
+        }
+
+        // Try to find the country code by name using WooCommerce
+        if (function_exists('WC') && WC()->countries) {
+            $countries = WC()->countries->get_countries();
+            $code = array_search($country, $countries, true);
+            if ($code !== false) {
+                return $code;
+            }
+        }
+
+        // If we can't determine the code, return the original value
+        // (it might already be a valid code that we didn't recognize)
+        return $country;
+    }
+}
 
