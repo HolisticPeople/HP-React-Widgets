@@ -360,7 +360,9 @@ class AddressApi
             $prefix . 'email'      => $this->ensure_string($chosen['email'] ?? ''),
         ];
 
-        $meta[$toType][] = $entry;
+        // Generate a unique key (NOT numeric!) for the new address
+        $new_key = 'addr_' . time() . '_' . wp_rand(1000, 9999);
+        $meta[$toType][$new_key] = $entry;
         update_user_meta($user_id, $meta_key, $meta);
 
         // Return updated target-type addresses (Woo default + ThemeHigh list).

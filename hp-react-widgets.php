@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       HP React Widgets
  * Description:       Container plugin for React-based widgets (Side Cart, Multi-Address, etc.) integrated via Shortcodes.
- * Version:           0.0.69
+ * Version:           0.0.70
  * Author:            Holistic People
  * Text Domain:       hp-react-widgets
  */
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('HP_RW_VERSION', '0.0.69');
+define('HP_RW_VERSION', '0.0.70');
 define('HP_RW_FILE', __FILE__);
 define('HP_RW_PATH', plugin_dir_path(__FILE__));
 define('HP_RW_URL', plugin_dir_url(__FILE__));
@@ -186,11 +186,26 @@ add_action('init', function () {
                     continue;
                 }
                 
+                $new_addresses = [];
+                $seen_hashes = [];
+                
                 foreach ($raw_value[$type] as $key => $addr_data) {
                     if (!is_array($addr_data)) {
                         continue;
                     }
                     
+                    // Fix 1: Convert numeric keys to proper string keys
+                    if (is_numeric($key)) {
+                        $new_key = 'addr_' . time() . '_' . wp_rand(1000, 9999);
+                        $details[] = "User {$row->user_id}: $type key '$key' → '$new_key'";
+                        $needs_repair = true;
+                        // Small delay to ensure unique timestamps
+                        usleep(1000);
+                    } else {
+                        $new_key = $key;
+                    }
+                    
+                    // Fix 2: Sanitize array/object values to strings
                     foreach ($addr_data as $field => $field_value) {
                         if (is_array($field_value) || is_object($field_value)) {
                             $string_value = '';
@@ -202,12 +217,25 @@ add_action('init', function () {
                                     }
                                 }
                             }
-                            $raw_value[$type][$key][$field] = $string_value;
+                            $addr_data[$field] = $string_value;
                             $needs_repair = true;
-                            $details[] = "User {$row->user_id}: $type/$key/$field was array";
+                            $details[] = "User {$row->user_id}: $type/$new_key/$field was array";
                         }
                     }
+                    
+                    // Fix 3: Remove duplicates by hashing address content
+                    $hash = md5(serialize($addr_data));
+                    if (isset($seen_hashes[$hash])) {
+                        $details[] = "User {$row->user_id}: $type removed duplicate '$new_key'";
+                        $needs_repair = true;
+                        continue; // Skip duplicate
+                    }
+                    $seen_hashes[$hash] = true;
+                    
+                    $new_addresses[$new_key] = $addr_data;
                 }
+                
+                $raw_value[$type] = $new_addresses;
             }
             
             if ($needs_repair) {
