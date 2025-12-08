@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       HP React Widgets
  * Description:       Container plugin for React-based widgets (Side Cart, Multi-Address, etc.) integrated via Shortcodes.
- * Version:           0.0.71
+ * Version:           0.0.72
  * Author:            Holistic People
  * Text Domain:       hp-react-widgets
  */
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('HP_RW_VERSION', '0.0.71');
+define('HP_RW_VERSION', '0.0.72');
 define('HP_RW_FILE', __FILE__);
 define('HP_RW_PATH', plugin_dir_path(__FILE__));
 define('HP_RW_URL', plugin_dir_url(__FILE__));
@@ -295,8 +295,31 @@ add_action('init', function () {
         
         delete_option('hp_rw_thwma_repair_time');
         
+        // Clear all caches
+        wp_cache_flush();
+        if (function_exists('wp_cache_flush_group')) {
+            wp_cache_flush_group('user_meta');
+            wp_cache_flush_group('users');
+        }
+        
         $detail_html = $details ? "<br><br>Details:<br>" . implode("<br>", $details) : "";
-        wp_die("HP React Widgets: Repaired $repaired user address records. $detail_html <br><br><a href='" . remove_query_arg('hp_repair_addresses') . "'>Go back</a>");
+        wp_die("HP React Widgets: Repaired $repaired user address records. Cache cleared. $detail_html <br><br><a href='" . remove_query_arg('hp_repair_addresses') . "'>Go back</a>");
+    }
+    
+    // Force clear cache for a user
+    if (isset($_GET['hp_clear_user_cache']) && current_user_can('manage_options')) {
+        $user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 8375;
+        
+        // Clear WordPress object cache
+        wp_cache_flush();
+        wp_cache_delete($user_id, 'user_meta');
+        wp_cache_delete($user_id, 'users');
+        clean_user_cache($user_id);
+        
+        // Clear transients
+        delete_transient('hp_rw_address_repaired_' . $user_id);
+        
+        wp_die("Cache cleared for user $user_id. <a href='" . remove_query_arg(['hp_clear_user_cache', 'user_id']) . "'>Go back</a>");
     }
 });
 
