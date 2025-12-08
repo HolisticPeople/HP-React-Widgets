@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Address, AddressType } from '@/types/address';
 import {
   Dialog,
@@ -10,7 +10,15 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { Country, State, ICountry, IState } from 'country-state-city';
 
 export interface EditAddressModalProps {
   address: Address;
@@ -29,6 +37,7 @@ interface FormErrors {
   city?: string;
   postcode?: string;
   country?: string;
+  state?: string;
   email?: string;
   phone?: string;
 }
@@ -44,6 +53,41 @@ export const EditAddressModal = ({
   const [formData, setFormData] = useState<Address>(address);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Get all countries
+  const countries = useMemo(() => Country.getAllCountries(), []);
+
+  // Find the country code from the address (could be code or full name)
+  const getCountryCode = (countryValue: string): string => {
+    if (!countryValue) return '';
+    
+    // If it's already a 2-letter code
+    if (countryValue.length === 2 && countryValue === countryValue.toUpperCase()) {
+      return countryValue;
+    }
+    
+    // Check for format "Country Name (XX)"
+    const match = countryValue.match(/\(([A-Z]{2})\)$/);
+    if (match) return match[1];
+    
+    // Search by name
+    const found = countries.find(
+      (c) => c.name.toLowerCase() === countryValue.toLowerCase()
+    );
+    return found?.isoCode || '';
+  };
+
+  // Get selected country code
+  const selectedCountryCode = getCountryCode(formData.country);
+
+  // Get states for selected country
+  const states = useMemo(() => {
+    if (!selectedCountryCode) return [];
+    return State.getStatesOfCountry(selectedCountryCode);
+  }, [selectedCountryCode]);
+
+  // Check if country has states
+  const hasStates = states.length > 0;
 
   // Reset form when address changes or modal opens
   useEffect(() => {
@@ -80,10 +124,13 @@ export const EditAddressModal = ({
     if (!formData.country?.trim()) {
       newErrors.country = 'Country is required';
     }
+    // State is required only if country has states
+    if (hasStates && !formData.state?.trim()) {
+      newErrors.state = 'State is required';
+    }
     if (formData.email && !validateEmail(formData.email)) {
       newErrors.email = 'Invalid email format';
     }
-    // Phone required for all addresses (shipping phone is mandatory; keep behaviour consistent here)
     if (!formData.phone?.trim()) {
       newErrors.phone = 'Phone is required';
     }
@@ -96,9 +143,27 @@ export const EditAddressModal = ({
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     setFormData((prev) => ({ ...prev, [field]: e.target.value }));
-    // Clear error when user starts typing
     if (errors[field as keyof FormErrors]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const handleCountryChange = (countryCode: string) => {
+    const country = countries.find((c) => c.isoCode === countryCode);
+    setFormData((prev) => ({
+      ...prev,
+      country: countryCode, // Store the code
+      state: '', // Reset state when country changes
+    }));
+    if (errors.country) {
+      setErrors((prev) => ({ ...prev, country: undefined }));
+    }
+  };
+
+  const handleStateChange = (stateCode: string) => {
+    setFormData((prev) => ({ ...prev, state: stateCode }));
+    if (errors.state) {
+      setErrors((prev) => ({ ...prev, state: undefined }));
     }
   };
 
@@ -171,7 +236,56 @@ export const EditAddressModal = ({
             </FormField>
           </div>
 
-          {/* Row 2: Address Line 1, Address Line 2 */}
+          {/* Row 2: Country and State (if applicable) */}
+          <div className={cn("grid gap-3", hasStates ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1")}>
+            <FormField
+              label="Country"
+              required
+              error={errors.country}
+            >
+              <Select
+                value={selectedCountryCode}
+                onValueChange={handleCountryChange}
+              >
+                <SelectTrigger className={cn(errors.country && 'border-destructive')}>
+                  <SelectValue placeholder="Select country" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {countries.map((country) => (
+                    <SelectItem key={country.isoCode} value={country.isoCode}>
+                      {country.flag} {country.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+
+            {hasStates && (
+              <FormField
+                label="State / Province"
+                required
+                error={errors.state}
+              >
+                <Select
+                  value={formData.state || ''}
+                  onValueChange={handleStateChange}
+                >
+                  <SelectTrigger className={cn(errors.state && 'border-destructive')}>
+                    <SelectValue placeholder="Select state" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {states.map((state) => (
+                      <SelectItem key={state.isoCode} value={state.isoCode}>
+                        {state.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+            )}
+          </div>
+
+          {/* Row 3: Address Line 1, Address Line 2 */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField
               label="Address Line 1"
@@ -195,8 +309,8 @@ export const EditAddressModal = ({
             </FormField>
           </div>
 
-          {/* Row 3: City, State, Postcode */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Row 4: City, Postcode */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField
               label="City"
               required
@@ -207,14 +321,6 @@ export const EditAddressModal = ({
                 onChange={handleChange('city')}
                 placeholder="City"
                 className={cn(errors.city && 'border-destructive')}
-              />
-            </FormField>
-
-            <FormField label="State / Province">
-              <Input
-                value={formData.state}
-                onChange={handleChange('state')}
-                placeholder="State"
               />
             </FormField>
 
@@ -232,21 +338,8 @@ export const EditAddressModal = ({
             </FormField>
           </div>
 
-          {/* Row 4: Country, Phone, Email */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <FormField
-              label="Country"
-              required
-              error={errors.country}
-            >
-              <Input
-                value={formData.country}
-                onChange={handleChange('country')}
-                placeholder="Country"
-                className={cn(errors.country && 'border-destructive')}
-              />
-            </FormField>
-
+          {/* Row 5: Phone, Email */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField
               label="Phone"
               required
@@ -318,5 +411,3 @@ const FormField = ({ label, required, error, children }: FormFieldProps) => (
 );
 
 export default EditAddressModal;
-
-

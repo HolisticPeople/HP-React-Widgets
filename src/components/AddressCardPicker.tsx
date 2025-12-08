@@ -66,11 +66,14 @@ const HpMapPinIcon = () => (
   </svg>
 );
 
-const HpPlusIcon = () => (
+const HpPlusIcon = ({ size = 16 }: { size?: number }) => (
   <svg
-    className="hp-icon"
+    width={size}
+    height={size}
     viewBox="0 0 24 24"
+    fill="none"
     aria-hidden="true"
+    style={{ display: 'block' }}
   >
     <line
       x1="12"
@@ -78,7 +81,7 @@ const HpPlusIcon = () => (
       x2="12"
       y2="19"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="2.5"
       strokeLinecap="round"
     />
     <line
@@ -87,7 +90,7 @@ const HpPlusIcon = () => (
       x2="19"
       y2="12"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="2.5"
       strokeLinecap="round"
     />
   </svg>
@@ -361,10 +364,15 @@ export const AddressCardPicker = ({
             <p className="text-muted-foreground">No {type} addresses found</p>
             {showActions && (
               <button
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
+                style={{
+                  backgroundColor: 'rgba(139, 92, 246, 0.25)',
+                  color: '#a78bfa',
+                  border: '1px solid rgba(139, 92, 246, 0.4)',
+                }}
                 onClick={handleAddNew}
               >
-                <HpPlusIcon />
+                <HpPlusIcon size={16} />
                 <span>Add Address</span>
               </button>
             )}
@@ -447,12 +455,19 @@ export const AddressCardPicker = ({
           {/* Add New Address Button */}
           {showActions && (
             <button
-              className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
+              className="flex items-center justify-center rounded-full transition-colors"
+              style={{
+                width: '28px',
+                height: '28px',
+                backgroundColor: 'rgba(139, 92, 246, 0.25)',
+                color: '#a78bfa',
+                border: '1px solid rgba(139, 92, 246, 0.4)',
+              }}
               onClick={handleAddNew}
               aria-label="Add new address"
               title="Add new address"
             >
-              <HpPlusIcon />
+              <HpPlusIcon size={18} />
             </button>
           )}
         </div>
