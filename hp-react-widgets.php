@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       HP React Widgets
  * Description:       Container plugin for React-based widgets (Side Cart, Multi-Address, etc.) integrated via Shortcodes.
- * Version:           0.0.66
+ * Version:           0.0.67
  * Author:            Holistic People
  * Text Domain:       hp-react-widgets
  */
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('HP_RW_VERSION', '0.0.66');
+define('HP_RW_VERSION', '0.0.67');
 define('HP_RW_FILE', __FILE__);
 define('HP_RW_PATH', plugin_dir_path(__FILE__));
 define('HP_RW_URL', plugin_dir_url(__FILE__));
@@ -40,43 +40,47 @@ add_action('plugins_loaded', function () {
 
 /**
  * Sanitize ThemeHigh address data to fix corrupted entries (arrays instead of strings).
- * This runs early on init to repair data before ThemeHigh reads it.
+ * This runs on plugins_loaded to repair data before ThemeHigh reads it.
  */
-add_action('init', function () {
-    // Only run for logged-in users
-    if (!is_user_logged_in()) {
-        return;
+add_action('plugins_loaded', function () {
+    // Hook into user meta retrieval to sanitize on-the-fly
+    add_filter('get_user_metadata', 'hp_rw_sanitize_thwma_meta', 1, 4);
+}, 0);
+
+/**
+ * Filter to sanitize thwma_custom_address meta before it's returned.
+ */
+function hp_rw_sanitize_thwma_meta($value, $object_id, $meta_key, $single) {
+    // Only intercept thwma_custom_address meta
+    if ($meta_key !== 'thwma_custom_address') {
+        return $value;
     }
     
-    $user_id = get_current_user_id();
-    if (!$user_id) {
-        return;
+    // Prevent infinite recursion
+    static $is_sanitizing = [];
+    if (isset($is_sanitizing[$object_id])) {
+        return $value;
     }
+    $is_sanitizing[$object_id] = true;
     
-    // Check if we've already repaired this user's data in this session
-    $repaired_key = 'hp_rw_address_repaired_' . $user_id;
-    if (get_transient($repaired_key)) {
-        return;
-    }
-    
-    // Get the raw meta directly from database to avoid any filters
+    // Get raw value from database directly
     global $wpdb;
-    $meta_value = $wpdb->get_var($wpdb->prepare(
+    $meta_row = $wpdb->get_var($wpdb->prepare(
         "SELECT meta_value FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key = %s LIMIT 1",
-        $user_id,
+        $object_id,
         'thwma_custom_address'
     ));
     
-    if (empty($meta_value)) {
-        set_transient($repaired_key, 1, HOUR_IN_SECONDS);
-        return;
+    unset($is_sanitizing[$object_id]);
+    
+    if (empty($meta_row)) {
+        return $value;
     }
     
-    $raw_value = maybe_unserialize($meta_value);
+    $raw_value = maybe_unserialize($meta_row);
     
     if (!is_array($raw_value)) {
-        set_transient($repaired_key, 1, HOUR_IN_SECONDS);
-        return;
+        return $value;
     }
     
     $needs_repair = false;
@@ -114,12 +118,23 @@ add_action('init', function () {
     
     // Auto-repair the database if we found corrupted data
     if ($needs_repair) {
-        update_user_meta($user_id, 'thwma_custom_address', $raw_value);
+        $wpdb->update(
+            $wpdb->usermeta,
+            ['meta_value' => maybe_serialize($raw_value)],
+            ['user_id' => $object_id, 'meta_key' => 'thwma_custom_address'],
+            ['%s'],
+            ['%d', '%s']
+        );
     }
     
-    // Mark as repaired for this session (1 hour)
-    set_transient($repaired_key, 1, HOUR_IN_SECONDS);
-}, 1); // Priority 1 to run very early
+    // Return sanitized value in the format WordPress expects
+    // For get_user_meta with $single=true, return array with single value
+    // For $single=false, return array of arrays
+    if ($single) {
+        return [$raw_value];
+    }
+    return [[$raw_value]];
+}
 
 // Ensure default options are created on activation.
 register_activation_hook(__FILE__, function () {
