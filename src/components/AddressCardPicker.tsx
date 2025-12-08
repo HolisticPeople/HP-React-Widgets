@@ -171,6 +171,17 @@ export const AddressCardPicker = ({
   const handleSelect = (address: Address) => {
     setActiveId(address.id);
     onSelect?.(address);
+    
+    // Dispatch custom event for external integrations (e.g., THWMA checkout integration)
+    window.dispatchEvent(
+      new CustomEvent('hpAddressSelected', {
+        detail: {
+          address,
+          type,
+          addressId: address.id,
+        },
+      })
+    );
   };
 
   const apiFetch = useCallback(

@@ -485,6 +485,30 @@ useEffect(() => {
 }, [type]);
 ```
 
+### 7.6 Address Selection Events (For External Integrations)
+
+The AddressCardPicker dispatches a custom event when an address is selected, useful for integrating with other plugins (e.g., checkout form population):
+
+```tsx
+// Dispatched by AddressCardPicker when user selects an address
+window.dispatchEvent(
+  new CustomEvent('hpAddressSelected', {
+    detail: {
+      address: selectedAddress,  // Full Address object
+      type: 'billing',           // 'billing' or 'shipping'
+      addressId: 'billing_primary', // The address ID
+    },
+  })
+);
+
+// External listener (e.g., in checkout integration script)
+window.addEventListener('hpAddressSelected', (e) => {
+  const { address, type, addressId } = e.detail;
+  // Fill checkout form fields, store selection, etc.
+  fillCheckoutFields(address, type);
+});
+```
+
 ---
 
 ## 8. REST API Endpoints
