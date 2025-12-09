@@ -409,6 +409,12 @@ class AddressApi
             'email'     => (string) $request->get_param('email'),
         ];
 
+        // Validate required fields
+        $validation_error = $this->validate_address_payload($payload);
+        if ($validation_error) {
+            return $validation_error;
+        }
+
         // Update primary WooCommerce address.
         if (preg_match('/^' . preg_quote($type, '/') . '_primary$/', $id)) {
             $customer = new \WC_Customer($user_id);
@@ -535,6 +541,12 @@ class AddressApi
             'email'     => (string) $request->get_param('email'),
         ];
 
+        // Validate required fields
+        $validation_error = $this->validate_address_payload($payload);
+        if ($validation_error) {
+            return $validation_error;
+        }
+
         // Create a new ThemeHigh entry.
         $meta_key = 'thwma_custom_address';
         $meta     = get_user_meta($user_id, $meta_key, true);
@@ -579,6 +591,54 @@ class AddressApi
             'addresses'  => $addresses,
             'selectedId' => $new_addr_id,
         ];
+    }
+
+    /**
+     * Validate address payload - phone and email are required for all addresses.
+     *
+     * @param array $payload The address data.
+     * @return WP_Error|null Returns WP_Error if validation fails, null if valid.
+     */
+    private function validate_address_payload(array $payload)
+    {
+        $errors = [];
+
+        if (empty(trim($payload['firstName'] ?? ''))) {
+            $errors[] = 'First name is required.';
+        }
+        if (empty(trim($payload['lastName'] ?? ''))) {
+            $errors[] = 'Last name is required.';
+        }
+        if (empty(trim($payload['address1'] ?? ''))) {
+            $errors[] = 'Address is required.';
+        }
+        if (empty(trim($payload['city'] ?? ''))) {
+            $errors[] = 'City is required.';
+        }
+        if (empty(trim($payload['postcode'] ?? ''))) {
+            $errors[] = 'Postcode is required.';
+        }
+        if (empty(trim($payload['country'] ?? ''))) {
+            $errors[] = 'Country is required.';
+        }
+        if (empty(trim($payload['phone'] ?? ''))) {
+            $errors[] = 'Phone is required.';
+        }
+        if (empty(trim($payload['email'] ?? ''))) {
+            $errors[] = 'Email is required.';
+        } elseif (!is_email($payload['email'])) {
+            $errors[] = 'Invalid email format.';
+        }
+
+        if (!empty($errors)) {
+            return new WP_Error(
+                'hp_rw_validation_error',
+                implode(' ', $errors),
+                ['status' => 400, 'errors' => $errors]
+            );
+        }
+
+        return null;
     }
 
     /**

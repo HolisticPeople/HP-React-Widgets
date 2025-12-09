@@ -158,7 +158,9 @@ export const EditAddressModal = ({
     if (hasStates && !formData.state?.trim()) {
       newErrors.state = 'State is required';
     }
-    if (formData.email && !validateEmail(formData.email)) {
+    if (!formData.email?.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!validateEmail(formData.email)) {
       newErrors.email = 'Invalid email format';
     }
     if (!formData.phone?.trim()) {
@@ -387,13 +389,14 @@ export const EditAddressModal = ({
 
             <FormField
               label="Email"
+              required
               error={errors.email}
             >
               <Input
                 type="email"
                 value={formData.email || ''}
                 onChange={handleChange('email')}
-                placeholder="Email (optional)"
+                placeholder="Email"
                 className={cn(errors.email && 'border-destructive')}
               />
             </FormField>
