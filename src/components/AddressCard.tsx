@@ -196,11 +196,11 @@ export const AddressCard = ({
         </div>
         <div className="flex items-center justify-between gap-2">
           {fullName ? (
-            <p className="font-semibold text-foreground text-base leading-tight">
+            <p className="font-semibold text-base leading-tight" style={{ color: '#ffffff' }}>
               {fullName}
             </p>
           ) : (
-            <p className="font-semibold text-foreground text-base leading-tight text-muted-foreground italic">
+            <p className="font-semibold text-base leading-tight italic" style={{ color: '#888888' }}>
               {addressSummary}
             </p>
           )}
@@ -213,8 +213,8 @@ export const AddressCard = ({
         {address.company && (
           <p className="text-sm text-muted-foreground">{address.company}</p>
         )}
-        <div className="space-y-0.5 text-sm text-secondary-foreground">
-          <p>
+        <div className="space-y-0.5 text-sm">
+          <p style={{ color: '#e0e0e0' }}>
             {address.address1}
             {address.address2 && `, ${address.address2}`}
           </p>
