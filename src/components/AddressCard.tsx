@@ -192,7 +192,7 @@ export const AddressCard = ({
       <div className={cn('space-y-2 pt-2 flex-grow', address.isDefault && 'pt-4')}>
         {/* DEBUG: Show raw data - REMOVE AFTER DEBUGGING */}
         <div className="text-[10px] text-yellow-400 bg-black/80 p-1 rounded mb-1 break-all font-mono">
-          DEBUG: fn="{address.firstName}" ln="{address.lastName}" a1="{address.address1}"
+          RAW: fn="{address.firstName}" | COMPUTED: fullName="{fullName}" | SHOWS: {fullName ? 'NAME' : 'FALLBACK'}
         </div>
         <div className="flex items-center justify-between gap-2">
           {fullName ? (
