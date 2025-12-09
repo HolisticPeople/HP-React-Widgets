@@ -11,7 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { Country, State, ICountry, IState } from 'country-state-city';
+import { Country, State } from 'country-state-city';
+import { SearchableSelect } from './SearchableSelect';
 
 export interface EditAddressModalProps {
   address: Address;
@@ -108,6 +109,24 @@ export const EditAddressModal = ({
   // Check if country has states
   const hasStates = states.length > 0;
 
+  // Format countries for SearchableSelect
+  const countryOptions = useMemo(() => 
+    countries.map((country) => ({
+      value: country.isoCode,
+      label: `${country.flag} ${country.name}`,
+    })),
+    [countries]
+  );
+
+  // Format states for SearchableSelect
+  const stateOptions = useMemo(() => 
+    states.map((state) => ({
+      value: state.isoCode,
+      label: state.name,
+    })),
+    [states]
+  );
+
   // Reset form when address changes or modal opens
   useEffect(() => {
     if (isOpen) {
@@ -181,7 +200,6 @@ export const EditAddressModal = ({
   };
 
   const handleCountryChange = (countryCode: string) => {
-    const country = countries.find((c) => c.isoCode === countryCode);
     setFormData((prev) => ({
       ...prev,
       country: countryCode, // Store the code
@@ -275,22 +293,13 @@ export const EditAddressModal = ({
               required
               error={errors.country}
             >
-              <select
+              <SearchableSelect
+                options={countryOptions}
                 value={selectedCountryCode}
-                onChange={(e) => handleCountryChange(e.target.value)}
-                className={cn(
-                  "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-                  errors.country && 'border-destructive'
-                )}
-                style={{ backgroundColor: 'hsl(var(--card))' }}
-              >
-                <option value="">Select country</option>
-                {countries.map((country) => (
-                  <option key={country.isoCode} value={country.isoCode}>
-                    {country.flag} {country.name}
-                  </option>
-                ))}
-              </select>
+                onChange={handleCountryChange}
+                placeholder="Select country"
+                error={!!errors.country}
+              />
             </FormField>
 
             {hasStates && (
@@ -299,22 +308,13 @@ export const EditAddressModal = ({
                 required
                 error={errors.state}
               >
-                <select
+                <SearchableSelect
+                  options={stateOptions}
                   value={formData.state || ''}
-                  onChange={(e) => handleStateChange(e.target.value)}
-                  className={cn(
-                    "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-                    errors.state && 'border-destructive'
-                  )}
-                  style={{ backgroundColor: 'hsl(var(--card))' }}
-                >
-                  <option value="">Select state</option>
-                  {states.map((state) => (
-                    <option key={state.isoCode} value={state.isoCode}>
-                      {state.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={handleStateChange}
+                  placeholder="Select state"
+                  error={!!errors.state}
+                />
               </FormField>
             )}
           </div>
