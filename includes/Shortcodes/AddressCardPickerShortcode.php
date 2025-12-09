@@ -165,8 +165,10 @@ class AddressCardPickerShortcode
     }
     
     /**
-     * Sanitize address data to ensure all values are strings.
-     * This fixes corrupted data where arrays were saved instead of strings.
+     * Sanitize and normalize address data.
+     * - Ensures all values are strings (not arrays)
+     * - Handles both prefixed (shipping_first_name) and non-prefixed (first_name) field names
+     * - Normalizes to prefixed format for consistent access
      */
     private function sanitize_address_data(array $addr_data, string $prefix): array
     {
@@ -176,9 +178,16 @@ class AddressCardPickerShortcode
         ];
         
         foreach ($fields as $field) {
-            $key = $prefix . $field;
-            if (isset($addr_data[$key])) {
-                $addr_data[$key] = $this->ensure_string($addr_data[$key]);
+            $prefixed_key = $prefix . $field;
+            
+            // Check for the prefixed version first
+            if (isset($addr_data[$prefixed_key])) {
+                $addr_data[$prefixed_key] = $this->ensure_string($addr_data[$prefixed_key]);
+            }
+            // Fall back to non-prefixed version (some old ThemeHigh data uses this)
+            elseif (isset($addr_data[$field])) {
+                // Copy the value to the prefixed key for consistent access
+                $addr_data[$prefixed_key] = $this->ensure_string($addr_data[$field]);
             }
         }
         
