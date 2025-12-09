@@ -194,6 +194,10 @@ export const AddressCard = ({
         <div className="text-[10px] text-yellow-400 bg-black/80 p-1 rounded mb-1 break-all font-mono">
           RAW: fn="{address.firstName}" | COMPUTED: fullName="{fullName}" | SHOWS: {fullName ? 'NAME' : 'FALLBACK'}
         </div>
+        {/* TEST: Hardcoded name line to see if it renders */}
+        <p className="font-semibold text-base" style={{ color: '#00ff00', backgroundColor: '#000' }}>
+          HARDCODED: {fullName || 'NO NAME'}
+        </p>
         <div className="flex items-center justify-between gap-2">
           {fullName ? (
             <p className="font-semibold text-base leading-tight" style={{ color: '#ffffff' }}>
