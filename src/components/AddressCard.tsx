@@ -193,16 +193,20 @@ export const AddressCard = ({
           <p className="text-sm text-muted-foreground">{address.company}</p>
         )}
         <div className="space-y-0.5 text-sm text-secondary-foreground">
-          <p>{address.address1}</p>
-          {address.address2 && <p>{address.address2}</p>}
           <p>
-            {address.city}, {address.state} {address.postcode}
+            {address.address1}
+            {address.address2 && `, ${address.address2}`}
+          </p>
+          <p>
+            {address.city}
+            {address.state && `, ${address.state}`} {address.postcode}
           </p>
           <p className="text-muted-foreground">{address.country}</p>
         </div>
-        {address.phone && (
-          <p className="text-sm text-muted-foreground pt-1">{address.phone}</p>
-        )}
+        <div className="space-y-0.5 text-sm text-muted-foreground pt-1">
+          {address.phone && <p>{address.phone}</p>}
+          {address.email && <p>{address.email}</p>}
+        </div>
       </div>
 
       {/* Action Buttons */}
