@@ -249,8 +249,8 @@ export const EditAddressModal = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Row 1: First Name, Last Name, Company */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Row 1: First Name, Last Name, Company (US only) */}
+          <div className={cn("grid grid-cols-1 gap-3", selectedCountryCode === 'US' ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
             <FormField
               label="First Name"
               required
@@ -277,13 +277,16 @@ export const EditAddressModal = ({
               />
             </FormField>
 
-            <FormField label="Company">
-              <Input
-                value={formData.company || ''}
-                onChange={handleChange('company')}
-                placeholder="Company (optional)"
-              />
-            </FormField>
+            {/* Company field - US addresses only */}
+            {selectedCountryCode === 'US' && (
+              <FormField label="Company">
+                <Input
+                  value={formData.company || ''}
+                  onChange={handleChange('company')}
+                  placeholder="Company (optional)"
+                />
+              </FormField>
+            )}
           </div>
 
           {/* Row 2: Country and State (if applicable) */}
