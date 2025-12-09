@@ -8,6 +8,14 @@ This folder contains WPCode snippets that extend functionality of HP React Widge
 
 **File:** `thwma-shortcode-display-type.php`
 
+> ⚠️ **DEPRECATED**: This snippet is no longer needed if you use the **HP Multi-Address** plugin.
+> The HP Multi-Address plugin provides all this functionality built-in, plus additional features.
+> If you're switching from ThemeHigh to HP Multi-Address, simply:
+> 1. Activate the HP Multi-Address plugin
+> 2. Deactivate the ThemeHigh Multiple Addresses plugin
+> 3. Remove this WPCode snippet
+> 4. Your existing address data will continue to work (no migration needed)
+
 ### Description
 
 This snippet adds a third "Shortcode" option to the ThemeHigh Multiple Addresses Pro display type settings. Instead of using the built-in popup or dropdown for address selection during checkout, this allows you to use the HP Address Card Picker (or any other shortcode) for a more modern, React-based address selection experience.

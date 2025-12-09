@@ -85,13 +85,21 @@ class AddressCardPickerShortcode
             $addresses[] = $primary;
         }
 
-        // 2. Additional addresses from ThemeHigh Multi-Address (thwma_custom_address)
+        // 2. Additional addresses from custom storage (compatible with ThemeHigh data structure)
         // Structure: ['billing' => ['key' => [...fields...]], 'shipping' => [...]]
-        $th_addresses = get_user_meta($user_id, 'thwma_custom_address', true);
+        $meta_key = apply_filters('hp_rw_address_meta_key', 'thwma_custom_address');
+        $th_addresses = get_user_meta($user_id, $meta_key, true);
 
         if (is_array($th_addresses) && !empty($th_addresses[$type])) {
             $counter = 1;
             $needs_repair = false;
+            
+            // Get primary address name as fallback for addresses missing names
+            $primary = $this->format_wc_address($customer, $type, false);
+            $fallback_first = $primary['firstName'] ?? '';
+            $fallback_last  = $primary['lastName'] ?? '';
+            $fallback_phone = $primary['phone'] ?? '';
+            $fallback_email = $primary['email'] ?? '';
             
             foreach ($th_addresses[$type] as $key => $addr_data) {
                 // Determine prefix based on type (ThemeHigh usually prefixes fields with billing_ or shipping_)
@@ -112,11 +120,27 @@ class AddressCardPickerShortcode
                 }
 
                 $country_code = $sanitized[$prefix . 'country'] ?? '';
+                
+                // Use stored name, or fall back to primary address name
+                $first_name = !empty($sanitized[$prefix . 'first_name']) 
+                    ? $sanitized[$prefix . 'first_name'] 
+                    : $fallback_first;
+                $last_name = !empty($sanitized[$prefix . 'last_name']) 
+                    ? $sanitized[$prefix . 'last_name'] 
+                    : $fallback_last;
+                    
+                // Also fall back for phone and email
+                $phone = !empty($sanitized[$prefix . 'phone']) 
+                    ? $sanitized[$prefix . 'phone'] 
+                    : $fallback_phone;
+                $email = !empty($sanitized[$prefix . 'email']) 
+                    ? $sanitized[$prefix . 'email'] 
+                    : $fallback_email;
 
                 $addresses[] = [
                     'id'        => "th_{$type}_{$key}",
-                    'firstName' => $sanitized[$prefix . 'first_name'] ?? '',
-                    'lastName'  => $sanitized[$prefix . 'last_name'] ?? '',
+                    'firstName' => $first_name,
+                    'lastName'  => $last_name,
                     'company'   => $sanitized[$prefix . 'company'] ?? '',
                     'address1'  => $sanitized[$prefix . 'address_1'] ?? '',
                     'address2'  => $sanitized[$prefix . 'address_2'] ?? '',
@@ -124,8 +148,8 @@ class AddressCardPickerShortcode
                     'state'     => $sanitized[$prefix . 'state'] ?? '',
                     'postcode'  => $sanitized[$prefix . 'postcode'] ?? '',
                     'country'   => $this->get_country_name($country_code),
-                    'phone'     => $sanitized[$prefix . 'phone'] ?? '',
-                    'email'     => $sanitized[$prefix . 'email'] ?? '',
+                    'phone'     => $phone,
+                    'email'     => $email,
                     'isDefault' => false,
                     'label'     => sprintf('#%d', $counter++),
                 ];
@@ -133,7 +157,7 @@ class AddressCardPickerShortcode
             
             // Auto-repair corrupted data in database
             if ($needs_repair) {
-                update_user_meta($user_id, 'thwma_custom_address', $th_addresses);
+                update_user_meta($user_id, $meta_key, $th_addresses);
             }
         }
 
@@ -191,7 +215,15 @@ class AddressCardPickerShortcode
         $getter_prefix = $type === 'billing' ? 'get_billing_' : 'get_shipping_';
 
         $first_name = call_user_func([$customer, $getter_prefix . 'first_name']);
+        $last_name  = call_user_func([$customer, $getter_prefix . 'last_name']);
         $address_1  = call_user_func([$customer, $getter_prefix . 'address_1']);
+
+        // Shipping addresses often don't have names if user never shipped to a different address.
+        // Fall back to billing name in this case.
+        if ($type === 'shipping' && empty($first_name)) {
+            $first_name = $customer->get_billing_first_name();
+            $last_name  = $customer->get_billing_last_name();
+        }
 
         if (empty($first_name) && empty($address_1)) {
             return null;
@@ -199,10 +231,15 @@ class AddressCardPickerShortcode
 
         $country_code = call_user_func([$customer, $getter_prefix . 'country']);
 
+        // For shipping, phone may also be empty - fall back to billing phone
+        $phone = $type === 'billing' 
+            ? $customer->get_billing_phone() 
+            : ($customer->get_shipping_phone() ?: $customer->get_billing_phone());
+
         return [
             'id'        => "{$type}_primary",
             'firstName' => $first_name,
-            'lastName'  => call_user_func([$customer, $getter_prefix . 'last_name']),
+            'lastName'  => $last_name,
             'company'   => call_user_func([$customer, $getter_prefix . 'company']),
             'address1'  => $address_1,
             'address2'  => call_user_func([$customer, $getter_prefix . 'address_2']),
@@ -210,8 +247,7 @@ class AddressCardPickerShortcode
             'state'     => call_user_func([$customer, $getter_prefix . 'state']),
             'postcode'  => call_user_func([$customer, $getter_prefix . 'postcode']),
             'country'   => $this->get_country_name($country_code),
-            // Phone is required for shipping; billing returns billing_phone, shipping returns shipping_phone.
-            'phone'     => $type === 'billing' ? $customer->get_billing_phone() : $customer->get_shipping_phone(),
+            'phone'     => $phone,
             // Email is only meaningful for billing; we keep it empty for shipping.
             'email'     => $type === 'billing' ? $customer->get_billing_email() : '',
             'isDefault' => $isDefault,
