@@ -29,6 +29,98 @@ class AddressApi
     public function register(): void
     {
         add_action('rest_api_init', [$this, 'register_routes']);
+        add_action('admin_menu', [$this, 'add_debug_page']);
+    }
+
+    /**
+     * Add a debug page under Tools menu for admins.
+     */
+    public function add_debug_page(): void
+    {
+        add_management_page(
+            'HP Address Debug',
+            'HP Address Debug',
+            'manage_options',
+            'hp-address-debug',
+            [$this, 'render_debug_page']
+        );
+    }
+
+    /**
+     * Render the debug page.
+     */
+    public function render_debug_page(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die('Access denied');
+        }
+
+        $user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : get_current_user_id();
+        
+        $meta_key = self::get_address_meta_key();
+        $raw_meta = get_user_meta($user_id, $meta_key, true);
+        
+        // Get WooCommerce customer data
+        $wc_data = [];
+        if (class_exists('WC_Customer')) {
+            try {
+                $customer = new \WC_Customer($user_id);
+                $wc_data = [
+                    'billing' => [
+                        'first_name' => $customer->get_billing_first_name(),
+                        'last_name'  => $customer->get_billing_last_name(),
+                        'address_1'  => $customer->get_billing_address_1(),
+                        'city'       => $customer->get_billing_city(),
+                        'country'    => $customer->get_billing_country(),
+                    ],
+                    'shipping' => [
+                        'first_name' => $customer->get_shipping_first_name(),
+                        'last_name'  => $customer->get_shipping_last_name(),
+                        'address_1'  => $customer->get_shipping_address_1(),
+                        'city'       => $customer->get_shipping_city(),
+                        'country'    => $customer->get_shipping_country(),
+                    ],
+                ];
+            } catch (\Exception $e) {
+                $wc_data = ['error' => $e->getMessage()];
+            }
+        }
+
+        // Get hydrated addresses
+        $hydrator = new Shortcodes\AddressCardPickerShortcode();
+        $shipping = $hydrator->get_user_addresses($user_id, 'shipping');
+        $billing = $hydrator->get_user_addresses($user_id, 'billing');
+
+        echo '<div class="wrap">';
+        echo '<h1>HP Address Debug - User ID: ' . esc_html($user_id) . '</h1>';
+        
+        echo '<form method="get" style="margin-bottom:20px;">';
+        echo '<input type="hidden" name="page" value="hp-address-debug">';
+        echo '<label>User ID: <input type="number" name="user_id" value="' . esc_attr($user_id) . '"></label> ';
+        echo '<button type="submit" class="button">Load</button>';
+        echo '</form>';
+
+        echo '<h2>Raw Meta Data (thwma_custom_address)</h2>';
+        echo '<pre style="background:#1e1e1e;color:#9cdcfe;padding:15px;overflow:auto;max-height:400px;">';
+        echo esc_html(print_r($raw_meta, true));
+        echo '</pre>';
+
+        echo '<h2>WooCommerce Default Addresses</h2>';
+        echo '<pre style="background:#1e1e1e;color:#9cdcfe;padding:15px;overflow:auto;">';
+        echo esc_html(print_r($wc_data, true));
+        echo '</pre>';
+
+        echo '<h2>Hydrated Shipping Addresses (what React receives)</h2>';
+        echo '<pre style="background:#1e1e1e;color:#9cdcfe;padding:15px;overflow:auto;max-height:400px;">';
+        echo esc_html(print_r($shipping, true));
+        echo '</pre>';
+
+        echo '<h2>Hydrated Billing Addresses (what React receives)</h2>';
+        echo '<pre style="background:#1e1e1e;color:#9cdcfe;padding:15px;overflow:auto;max-height:400px;">';
+        echo esc_html(print_r($billing, true));
+        echo '</pre>';
+
+        echo '</div>';
     }
 
     /**
