@@ -11,6 +11,19 @@ use WP_REST_Request;
 class AddressApi
 {
     /**
+     * Get the user meta key for storing custom addresses.
+     * 
+     * Uses 'thwma_custom_address' for backward compatibility with ThemeHigh plugin data.
+     * Can be filtered via 'hp_rw_address_meta_key' for future migration.
+     *
+     * @return string
+     */
+    public static function get_address_meta_key(): string
+    {
+        return apply_filters('hp_rw_address_meta_key', 'thwma_custom_address');
+    }
+
+    /**
      * Hook into WordPress.
      */
     public function register(): void
@@ -161,7 +174,7 @@ class AddressApi
         }
 
         $key      = $matches[1];
-        $meta_key = 'thwma_custom_address';
+        $meta_key = self::get_address_meta_key();
         $meta     = get_user_meta($user_id, $meta_key, true);
 
         if (is_array($meta) && isset($meta[$type][$key])) {
@@ -221,7 +234,7 @@ class AddressApi
         //  - Previous default is written back into the same ThemeHigh slot
         if ($current && isset($chosen['id']) && preg_match('/^th_' . preg_quote($type, '/') . '_(.+)$/', (string) $chosen['id'], $m)) {
             $th_key   = $m[1];
-            $meta_key = 'thwma_custom_address';
+            $meta_key = self::get_address_meta_key();
             $meta     = get_user_meta($user_id, $meta_key, true);
 
             if (is_array($meta) && isset($meta[$type][$th_key])) {
@@ -329,7 +342,7 @@ class AddressApi
 
         // Copy should create a NEW ThemeHigh address entry for the target type,
         // without touching the target's current default WooCommerce address.
-        $meta_key = 'thwma_custom_address';
+        $meta_key = self::get_address_meta_key();
         $meta     = get_user_meta($user_id, $meta_key, true);
         if (!is_array($meta)) {
             $meta = [
@@ -469,7 +482,7 @@ class AddressApi
         } elseif (preg_match('/^th_' . preg_quote($type, '/') . '_(.+)$/', $id, $m)) {
             // Update ThemeHigh entry for this user.
             $th_key   = $m[1];
-            $meta_key = 'thwma_custom_address';
+            $meta_key = self::get_address_meta_key();
             $meta     = get_user_meta($user_id, $meta_key, true);
 
             if (!is_array($meta) || !isset($meta[$type][$th_key])) {
@@ -548,7 +561,7 @@ class AddressApi
         }
 
         // Create a new ThemeHigh entry.
-        $meta_key = 'thwma_custom_address';
+        $meta_key = self::get_address_meta_key();
         $meta     = get_user_meta($user_id, $meta_key, true);
 
         if (!is_array($meta)) {

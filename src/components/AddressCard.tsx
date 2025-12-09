@@ -146,7 +146,18 @@ export const AddressCard = ({
   onCopy,
   showActions = true,
 }: AddressCardProps) => {
-  const fullName = `${address.firstName} ${address.lastName}`;
+  // Build display name with fallback for addresses missing name data
+  const firstName = address.firstName?.trim() || '';
+  const lastName = address.lastName?.trim() || '';
+  const fullName = firstName || lastName 
+    ? `${firstName} ${lastName}`.trim()
+    : null; // null means no name to display
+  
+  // Build a short address summary for when name is missing
+  const addressSummary = address.city 
+    ? `${address.city}${address.postcode ? ` ${address.postcode}` : ''}`
+    : address.address1 || 'Address';
+    
   const copyTooltip = type === 'billing' ? 'Copy to shipping' : 'Copy to billing';
 
   return (
@@ -180,9 +191,15 @@ export const AddressCard = ({
       {/* Address Content */}
       <div className={cn('space-y-2 pt-2 flex-grow', address.isDefault && 'pt-4')}>
         <div className="flex items-center justify-between gap-2">
-          <p className="font-semibold text-foreground text-base leading-tight">
-            {fullName}
-          </p>
+          {fullName ? (
+            <p className="font-semibold text-foreground text-base leading-tight">
+              {fullName}
+            </p>
+          ) : (
+            <p className="font-semibold text-foreground text-base leading-tight text-muted-foreground italic">
+              {addressSummary}
+            </p>
+          )}
           {address.label && !address.isDefault && (
             <span className="text-xs text-muted-foreground font-medium">
               {address.label}

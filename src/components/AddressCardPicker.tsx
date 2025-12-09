@@ -459,7 +459,7 @@ export const AddressCardPicker = ({
   return (
     <div ref={containerRef}>
       {/* Header */}
-      <div className="flex items-center justify-between" style={{ marginBottom: '4px' }}>
+      <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
         <div className="flex items-center gap-3">
           <h3 className="text-lg font-semibold text-foreground flex items-center gap-2" style={{ lineHeight: 1, margin: 0 }}>
             {displayTitle}
