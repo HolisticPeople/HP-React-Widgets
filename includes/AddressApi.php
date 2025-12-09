@@ -36,6 +36,25 @@ class AddressApi
      */
     public function register_routes(): void
     {
+        // Diagnostic endpoint to inspect raw address data
+        register_rest_route(
+            'hp-rw/v1',
+            '/address/debug',
+            [
+                'methods'             => 'GET',
+                'callback'            => [$this, 'handle_debug'],
+                'permission_callback' => function () {
+                    return current_user_can('manage_options'); // Admin only
+                },
+                'args'                => [
+                    'user_id' => [
+                        'required' => false,
+                        'type'     => 'integer',
+                    ],
+                ],
+            ]
+        );
+
         register_rest_route(
             'hp-rw/v1',
             '/address/delete',
@@ -153,6 +172,73 @@ class AddressApi
                 ],
             ]
         );
+    }
+
+    /**
+     * Debug endpoint to inspect raw address data structure.
+     * Only accessible to administrators.
+     */
+    public function handle_debug(WP_REST_Request $request)
+    {
+        $user_id = $request->get_param('user_id') ?: get_current_user_id();
+        
+        if (!$user_id) {
+            return new WP_Error('hp_rw_no_user', 'No user specified.', ['status' => 400]);
+        }
+
+        $meta_key = self::get_address_meta_key();
+        $raw_meta = get_user_meta($user_id, $meta_key, true);
+        
+        // Also get WooCommerce customer data
+        $customer = null;
+        $wc_data = [];
+        if (class_exists('WC_Customer')) {
+            try {
+                $customer = new \WC_Customer($user_id);
+                $wc_data = [
+                    'billing' => [
+                        'first_name' => $customer->get_billing_first_name(),
+                        'last_name'  => $customer->get_billing_last_name(),
+                        'address_1'  => $customer->get_billing_address_1(),
+                        'address_2'  => $customer->get_billing_address_2(),
+                        'city'       => $customer->get_billing_city(),
+                        'state'      => $customer->get_billing_state(),
+                        'postcode'   => $customer->get_billing_postcode(),
+                        'country'    => $customer->get_billing_country(),
+                        'phone'      => $customer->get_billing_phone(),
+                        'email'      => $customer->get_billing_email(),
+                    ],
+                    'shipping' => [
+                        'first_name' => $customer->get_shipping_first_name(),
+                        'last_name'  => $customer->get_shipping_last_name(),
+                        'address_1'  => $customer->get_shipping_address_1(),
+                        'address_2'  => $customer->get_shipping_address_2(),
+                        'city'       => $customer->get_shipping_city(),
+                        'state'      => $customer->get_shipping_state(),
+                        'postcode'   => $customer->get_shipping_postcode(),
+                        'country'    => $customer->get_shipping_country(),
+                        'phone'      => $customer->get_shipping_phone(),
+                    ],
+                ];
+            } catch (\Exception $e) {
+                $wc_data = ['error' => $e->getMessage()];
+            }
+        }
+
+        // Get hydrated addresses for comparison
+        $hydrator = new AddressCardPickerShortcode();
+        $shipping_addresses = $hydrator->get_user_addresses($user_id, 'shipping');
+        $billing_addresses = $hydrator->get_user_addresses($user_id, 'billing');
+
+        return [
+            'user_id'           => $user_id,
+            'meta_key'          => $meta_key,
+            'raw_meta_type'     => gettype($raw_meta),
+            'raw_meta'          => $raw_meta,
+            'wc_customer_data'  => $wc_data,
+            'hydrated_shipping' => $shipping_addresses,
+            'hydrated_billing'  => $billing_addresses,
+        ];
     }
 
     /**
