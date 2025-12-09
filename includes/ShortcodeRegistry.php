@@ -10,60 +10,69 @@ class ShortcodeRegistry
         $this->assetLoader = $assetLoader;
     }
 
-    public function register()
+    /**
+     * Register shortcodes based on which ones are enabled in settings.
+     */
+    public function register(): void
     {
-        add_shortcode('hp_multi_address', [$this, 'renderMultiAddress']);
+        $enabled       = Plugin::get_enabled_shortcodes();
+        $allShortcodes = Plugin::get_shortcodes();
+
+        foreach ($allShortcodes as $slug => $config) {
+            // Register every known shortcode so Elementor/WP never shows the raw [shortcode] text.
+            // Rendering logic checks whether it is enabled, and if not, returns an empty string.
+            add_shortcode(
+                $slug,
+                function ($atts = []) use ($slug, $config, $enabled) {
+                    if (!in_array($slug, $enabled, true)) {
+                        // Shortcode is configured but disabled → render nothing and do not enqueue assets.
+                        return '';
+                    }
+
+                    return $this->renderGeneric($config, (array) $atts);
+                }
+            );
+        }
     }
 
-    public function renderMultiAddress($atts)
+    /**
+     * Generic renderer used for custom shortcodes defined via the wizard.
+     *
+     * @param array<string,mixed> $config
+     * @param array<string,mixed> $atts
+     */
+    private function renderGeneric(array $config, array $atts): string
     {
-        // Ensure assets are enqueued when this shortcode is used
-        wp_enqueue_script(AssetLoader::HANDLE);
+        // Enqueue the React bundle (only loads on pages with this shortcode).
+        AssetLoader::enqueue_bundle();
 
-        // Hydration: Fetch addresses server-side
-        $user_id = get_current_user_id();
-        $addresses = [];
+        $rootId    = isset($config['root_id']) ? (string) $config['root_id'] : 'hp-generic-widget-root';
+        $component = isset($config['component']) ? (string) $config['component'] : '';
 
-        if ($user_id) {
-            $customer = new \WC_Customer($user_id);
-            // This is a simplified example. In reality, WC stores billing/shipping.
-            // For a "Multi-Address" feature, you might be using a plugin or custom meta.
-            // For this POC, we'll just send the standard billing/shipping as the initial list.
-
-            $addresses[] = [
-                'id' => 'billing',
-                'type' => 'billing',
-                'first_name' => $customer->get_billing_first_name(),
-                'last_name' => $customer->get_billing_last_name(),
-                'address_1' => $customer->get_billing_address_1(),
-                'city' => $customer->get_billing_city(),
-                'state' => $customer->get_billing_state(),
-                'postcode' => $customer->get_billing_postcode(),
-                'country' => $customer->get_billing_country(),
-                'phone' => $customer->get_billing_phone(),
-            ];
-
-            $addresses[] = [
-                'id' => 'shipping',
-                'type' => 'shipping',
-                'first_name' => $customer->get_shipping_first_name(),
-                'last_name' => $customer->get_shipping_last_name(),
-                'address_1' => $customer->get_shipping_address_1(),
-                'city' => $customer->get_shipping_city(),
-                'state' => $customer->get_shipping_state(),
-                'postcode' => $customer->get_shipping_postcode(),
-                'country' => $customer->get_shipping_country(),
-            ];
+        // If a hydrator class is configured and available, let it take over completely.
+        if (!empty($config['hydrator_class'])) {
+            $class = 'HP_RW\\Shortcodes\\' . ltrim((string) $config['hydrator_class'], '\\');
+            if (class_exists($class) && method_exists($class, 'render')) {
+                $instance = new $class();
+                /** @var mixed $output */
+                $output = $instance->render($atts);
+                if (is_string($output)) {
+                    return $output;
+                }
+            }
         }
 
-        $props = [
-            'addresses' => $addresses,
-            'isLoggedIn' => $user_id > 0
-        ];
+        $props = isset($config['default_props']) && is_array($config['default_props'])
+            ? $config['default_props']
+            : [];
 
         return sprintf(
-            '<div id="hp-multi-address-root" data-props="%s"></div>',
-            htmlspecialchars(json_encode($props), ENT_QUOTES, 'UTF-8')
+            '<div id="%s" data-hp-widget="1" data-component="%s" data-props="%s"></div>',
+            esc_attr($rootId),
+            esc_attr($component),
+            esc_attr(wp_json_encode($props))
         );
     }
 }
+
+

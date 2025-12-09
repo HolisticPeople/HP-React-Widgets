@@ -1,3 +1,271 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* HolisticPeople Dark Theme - WooCommerce Integration */
+
+@layer base {
+    :root {
+        --background: 0 0% 7%;
+        --foreground: 0 0% 95%;
+
+        --card: 0 0% 10%;
+        --card-foreground: 0 0% 95%;
+
+        --popover: 0 0% 10%;
+        --popover-foreground: 0 0% 95%;
+
+        --primary: 270 100% 64%;
+        --primary-foreground: 0 0% 100%;
+
+        --secondary: 0 0% 15%;
+        --secondary-foreground: 0 0% 95%;
+
+        --muted: 0 0% 20%;
+        --muted-foreground: 0 0% 65%;
+
+        --accent: 270 100% 64%;
+        --accent-foreground: 0 0% 100%;
+
+        --destructive: 0 70% 50%;
+        --destructive-foreground: 0 0% 100%;
+
+        --border: 270 50% 40%;
+        --input: 0 0% 20%;
+        --ring: 270 100% 64%;
+
+        --radius: 0.5rem;
+
+        /* Custom tokens */
+        --nav-icon-bg: 0 0% 12%;
+        --nav-icon-border: 270 50% 40%;
+        --success: 142 76% 36%;
+        --warning: 38 92% 50%;
+    }
+
+    .dark {
+        --background: 0 0% 7%;
+        --foreground: 0 0% 95%;
+        --card: 0 0% 10%;
+        --card-foreground: 0 0% 95%;
+        --popover: 0 0% 10%;
+        --popover-foreground: 0 0% 95%;
+        --primary: 270 100% 64%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 0 0% 15%;
+        --secondary-foreground: 0 0% 95%;
+        --muted: 0 0% 20%;
+        --muted-foreground: 0 0% 65%;
+        --accent: 270 100% 64%;
+        --accent-foreground: 0 0% 100%;
+        --destructive: 0 70% 50%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 270 50% 40%;
+        --input: 0 0% 20%;
+        --ring: 270 100% 64%;
+    }
+}
+
+@layer base {
+    * {
+        border-color: hsl(var(--border));
+    }
+
+    body {
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+}
+
+@layer components {
+    .nav-icon-button {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid hsl(var(--border));
+        background-color: hsl(var(--card));
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+
+    .nav-icon-button:hover {
+        border-color: hsl(var(--primary));
+        background-color: hsl(var(--secondary));
+    }
+
+    .nav-icon-button.active {
+        border-color: hsl(var(--primary));
+        background-color: hsl(var(--secondary));
+    }
+
+    .nav-icon-button svg {
+        width: 1.5rem;
+        height: 1.5rem;
+        color: hsl(var(--primary));
+    }
+
+    .nav-icon-button span {
+        font-size: 0.75rem;
+        color: hsl(var(--foreground));
+    }
+
+    /* Address card + slider styles shared with AddressCardPicker */
+    .address-card {
+        position: relative;
+        border-radius: 0.75rem;
+        border: 1px solid hsl(var(--border));
+        background-color: hsl(var(--card));
+        padding: 1.25rem;
+        transition: all 0.2s ease-out;
+        /* Ensure all cards have at least the same height so rows look uniform */
+        min-height: 320px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .address-card:hover {
+        border-color: hsl(var(--primary));
+        box-shadow: 0 8px 24px -4px hsl(var(--primary) / 0.3);
+    }
+
+    .address-card.selected {
+        border-color: hsl(var(--primary));
+        box-shadow: 0 0 0 1px hsl(var(--primary));
+    }
+
+    .address-card.is-default {
+        border-color: hsl(var(--primary));
+    }
+
+    /* Prevent theme badges / triangles from appearing on default cards */
+    .address-card.is-default::before,
+    .address-card.is-default::after {
+        content: none !important;
+        border: 0 !important;
+    }
+
+    .action-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 0.75rem;
+        background-color: hsla(var(--secondary), 0.8);
+        color: #ffffff !important; /* Force high contrast for debug */
+        font-size: 16px !important; /* Prevent font-size: 0 */
+        transition: all 0.2s ease-out;
+    }
+
+    .action-btn:hover {
+        background-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground)) !important;
+        transform: scale(1.08);
+    }
+
+    .action-btn.destructive:hover {
+        background-color: hsl(var(--destructive));
+        color: hsl(var(--destructive-foreground));
+    }
+
+    .action-btn svg,
+    .slider-nav-btn svg {
+        /* Baseline reset for any SVG in our buttons */
+        display: inline-block;
+    }
+
+    /* Custom HP icons: stroked for a refined look */
+    .action-btn svg.hp-icon,
+    .slider-nav-btn svg.hp-icon {
+        all: unset;
+        display: inline-block !important;
+        width: 1.125rem !important;
+        height: 1.125rem !important;
+        color: currentColor !important;
+    }
+
+    .action-btn svg.hp-icon *,
+    .slider-nav-btn svg.hp-icon * {
+        stroke: currentColor !important;
+    }
+
+    .slider-nav-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 9999px;
+        background-color: hsl(var(--card));
+        border: 1px solid hsl(var(--border) / 0.5);
+        color: hsl(var(--muted-foreground));
+        transition: all 0.2s ease-out;
+    }
+
+    .slider-nav-btn:hover:not(:disabled) {
+        background-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        border-color: hsl(var(--primary));
+    }
+
+    .slider-nav-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+    }
+
+    .default-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        border-radius: 9999px;
+        padding: 0.25rem 0.625rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        background-color: hsla(var(--primary), 0.2);
+        color: hsl(var(--primary));
+    }
+
+    .slider-dot {
+        width: 0.5rem;
+        height: 0.5rem;
+        border-radius: 9999px;
+        background-color: hsl(var(--muted));
+        transition: all 0.2s ease-out;
+    }
+
+    .slider-dot.active {
+        width: 1.5rem;
+        background-color: hsl(var(--primary));
+    }
+
+    /* Horizontal slider scrollbar - make track dark and thumb subtle */
+    .address-slider {
+        scrollbar-color: hsl(var(--muted-foreground)) hsl(var(--background));
+    }
+
+    .address-slider::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .address-slider::-webkit-scrollbar-track {
+        background-color: hsl(var(--background));
+    }
+
+    .address-slider::-webkit-scrollbar-thumb {
+        background-color: hsl(var(--muted-foreground));
+        border-radius: 9999px;
+    }
+
+    .tooltip-content {
+        border-radius: 0.5rem;
+        background-color: hsl(var(--popover));
+        color: hsl(var(--popover-foreground));
+        border: 1px solid hsl(var(--border));
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.75);
+    }
+}
