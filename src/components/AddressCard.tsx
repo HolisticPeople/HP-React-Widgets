@@ -190,21 +190,13 @@ export const AddressCard = ({
 
       {/* Address Content */}
       <div className={cn('space-y-2 pt-2 flex-grow', address.isDefault && 'pt-4')}>
-        {/* DEBUG: Show raw data - REMOVE AFTER DEBUGGING */}
-        <div className="text-[10px] text-yellow-400 bg-black/80 p-1 rounded mb-1 break-all font-mono">
-          RAW: fn="{address.firstName}" | COMPUTED: fullName="{fullName}" | SHOWS: {fullName ? 'NAME' : 'FALLBACK'}
-        </div>
-        {/* TEST: Hardcoded name line to see if it renders */}
-        <p className="font-semibold text-base" style={{ color: '#00ff00', backgroundColor: '#000' }}>
-          HARDCODED: {fullName || 'NO NAME'}
-        </p>
         <div className="flex items-center justify-between gap-2">
           {fullName ? (
-            <p className="font-semibold text-base leading-tight" style={{ color: '#ffffff' }}>
+            <p className="font-semibold text-foreground text-base leading-tight">
               {fullName}
             </p>
           ) : (
-            <p className="font-semibold text-base leading-tight italic" style={{ color: '#888888' }}>
+            <p className="font-semibold text-foreground text-base leading-tight text-muted-foreground italic">
               {addressSummary}
             </p>
           )}
@@ -217,8 +209,8 @@ export const AddressCard = ({
         {address.company && (
           <p className="text-sm text-muted-foreground">{address.company}</p>
         )}
-        <div className="space-y-0.5 text-sm">
-          <p style={{ color: '#e0e0e0' }}>
+        <div className="space-y-0.5 text-sm text-secondary-foreground">
+          <p>
             {address.address1}
             {address.address2 && `, ${address.address2}`}
           </p>
