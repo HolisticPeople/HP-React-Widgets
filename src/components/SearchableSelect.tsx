@@ -133,7 +133,7 @@ export const SearchableSelect = ({
           {/* Options List */}
           <div 
             ref={listRef}
-            className="max-h-[220px] overflow-y-auto py-1"
+            className="max-h-[220px] overflow-y-auto p-2 flex flex-col gap-1"
             style={{ 
               backgroundColor: 'hsl(var(--card))',
               scrollbarWidth: 'thin',
@@ -152,7 +152,7 @@ export const SearchableSelect = ({
                   data-selected={option.value === value}
                   onClick={() => handleSelect(option.value)}
                   className={cn(
-                    "w-full px-3 py-2 text-sm text-left transition-colors",
+                    "w-full px-3 py-2 text-sm text-left transition-colors rounded-md",
                     "hover:bg-accent hover:text-accent-foreground",
                     "focus:outline-none focus:bg-accent focus:text-accent-foreground",
                     option.value === value && "bg-primary/10 text-primary font-medium"
