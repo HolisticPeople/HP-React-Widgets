@@ -238,7 +238,7 @@ export const AddressCard = ({
               </button>
             </TooltipTrigger>
             <TooltipContent className="tooltip-content">
-              <p>Edit address</p>
+              <span>Edit address</span>
             </TooltipContent>
           </Tooltip>
 
@@ -256,7 +256,7 @@ export const AddressCard = ({
               </button>
             </TooltipTrigger>
             <TooltipContent className="tooltip-content">
-              <p>Delete address</p>
+              <span>Delete address</span>
             </TooltipContent>
           </Tooltip>
 
@@ -277,7 +277,7 @@ export const AddressCard = ({
               </button>
             </TooltipTrigger>
             <TooltipContent className="tooltip-content">
-              <p>{address.isDefault ? 'Current default' : 'Set as default'}</p>
+              <span>{address.isDefault ? 'Current default' : 'Set as default'}</span>
             </TooltipContent>
           </Tooltip>
 
@@ -295,7 +295,7 @@ export const AddressCard = ({
               </button>
             </TooltipTrigger>
             <TooltipContent className="tooltip-content">
-              <p>{copyTooltip}</p>
+              <span>{copyTooltip}</span>
             </TooltipContent>
           </Tooltip>
         </div>
