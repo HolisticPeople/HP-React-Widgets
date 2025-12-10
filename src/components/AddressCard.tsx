@@ -202,22 +202,22 @@ export const AddressCard = ({
           )}
         </div>
         {address.company && (
-          <p className="text-sm text-muted-foreground">{address.company}</p>
+          <span className="block text-sm text-muted-foreground">{address.company}</span>
         )}
         <div className="space-y-0.5 text-sm text-secondary-foreground">
-          <p>
+          <span className="block">
             {address.address1}
             {address.address2 && `, ${address.address2}`}
-          </p>
-          <p>
+          </span>
+          <span className="block">
             {address.city}
             {address.state && `, ${address.state}`} {address.postcode}
-          </p>
-          <p className="text-muted-foreground">{address.country}</p>
+          </span>
+          <span className="block text-muted-foreground">{address.country}</span>
         </div>
         <div className="space-y-0.5 text-sm text-muted-foreground pt-1">
-          {address.phone && <p>{address.phone}</p>}
-          {address.email && <p>{address.email}</p>}
+          {address.phone && <span className="block">{address.phone}</span>}
+          {address.email && <span className="block">{address.email}</span>}
         </div>
       </div>
 

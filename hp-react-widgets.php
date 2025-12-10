@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('HP_RW_VERSION', '0.0.94');
+define('HP_RW_VERSION', '0.0.95');
 define('HP_RW_FILE', __FILE__);
 define('HP_RW_PATH', plugin_dir_path(__FILE__));
 define('HP_RW_URL', plugin_dir_url(__FILE__));
