@@ -7,9 +7,20 @@ interface Option {
   flag?: string; // Optional emoji flag to render with emoji font
 }
 
+// Detect if the platform supports flag emojis (Windows doesn't)
+const supportsFlags = (): boolean => {
+  if (typeof navigator === 'undefined') return true;
+  const platform = navigator.platform?.toLowerCase() || '';
+  const userAgent = navigator.userAgent?.toLowerCase() || '';
+  // Windows doesn't render flag emojis properly
+  return !(platform.includes('win') || userAgent.includes('windows'));
+};
+
 // Convert country code to flag emoji using Unicode regional indicators
 const countryCodeToFlag = (countryCode: string): string => {
   if (!countryCode || countryCode.length !== 2) return '';
+  // Don't generate flags on Windows - they render as letter pairs
+  if (!supportsFlags()) return '';
   const codePoints = countryCode
     .toUpperCase()
     .split('')
@@ -45,12 +56,23 @@ export const SearchableSelect = ({
   
   // Generate flag from country code if this looks like a country selector
   const getFlag = (opt: Option) => {
+    // Don't show flags on Windows
+    if (!supportsFlags()) return null;
     // If flag is provided, use it; otherwise try to generate from 2-letter value
     if (opt.flag) return opt.flag;
     if (opt.value && opt.value.length === 2 && /^[A-Z]{2}$/.test(opt.value)) {
       return countryCodeToFlag(opt.value);
     }
     return null;
+  };
+  
+  // Clean label - remove flag emoji prefix if platform doesn't support flags
+  const cleanLabel = (label: string) => {
+    if (!supportsFlags()) {
+      // Remove emoji flags and regional indicator symbols at start
+      return label.replace(/^[\p{Emoji}\p{Emoji_Component}\s]+/u, '').trim();
+    }
+    return label;
   };
   
   // Render selected value with emoji font for flag if present
@@ -72,7 +94,8 @@ export const SearchableSelect = ({
           </>
         );
       }
-      return selectedOption.label;
+      // On Windows, show clean label without broken flag characters
+      return cleanLabel(selectedOption.label);
     })()
   ) : null;
 
@@ -214,7 +237,7 @@ export const SearchableSelect = ({
                 const flag = getFlag(option);
                 const labelWithoutFlag = flag 
                   ? option.label.replace(/^[\p{Emoji}\s]+/u, '').trim()
-                  : option.label;
+                  : cleanLabel(option.label);
                 
                 return (
                   <button
