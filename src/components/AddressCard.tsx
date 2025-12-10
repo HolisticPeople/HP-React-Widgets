@@ -7,18 +7,28 @@ import {
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
-// Detect touch device - tooltips don't work well on mobile
+// Detect if primary input is touch (mobile/tablet) vs mouse (desktop)
+// Only disable tooltips on true mobile devices, not touch-capable desktops
 const useIsTouchDevice = () => {
   const [isTouch, setIsTouch] = useState(false);
   
   useEffect(() => {
     const checkTouch = () => {
-      setIsTouch(
-        'ontouchstart' in window || 
-        navigator.maxTouchPoints > 0
-      );
+      // Check if device is primarily touch-based using media query
+      // This correctly identifies mobile/tablet vs touch-screen laptops
+      const isTouchPrimary = window.matchMedia('(pointer: coarse)').matches;
+      const isHoverNone = window.matchMedia('(hover: none)').matches;
+      
+      // Only consider it a touch device if pointer is coarse AND no hover
+      // This excludes laptops with touchscreens that also have mouse/trackpad
+      setIsTouch(isTouchPrimary && isHoverNone);
     };
     checkTouch();
+    
+    // Listen for changes (e.g., tablet with keyboard attached)
+    const mediaQuery = window.matchMedia('(hover: none)');
+    mediaQuery.addEventListener('change', checkTouch);
+    return () => mediaQuery.removeEventListener('change', checkTouch);
   }, []);
   
   return isTouch;
