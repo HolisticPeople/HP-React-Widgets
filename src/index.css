@@ -173,6 +173,13 @@
         color: hsl(var(--destructive-foreground));
     }
 
+    /* Disabled action button - grayed out */
+    .action-btn:disabled:not(.is-default-star) {
+        opacity: 0.4;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
     /* Highlighted star button for default address - unclickable but shows this is default */
     .action-btn.is-default-star,
     .action-btn.is-default-star:disabled,

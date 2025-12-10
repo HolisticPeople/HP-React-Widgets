@@ -272,14 +272,17 @@ export const AddressCard = ({
             </button>
           </MaybeTooltip>
 
-          <MaybeTooltip content="Delete address">
+          <MaybeTooltip content={address.isDefault ? "Can't delete default address" : "Delete address"}>
             <button
-              className="action-btn destructive"
+              className={cn('action-btn', !address.isDefault && 'destructive')}
               onClick={(e) => {
                 e.stopPropagation();
-                onDelete?.();
+                if (!address.isDefault) {
+                  onDelete?.();
+                }
               }}
-              aria-label="Delete address"
+              disabled={address.isDefault}
+              aria-label={address.isDefault ? "Can't delete default address" : "Delete address"}
             >
               <HpDeleteIcon />
             </button>
