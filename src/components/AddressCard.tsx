@@ -163,7 +163,7 @@ export const AddressCard = ({
   return (
     <div
       className={cn(
-        'address-card group cursor-pointer min-w-[280px] max-w-[320px] flex-shrink-0 h-full min-h-[320px] flex flex-col',
+        'address-card group cursor-pointer min-w-[260px] max-w-[280px] flex-shrink-0 h-full min-h-[300px] flex flex-col',
         isSelected && 'selected',
         address.isDefault && 'is-default'
       )}
@@ -199,11 +199,6 @@ export const AddressCard = ({
             <p className="font-semibold text-foreground text-base leading-tight text-muted-foreground italic">
               {addressSummary}
             </p>
-          )}
-          {address.label && !address.isDefault && (
-            <span className="text-xs text-muted-foreground font-medium">
-              {address.label}
-            </span>
           )}
         </div>
         {address.company && (
@@ -265,25 +260,26 @@ export const AddressCard = ({
             </TooltipContent>
           </Tooltip>
 
-          {!address.isDefault && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  className="action-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                className={cn('action-btn', address.isDefault && 'is-default-star')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!address.isDefault) {
                     onSetDefault?.();
-                  }}
-                  aria-label="Set as default"
-                >
-                  <HpStarIcon />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent className="tooltip-content">
-                <p>Set as default</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
+                  }
+                }}
+                disabled={address.isDefault}
+                aria-label={address.isDefault ? 'Current default' : 'Set as default'}
+              >
+                <HpStarIcon />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="tooltip-content">
+              <p>{address.isDefault ? 'Current default' : 'Set as default'}</p>
+            </TooltipContent>
+          </Tooltip>
 
           <Tooltip>
             <TooltipTrigger asChild>

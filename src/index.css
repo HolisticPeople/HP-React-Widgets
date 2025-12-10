@@ -123,7 +123,7 @@
         padding: 1.25rem;
         transition: all 0.2s ease-out;
         /* Ensure all cards have at least the same height so rows look uniform */
-        min-height: 320px;
+        min-height: 300px;
         display: flex;
         flex-direction: column;
     }
@@ -171,6 +171,18 @@
     .action-btn.destructive:hover {
         background-color: hsl(var(--destructive));
         color: hsl(var(--destructive-foreground));
+    }
+
+    /* Highlighted star button for default address - unclickable but shows this is default */
+    .action-btn.is-default-star {
+        background-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground)) !important;
+        cursor: default;
+        opacity: 1;
+    }
+
+    .action-btn.is-default-star:hover {
+        transform: none;
     }
 
     .action-btn svg,
