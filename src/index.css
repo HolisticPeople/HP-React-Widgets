@@ -280,4 +280,18 @@
         border: 1px solid hsl(var(--border));
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.75);
     }
+
+    /* Mobile safe area padding for footer/buttons */
+    .pb-safe {
+        padding-bottom: max(1rem, env(safe-area-inset-bottom, 1rem));
+    }
+
+    /* Dialog mobile fixes */
+    @media (max-width: 640px) {
+        [role="dialog"] {
+            margin: 1rem !important;
+            max-height: calc(100vh - 6rem) !important;
+            max-height: calc(100dvh - 6rem) !important;
+        }
+    }
 }

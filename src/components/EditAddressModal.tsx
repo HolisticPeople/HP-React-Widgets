@@ -241,14 +241,14 @@ export const EditAddressModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleCancel()}>
-      <DialogContent className="max-w-2xl bg-card border-border">
+      <DialogContent className="max-w-2xl bg-card border-border mx-4 my-8 max-h-[calc(100vh-4rem)] overflow-y-auto sm:mx-auto sm:my-auto sm:max-h-[85vh]">
         <DialogHeader>
           <DialogTitle className="text-foreground">
             {modalTitle}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 pb-4">
           {/* Row 1: First Name, Last Name, Company (US only) */}
           <div className={cn("grid grid-cols-1 gap-3", selectedCountryCode === 'US' ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
             <FormField
@@ -405,7 +405,7 @@ export const EditAddressModal = ({
             </FormField>
           </div>
 
-          <DialogFooter className="gap-2 pt-4">
+          <DialogFooter className="gap-2 pt-4 pb-safe sticky bottom-0 bg-card">
             <Button
               type="button"
               variant="ghost"
