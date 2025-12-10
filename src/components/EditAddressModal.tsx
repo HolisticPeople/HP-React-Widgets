@@ -241,7 +241,7 @@ export const EditAddressModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleCancel()}>
-      <DialogContent className="max-w-2xl bg-card border-border max-h-[calc(100vh-4rem)] overflow-y-auto sm:max-h-[85vh]" style={{ margin: '2rem 1rem', width: 'calc(100% - 2rem)' }}>
+      <DialogContent className="max-w-2xl bg-card border-border max-h-[calc(100vh-4rem)] overflow-y-auto sm:max-h-[85vh]">
         <DialogHeader>
           <DialogTitle className="text-foreground">
             {modalTitle}
