@@ -62,7 +62,12 @@ export const SearchableSelect = ({
         const labelWithoutFlag = selectedOption.label.replace(/^[\p{Emoji}\s]+/u, '').trim();
         return (
           <>
-            <span className="emoji-flag">{flag}</span>
+            <span 
+              className="emoji-flag" 
+              style={{ fontFamily: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif' }}
+            >
+              {flag}
+            </span>
             {' '}{labelWithoutFlag}
           </>
         );
@@ -224,7 +229,14 @@ export const SearchableSelect = ({
                       option.value === value && "bg-primary/10 text-primary font-medium"
                     )}
                   >
-                    {flag && <span className="emoji-flag mr-1">{flag}</span>}
+                    {flag && (
+                      <span 
+                        className="emoji-flag mr-1" 
+                        style={{ fontFamily: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif' }}
+                      >
+                        {flag}
+                      </span>
+                    )}
                     {labelWithoutFlag}
                   </button>
                 );

@@ -295,9 +295,12 @@
         }
     }
 
-    /* Ensure emoji flags render correctly */
+    /* Ensure emoji flags render correctly - force emoji font */
     .emoji-flag {
-        font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Android Emoji", "EmojiSymbols", sans-serif;
-        font-style: normal;
+        font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Android Emoji", "EmojiSymbols", "Twemoji Mozilla", sans-serif !important;
+        font-style: normal !important;
+        font-weight: normal !important;
+        line-height: 1 !important;
+        -webkit-font-smoothing: antialiased;
     }
 }
