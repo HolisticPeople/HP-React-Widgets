@@ -123,7 +123,7 @@
         padding: 1.25rem;
         transition: all 0.2s ease-out;
         /* Ensure all cards have at least the same height so rows look uniform */
-        min-height: 320px;
+        min-height: 300px;
         display: flex;
         flex-direction: column;
     }
@@ -171,6 +171,27 @@
     .action-btn.destructive:hover {
         background-color: hsl(var(--destructive));
         color: hsl(var(--destructive-foreground));
+    }
+
+    /* Disabled action button - grayed out */
+    .action-btn:disabled:not(.is-default-star) {
+        opacity: 0.4;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    /* Highlighted star button for default address - unclickable but shows this is default */
+    .action-btn.is-default-star,
+    .action-btn.is-default-star:disabled,
+    .action-btn.is-default-star:hover,
+    .action-btn.is-default-star:active,
+    .action-btn.is-default-star:focus {
+        background-color: hsl(var(--primary)) !important;
+        color: hsl(var(--primary-foreground)) !important;
+        cursor: default !important;
+        opacity: 1 !important;
+        transform: none !important;
+        pointer-events: none;
     }
 
     .action-btn svg,
@@ -267,5 +288,28 @@
         color: hsl(var(--popover-foreground));
         border: 1px solid hsl(var(--border));
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.75);
+    }
+
+    /* Mobile safe area padding for footer/buttons */
+    .pb-safe {
+        padding-bottom: max(1rem, env(safe-area-inset-bottom, 1rem));
+    }
+
+    /* Dialog mobile fixes - subtle margin adjustment */
+    @media (max-width: 640px) {
+        [role="dialog"] {
+            width: calc(100% - 1.5rem) !important;
+            max-height: calc(100vh - 4rem) !important;
+            max-height: calc(100dvh - 4rem) !important;
+        }
+    }
+
+    /* Ensure emoji flags render correctly - force emoji font */
+    .emoji-flag {
+        font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Android Emoji", "EmojiSymbols", "Twemoji Mozilla", sans-serif !important;
+        font-style: normal !important;
+        font-weight: normal !important;
+        line-height: 1 !important;
+        -webkit-font-smoothing: antialiased;
     }
 }

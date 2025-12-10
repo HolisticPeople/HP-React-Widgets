@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Address, AddressType } from '@/types/address';
 import {
   Tooltip,
@@ -5,6 +6,33 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+
+// Detect if primary input is touch (mobile/tablet) vs mouse (desktop)
+// Only disable tooltips on true mobile devices, not touch-capable desktops
+const useIsTouchDevice = () => {
+  const [isTouch, setIsTouch] = useState(false);
+  
+  useEffect(() => {
+    const checkTouch = () => {
+      // Check if device is primarily touch-based using media query
+      // This correctly identifies mobile/tablet vs touch-screen laptops
+      const isTouchPrimary = window.matchMedia('(pointer: coarse)').matches;
+      const isHoverNone = window.matchMedia('(hover: none)').matches;
+      
+      // Only consider it a touch device if pointer is coarse AND no hover
+      // This excludes laptops with touchscreens that also have mouse/trackpad
+      setIsTouch(isTouchPrimary && isHoverNone);
+    };
+    checkTouch();
+    
+    // Listen for changes (e.g., tablet with keyboard attached)
+    const mediaQuery = window.matchMedia('(hover: none)');
+    mediaQuery.addEventListener('change', checkTouch);
+    return () => mediaQuery.removeEventListener('change', checkTouch);
+  }, []);
+  
+  return isTouch;
+};
 
 // Refined inline SVG icons - stroked for a modern, lightweight look.
 const HpEditIcon = () => (
@@ -146,6 +174,8 @@ export const AddressCard = ({
   onCopy,
   showActions = true,
 }: AddressCardProps) => {
+  const isTouchDevice = useIsTouchDevice();
+  
   // Build display name with fallback for addresses missing name data
   const firstName = address.firstName?.trim() || '';
   const lastName = address.lastName?.trim() || '';
@@ -159,11 +189,26 @@ export const AddressCard = ({
     : address.address1 || 'Address';
     
   const copyTooltip = type === 'billing' ? 'Copy to shipping' : 'Copy to billing';
+  
+  // Wrapper that only shows tooltip on non-touch devices
+  const MaybeTooltip = ({ children, content }: { children: React.ReactNode; content: string }) => {
+    if (isTouchDevice) {
+      return <>{children}</>;
+    }
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{children}</TooltipTrigger>
+        <TooltipContent className="tooltip-content">
+          <span>{content}</span>
+        </TooltipContent>
+      </Tooltip>
+    );
+  };
 
   return (
     <div
       className={cn(
-        'address-card group cursor-pointer min-w-[280px] max-w-[320px] flex-shrink-0 h-full min-h-[320px] flex flex-col',
+        'address-card group cursor-pointer min-w-[260px] max-w-[280px] flex-shrink-0 h-full min-h-[300px] flex flex-col',
         isSelected && 'selected',
         address.isDefault && 'is-default'
       )}
@@ -192,116 +237,95 @@ export const AddressCard = ({
       <div className={cn('space-y-2 pt-2 flex-grow', address.isDefault && 'pt-4')}>
         <div className="flex items-center justify-between gap-2">
           {fullName ? (
-            <p className="font-semibold text-foreground text-base leading-tight">
+            <span className="block font-semibold text-foreground text-base leading-tight">
               {fullName}
-            </p>
+            </span>
           ) : (
-            <p className="font-semibold text-foreground text-base leading-tight text-muted-foreground italic">
+            <span className="block font-semibold text-foreground text-base leading-tight text-muted-foreground italic">
               {addressSummary}
-            </p>
-          )}
-          {address.label && !address.isDefault && (
-            <span className="text-xs text-muted-foreground font-medium">
-              {address.label}
             </span>
           )}
         </div>
         {address.company && (
-          <p className="text-sm text-muted-foreground">{address.company}</p>
+          <span className="block text-sm text-muted-foreground">{address.company}</span>
         )}
         <div className="space-y-0.5 text-sm text-secondary-foreground">
-          <p>
+          <span className="block">
             {address.address1}
             {address.address2 && `, ${address.address2}`}
-          </p>
-          <p>
+          </span>
+          <span className="block">
             {address.city}
             {address.state && `, ${address.state}`} {address.postcode}
-          </p>
-          <p className="text-muted-foreground">{address.country}</p>
+          </span>
+          <span className="block text-muted-foreground">{address.country}</span>
         </div>
         <div className="space-y-0.5 text-sm text-muted-foreground pt-1">
-          {address.phone && <p>{address.phone}</p>}
-          {address.email && <p>{address.email}</p>}
+          {address.phone && <span className="block">{address.phone}</span>}
+          {address.email && <span className="block">{address.email}</span>}
         </div>
       </div>
 
       {/* Action Buttons */}
       {showActions && (
         <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border/50">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                className="action-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit?.();
-                }}
-                aria-label="Edit address"
-              >
-                <HpEditIcon />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent className="tooltip-content">
-              <p>Edit address</p>
-            </TooltipContent>
-          </Tooltip>
+          <MaybeTooltip content="Edit address">
+            <button
+              className="action-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit?.();
+              }}
+              aria-label="Edit address"
+            >
+              <HpEditIcon />
+            </button>
+          </MaybeTooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                className="action-btn destructive"
-                onClick={(e) => {
-                  e.stopPropagation();
+          <MaybeTooltip content={address.isDefault ? "Can't delete default address" : "Delete address"}>
+            <button
+              className={cn('action-btn', !address.isDefault && 'destructive')}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!address.isDefault) {
                   onDelete?.();
-                }}
-                aria-label="Delete address"
-              >
-                <HpDeleteIcon />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent className="tooltip-content">
-              <p>Delete address</p>
-            </TooltipContent>
-          </Tooltip>
+                }
+              }}
+              disabled={address.isDefault}
+              aria-label={address.isDefault ? "Can't delete default address" : "Delete address"}
+            >
+              <HpDeleteIcon />
+            </button>
+          </MaybeTooltip>
 
-          {!address.isDefault && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  className="action-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSetDefault?.();
-                  }}
-                  aria-label="Set as default"
-                >
-                  <HpStarIcon />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent className="tooltip-content">
-                <p>Set as default</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
+          <MaybeTooltip content={address.isDefault ? 'Current default' : 'Set as default'}>
+            <button
+              className={cn('action-btn', address.isDefault && 'is-default-star')}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!address.isDefault) {
+                  onSetDefault?.();
+                }
+              }}
+              disabled={address.isDefault}
+              aria-label={address.isDefault ? 'Current default' : 'Set as default'}
+            >
+              <HpStarIcon />
+            </button>
+          </MaybeTooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                className="action-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onCopy?.();
-                }}
-                aria-label={copyTooltip}
-              >
-                <HpCopyIcon />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent className="tooltip-content">
-              <p>{copyTooltip}</p>
-            </TooltipContent>
-          </Tooltip>
+          <MaybeTooltip content={copyTooltip}>
+            <button
+              className="action-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCopy?.();
+              }}
+              aria-label={copyTooltip}
+            >
+              <HpCopyIcon />
+            </button>
+          </MaybeTooltip>
         </div>
       )}
     </div>

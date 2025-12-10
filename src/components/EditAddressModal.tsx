@@ -110,10 +110,12 @@ export const EditAddressModal = ({
   const hasStates = states.length > 0;
 
   // Format countries for SearchableSelect
+  // Note: flag emoji might not render on all pages due to font issues
   const countryOptions = useMemo(() => 
     countries.map((country) => ({
       value: country.isoCode,
       label: `${country.flag} ${country.name}`,
+      flag: country.flag,
     })),
     [countries]
   );
@@ -241,14 +243,14 @@ export const EditAddressModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleCancel()}>
-      <DialogContent className="max-w-2xl bg-card border-border">
+      <DialogContent className="max-w-2xl bg-card border-border max-h-[calc(100vh-4rem)] overflow-y-auto sm:max-h-[85vh]">
         <DialogHeader>
           <DialogTitle className="text-foreground">
             {modalTitle}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 pb-4">
           {/* Row 1: First Name, Last Name, Company (US only) */}
           <div className={cn("grid grid-cols-1 gap-3", selectedCountryCode === 'US' ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
             <FormField
@@ -405,7 +407,7 @@ export const EditAddressModal = ({
             </FormField>
           </div>
 
-          <DialogFooter className="gap-2 pt-4">
+          <DialogFooter className="gap-2 pt-4 pb-safe sticky bottom-0 bg-card/95 backdrop-blur-sm border-t border-border/50 -mx-6 px-6 mt-4" style={{ backgroundColor: 'hsl(var(--card) / 0.97)' }}>
             <Button
               type="button"
               variant="ghost"

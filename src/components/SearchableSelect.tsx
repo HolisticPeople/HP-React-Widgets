@@ -4,7 +4,29 @@ import { cn } from '@/lib/utils';
 interface Option {
   value: string;
   label: string;
+  flag?: string; // Optional emoji flag to render with emoji font
 }
+
+// Detect if the platform supports flag emojis (Windows doesn't)
+const supportsFlags = (): boolean => {
+  if (typeof navigator === 'undefined') return true;
+  const platform = navigator.platform?.toLowerCase() || '';
+  const userAgent = navigator.userAgent?.toLowerCase() || '';
+  // Windows doesn't render flag emojis properly
+  return !(platform.includes('win') || userAgent.includes('windows'));
+};
+
+// Convert country code to flag emoji using Unicode regional indicators
+const countryCodeToFlag = (countryCode: string): string => {
+  if (!countryCode || countryCode.length !== 2) return '';
+  // Don't generate flags on Windows - they render as letter pairs
+  if (!supportsFlags()) return '';
+  const codePoints = countryCode
+    .toUpperCase()
+    .split('')
+    .map(char => 127397 + char.charCodeAt(0));
+  return String.fromCodePoint(...codePoints);
+};
 
 interface SearchableSelectProps {
   options: Option[];
@@ -31,13 +53,78 @@ export const SearchableSelect = ({
 
   // Find the selected option's label
   const selectedOption = options.find((opt) => opt.value === value);
-  const displayValue = selectedOption?.label || '';
+  
+  // Generate flag from country code if this looks like a country selector
+  const getFlag = (opt: Option) => {
+    // Don't show flags on Windows
+    if (!supportsFlags()) return null;
+    // If flag is provided, use it; otherwise try to generate from 2-letter value
+    if (opt.flag) return opt.flag;
+    if (opt.value && opt.value.length === 2 && /^[A-Z]{2}$/.test(opt.value)) {
+      return countryCodeToFlag(opt.value);
+    }
+    return null;
+  };
+  
+  // Clean label - remove flag emoji prefix if platform doesn't support flags
+  const cleanLabel = (label: string) => {
+    if (!supportsFlags()) {
+      // Remove emoji flags and regional indicator symbols at start
+      return label.replace(/^[\p{Emoji}\p{Emoji_Component}\s]+/u, '').trim();
+    }
+    return label;
+  };
+  
+  // Render selected value with emoji font for flag if present
+  const displayContent = selectedOption ? (
+    (() => {
+      const flag = getFlag(selectedOption);
+      if (flag) {
+        // Remove any existing flag from label and prepend fresh one
+        const labelWithoutFlag = selectedOption.label.replace(/^[\p{Emoji}\s]+/u, '').trim();
+        return (
+          <>
+            <span 
+              className="emoji-flag" 
+              style={{ fontFamily: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif' }}
+            >
+              {flag}
+            </span>
+            {' '}{labelWithoutFlag}
+          </>
+        );
+      }
+      // On Windows, show clean label without broken flag characters
+      return cleanLabel(selectedOption.label);
+    })()
+  ) : null;
 
-  // Filter options based on search
+  // Filter and sort options based on search
+  // Prioritize options that START with the search term
   const filteredOptions = search
-    ? options.filter((opt) =>
-        opt.label.toLowerCase().includes(search.toLowerCase())
-      )
+    ? options
+        .filter((opt) =>
+          opt.label.toLowerCase().includes(search.toLowerCase())
+        )
+        .sort((a, b) => {
+          const searchLower = search.toLowerCase();
+          const aLabel = a.label.toLowerCase();
+          const bLabel = b.label.toLowerCase();
+          
+          // Check if labels start with search (skip emoji/flag at start)
+          const aText = aLabel.replace(/^[^\w\s]+\s*/, ''); // Remove leading emoji/flag
+          const bText = bLabel.replace(/^[^\w\s]+\s*/, '');
+          
+          const aStartsWith = aText.startsWith(searchLower);
+          const bStartsWith = bText.startsWith(searchLower);
+          
+          // Items starting with search come first
+          if (aStartsWith && !bStartsWith) return -1;
+          if (!aStartsWith && bStartsWith) return 1;
+          
+          // If both start or both don't start, sort alphabetically
+          return aText.localeCompare(bText);
+        })
     : options;
 
   // Close dropdown when clicking outside
@@ -98,7 +185,7 @@ export const SearchableSelect = ({
         style={{ backgroundColor: 'hsl(var(--card))' }}
       >
         <span className={cn("truncate", !value && 'text-muted-foreground')}>
-          {displayValue || placeholder}
+          {displayContent || placeholder}
         </span>
         <svg
           className={cn("h-4 w-4 shrink-0 opacity-50 transition-transform ml-2", isOpen && "rotate-180")}
@@ -145,22 +232,38 @@ export const SearchableSelect = ({
                 No results found
               </div>
             ) : (
-              filteredOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  data-selected={option.value === value}
-                  onClick={() => handleSelect(option.value)}
-                  className={cn(
-                    "w-full px-3 py-2 text-sm text-left transition-colors rounded-md",
-                    "hover:bg-accent hover:text-accent-foreground",
-                    "focus:outline-none focus:bg-accent focus:text-accent-foreground",
-                    option.value === value && "bg-primary/10 text-primary font-medium"
-                  )}
-                >
-                  {option.label}
-                </button>
-              ))
+              filteredOptions.map((option) => {
+                // Generate flag and render with emoji font
+                const flag = getFlag(option);
+                const labelWithoutFlag = flag 
+                  ? option.label.replace(/^[\p{Emoji}\s]+/u, '').trim()
+                  : cleanLabel(option.label);
+                
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    data-selected={option.value === value}
+                    onClick={() => handleSelect(option.value)}
+                    className={cn(
+                      "w-full px-3 py-2 text-sm text-left transition-colors rounded-md",
+                      "hover:bg-accent hover:text-accent-foreground",
+                      "focus:outline-none focus:bg-accent focus:text-accent-foreground",
+                      option.value === value && "bg-primary/10 text-primary font-medium"
+                    )}
+                  >
+                    {flag && (
+                      <span 
+                        className="emoji-flag mr-1" 
+                        style={{ fontFamily: '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif' }}
+                      >
+                        {flag}
+                      </span>
+                    )}
+                    {labelWithoutFlag}
+                  </button>
+                );
+              })
             )}
           </div>
         </div>

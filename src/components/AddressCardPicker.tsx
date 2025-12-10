@@ -117,6 +117,7 @@ export const AddressCardPicker = ({
 }: AddressCardPickerProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [visibleCards, setVisibleCards] = useState(3);
+  const [mostVisibleIndex, setMostVisibleIndex] = useState(0);
   const sliderRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -175,6 +176,23 @@ export const AddressCardPicker = ({
     return () => window.removeEventListener('resize', updateVisibleCards);
   }, []);
 
+  // Track scroll position to show most visible card index
+  useEffect(() => {
+    const slider = sliderRef.current;
+    if (!slider) return;
+
+    const handleScroll = () => {
+      const scrollLeft = slider.scrollLeft;
+      const cardWidth = 260 + 16; // card width + gap
+      const index = Math.round(scrollLeft / cardWidth);
+      setMostVisibleIndex(Math.min(index, items.length - 1));
+      setCurrentIndex(index);
+    };
+
+    slider.addEventListener('scroll', handleScroll, { passive: true });
+    return () => slider.removeEventListener('scroll', handleScroll);
+  }, [items.length]);
+
   const maxIndex = Math.max(0, items.length - visibleCards);
   const canScrollLeft = currentIndex > 0;
   const canScrollRight = currentIndex < maxIndex;
@@ -185,7 +203,7 @@ export const AddressCardPicker = ({
       setCurrentIndex(newIndex);
 
       if (sliderRef.current) {
-        const cardWidth = 320 + 16; // card width + gap
+        const cardWidth = 260 + 16; // card width + gap
         sliderRef.current.scrollTo({
           left: newIndex * cardWidth,
           behavior: 'smooth',
@@ -547,26 +565,9 @@ export const AddressCardPicker = ({
         </div>
       </div>
 
-      {/* Pagination Dots - Mobile */}
+      {/* Mobile Navigation - show most visible card position */}
       {items.length > visibleCards && (
-        <div className="flex justify-center gap-2 pt-2 sm:hidden">
-          {Array.from({ length: Math.ceil(items.length / visibleCards) }).map((_, i) => (
-            <button
-              key={i}
-              className={cn(
-                'slider-dot',
-                Math.floor(currentIndex / visibleCards) === i && 'active'
-              )}
-              onClick={() => scrollTo(i * visibleCards)}
-              aria-label={`Go to page ${i + 1}`}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Mobile Navigation */}
-      {items.length > visibleCards && (
-        <div className="flex sm:hidden items-center justify-center gap-4">
+        <div className="flex sm:hidden items-center justify-center gap-4 pt-3">
           <button
             className="slider-nav-btn"
             onClick={handlePrev}
@@ -576,7 +577,7 @@ export const AddressCardPicker = ({
             <HpArrowLeftIcon />
           </button>
           <span className="text-sm text-muted-foreground">
-            {currentIndex + 1} - {Math.min(currentIndex + visibleCards, items.length)} of {items.length}
+            {mostVisibleIndex + 1} of {items.length}
           </span>
           <button
             className="slider-nav-btn"
