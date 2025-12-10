@@ -7,6 +7,16 @@ interface Option {
   flag?: string; // Optional emoji flag to render with emoji font
 }
 
+// Convert country code to flag emoji using Unicode regional indicators
+const countryCodeToFlag = (countryCode: string): string => {
+  if (!countryCode || countryCode.length !== 2) return '';
+  const codePoints = countryCode
+    .toUpperCase()
+    .split('')
+    .map(char => 127397 + char.charCodeAt(0));
+  return String.fromCodePoint(...codePoints);
+};
+
 interface SearchableSelectProps {
   options: Option[];
   value: string;
@@ -33,14 +43,32 @@ export const SearchableSelect = ({
   // Find the selected option's label
   const selectedOption = options.find((opt) => opt.value === value);
   
+  // Generate flag from country code if this looks like a country selector
+  const getFlag = (opt: Option) => {
+    // If flag is provided, use it; otherwise try to generate from 2-letter value
+    if (opt.flag) return opt.flag;
+    if (opt.value && opt.value.length === 2 && /^[A-Z]{2}$/.test(opt.value)) {
+      return countryCodeToFlag(opt.value);
+    }
+    return null;
+  };
+  
   // Render selected value with emoji font for flag if present
   const displayContent = selectedOption ? (
-    selectedOption.flag ? (
-      <>
-        <span className="emoji-flag">{selectedOption.flag}</span>
-        {' '}{selectedOption.label.replace(selectedOption.flag, '').trim()}
-      </>
-    ) : selectedOption.label
+    (() => {
+      const flag = getFlag(selectedOption);
+      if (flag) {
+        // Remove any existing flag from label and prepend fresh one
+        const labelWithoutFlag = selectedOption.label.replace(/^[\p{Emoji}\s]+/u, '').trim();
+        return (
+          <>
+            <span className="emoji-flag">{flag}</span>
+            {' '}{labelWithoutFlag}
+          </>
+        );
+      }
+      return selectedOption.label;
+    })()
   ) : null;
 
   // Filter and sort options based on search
@@ -177,13 +205,11 @@ export const SearchableSelect = ({
               </div>
             ) : (
               filteredOptions.map((option) => {
-                // If option has a flag, render it separately with emoji font
-                const displayContent = option.flag ? (
-                  <>
-                    <span className="emoji-flag mr-1">{option.flag}</span>
-                    {option.label.replace(option.flag, '').trim()}
-                  </>
-                ) : option.label;
+                // Generate flag and render with emoji font
+                const flag = getFlag(option);
+                const labelWithoutFlag = flag 
+                  ? option.label.replace(/^[\p{Emoji}\s]+/u, '').trim()
+                  : option.label;
                 
                 return (
                   <button
@@ -198,7 +224,8 @@ export const SearchableSelect = ({
                       option.value === value && "bg-primary/10 text-primary font-medium"
                     )}
                   >
-                    {displayContent}
+                    {flag && <span className="emoji-flag mr-1">{flag}</span>}
+                    {labelWithoutFlag}
                   </button>
                 );
               })
