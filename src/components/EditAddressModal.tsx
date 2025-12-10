@@ -110,10 +110,12 @@ export const EditAddressModal = ({
   const hasStates = states.length > 0;
 
   // Format countries for SearchableSelect
+  // Note: flag emoji might not render on all pages due to font issues
   const countryOptions = useMemo(() => 
     countries.map((country) => ({
       value: country.isoCode,
       label: `${country.flag} ${country.name}`,
+      flag: country.flag,
     })),
     [countries]
   );
@@ -405,7 +407,7 @@ export const EditAddressModal = ({
             </FormField>
           </div>
 
-          <DialogFooter className="gap-2 pt-4 pb-safe sticky bottom-0 bg-card">
+          <DialogFooter className="gap-2 pt-4 pb-safe sticky bottom-0 bg-card/95 backdrop-blur-sm border-t border-border/50 -mx-6 px-6 mt-4" style={{ backgroundColor: 'hsl(var(--card) / 0.97)' }}>
             <Button
               type="button"
               variant="ghost"

@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 interface Option {
   value: string;
   label: string;
+  flag?: string; // Optional emoji flag to render with emoji font
 }
 
 interface SearchableSelectProps {
@@ -31,7 +32,16 @@ export const SearchableSelect = ({
 
   // Find the selected option's label
   const selectedOption = options.find((opt) => opt.value === value);
-  const displayValue = selectedOption?.label || '';
+  
+  // Render selected value with emoji font for flag if present
+  const displayContent = selectedOption ? (
+    selectedOption.flag ? (
+      <>
+        <span className="emoji-flag">{selectedOption.flag}</span>
+        {' '}{selectedOption.label.replace(selectedOption.flag, '').trim()}
+      </>
+    ) : selectedOption.label
+  ) : null;
 
   // Filter and sort options based on search
   // Prioritize options that START with the search term
@@ -119,7 +129,7 @@ export const SearchableSelect = ({
         style={{ backgroundColor: 'hsl(var(--card))' }}
       >
         <span className={cn("truncate", !value && 'text-muted-foreground')}>
-          {displayValue || placeholder}
+          {displayContent || placeholder}
         </span>
         <svg
           className={cn("h-4 w-4 shrink-0 opacity-50 transition-transform ml-2", isOpen && "rotate-180")}
@@ -166,22 +176,32 @@ export const SearchableSelect = ({
                 No results found
               </div>
             ) : (
-              filteredOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  data-selected={option.value === value}
-                  onClick={() => handleSelect(option.value)}
-                  className={cn(
-                    "w-full px-3 py-2 text-sm text-left transition-colors rounded-md",
-                    "hover:bg-accent hover:text-accent-foreground",
-                    "focus:outline-none focus:bg-accent focus:text-accent-foreground",
-                    option.value === value && "bg-primary/10 text-primary font-medium"
-                  )}
-                >
-                  {option.label}
-                </button>
-              ))
+              filteredOptions.map((option) => {
+                // If option has a flag, render it separately with emoji font
+                const displayContent = option.flag ? (
+                  <>
+                    <span className="emoji-flag mr-1">{option.flag}</span>
+                    {option.label.replace(option.flag, '').trim()}
+                  </>
+                ) : option.label;
+                
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    data-selected={option.value === value}
+                    onClick={() => handleSelect(option.value)}
+                    className={cn(
+                      "w-full px-3 py-2 text-sm text-left transition-colors rounded-md",
+                      "hover:bg-accent hover:text-accent-foreground",
+                      "focus:outline-none focus:bg-accent focus:text-accent-foreground",
+                      option.value === value && "bg-primary/10 text-primary font-medium"
+                    )}
+                  >
+                    {displayContent}
+                  </button>
+                );
+              })
             )}
           </div>
         </div>
