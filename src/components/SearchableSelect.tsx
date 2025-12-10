@@ -33,11 +33,32 @@ export const SearchableSelect = ({
   const selectedOption = options.find((opt) => opt.value === value);
   const displayValue = selectedOption?.label || '';
 
-  // Filter options based on search
+  // Filter and sort options based on search
+  // Prioritize options that START with the search term
   const filteredOptions = search
-    ? options.filter((opt) =>
-        opt.label.toLowerCase().includes(search.toLowerCase())
-      )
+    ? options
+        .filter((opt) =>
+          opt.label.toLowerCase().includes(search.toLowerCase())
+        )
+        .sort((a, b) => {
+          const searchLower = search.toLowerCase();
+          const aLabel = a.label.toLowerCase();
+          const bLabel = b.label.toLowerCase();
+          
+          // Check if labels start with search (skip emoji/flag at start)
+          const aText = aLabel.replace(/^[^\w\s]+\s*/, ''); // Remove leading emoji/flag
+          const bText = bLabel.replace(/^[^\w\s]+\s*/, '');
+          
+          const aStartsWith = aText.startsWith(searchLower);
+          const bStartsWith = bText.startsWith(searchLower);
+          
+          // Items starting with search come first
+          if (aStartsWith && !bStartsWith) return -1;
+          if (!aStartsWith && bStartsWith) return 1;
+          
+          // If both start or both don't start, sort alphabetically
+          return aText.localeCompare(bText);
+        })
     : options;
 
   // Close dropdown when clicking outside
