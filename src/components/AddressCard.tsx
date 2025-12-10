@@ -192,13 +192,13 @@ export const AddressCard = ({
       <div className={cn('space-y-2 pt-2 flex-grow', address.isDefault && 'pt-4')}>
         <div className="flex items-center justify-between gap-2">
           {fullName ? (
-            <p className="font-semibold text-foreground text-base leading-tight">
+            <span className="block font-semibold text-foreground text-base leading-tight">
               {fullName}
-            </p>
+            </span>
           ) : (
-            <p className="font-semibold text-foreground text-base leading-tight text-muted-foreground italic">
+            <span className="block font-semibold text-foreground text-base leading-tight text-muted-foreground italic">
               {addressSummary}
-            </p>
+            </span>
           )}
         </div>
         {address.company && (
