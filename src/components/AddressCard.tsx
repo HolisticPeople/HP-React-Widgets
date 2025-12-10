@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Address, AddressType } from '@/types/address';
 import {
   Tooltip,
@@ -5,6 +6,23 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+
+// Detect touch device - tooltips don't work well on mobile
+const useIsTouchDevice = () => {
+  const [isTouch, setIsTouch] = useState(false);
+  
+  useEffect(() => {
+    const checkTouch = () => {
+      setIsTouch(
+        'ontouchstart' in window || 
+        navigator.maxTouchPoints > 0
+      );
+    };
+    checkTouch();
+  }, []);
+  
+  return isTouch;
+};
 
 // Refined inline SVG icons - stroked for a modern, lightweight look.
 const HpEditIcon = () => (
@@ -146,6 +164,8 @@ export const AddressCard = ({
   onCopy,
   showActions = true,
 }: AddressCardProps) => {
+  const isTouchDevice = useIsTouchDevice();
+  
   // Build display name with fallback for addresses missing name data
   const firstName = address.firstName?.trim() || '';
   const lastName = address.lastName?.trim() || '';
@@ -159,6 +179,21 @@ export const AddressCard = ({
     : address.address1 || 'Address';
     
   const copyTooltip = type === 'billing' ? 'Copy to shipping' : 'Copy to billing';
+  
+  // Wrapper that only shows tooltip on non-touch devices
+  const MaybeTooltip = ({ children, content }: { children: React.ReactNode; content: string }) => {
+    if (isTouchDevice) {
+      return <>{children}</>;
+    }
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{children}</TooltipTrigger>
+        <TooltipContent className="tooltip-content">
+          <span>{content}</span>
+        </TooltipContent>
+      </Tooltip>
+    );
+  };
 
   return (
     <div
@@ -224,80 +259,60 @@ export const AddressCard = ({
       {/* Action Buttons */}
       {showActions && (
         <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border/50">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                className="action-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit?.();
-                }}
-                aria-label="Edit address"
-              >
-                <HpEditIcon />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent className="tooltip-content">
-              <span>Edit address</span>
-            </TooltipContent>
-          </Tooltip>
+          <MaybeTooltip content="Edit address">
+            <button
+              className="action-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit?.();
+              }}
+              aria-label="Edit address"
+            >
+              <HpEditIcon />
+            </button>
+          </MaybeTooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                className="action-btn destructive"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete?.();
-                }}
-                aria-label="Delete address"
-              >
-                <HpDeleteIcon />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent className="tooltip-content">
-              <span>Delete address</span>
-            </TooltipContent>
-          </Tooltip>
+          <MaybeTooltip content="Delete address">
+            <button
+              className="action-btn destructive"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete?.();
+              }}
+              aria-label="Delete address"
+            >
+              <HpDeleteIcon />
+            </button>
+          </MaybeTooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                className={cn('action-btn', address.isDefault && 'is-default-star')}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!address.isDefault) {
-                    onSetDefault?.();
-                  }
-                }}
-                disabled={address.isDefault}
-                aria-label={address.isDefault ? 'Current default' : 'Set as default'}
-              >
-                <HpStarIcon />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent className="tooltip-content">
-              <span>{address.isDefault ? 'Current default' : 'Set as default'}</span>
-            </TooltipContent>
-          </Tooltip>
+          <MaybeTooltip content={address.isDefault ? 'Current default' : 'Set as default'}>
+            <button
+              className={cn('action-btn', address.isDefault && 'is-default-star')}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!address.isDefault) {
+                  onSetDefault?.();
+                }
+              }}
+              disabled={address.isDefault}
+              aria-label={address.isDefault ? 'Current default' : 'Set as default'}
+            >
+              <HpStarIcon />
+            </button>
+          </MaybeTooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                className="action-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onCopy?.();
-                }}
-                aria-label={copyTooltip}
-              >
-                <HpCopyIcon />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent className="tooltip-content">
-              <span>{copyTooltip}</span>
-            </TooltipContent>
-          </Tooltip>
+          <MaybeTooltip content={copyTooltip}>
+            <button
+              className="action-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCopy?.();
+              }}
+              aria-label={copyTooltip}
+            >
+              <HpCopyIcon />
+            </button>
+          </MaybeTooltip>
         </div>
       )}
     </div>
