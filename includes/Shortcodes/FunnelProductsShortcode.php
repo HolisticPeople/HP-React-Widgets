@@ -28,14 +28,16 @@ class FunnelProductsShortcode
         AssetLoader::enqueue_bundle();
 
         $atts = shortcode_atts([
-            'funnel'        => '',
-            'id'            => '',
-            'title'         => '',           // Override default title
-            'subtitle'      => '',           // Override default subtitle
-            'layout'        => 'grid',       // grid or horizontal
-            'show_prices'   => 'true',
-            'show_features' => 'true',
-            'cta_text'      => 'Select',     // Default CTA text
+            'funnel'             => '',
+            'id'                 => '',
+            'title'              => '',           // Override default title
+            'subtitle'           => '',           // Override default subtitle
+            'layout'             => 'grid',       // grid or horizontal
+            'show_prices'        => 'true',
+            'show_features'      => 'true',
+            'cta_text'           => 'Select',     // Default CTA text
+            'background_color'   => '',           // Section background color override
+            'background_gradient' => '',          // Section background gradient override
         ], $atts);
 
         // Load config
@@ -59,14 +61,16 @@ class FunnelProductsShortcode
 
         // Build props for React component
         $props = [
-            'title'         => !empty($atts['title']) ? $atts['title'] : 'Choose Your Package',
-            'subtitle'      => $atts['subtitle'],
-            'products'      => $formattedProducts,
-            'defaultCtaText' => $atts['cta_text'],
-            'defaultCtaUrl' => $config['checkout']['url'],
-            'showPrices'    => filter_var($atts['show_prices'], FILTER_VALIDATE_BOOLEAN),
-            'showFeatures'  => filter_var($atts['show_features'], FILTER_VALIDATE_BOOLEAN),
-            'layout'        => $atts['layout'],
+            'title'              => !empty($atts['title']) ? $atts['title'] : 'Choose Your Package',
+            'subtitle'           => $atts['subtitle'],
+            'products'           => $formattedProducts,
+            'defaultCtaText'     => $atts['cta_text'],
+            'defaultCtaUrl'      => $config['checkout']['url'],
+            'showPrices'         => filter_var($atts['show_prices'], FILTER_VALIDATE_BOOLEAN),
+            'showFeatures'       => filter_var($atts['show_features'], FILTER_VALIDATE_BOOLEAN),
+            'layout'             => $atts['layout'],
+            'backgroundColor'    => $atts['background_color'],
+            'backgroundGradient' => $atts['background_gradient'],
         ];
 
         return $this->renderWidget('FunnelProducts', $config['slug'], $props);

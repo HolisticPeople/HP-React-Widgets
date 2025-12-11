@@ -28,13 +28,15 @@ class FunnelBenefitsShortcode
         AssetLoader::enqueue_bundle();
 
         $atts = shortcode_atts([
-            'funnel'       => '',
-            'id'           => '',
-            'columns'      => '3',
-            'show_cards'   => 'true',
-            'default_icon' => 'check',
-            'title'        => '',        // Override default title
-            'subtitle'     => '',        // Override default subtitle
+            'funnel'             => '',
+            'id'                 => '',
+            'columns'            => '3',
+            'show_cards'         => 'true',
+            'default_icon'       => 'check',
+            'title'              => '',        // Override default title
+            'subtitle'           => '',        // Override default subtitle
+            'background_color'   => '',        // Section background color override
+            'background_gradient' => '',       // Section background gradient override
         ], $atts);
 
         // Load config
@@ -57,12 +59,14 @@ class FunnelBenefitsShortcode
 
         // Build props for React component
         $props = [
-            'title'       => !empty($atts['title']) ? $atts['title'] : ($benefitsConfig['title'] ?? ($config['hero']['benefits_title'] ?? 'Why Choose Us?')),
-            'subtitle'    => !empty($atts['subtitle']) ? $atts['subtitle'] : ($benefitsConfig['subtitle'] ?? ''),
-            'benefits'    => $benefits,
-            'columns'     => (int) $atts['columns'],
-            'showCards'   => filter_var($atts['show_cards'], FILTER_VALIDATE_BOOLEAN),
-            'defaultIcon' => $atts['default_icon'],
+            'title'              => !empty($atts['title']) ? $atts['title'] : ($benefitsConfig['title'] ?? ($config['hero']['benefits_title'] ?? 'Why Choose Us?')),
+            'subtitle'           => !empty($atts['subtitle']) ? $atts['subtitle'] : ($benefitsConfig['subtitle'] ?? ''),
+            'benefits'           => $benefits,
+            'columns'            => (int) $atts['columns'],
+            'showCards'          => filter_var($atts['show_cards'], FILTER_VALIDATE_BOOLEAN),
+            'defaultIcon'        => $atts['default_icon'],
+            'backgroundColor'    => $atts['background_color'],
+            'backgroundGradient' => $atts['background_gradient'],
         ];
 
         return $this->renderWidget('FunnelBenefits', $config['slug'], $props);
