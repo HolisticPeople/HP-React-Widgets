@@ -109,8 +109,11 @@ class FunnelConfigLoader
         // Clear by ID
         delete_transient(self::CACHE_PREFIX . 'id_' . $postId);
         
-        // Clear by slug
-        $slug = get_field('funnel_slug', $postId);
+        // Clear by slug (try ACF then post meta)
+        $slug = function_exists('get_field') ? get_field('funnel_slug', $postId) : null;
+        if (!$slug) {
+            $slug = get_post_meta($postId, 'funnel_slug', true);
+        }
         if ($slug) {
             delete_transient(self::CACHE_PREFIX . 'slug_' . $slug);
         }
@@ -180,7 +183,7 @@ class FunnelConfigLoader
         $postId = $post->ID;
 
         // Check status
-        $status = get_field('funnel_status', $postId) ?: 'active';
+        $status = self::getFieldValue('funnel_status', $postId, 'active');
         if ($status === 'inactive') {
             return ['status' => 'inactive', 'active' => false];
         }
@@ -191,120 +194,120 @@ class FunnelConfigLoader
             'status'      => $status,
             'active'      => true,
             'name'        => $post->post_title,
-            'slug'        => get_field('funnel_slug', $postId) ?: $post->post_name,
-            'stripe_mode' => get_field('stripe_mode', $postId) ?: 'auto',
+            'slug'        => self::getFieldValue('funnel_slug', $postId, $post->post_name),
+            'stripe_mode' => self::getFieldValue('stripe_mode', $postId, 'auto'),
             
             // Header section
             'header' => [
-                'logo'        => get_field('header_logo', $postId) ?: '',
-                'logo_link'   => get_field('header_logo_link', $postId) ?: home_url('/'),
-                'nav_items'   => self::extractNavItems(get_field('header_nav_items', $postId) ?: []),
-                'sticky'      => (bool) get_field('header_sticky', $postId),
-                'transparent' => (bool) get_field('header_transparent', $postId),
+                'logo'        => self::getFieldValue('header_logo', $postId, ''),
+                'logo_link'   => self::getFieldValue('header_logo_link', $postId, home_url('/')),
+                'nav_items'   => self::extractNavItems(self::getFieldValue('header_nav_items', $postId, [])),
+                'sticky'      => (bool) self::getFieldValue('header_sticky', $postId, false),
+                'transparent' => (bool) self::getFieldValue('header_transparent', $postId, false),
             ],
             
             // Hero section
             'hero' => [
-                'title'            => get_field('hero_title', $postId) ?: '',
-                'subtitle'         => get_field('hero_subtitle', $postId) ?: '',
-                'tagline'          => get_field('hero_tagline', $postId) ?: '',
-                'description'      => get_field('hero_description', $postId) ?: '',
-                'image'            => self::resolveImageUrl(get_field('hero_image', $postId)),
-                'logo'             => self::resolveImageUrl(get_field('hero_logo', $postId)),
-                'logo_link'        => get_field('hero_logo_link', $postId) ?: home_url('/'),
-                'cta_text'         => get_field('hero_cta_text', $postId) ?: 'Get Your Special Offer Now',
+                'title'            => self::getFieldValue('hero_title', $postId, ''),
+                'subtitle'         => self::getFieldValue('hero_subtitle', $postId, ''),
+                'tagline'          => self::getFieldValue('hero_tagline', $postId, ''),
+                'description'      => self::getFieldValue('hero_description', $postId, ''),
+                'image'            => self::resolveImageUrl(self::getFieldValue('hero_image', $postId, '')),
+                'logo'             => self::resolveImageUrl(self::getFieldValue('hero_logo', $postId, '')),
+                'logo_link'        => self::getFieldValue('hero_logo_link', $postId, home_url('/')),
+                'cta_text'         => self::getFieldValue('hero_cta_text', $postId, 'Get Your Special Offer Now'),
             ],
             
             // Benefits section
             'benefits' => [
-                'title'    => get_field('hero_benefits_title', $postId) ?: 'Why Choose Us?',
-                'subtitle' => get_field('hero_benefits_subtitle', $postId) ?: '',
-                'items'    => self::extractBenefitsWithIcons(get_field('hero_benefits', $postId) ?: []),
+                'title'    => self::getFieldValue('hero_benefits_title', $postId, 'Why Choose Us?'),
+                'subtitle' => self::getFieldValue('hero_benefits_subtitle', $postId, ''),
+                'items'    => self::extractBenefitsWithIcons(self::getFieldValue('hero_benefits', $postId, [])),
             ],
             
             // Products
-            'products' => self::extractProducts(get_field('funnel_products', $postId) ?: []),
+            'products' => self::extractProducts(self::getFieldValue('funnel_products', $postId, [])),
             
             // Checkout
             'checkout' => [
-                'url'                    => get_field('checkout_url', $postId) ?: '/checkout/',
-                'free_shipping_countries' => get_field('free_shipping_countries', $postId) ?: ['US'],
-                'global_discount_percent' => (float) (get_field('global_discount_percent', $postId) ?: 0),
-                'enable_points'          => (bool) get_field('enable_points_redemption', $postId),
-                'show_order_summary'     => (bool) (get_field('show_order_summary', $postId) ?? true),
+                'url'                    => self::getFieldValue('checkout_url', $postId, '/checkout/'),
+                'free_shipping_countries' => self::getFieldValue('free_shipping_countries', $postId, ['US']),
+                'global_discount_percent' => (float) self::getFieldValue('global_discount_percent', $postId, 0),
+                'enable_points'          => (bool) self::getFieldValue('enable_points_redemption', $postId, false),
+                'show_order_summary'     => (bool) self::getFieldValue('show_order_summary', $postId, true),
             ],
             
             // Thank you page
             'thankyou' => [
-                'url'       => get_field('thankyou_url', $postId) ?: '/thank-you/',
-                'headline'  => get_field('thankyou_headline', $postId) ?: 'Thank You for Your Order!',
-                'message'   => get_field('thankyou_message', $postId) ?: '',
-                'show_upsell' => (bool) get_field('show_upsell', $postId),
-                'upsell'    => self::extractUpsellConfig(get_field('upsell_config', $postId) ?: []),
+                'url'       => self::getFieldValue('thankyou_url', $postId, '/thank-you/'),
+                'headline'  => self::getFieldValue('thankyou_headline', $postId, 'Thank You for Your Order!'),
+                'message'   => self::getFieldValue('thankyou_message', $postId, ''),
+                'show_upsell' => (bool) self::getFieldValue('show_upsell', $postId, false),
+                'upsell'    => self::extractUpsellConfig(self::getFieldValue('upsell_config', $postId, [])),
             ],
             
             // Styling
             'styling' => [
-                'accent_color'     => get_field('accent_color', $postId) ?: '#eab308',
-                'background_type'  => get_field('background_type', $postId) ?: 'gradient',
-                'background_color' => get_field('background_color', $postId) ?: '',
-                'background_image' => get_field('background_image', $postId) ?: '',
-                'custom_css'       => get_field('custom_css', $postId) ?: '',
+                'accent_color'     => self::getFieldValue('accent_color', $postId, '#eab308'),
+                'background_type'  => self::getFieldValue('background_type', $postId, 'gradient'),
+                'background_color' => self::getFieldValue('background_color', $postId, ''),
+                'background_image' => self::getFieldValue('background_image', $postId, ''),
+                'custom_css'       => self::getFieldValue('custom_css', $postId, ''),
             ],
             
             // Footer
             'footer' => [
-                'text'       => get_field('footer_text', $postId) ?: '',
-                'disclaimer' => get_field('footer_disclaimer', $postId) ?: '',
-                'links'      => self::extractFooterLinks(get_field('footer_links', $postId) ?: []),
+                'text'       => self::getFieldValue('footer_text', $postId, ''),
+                'disclaimer' => self::getFieldValue('footer_disclaimer', $postId, ''),
+                'links'      => self::extractFooterLinks(self::getFieldValue('footer_links', $postId, [])),
             ],
             
             // Features section
             'features' => [
-                'title'    => get_field('features_title', $postId) ?: 'Key Features',
-                'subtitle' => get_field('features_subtitle', $postId) ?: '',
-                'items'    => self::extractFeatures(get_field('features_list', $postId) ?: []),
+                'title'    => self::getFieldValue('features_title', $postId, 'Key Features'),
+                'subtitle' => self::getFieldValue('features_subtitle', $postId, ''),
+                'items'    => self::extractFeatures(self::getFieldValue('features_list', $postId, [])),
             ],
             
             // Authority section
             'authority' => [
-                'title'           => get_field('authority_title', $postId) ?: 'Who We Are',
-                'subtitle'        => get_field('authority_subtitle', $postId) ?: '',
-                'name'            => get_field('authority_name', $postId) ?: '',
-                'credentials'     => get_field('authority_credentials', $postId) ?: '',
-                'image'           => self::resolveImageUrl(get_field('authority_image', $postId)),
-                'bio'             => get_field('authority_bio', $postId) ?: '',
-                'quotes'          => self::extractQuotes(get_field('authority_quotes', $postId) ?: []),
-                'quoteCategories' => self::extractQuoteCategories(get_field('authority_quote_categories', $postId) ?: []),
+                'title'           => self::getFieldValue('authority_title', $postId, 'Who We Are'),
+                'subtitle'        => self::getFieldValue('authority_subtitle', $postId, ''),
+                'name'            => self::getFieldValue('authority_name', $postId, ''),
+                'credentials'     => self::getFieldValue('authority_credentials', $postId, ''),
+                'image'           => self::resolveImageUrl(self::getFieldValue('authority_image', $postId, '')),
+                'bio'             => self::getFieldValue('authority_bio', $postId, ''),
+                'quotes'          => self::extractQuotes(self::getFieldValue('authority_quotes', $postId, [])),
+                'quoteCategories' => self::extractQuoteCategories(self::getFieldValue('authority_quote_categories', $postId, [])),
                 'articleLink'     => self::extractArticleLink($postId),
             ],
             
             // Testimonials section
             'testimonials' => [
-                'title'    => get_field('testimonials_title', $postId) ?: 'What Our Customers Say',
-                'subtitle' => get_field('testimonials_subtitle', $postId) ?: '',
-                'items'    => self::extractTestimonials(get_field('testimonials_list', $postId) ?: []),
+                'title'    => self::getFieldValue('testimonials_title', $postId, 'What Our Customers Say'),
+                'subtitle' => self::getFieldValue('testimonials_subtitle', $postId, ''),
+                'items'    => self::extractTestimonials(self::getFieldValue('testimonials_list', $postId, [])),
             ],
             
             // FAQ section
             'faq' => [
-                'title' => get_field('faq_title', $postId) ?: 'Frequently Asked Questions',
-                'items' => self::extractFaqItems(get_field('faq_list', $postId) ?: []),
+                'title' => self::getFieldValue('faq_title', $postId, 'Frequently Asked Questions'),
+                'items' => self::extractFaqItems(self::getFieldValue('faq_list', $postId, [])),
             ],
             
             // CTA section
             'cta' => [
-                'title'      => get_field('cta_title', $postId) ?: 'Ready to Get Started?',
-                'subtitle'   => get_field('cta_subtitle', $postId) ?: '',
-                'buttonText' => get_field('cta_button_text', $postId) ?: 'Order Now',
-                'buttonUrl'  => get_field('cta_button_url', $postId) ?: '',
+                'title'      => self::getFieldValue('cta_title', $postId, 'Ready to Get Started?'),
+                'subtitle'   => self::getFieldValue('cta_subtitle', $postId, ''),
+                'buttonText' => self::getFieldValue('cta_button_text', $postId, 'Order Now'),
+                'buttonUrl'  => self::getFieldValue('cta_button_url', $postId, ''),
             ],
             
             // Science section
             'science' => [
-                'title'    => get_field('science_title', $postId) ?: 'The Science Behind Our Product',
-                'subtitle' => get_field('science_subtitle', $postId) ?: '',
-                'sections' => self::extractScienceSections(get_field('science_sections', $postId) ?: []),
+                'title'    => self::getFieldValue('science_title', $postId, 'The Science Behind Our Product'),
+                'subtitle' => self::getFieldValue('science_subtitle', $postId, ''),
+                'sections' => self::extractScienceSections(self::getFieldValue('science_sections', $postId, [])),
             ],
         ];
 
@@ -441,8 +444,8 @@ class FunnelConfigLoader
      */
     private static function extractArticleLink(int $postId): ?array
     {
-        $text = get_field('authority_article_text', $postId);
-        $url = get_field('authority_article_url', $postId);
+        $text = self::getFieldValue('authority_article_text', $postId, '');
+        $url = self::getFieldValue('authority_article_url', $postId, '');
         
         if ($text && $url) {
             return [
@@ -624,6 +627,42 @@ class FunnelConfigLoader
             'image'       => self::resolveImageUrl($config['image'] ?? null, $wcData['image'] ?? ''),
             'productName' => $wcData['name'] ?? $sku,
         ];
+    }
+
+    /**
+     * Get ACF field value with fallback to post meta.
+     * 
+     * This handles cases where data was imported but ACF field isn't registered.
+     *
+     * @param string $fieldName Field name
+     * @param int    $postId    Post ID
+     * @param mixed  $default   Default value if not found
+     * @return mixed Field value
+     */
+    private static function getFieldValue(string $fieldName, int $postId, $default = '')
+    {
+        // Try ACF first
+        if (function_exists('get_field')) {
+            $value = get_field($fieldName, $postId);
+            if ($value !== null && $value !== false && $value !== '') {
+                return $value;
+            }
+        }
+
+        // Fall back to post meta
+        $metaValue = get_post_meta($postId, $fieldName, true);
+        if (!empty($metaValue)) {
+            // Handle serialized arrays
+            if (is_string($metaValue) && strpos($metaValue, 'a:') === 0) {
+                $unserialized = maybe_unserialize($metaValue);
+                if (is_array($unserialized)) {
+                    return $unserialized;
+                }
+            }
+            return $metaValue;
+        }
+
+        return $default;
     }
 
     /**
