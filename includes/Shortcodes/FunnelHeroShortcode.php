@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
  *   [hp_funnel_hero funnel="illumodine"]  - by slug
  *   [hp_funnel_hero id="123"]             - by post ID
  * 
- * The funnel configuration is loaded from the hp_funnel CPT via ACF fields.
+ * The funnel configuration is loaded from the hp-funnel CPT via ACF fields.
  */
 class FunnelHeroShortcode
 {
