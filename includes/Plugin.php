@@ -368,6 +368,15 @@ class Plugin
             true
         );
 
+        // Enqueue the validation enhancement script
+        wp_enqueue_script(
+            'hp-rw-funnel-validation',
+            HP_RW_URL . 'assets/admin/funnel-validation.js',
+            ['jquery', 'acf-input'],
+            HP_RW_VERSION,
+            true
+        );
+
         // Pass data to script
         wp_localize_script('hp-rw-funnel-product-lookup', 'hpRwAdmin', [
             'restUrl' => rest_url(),
