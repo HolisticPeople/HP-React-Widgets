@@ -83,9 +83,9 @@ class FunnelStylesShortcode
                 background-color: transparent !important;
             }
             
-            /* HP Funnel sections - transparent by default */
+            /* HP Funnel sections - transparent by default (no !important so inline styles can override) */
             .hp-funnel-section {
-                background: transparent !important;
+                background: transparent;
             }
             
             /* Accent color utilities */
