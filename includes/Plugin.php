@@ -99,7 +99,7 @@ class Plugin
 
         // Register shipping rates REST API endpoints.
         $shippingApi = new Rest\ShippingApi();
-        $shippingApi->register_routes();
+        $shippingApi->register();
 
         // Register shortcodes based on current settings.
         $shortcodeRegistry = new ShortcodeRegistry($assetLoader);

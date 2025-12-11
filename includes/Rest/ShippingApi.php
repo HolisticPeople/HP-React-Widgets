@@ -12,6 +12,17 @@ if (!defined('ABSPATH')) {
 
 class ShippingApi
 {
+    /**
+     * Register the API by hooking into rest_api_init.
+     */
+    public function register(): void
+    {
+        add_action('rest_api_init', [$this, 'register_routes']);
+    }
+
+    /**
+     * Register REST routes.
+     */
     public function register_routes(): void
     {
         register_rest_route('hp-rw/v1', '/shipstation/rates', [
