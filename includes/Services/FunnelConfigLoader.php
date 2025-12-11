@@ -254,7 +254,7 @@ class FunnelConfigLoader
                 'description'  => $row['description'] ?? '',
                 'price'        => !empty($row['display_price']) ? (float) $row['display_price'] : ($wcData['price'] ?? 0),
                 'regularPrice' => $wcData['regular_price'] ?? null,
-                'image'        => !empty($row['image']) ? (string) $row['image'] : ($wcData['image'] ?? ''),
+                'image'        => self::resolveImageUrl($row['image'] ?? null, $wcData['image'] ?? ''),
                 'badge'        => $row['badge'] ?? '',
                 'features'     => $features,
                 'isBestValue'  => !empty($row['is_best_value']),
@@ -295,9 +295,44 @@ class FunnelConfigLoader
             'price'       => round($finalPrice, 2),
             'headline'    => $config['headline'] ?? 'Wait! Special Offer Just For You!',
             'description' => $config['description'] ?? '',
-            'image'       => !empty($config['image']) ? (string) $config['image'] : ($wcData['image'] ?? ''),
+            'image'       => self::resolveImageUrl($config['image'] ?? null, $wcData['image'] ?? ''),
             'productName' => $wcData['name'] ?? $sku,
         ];
+    }
+
+    /**
+     * Resolve an image field value to a URL.
+     * Handles both image IDs (from ACF) and direct URLs.
+     *
+     * @param mixed  $value    ACF image value (ID, URL, or array)
+     * @param string $fallback Fallback URL
+     * @return string Image URL
+     */
+    private static function resolveImageUrl($value, string $fallback = ''): string
+    {
+        if (empty($value)) {
+            return $fallback;
+        }
+
+        // If it's already a URL
+        if (is_string($value) && filter_var($value, FILTER_VALIDATE_URL)) {
+            return $value;
+        }
+
+        // If it's an array (ACF returns array when return_format is 'array')
+        if (is_array($value) && isset($value['url'])) {
+            return (string) $value['url'];
+        }
+
+        // If it's an ID
+        if (is_numeric($value)) {
+            $imageData = wp_get_attachment_image_src((int) $value, 'large');
+            if ($imageData && isset($imageData[0])) {
+                return $imageData[0];
+            }
+        }
+
+        return $fallback;
     }
 
     /**

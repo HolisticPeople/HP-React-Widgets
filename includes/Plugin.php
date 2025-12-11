@@ -91,6 +91,12 @@ class Plugin
         // Initialize Funnel Export/Import admin page
         Admin\FunnelExportImport::init();
 
+        // Initialize Product Lookup API for admin
+        Admin\ProductLookupApi::init();
+
+        // Enqueue admin scripts for funnel editing
+        add_action('admin_enqueue_scripts', [self::class, 'enqueueAdminScripts']);
+
         $assetLoader = new AssetLoader();
         $assetLoader->register();
 
@@ -130,6 +136,40 @@ class Plugin
             $shortcodes = array_keys(self::get_shortcodes());
             update_option(self::OPTION_ENABLED_SHORTCODES, $shortcodes);
         }
+    }
+
+    /**
+     * Enqueue admin scripts for funnel editing.
+     *
+     * @param string $hook Current admin page hook
+     */
+    public static function enqueueAdminScripts(string $hook): void
+    {
+        global $post;
+
+        // Only load on funnel edit screens
+        if (!in_array($hook, ['post.php', 'post-new.php'], true)) {
+            return;
+        }
+
+        if (!$post || $post->post_type !== FunnelPostType::POST_TYPE) {
+            return;
+        }
+
+        // Enqueue the product lookup script
+        wp_enqueue_script(
+            'hp-rw-funnel-product-lookup',
+            HP_RW_URL . 'assets/admin/funnel-product-lookup.js',
+            ['jquery', 'acf-input'],
+            HP_RW_VERSION,
+            true
+        );
+
+        // Pass data to script
+        wp_localize_script('hp-rw-funnel-product-lookup', 'hpRwAdmin', [
+            'restUrl' => rest_url(),
+            'nonce'   => wp_create_nonce('wp_rest'),
+        ]);
     }
 
     /**

@@ -181,6 +181,23 @@
             "button_label": "Add Product",
             "sub_fields": [
                 {
+                    "key": "field_product_lookup",
+                    "label": "Search Product",
+                    "name": "product_lookup",
+                    "type": "post_object",
+                    "instructions": "Search for a WooCommerce product to auto-fill the fields below.",
+                    "post_type": ["product"],
+                    "taxonomy": [],
+                    "allow_null": 1,
+                    "multiple": 0,
+                    "return_format": "id",
+                    "ui": 1,
+                    "wrapper": {
+                        "width": "100",
+                        "class": "hp-product-lookup"
+                    }
+                },
+                {
                     "key": "field_product_sku",
                     "label": "Product SKU",
                     "name": "sku",
@@ -188,7 +205,8 @@
                     "instructions": "WooCommerce product SKU.",
                     "required": 1,
                     "wrapper": {
-                        "width": "25"
+                        "width": "25",
+                        "class": "hp-product-sku"
                     }
                 },
                 {
@@ -197,8 +215,10 @@
                     "name": "display_name",
                     "type": "text",
                     "instructions": "Override the product name. Leave empty to use WooCommerce name.",
+                    "placeholder": "(auto-filled from product)",
                     "wrapper": {
-                        "width": "25"
+                        "width": "25",
+                        "class": "hp-product-name"
                     }
                 },
                 {
@@ -207,8 +227,10 @@
                     "name": "display_price",
                     "type": "number",
                     "instructions": "Override the displayed price. Leave empty to use WooCommerce price.",
+                    "placeholder": "(auto-filled)",
                     "wrapper": {
-                        "width": "25"
+                        "width": "25",
+                        "class": "hp-product-price"
                     }
                 },
                 {
@@ -248,10 +270,11 @@
                     "name": "image",
                     "type": "image",
                     "instructions": "Override product image. Leave empty to use WooCommerce image.",
-                    "return_format": "url",
+                    "return_format": "id",
                     "preview_size": "thumbnail",
                     "wrapper": {
-                        "width": "25"
+                        "width": "25",
+                        "class": "hp-product-image"
                     }
                 },
                 {
