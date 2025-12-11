@@ -199,6 +199,10 @@ class Plugin
         $shippingApi = new Rest\ShippingApi();
         $shippingApi->register();
 
+        // Register funnel import/export REST API endpoints.
+        $funnelApi = new Rest\FunnelApi();
+        $funnelApi->register();
+
         // Register shortcodes based on current settings.
         $shortcodeRegistry = new ShortcodeRegistry($assetLoader);
         $shortcodeRegistry->register();

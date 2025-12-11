@@ -3,6 +3,9 @@ namespace HP_RW\Admin;
 
 use HP_RW\Plugin;
 use HP_RW\Services\FunnelConfigLoader;
+use HP_RW\Services\FunnelExporter;
+use HP_RW\Services\FunnelImporter;
+use HP_RW\Services\FunnelSchema;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -11,7 +14,7 @@ if (!defined('ABSPATH')) {
 /**
  * Admin page for exporting and importing funnel configurations.
  * 
- * Allows syncing funnels between staging and production environments.
+ * Supports JSON import/export for AI agents and cross-environment sync.
  */
 class FunnelExportImport
 {
@@ -57,38 +60,42 @@ class FunnelExportImport
         if (isset($_POST['hp_funnel_import']) && wp_verify_nonce($_POST['_wpnonce'] ?? '', 'hp_funnel_import')) {
             self::handleImport();
         }
+
+        // Handle JSON text import
+        if (isset($_POST['hp_funnel_import_json']) && wp_verify_nonce($_POST['_wpnonce'] ?? '', 'hp_funnel_import_json')) {
+            self::handleJsonImport();
+        }
     }
 
     /**
-     * Handle funnel export.
+     * Handle funnel export using new exporter.
      */
     private static function handleExport(): void
     {
         $funnelId = isset($_GET['funnel_id']) ? absint($_GET['funnel_id']) : 0;
         $exportAll = isset($_GET['export_all']);
 
-        $data = [];
-
         if ($exportAll) {
-            $funnels = FunnelConfigLoader::getAllPosts();
-            foreach ($funnels as $funnel) {
-                $data['funnels'][] = self::exportFunnel($funnel->ID);
-            }
+            $data = [
+                '$schema' => FunnelSchema::VERSION,
+                'funnels' => FunnelExporter::exportAll(),
+                '_export_meta' => [
+                    'version' => HP_RW_VERSION,
+                    'exported_at' => current_time('mysql'),
+                    'site_url' => home_url(),
+                ],
+            ];
             $filename = 'hp-funnels-export-' . date('Y-m-d') . '.json';
         } elseif ($funnelId > 0) {
-            $data = self::exportFunnel($funnelId);
-            $slug = get_field('funnel_slug', $funnelId) ?: get_post_field('post_name', $funnelId);
+            $data = FunnelExporter::exportById($funnelId);
+            if (!$data) {
+                wp_die(__('Funnel not found', 'hp-react-widgets'));
+            }
+            $slug = $data['funnel']['slug'] ?? 'funnel';
             $filename = 'hp-funnel-' . $slug . '-' . date('Y-m-d') . '.json';
         } else {
             wp_die(__('Invalid funnel ID', 'hp-react-widgets'));
         }
-
-        // Add metadata
-        $data['_export_meta'] = [
-            'version'     => HP_RW_VERSION,
-            'exported_at' => current_time('mysql'),
-            'site_url'    => home_url(),
-        ];
 
         // Send as download
         header('Content-Type: application/json');
@@ -101,41 +108,7 @@ class FunnelExportImport
     }
 
     /**
-     * Export a single funnel to array.
-     *
-     * @param int $postId Funnel post ID
-     * @return array Export data
-     */
-    private static function exportFunnel(int $postId): array
-    {
-        $post = get_post($postId);
-        if (!$post || $post->post_type !== Plugin::FUNNEL_POST_TYPE) {
-            return [];
-        }
-
-        // Get all ACF fields
-        $fields = get_fields($postId);
-        
-        // Get meta fields that might not be in ACF
-        $meta = [
-            '_thumbnail_id' => get_post_thumbnail_id($postId),
-        ];
-
-        return [
-            'post' => [
-                'post_title'   => $post->post_title,
-                'post_name'    => $post->post_name,
-                'post_status'  => $post->post_status,
-                'post_content' => $post->post_content,
-                'post_excerpt' => $post->post_excerpt,
-            ],
-            'acf_fields' => $fields ?: [],
-            'meta'       => $meta,
-        ];
-    }
-
-    /**
-     * Handle funnel import.
+     * Handle file upload import.
      */
     private static function handleImport(): void
     {
@@ -150,122 +123,109 @@ class FunnelExportImport
         }
 
         $fileContent = file_get_contents($_FILES['import_file']['tmp_name']);
-        $data = json_decode($fileContent, true);
+        self::processImport($fileContent);
+    }
 
-        if (!$data || json_last_error() !== JSON_ERROR_NONE) {
+    /**
+     * Handle JSON text import.
+     */
+    private static function handleJsonImport(): void
+    {
+        if (empty($_POST['json_content'])) {
             add_settings_error(
                 'hp_funnel_import',
-                'parse_error',
-                __('Invalid JSON file. Please check the file format.', 'hp-react-widgets'),
+                'empty_json',
+                __('No JSON content provided.', 'hp-react-widgets'),
                 'error'
             );
             return;
         }
 
-        $updateExisting = !empty($_POST['update_existing']);
-        $imported = 0;
-        $updated = 0;
-        $skipped = 0;
-
-        // Handle multi-funnel export
-        if (isset($data['funnels']) && is_array($data['funnels'])) {
-            foreach ($data['funnels'] as $funnelData) {
-                $result = self::importFunnel($funnelData, $updateExisting);
-                if ($result === 'imported') $imported++;
-                elseif ($result === 'updated') $updated++;
-                else $skipped++;
-            }
-        } else {
-            // Single funnel export
-            $result = self::importFunnel($data, $updateExisting);
-            if ($result === 'imported') $imported++;
-            elseif ($result === 'updated') $updated++;
-            else $skipped++;
-        }
-
-        $message = sprintf(
-            __('Import complete: %d imported, %d updated, %d skipped.', 'hp-react-widgets'),
-            $imported,
-            $updated,
-            $skipped
-        );
-
-        add_settings_error(
-            'hp_funnel_import',
-            'import_success',
-            $message,
-            'success'
-        );
+        self::processImport(wp_unslash($_POST['json_content']));
     }
 
     /**
-     * Import a single funnel.
-     *
-     * @param array $data    Funnel data
-     * @param bool  $update  Whether to update existing
-     * @return string Result: 'imported', 'updated', 'skipped'
+     * Process import from JSON string.
      */
-    private static function importFunnel(array $data, bool $update): string
+    private static function processImport(string $jsonContent): void
     {
-        if (empty($data['post']) || empty($data['acf_fields'])) {
-            return 'skipped';
+        $data = json_decode($jsonContent, true);
+
+        if (!$data || json_last_error() !== JSON_ERROR_NONE) {
+            add_settings_error(
+                'hp_funnel_import',
+                'parse_error',
+                __('Invalid JSON: ', 'hp-react-widgets') . json_last_error_msg(),
+                'error'
+            );
+            return;
         }
 
-        $postData = $data['post'];
-        $acfFields = $data['acf_fields'];
-        $slug = $acfFields['funnel_slug'] ?? $postData['post_name'] ?? '';
+        // Determine import mode
+        $mode = $_POST['import_mode'] ?? 'skip';
+        $modeMap = [
+            'skip' => FunnelImporter::MODE_SKIP,
+            'update' => FunnelImporter::MODE_UPDATE,
+            'create_new' => FunnelImporter::MODE_CREATE_NEW,
+        ];
+        $importMode = $modeMap[$mode] ?? FunnelImporter::MODE_SKIP;
 
-        if (empty($slug)) {
-            return 'skipped';
-        }
-
-        // Check if funnel already exists
-        $existing = FunnelConfigLoader::findPostBySlug($slug);
-
-        if ($existing && !$update) {
-            return 'skipped';
-        }
-
-        if ($existing) {
-            // Update existing
-            $postId = $existing->ID;
+        // Handle multi-funnel import
+        if (isset($data['funnels']) && is_array($data['funnels'])) {
+            $results = FunnelImporter::importMultiple($data['funnels'], $importMode);
             
-            wp_update_post([
-                'ID'           => $postId,
-                'post_title'   => $postData['post_title'] ?? $existing->post_title,
-                'post_status'  => $postData['post_status'] ?? 'publish',
-                'post_content' => $postData['post_content'] ?? '',
-            ]);
+            $created = 0;
+            $updated = 0;
+            $skipped = 0;
+            $errors = [];
 
-            $result = 'updated';
+            foreach ($results as $slug => $result) {
+                switch ($result['result'] ?? '') {
+                    case FunnelImporter::RESULT_CREATED:
+                        $created++;
+                        break;
+                    case FunnelImporter::RESULT_UPDATED:
+                        $updated++;
+                        break;
+                    case FunnelImporter::RESULT_SKIPPED:
+                        $skipped++;
+                        break;
+                    case FunnelImporter::RESULT_ERROR:
+                        $errors[] = $slug . ': ' . ($result['error'] ?? 'Unknown error');
+                        break;
+                }
+            }
+
+            $message = sprintf(
+                __('Import complete: %d created, %d updated, %d skipped.', 'hp-react-widgets'),
+                $created, $updated, $skipped
+            );
+
+            if (!empty($errors)) {
+                $message .= ' ' . __('Errors:', 'hp-react-widgets') . ' ' . implode('; ', $errors);
+                add_settings_error('hp_funnel_import', 'import_partial', $message, 'warning');
+            } else {
+                add_settings_error('hp_funnel_import', 'import_success', $message, 'success');
+            }
         } else {
-            // Create new
-            $postId = wp_insert_post([
-                'post_type'    => Plugin::FUNNEL_POST_TYPE,
-                'post_title'   => $postData['post_title'] ?? ucfirst($slug),
-                'post_name'    => $postData['post_name'] ?? $slug,
-                'post_status'  => $postData['post_status'] ?? 'publish',
-                'post_content' => $postData['post_content'] ?? '',
-            ]);
+            // Single funnel import
+            $result = FunnelImporter::import($data, $importMode);
 
-            if (is_wp_error($postId)) {
-                return 'skipped';
-            }
-
-            $result = 'imported';
-        }
-
-        // Update ACF fields
-        if (function_exists('update_field')) {
-            foreach ($acfFields as $fieldName => $value) {
-                update_field($fieldName, $value, $postId);
+            if ($result['success']) {
+                $message = $result['message'] ?? __('Funnel imported successfully.', 'hp-react-widgets');
+                if (!empty($result['edit_url'])) {
+                    $message .= ' <a href="' . esc_url($result['edit_url']) . '">' . __('Edit funnel', 'hp-react-widgets') . '</a>';
+                }
+                add_settings_error('hp_funnel_import', 'import_success', $message, 'success');
+            } else {
+                add_settings_error(
+                    'hp_funnel_import',
+                    'import_error',
+                    $result['error'] ?? __('Import failed.', 'hp-react-widgets'),
+                    'error'
+                );
             }
         }
-
-        // Clear cache
-        FunnelConfigLoader::clearCache($postId);
-
-        return $result;
     }
 
     /**
@@ -274,6 +234,7 @@ class FunnelExportImport
     public static function renderPage(): void
     {
         $funnels = FunnelConfigLoader::getAllPosts();
+        $schemaUrl = rest_url('hp-rw/v1/funnels/schema');
         ?>
         <div class="wrap">
             <h1><?php echo esc_html__('Funnel Export / Import', 'hp-react-widgets'); ?></h1>
@@ -284,7 +245,7 @@ class FunnelExportImport
                 <!-- Export Section -->
                 <div class="card" style="flex: 1; min-width: 300px; max-width: 500px;">
                     <h2><?php echo esc_html__('Export Funnels', 'hp-react-widgets'); ?></h2>
-                    <p><?php echo esc_html__('Download funnel configurations as JSON files to import on another site.', 'hp-react-widgets'); ?></p>
+                    <p><?php echo esc_html__('Download funnel configurations as JSON files.', 'hp-react-widgets'); ?></p>
 
                     <?php if (empty($funnels)): ?>
                         <p><em><?php echo esc_html__('No funnels to export.', 'hp-react-widgets'); ?></em></p>
@@ -294,12 +255,14 @@ class FunnelExportImport
                                 <tr>
                                     <th><?php echo esc_html__('Funnel', 'hp-react-widgets'); ?></th>
                                     <th><?php echo esc_html__('Slug', 'hp-react-widgets'); ?></th>
+                                    <th><?php echo esc_html__('Status', 'hp-react-widgets'); ?></th>
                                     <th><?php echo esc_html__('Action', 'hp-react-widgets'); ?></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($funnels as $funnel): 
                                     $slug = get_field('funnel_slug', $funnel->ID) ?: $funnel->post_name;
+                                    $status = get_field('funnel_status', $funnel->ID) ?: 'active';
                                     $exportUrl = wp_nonce_url(
                                         add_query_arg([
                                             'hp_funnel_export' => 1,
@@ -311,6 +274,10 @@ class FunnelExportImport
                                 <tr>
                                     <td><strong><?php echo esc_html($funnel->post_title); ?></strong></td>
                                     <td><code><?php echo esc_html($slug); ?></code></td>
+                                    <td>
+                                        <span style="color: <?php echo $status === 'active' ? '#00a32a' : '#d63638'; ?>;">●</span>
+                                        <?php echo esc_html(ucfirst($status)); ?>
+                                    </td>
                                     <td>
                                         <a href="<?php echo esc_url($exportUrl); ?>" class="button button-small">
                                             <?php echo esc_html__('Export', 'hp-react-widgets'); ?>
@@ -338,59 +305,147 @@ class FunnelExportImport
 
                 <!-- Import Section -->
                 <div class="card" style="flex: 1; min-width: 300px; max-width: 500px;">
-                    <h2><?php echo esc_html__('Import Funnels', 'hp-react-widgets'); ?></h2>
-                    <p><?php echo esc_html__('Upload a JSON file exported from another site to import funnel configurations.', 'hp-react-widgets'); ?></p>
-
+                    <h2><?php echo esc_html__('Import Funnel', 'hp-react-widgets'); ?></h2>
+                    
+                    <!-- File Upload -->
+                    <h3 style="margin-top: 0;"><?php echo esc_html__('From File', 'hp-react-widgets'); ?></h3>
                     <form method="post" enctype="multipart/form-data">
                         <?php wp_nonce_field('hp_funnel_import'); ?>
                         
-                        <table class="form-table">
-                            <tr>
-                                <th scope="row">
-                                    <label for="import_file"><?php echo esc_html__('JSON File', 'hp-react-widgets'); ?></label>
-                                </th>
-                                <td>
-                                    <input type="file" name="import_file" id="import_file" accept=".json" required>
-                                    <p class="description">
-                                        <?php echo esc_html__('Select a .json file exported from HP React Widgets.', 'hp-react-widgets'); ?>
-                                    </p>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th scope="row"><?php echo esc_html__('Options', 'hp-react-widgets'); ?></th>
-                                <td>
-                                    <label>
-                                        <input type="checkbox" name="update_existing" value="1">
-                                        <?php echo esc_html__('Update existing funnels with matching slugs', 'hp-react-widgets'); ?>
-                                    </label>
-                                    <p class="description">
-                                        <?php echo esc_html__('If unchecked, funnels with existing slugs will be skipped.', 'hp-react-widgets'); ?>
-                                    </p>
-                                </td>
-                            </tr>
-                        </table>
+                        <p>
+                            <input type="file" name="import_file" accept=".json" required>
+                        </p>
 
-                        <p class="submit">
+                        <p>
+                            <label><strong><?php echo esc_html__('When funnel slug exists:', 'hp-react-widgets'); ?></strong></label><br>
+                            <label>
+                                <input type="radio" name="import_mode" value="skip" checked>
+                                <?php echo esc_html__('Skip (keep existing)', 'hp-react-widgets'); ?>
+                            </label><br>
+                            <label>
+                                <input type="radio" name="import_mode" value="update">
+                                <?php echo esc_html__('Update existing funnel', 'hp-react-widgets'); ?>
+                            </label><br>
+                            <label>
+                                <input type="radio" name="import_mode" value="create_new">
+                                <?php echo esc_html__('Create new with different slug', 'hp-react-widgets'); ?>
+                            </label>
+                        </p>
+
+                        <p>
                             <button type="submit" name="hp_funnel_import" class="button button-primary">
-                                <?php echo esc_html__('Import', 'hp-react-widgets'); ?>
+                                <?php echo esc_html__('Import File', 'hp-react-widgets'); ?>
+                            </button>
+                        </p>
+                    </form>
+
+                    <hr>
+
+                    <!-- JSON Paste -->
+                    <h3><?php echo esc_html__('From JSON', 'hp-react-widgets'); ?></h3>
+                    <form method="post">
+                        <?php wp_nonce_field('hp_funnel_import_json'); ?>
+                        
+                        <p>
+                            <textarea name="json_content" rows="8" style="width: 100%; font-family: monospace; font-size: 12px;" placeholder='{"funnel": {"name": "My Funnel", "slug": "my-funnel"}, ...}'></textarea>
+                        </p>
+
+                        <p>
+                            <label><strong><?php echo esc_html__('When funnel slug exists:', 'hp-react-widgets'); ?></strong></label><br>
+                            <label>
+                                <input type="radio" name="import_mode" value="skip" checked>
+                                <?php echo esc_html__('Skip', 'hp-react-widgets'); ?>
+                            </label>
+                            <label>
+                                <input type="radio" name="import_mode" value="update">
+                                <?php echo esc_html__('Update', 'hp-react-widgets'); ?>
+                            </label>
+                            <label>
+                                <input type="radio" name="import_mode" value="create_new">
+                                <?php echo esc_html__('Create New', 'hp-react-widgets'); ?>
+                            </label>
+                        </p>
+
+                        <p>
+                            <button type="submit" name="hp_funnel_import_json" class="button button-primary">
+                                <?php echo esc_html__('Import JSON', 'hp-react-widgets'); ?>
                             </button>
                         </p>
                     </form>
                 </div>
             </div>
 
-            <!-- Help Section -->
+            <!-- API Documentation -->
             <div class="card" style="margin-top: 20px; max-width: 1020px;">
-                <h2><?php echo esc_html__('How to Use', 'hp-react-widgets'); ?></h2>
-                <ol>
-                    <li><?php echo esc_html__('On your staging site, create and configure funnels using the Funnels menu.', 'hp-react-widgets'); ?></li>
-                    <li><?php echo esc_html__('Export the funnels you want to move to production.', 'hp-react-widgets'); ?></li>
-                    <li><?php echo esc_html__('On your production site, import the JSON file.', 'hp-react-widgets'); ?></li>
-                    <li><?php echo esc_html__('Review and publish the imported funnels.', 'hp-react-widgets'); ?></li>
-                </ol>
-                <p><strong><?php echo esc_html__('Note:', 'hp-react-widgets'); ?></strong> 
-                    <?php echo esc_html__('Image URLs are exported as-is. Make sure images exist on the destination site or update the URLs after import.', 'hp-react-widgets'); ?>
+                <h2><?php echo esc_html__('REST API for AI Agents', 'hp-react-widgets'); ?></h2>
+                <p><?php echo esc_html__('Use these endpoints to programmatically manage funnels:', 'hp-react-widgets'); ?></p>
+
+                <table class="widefat" style="margin-bottom: 15px;">
+                    <thead>
+                        <tr>
+                            <th><?php echo esc_html__('Endpoint', 'hp-react-widgets'); ?></th>
+                            <th><?php echo esc_html__('Method', 'hp-react-widgets'); ?></th>
+                            <th><?php echo esc_html__('Auth', 'hp-react-widgets'); ?></th>
+                            <th><?php echo esc_html__('Description', 'hp-react-widgets'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>/wp-json/hp-rw/v1/funnels/schema</code></td>
+                            <td>GET</td>
+                            <td>Public</td>
+                            <td><?php echo esc_html__('Get JSON schema with example (for AI agents)', 'hp-react-widgets'); ?></td>
+                        </tr>
+                        <tr>
+                            <td><code>/wp-json/hp-rw/v1/funnels/validate</code></td>
+                            <td>POST</td>
+                            <td>Public</td>
+                            <td><?php echo esc_html__('Validate JSON before importing', 'hp-react-widgets'); ?></td>
+                        </tr>
+                        <tr>
+                            <td><code>/wp-json/hp-rw/v1/funnels</code></td>
+                            <td>GET</td>
+                            <td>Auth</td>
+                            <td><?php echo esc_html__('List all funnels', 'hp-react-widgets'); ?></td>
+                        </tr>
+                        <tr>
+                            <td><code>/wp-json/hp-rw/v1/funnels/export/{slug}</code></td>
+                            <td>GET</td>
+                            <td>Auth</td>
+                            <td><?php echo esc_html__('Export single funnel', 'hp-react-widgets'); ?></td>
+                        </tr>
+                        <tr>
+                            <td><code>/wp-json/hp-rw/v1/funnels/import</code></td>
+                            <td>POST</td>
+                            <td>Admin</td>
+                            <td><?php echo esc_html__('Import funnel from JSON', 'hp-react-widgets'); ?></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p>
+                    <a href="<?php echo esc_url($schemaUrl); ?>" target="_blank" class="button">
+                        <?php echo esc_html__('View Schema', 'hp-react-widgets'); ?> ↗
+                    </a>
                 </p>
+
+                <details style="margin-top: 15px;">
+                    <summary style="cursor: pointer; font-weight: bold;">
+                        <?php echo esc_html__('AI Agent Instructions', 'hp-react-widgets'); ?>
+                    </summary>
+                    <div style="background: #f0f0f1; padding: 15px; margin-top: 10px; border-radius: 4px;">
+                        <p><?php echo esc_html__('To create a funnel programmatically:', 'hp-react-widgets'); ?></p>
+                        <ol>
+                            <li><?php echo esc_html__('GET /wp-json/hp-rw/v1/funnels/schema to understand the structure', 'hp-react-widgets'); ?></li>
+                            <li><?php echo esc_html__('Generate JSON based on the schema and example', 'hp-react-widgets'); ?></li>
+                            <li><?php echo esc_html__('POST to /wp-json/hp-rw/v1/funnels/validate to check for errors', 'hp-react-widgets'); ?></li>
+                            <li><?php echo esc_html__('POST to /wp-json/hp-rw/v1/funnels/import with {"data": YOUR_JSON, "mode": "update"}', 'hp-react-widgets'); ?></li>
+                        </ol>
+                        <p><strong><?php echo esc_html__('Authentication:', 'hp-react-widgets'); ?></strong> 
+                            <?php echo esc_html__('Use WordPress application passwords or cookie-based auth.', 'hp-react-widgets'); ?>
+                        </p>
+                    </div>
+                </details>
             </div>
         </div>
         <?php
