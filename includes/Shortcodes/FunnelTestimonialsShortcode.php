@@ -43,7 +43,9 @@ class FunnelTestimonialsShortcode
             return $this->renderError('Funnel not found or inactive.');
         }
 
-        $testimonials = $this->extractTestimonials($config);
+        // Use testimonials from loader config
+        $testimonialsConfig = $config['testimonials'] ?? [];
+        $testimonials = $testimonialsConfig['items'] ?? [];
 
         if (empty($testimonials)) {
             if (current_user_can('manage_options')) {
@@ -53,41 +55,17 @@ class FunnelTestimonialsShortcode
         }
 
         $props = [
-            'title'        => !empty($atts['title']) ? $atts['title'] : (get_field('testimonials_title', $config['id']) ?: 'What Our Customers Say'),
-            'subtitle'     => $atts['subtitle'],
+            'title'        => !empty($atts['title']) ? $atts['title'] : ($testimonialsConfig['title'] ?? 'What Our Customers Say'),
+            'subtitle'     => !empty($atts['subtitle']) ? $atts['subtitle'] : ($testimonialsConfig['subtitle'] ?? ''),
             'testimonials' => $testimonials,
             'columns'      => min((int) $atts['columns'], 3),
             'showRatings'  => filter_var($atts['show_ratings'], FILTER_VALIDATE_BOOLEAN),
             'layout'       => $atts['layout'],
+            'ctaText'      => $config['hero']['cta_text'] ?? '',
+            'ctaUrl'       => $config['checkout']['url'] ?? '',
         ];
 
         return $this->renderWidget('FunnelTestimonials', $config['slug'], $props);
-    }
-
-    /**
-     * Extract testimonials from config.
-     *
-     * @param array $config Funnel config
-     * @return array Testimonials array
-     */
-    private function extractTestimonials(array $config): array
-    {
-        $testimonialsList = get_field('testimonials_list', $config['id']) ?: [];
-        $result = [];
-
-        foreach ($testimonialsList as $t) {
-            if (!empty($t['name']) && !empty($t['quote'])) {
-                $result[] = [
-                    'name'   => $t['name'],
-                    'role'   => $t['role'] ?? '',
-                    'quote'  => $t['quote'],
-                    'image'  => $this->resolveImageUrl($t['image'] ?? null),
-                    'rating' => (int) ($t['rating'] ?? 5),
-                ];
-            }
-        }
-
-        return $result;
     }
 
     private function resolveImageUrl($value): string

@@ -43,8 +43,9 @@ class FunnelBenefitsShortcode
             return $this->renderError('Funnel not found or inactive.');
         }
 
-        $hero = $config['hero'];
-        $benefits = $hero['benefits'] ?? [];
+        // Benefits can be in $config['benefits'] (new) or $config['hero']['benefits'] (legacy)
+        $benefitsConfig = $config['benefits'] ?? [];
+        $benefits = $benefitsConfig['items'] ?? ($config['hero']['benefits'] ?? []);
 
         // Don't render if no benefits
         if (empty($benefits)) {
@@ -56,8 +57,8 @@ class FunnelBenefitsShortcode
 
         // Build props for React component
         $props = [
-            'title'       => !empty($atts['title']) ? $atts['title'] : ($hero['benefits_title'] ?? 'Why Choose Us?'),
-            'subtitle'    => !empty($atts['subtitle']) ? $atts['subtitle'] : '',
+            'title'       => !empty($atts['title']) ? $atts['title'] : ($benefitsConfig['title'] ?? ($config['hero']['benefits_title'] ?? 'Why Choose Us?')),
+            'subtitle'    => !empty($atts['subtitle']) ? $atts['subtitle'] : ($benefitsConfig['subtitle'] ?? ''),
             'benefits'    => $benefits,
             'columns'     => (int) $atts['columns'],
             'showCards'   => filter_var($atts['show_cards'], FILTER_VALIDATE_BOOLEAN),

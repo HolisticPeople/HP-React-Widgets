@@ -40,8 +40,8 @@ class FunnelAuthorityShortcode
             return $this->renderError('Funnel not found or inactive.');
         }
 
-        $postId = $config['id'];
-        $name = get_field('authority_name', $postId);
+        $authority = $config['authority'] ?? [];
+        $name = $authority['name'] ?? '';
 
         if (empty($name)) {
             if (current_user_can('manage_options')) {
@@ -50,27 +50,23 @@ class FunnelAuthorityShortcode
             return '';
         }
 
-        // Extract quotes
-        $quotesRaw = get_field('authority_quotes', $postId) ?: [];
-        $quotes = [];
-        foreach ($quotesRaw as $q) {
-            if (!empty($q['text'])) {
-                $quotes[] = ['text' => $q['text']];
-            }
-        }
-
-        // Resolve image URL
-        $image = get_field('authority_image', $postId);
-        $imageUrl = $this->resolveImageUrl($image);
+        // Determine layout based on whether we have quote categories
+        $hasQuoteCategories = !empty($authority['quoteCategories']);
+        $layout = $hasQuoteCategories ? 'illumodine' : $atts['layout'];
 
         $props = [
-            'title'       => !empty($atts['title']) ? $atts['title'] : (get_field('authority_title', $postId) ?: 'Who We Are'),
-            'name'        => $name,
-            'credentials' => get_field('authority_credentials', $postId) ?: '',
-            'image'       => $imageUrl,
-            'bio'         => get_field('authority_bio', $postId) ?: '',
-            'quotes'      => $quotes,
-            'layout'      => $atts['layout'],
+            'title'           => !empty($atts['title']) ? $atts['title'] : ($authority['title'] ?? 'Who We Are'),
+            'subtitle'        => $authority['subtitle'] ?? '',
+            'name'            => $name,
+            'credentials'     => $authority['credentials'] ?? '',
+            'image'           => $authority['image'] ?? '',
+            'bio'             => $authority['bio'] ?? '',
+            'quotes'          => $authority['quotes'] ?? [],
+            'quoteCategories' => $authority['quoteCategories'] ?? [],
+            'articleLink'     => $authority['articleLink'] ?? null,
+            'ctaText'         => $config['hero']['cta_text'] ?? 'Get Your Special Offer Now',
+            'ctaUrl'          => $config['checkout']['url'] ?? '#checkout',
+            'layout'          => $layout,
         ];
 
         return $this->renderWidget('FunnelAuthority', $config['slug'], $props);
