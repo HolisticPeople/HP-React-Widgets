@@ -18,6 +18,9 @@ export interface FunnelHeroSectionProps {
   
   // Styling
   backgroundGradient?: string;
+  backgroundColor?: string;
+  backgroundImage?: string;
+  useGlobalBackground?: boolean; // If true, section is transparent to show page background
   accentColor?: string;
   textAlign?: 'left' | 'center' | 'right';
   imagePosition?: 'right' | 'left' | 'background';
@@ -38,6 +41,9 @@ export const FunnelHeroSection = ({
   ctaSecondaryText,
   ctaSecondaryUrl,
   backgroundGradient,
+  backgroundColor,
+  backgroundImage,
+  useGlobalBackground = true,
   accentColor,
   textAlign = 'left',
   imagePosition = 'right',
@@ -54,31 +60,47 @@ export const FunnelHeroSection = ({
 
   const hasImage = heroImage && imagePosition !== 'background';
   const isBackgroundImage = heroImage && imagePosition === 'background';
+  
+  // Determine if we should render a background or use transparent (for global background)
+  const hasCustomBackground = backgroundGradient || backgroundColor || backgroundImage || !useGlobalBackground;
 
   return (
     <section
       className={cn(
-        'hp-funnel-hero-section relative overflow-hidden flex items-center',
+        'hp-funnel-hero-section hp-funnel-section relative overflow-hidden flex items-center',
         className
       )}
       style={customStyles}
     >
-      {/* Background */}
-      {backgroundGradient ? (
-        <div className="absolute inset-0" style={{ background: backgroundGradient }} />
-      ) : (
+      {/* Background - only render if section has custom background */}
+      {hasCustomBackground && (
         <>
-          <div className="absolute inset-0 bg-gradient-to-br from-primary via-secondary to-background opacity-90" />
-          <div
-            className="absolute inset-0"
-            style={{
-              background: 'radial-gradient(ellipse at 30% 50%, hsl(280 65% 35% / 0.4), transparent 50%), radial-gradient(ellipse at 70% 50%, hsl(45 95% 50% / 0.3), transparent 50%)',
-            }}
-          />
+          {backgroundImage ? (
+            <div
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: `url(${backgroundImage})` }}
+            >
+              <div className="absolute inset-0 bg-black/50" />
+            </div>
+          ) : backgroundColor ? (
+            <div className="absolute inset-0" style={{ backgroundColor }} />
+          ) : backgroundGradient ? (
+            <div className="absolute inset-0" style={{ background: backgroundGradient }} />
+          ) : (
+            <>
+              <div className="absolute inset-0 bg-gradient-to-br from-primary via-secondary to-background opacity-90" />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: 'radial-gradient(ellipse at 30% 50%, hsl(280 65% 35% / 0.4), transparent 50%), radial-gradient(ellipse at 70% 50%, hsl(45 95% 50% / 0.3), transparent 50%)',
+                }}
+              />
+            </>
+          )}
         </>
       )}
 
-      {/* Background image mode */}
+      {/* Background image mode (hero image as background) */}
       {isBackgroundImage && (
         <div
           className="absolute inset-0 bg-cover bg-center"
@@ -88,8 +110,8 @@ export const FunnelHeroSection = ({
         </div>
       )}
 
-      {/* Animated effect */}
-      <div className="absolute inset-0 opacity-30">
+      {/* Animated glow effect */}
+      <div className="absolute inset-0 opacity-30 pointer-events-none">
         <div
           className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/20 via-transparent to-accent/20 animate-pulse"
           style={{ animationDuration: '4s' }}

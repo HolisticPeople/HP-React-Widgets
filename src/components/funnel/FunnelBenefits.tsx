@@ -45,6 +45,8 @@ export interface FunnelBenefitsProps {
   columns?: 2 | 3 | 4;
   defaultIcon?: 'check' | 'star' | 'shield' | 'heart';
   showCards?: boolean;
+  backgroundColor?: string;
+  backgroundGradient?: string;
   className?: string;
 }
 
@@ -55,6 +57,8 @@ export const FunnelBenefits = ({
   columns = 3,
   defaultIcon = 'check',
   showCards = true,
+  backgroundColor,
+  backgroundGradient,
   className,
 }: FunnelBenefitsProps) => {
   // Normalize benefits to always be objects
@@ -68,12 +72,22 @@ export const FunnelBenefits = ({
     4: 'md:grid-cols-2 lg:grid-cols-4',
   };
 
+  // Build background style
+  const bgStyle: React.CSSProperties = {};
+  if (backgroundColor) {
+    bgStyle.backgroundColor = backgroundColor;
+  } else if (backgroundGradient) {
+    bgStyle.background = backgroundGradient;
+  }
+  // If no custom background, section is transparent to show global funnel background
+
   return (
     <section
       className={cn(
-        'hp-funnel-benefits py-20 px-4 bg-gradient-to-b from-background via-secondary/20 to-background',
+        'hp-funnel-benefits hp-funnel-section py-20 px-4',
         className
       )}
+      style={bgStyle}
     >
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}

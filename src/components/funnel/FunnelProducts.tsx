@@ -32,6 +32,8 @@ export interface FunnelProductsProps {
   showPrices?: boolean;
   showFeatures?: boolean;
   layout?: 'grid' | 'horizontal';
+  backgroundColor?: string;
+  backgroundGradient?: string;
   className?: string;
 }
 
@@ -44,6 +46,8 @@ export const FunnelProducts = ({
   showPrices = true,
   showFeatures = true,
   layout = 'grid',
+  backgroundColor,
+  backgroundGradient,
   className,
 }: FunnelProductsProps) => {
   const handleProductClick = (product: FunnelProduct) => {
@@ -64,12 +68,21 @@ export const FunnelProducts = ({
 
   const columnClass = gridCols[Math.min(products.length, 3) as 1 | 2 | 3];
 
+  // Build background style
+  const bgStyle: React.CSSProperties = {};
+  if (backgroundColor) {
+    bgStyle.backgroundColor = backgroundColor;
+  } else if (backgroundGradient) {
+    bgStyle.background = backgroundGradient;
+  }
+
   return (
     <section
       className={cn(
-        'hp-funnel-products py-20 px-4 bg-gradient-to-br from-primary/20 via-secondary/30 to-background',
+        'hp-funnel-products hp-funnel-section py-20 px-4',
         className
       )}
+      style={bgStyle}
     >
       <div className="max-w-5xl mx-auto">
         {/* Section Header */}

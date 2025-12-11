@@ -81,6 +81,14 @@ class Plugin
             'hydrator_class' => 'FunnelThankYouShortcode',
         ],
         // Modular funnel section components
+        'hp_funnel_styles' => [
+            'label'       => 'Funnel Global Styles',
+            'description' => 'Outputs global CSS variables and background for a funnel. Place at the TOP of your page.',
+            'example'     => '[hp_funnel_styles funnel="illumodine"]',
+            'component'   => null, // No React component - pure CSS output
+            'root_id'     => null,
+            'hydrator_class' => 'FunnelStylesShortcode',
+        ],
         'hp_funnel_header' => [
             'label'       => 'Funnel Header',
             'description' => 'Header section with logo and optional navigation.',
