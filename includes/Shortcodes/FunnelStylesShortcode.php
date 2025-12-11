@@ -48,6 +48,7 @@ class FunnelStylesShortcode
 
         // Build background CSS
         $background = $this->buildBackground($bgType, $bgColor, $bgImage);
+        $slug = esc_attr($config['slug']);
 
         $cssVars = "
             --hp-funnel-accent: {$accentColor};
@@ -55,27 +56,36 @@ class FunnelStylesShortcode
             --hp-funnel-bg: {$background};
         ";
 
-        // Output CSS
-        $output = "<style id=\"hp-funnel-styles-{$config['slug']}\">
+        // Output CSS with high specificity to override Elementor
+        $output = "<style id=\"hp-funnel-styles-{$slug}\">
             :root {
                 {$cssVars}
             }
             
-            /* Global funnel page background */
-            .hp-funnel-page,
-            body.hp-funnel-{$config['slug']} {
-                background: {$background};
+            /* Global funnel page background - high specificity to override Elementor */
+            body.hp-funnel-{$slug},
+            body.hp-funnel-{$slug} .elementor,
+            body.hp-funnel-{$slug} .elementor-inner,
+            body.hp-funnel-{$slug} .elementor-section-wrap,
+            body.hp-funnel-{$slug} .e-con,
+            .hp-funnel-page-{$slug} {
+                background: {$background} !important;
+            }
+            
+            body.hp-funnel-{$slug} {
                 min-height: 100vh;
             }
             
-            /* Section default - transparent to show page background */
-            .hp-funnel-section {
-                background: transparent;
+            /* Make Elementor sections transparent */
+            body.hp-funnel-{$slug} .elementor-section,
+            body.hp-funnel-{$slug} .elementor-element,
+            body.hp-funnel-{$slug} .e-con {
+                background-color: transparent !important;
             }
             
-            /* Section with explicit background override */
-            .hp-funnel-section[data-bg] {
-                background: attr(data-bg);
+            /* HP Funnel sections - transparent by default */
+            .hp-funnel-section {
+                background: transparent !important;
             }
             
             /* Accent color utilities */
@@ -92,8 +102,8 @@ class FunnelStylesShortcode
             {$customCss}
         </style>";
 
-        // Add body class via inline script
-        $output .= "<script>document.body.classList.add('hp-funnel-{$config['slug']}');</script>";
+        // Add body class via inline script (runs immediately)
+        $output .= "<script>(function(){document.body.classList.add('hp-funnel-{$slug}');})();</script>";
 
         return $output;
     }
@@ -103,21 +113,25 @@ class FunnelStylesShortcode
      */
     private function buildBackground(string $type, string $color, string $image): string
     {
-        switch ($type) {
-            case 'solid':
-                return $color ?: '#1a1a2e';
-            
-            case 'image':
-                if ($image) {
-                    return "url('{$image}') center/cover no-repeat";
-                }
-                return '#1a1a2e';
-            
-            case 'gradient':
-            default:
-                // Default dark gradient with accent glow
-                return 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%)';
+        // Normalize type value (ACF might store "Default Gradient", "Solid Color", etc.)
+        $normalizedType = strtolower(trim($type));
+        
+        // Check for solid color
+        if (strpos($normalizedType, 'solid') !== false || $normalizedType === 'color') {
+            return $color ?: '#1a1a2e';
         }
+        
+        // Check for image
+        if (strpos($normalizedType, 'image') !== false) {
+            if ($image) {
+                return "url('{$image}') center/cover no-repeat fixed";
+            }
+            return '#1a1a2e';
+        }
+        
+        // Default: gradient (matches "gradient", "default gradient", etc.)
+        // Dark gradient with subtle purple/gold undertones for Illumodine style
+        return 'linear-gradient(135deg, #0f0f1a 0%, #1a1525 25%, #151520 50%, #1a1a25 75%, #0f0f1a 100%)';
     }
 
     /**
