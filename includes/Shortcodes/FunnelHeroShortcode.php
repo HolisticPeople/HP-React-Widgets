@@ -11,9 +11,30 @@ if (!defined('ABSPATH')) {
 /**
  * FunnelHero shortcode - renders a landing page hero for sales funnels.
  * 
- * Usage: [hp_funnel_hero funnel="illumodine"]
+ * All configuration can be passed as shortcode attributes for easy Elementor setup.
  * 
- * The funnel configuration is loaded from hp_rw_settings option.
+ * Usage examples:
+ * 
+ * Minimal (uses defaults):
+ * [hp_funnel_hero title="Illumodine™" subtitle="The best Iodine!" checkout_url="/checkout/"]
+ * 
+ * With products (SKUs are looked up from WooCommerce):
+ * [hp_funnel_hero title="Illumodine™" products="ILLUM-05OZ,ILLUM-2OZ" checkout_url="/checkout/"]
+ * 
+ * Full configuration:
+ * [hp_funnel_hero 
+ *   funnel="illumodine"
+ *   title="Illumodine™" 
+ *   subtitle="The best Iodine in the world!"
+ *   tagline="Pure, High-Potency Iodine Supplement"
+ *   description="The most bioavailable iodine supplement on Earth"
+ *   hero_image="https://example.com/bottle.png"
+ *   logo_url="https://example.com/logo.png"
+ *   cta_text="Get Your Special Offer Now"
+ *   checkout_url="/illumodine-checkout/"
+ *   products="ILLUM-05OZ,ILLUM-2OZ"
+ *   benefits="Supports thyroid health|Promotes mental clarity|Detoxifies heavy metals"
+ * ]
  */
 class FunnelHeroShortcode
 {
@@ -27,48 +48,71 @@ class FunnelHeroShortcode
     {
         AssetLoader::enqueue_bundle();
 
+        // All available attributes with defaults
         $atts = shortcode_atts([
-            'funnel'  => 'default',
-            'product' => '', // Optional: pre-select a product
+            // Identity
+            'funnel'          => 'default',
+            
+            // Hero content
+            'title'           => 'Special Offer',
+            'subtitle'        => '',
+            'tagline'         => '',
+            'description'     => '',
+            'hero_image'      => '',
+            
+            // Branding
+            'logo_url'        => '',
+            'logo_link'       => '',
+            
+            // Call to action
+            'cta_text'        => 'Get Your Special Offer Now',
+            'checkout_url'    => '/checkout/',
+            
+            // Products - comma-separated SKUs (will fetch from WooCommerce)
+            'products'        => '',
+            
+            // Benefits - pipe-separated list
+            'benefits'        => '',
+            'benefits_title'  => 'Why Choose Us?',
+            
+            // Styling
+            'accent_color'    => '',
+            'background'      => '',
+            
+            // Product display overrides (JSON or simple format)
+            'product_config'  => '', // JSON: [{"sku":"X","name":"Y","price":29,"badge":"BEST"}]
         ], $atts);
 
         $funnelId = sanitize_key($atts['funnel']);
-        $selectedProduct = sanitize_key($atts['product']);
 
-        // Get funnel configuration
-        $config = $this->getFunnelConfig($funnelId);
+        // Try to load stored config first, then override with attributes
+        $storedConfig = $this->getFunnelConfig($funnelId);
 
-        if (empty($config)) {
-            return '<div class="hp-funnel-error">Funnel configuration not found.</div>';
-        }
+        // Build products array
+        $products = $this->buildProducts($atts, $storedConfig);
 
-        // Build product data from SKUs
-        $products = $this->buildProductsFromConfig($config);
+        // Parse benefits
+        $benefits = $this->parseBenefits($atts['benefits'], $storedConfig);
 
         // Build props for React component
         $props = [
-            'funnelId'     => $funnelId,
-            'funnelName'   => $config['name'] ?? ucfirst($funnelId),
-            'title'        => $config['hero_title'] ?? '',
-            'subtitle'     => $config['hero_subtitle'] ?? '',
-            'tagline'      => $config['hero_tagline'] ?? '',
-            'description'  => $config['hero_description'] ?? '',
-            'heroImage'    => $config['hero_image'] ?? '',
-            'logoUrl'      => $config['logo_url'] ?? '',
-            'logoLink'     => $config['logo_link'] ?? home_url('/'),
-            'products'     => $products,
-            'checkoutUrl'  => $this->getCheckoutUrl($funnelId, $config),
-            'ctaText'      => $config['cta_text'] ?? 'Get Your Special Offer Now',
-            'benefits'     => $config['benefits'] ?? [],
-            'benefitsTitle' => $config['benefits_title'] ?? 'Why Choose Us?',
-            'accentColor'  => $config['accent_color'] ?? '',
-            'backgroundGradient' => $config['background_gradient'] ?? '',
+            'funnelId'          => $funnelId,
+            'funnelName'        => $atts['title'] ?: ($storedConfig['name'] ?? ucfirst($funnelId)),
+            'title'             => $atts['title'] ?: ($storedConfig['hero_title'] ?? 'Special Offer'),
+            'subtitle'          => $atts['subtitle'] ?: ($storedConfig['hero_subtitle'] ?? ''),
+            'tagline'           => $atts['tagline'] ?: ($storedConfig['hero_tagline'] ?? ''),
+            'description'       => $atts['description'] ?: ($storedConfig['hero_description'] ?? ''),
+            'heroImage'         => $atts['hero_image'] ?: ($storedConfig['hero_image'] ?? ''),
+            'logoUrl'           => $atts['logo_url'] ?: ($storedConfig['logo_url'] ?? ''),
+            'logoLink'          => $atts['logo_link'] ?: ($storedConfig['logo_link'] ?? home_url('/')),
+            'products'          => $products,
+            'checkoutUrl'       => $atts['checkout_url'] ?: ($storedConfig['checkout_url'] ?? '/checkout/'),
+            'ctaText'           => $atts['cta_text'] ?: ($storedConfig['cta_text'] ?? 'Get Your Special Offer Now'),
+            'benefits'          => $benefits,
+            'benefitsTitle'     => $atts['benefits_title'] ?: ($storedConfig['benefits_title'] ?? 'Why Choose Us?'),
+            'accentColor'       => $atts['accent_color'] ?: ($storedConfig['accent_color'] ?? ''),
+            'backgroundGradient' => $atts['background'] ?: ($storedConfig['background_gradient'] ?? ''),
         ];
-
-        // Add selected product if specified
-        if ($selectedProduct) {
-            $props['selectedProductId'] = $selectedProduct;
-        }
 
         $rootId = 'hp-funnel-hero-' . esc_attr($funnelId) . '-' . uniqid();
 
@@ -81,86 +125,132 @@ class FunnelHeroShortcode
     }
 
     /**
-     * Get funnel configuration from settings.
+     * Build products array from attributes or stored config.
      */
-    private function getFunnelConfig(string $funnelId): array
-    {
-        $opts = get_option('hp_rw_settings', []);
-        
-        if (!empty($opts['funnel_configs']) && isset($opts['funnel_configs'][$funnelId])) {
-            return $opts['funnel_configs'][$funnelId];
-        }
-
-        // Try to load from a separate option for the funnel
-        $funnelOpts = get_option('hp_rw_funnel_' . $funnelId, []);
-        if (!empty($funnelOpts)) {
-            return $funnelOpts;
-        }
-
-        return [];
-    }
-
-    /**
-     * Build product data from funnel configuration.
-     */
-    private function buildProductsFromConfig(array $config): array
+    private function buildProducts(array $atts, array $storedConfig): array
     {
         $products = [];
-        
-        if (empty($config['products']) || !is_array($config['products'])) {
-            return $products;
+
+        // Try product_config JSON first (most flexible)
+        if (!empty($atts['product_config'])) {
+            $decoded = json_decode($atts['product_config'], true);
+            if (is_array($decoded)) {
+                foreach ($decoded as $pc) {
+                    if (empty($pc['sku'])) continue;
+                    $products[] = $this->buildProductFromConfig($pc);
+                }
+                if (!empty($products)) {
+                    return $products;
+                }
+            }
         }
 
-        foreach ($config['products'] as $productConfig) {
-            if (!is_array($productConfig) || empty($productConfig['sku'])) {
-                continue;
+        // Try comma-separated SKUs
+        if (!empty($atts['products'])) {
+            $skus = array_map('trim', explode(',', $atts['products']));
+            foreach ($skus as $sku) {
+                if (empty($sku)) continue;
+                $product = $this->buildProductFromSku($sku);
+                if ($product) {
+                    $products[] = $product;
+                }
             }
-
-            $sku = (string) $productConfig['sku'];
-            $wcProduct = Resolver::resolveProductFromItem(['sku' => $sku]);
-
-            if (!$wcProduct) {
-                continue;
+            if (!empty($products)) {
+                return $products;
             }
+        }
 
-            $productData = Resolver::getProductDisplayData($wcProduct);
-
-            $products[] = [
-                'id'           => $productConfig['id'] ?? $sku,
-                'sku'          => $sku,
-                'name'         => $productConfig['display_name'] ?? $productData['name'],
-                'description'  => $productConfig['description'] ?? '',
-                'price'        => (float) ($productConfig['display_price'] ?? $productData['price']),
-                'regularPrice' => $productData['regular_price'],
-                'image'        => $productConfig['image'] ?? $productData['image'],
-                'badge'        => $productConfig['badge'] ?? '',
-                'features'     => $productConfig['features'] ?? [],
-                'isBestValue'  => !empty($productConfig['is_best_value']),
-            ];
+        // Fall back to stored config
+        if (!empty($storedConfig['products'])) {
+            foreach ($storedConfig['products'] as $pc) {
+                if (empty($pc['sku'])) continue;
+                $products[] = $this->buildProductFromConfig($pc);
+            }
         }
 
         return $products;
     }
 
     /**
-     * Get the checkout URL for this funnel.
+     * Build product data from a config array.
      */
-    private function getCheckoutUrl(string $funnelId, array $config): string
+    private function buildProductFromConfig(array $config): array
     {
-        if (!empty($config['checkout_url'])) {
-            return $config['checkout_url'];
+        $sku = (string) ($config['sku'] ?? '');
+        $wcProduct = Resolver::resolveProductFromItem(['sku' => $sku]);
+        $wcData = $wcProduct ? Resolver::getProductDisplayData($wcProduct) : [];
+
+        return [
+            'id'           => $config['id'] ?? $sku,
+            'sku'          => $sku,
+            'name'         => $config['name'] ?? $config['display_name'] ?? ($wcData['name'] ?? $sku),
+            'description'  => $config['description'] ?? '',
+            'price'        => (float) ($config['price'] ?? $config['display_price'] ?? ($wcData['price'] ?? 0)),
+            'regularPrice' => $wcData['regular_price'] ?? null,
+            'image'        => $config['image'] ?? ($wcData['image'] ?? ''),
+            'badge'        => $config['badge'] ?? '',
+            'features'     => $config['features'] ?? [],
+            'isBestValue'  => !empty($config['is_best_value']) || !empty($config['best_value']),
+        ];
+    }
+
+    /**
+     * Build product data from just a SKU (fetches from WooCommerce).
+     */
+    private function buildProductFromSku(string $sku): ?array
+    {
+        $wcProduct = Resolver::resolveProductFromItem(['sku' => $sku]);
+        if (!$wcProduct) {
+            return null;
         }
 
-        // Default: look for a page with the funnel checkout shortcode
-        $checkoutPage = get_page_by_path("funnels/{$funnelId}/checkout");
-        if ($checkoutPage) {
-            return get_permalink($checkoutPage);
+        $wcData = Resolver::getProductDisplayData($wcProduct);
+
+        return [
+            'id'           => $sku,
+            'sku'          => $sku,
+            'name'         => $wcData['name'] ?? $sku,
+            'description'  => $wcProduct->get_short_description() ?: '',
+            'price'        => (float) ($wcData['price'] ?? 0),
+            'regularPrice' => $wcData['regular_price'] ?? null,
+            'image'        => $wcData['image'] ?? '',
+            'badge'        => '',
+            'features'     => [],
+            'isBestValue'  => false,
+        ];
+    }
+
+    /**
+     * Parse benefits from attribute or stored config.
+     */
+    private function parseBenefits(string $benefitsAttr, array $storedConfig): array
+    {
+        if (!empty($benefitsAttr)) {
+            // Pipe-separated list
+            return array_map('trim', explode('|', $benefitsAttr));
         }
 
-        // Fallback to a query param based URL
-        return add_query_arg([
-            'hp_funnel_checkout' => $funnelId,
-        ], home_url('/'));
+        return $storedConfig['benefits'] ?? [];
+    }
+
+    /**
+     * Get funnel configuration from stored settings.
+     */
+    private function getFunnelConfig(string $funnelId): array
+    {
+        // Try main settings first
+        $opts = get_option('hp_rw_settings', []);
+        if (!empty($opts['funnel_configs'][$funnelId])) {
+            return $opts['funnel_configs'][$funnelId];
+        }
+
+        // Try separate option
+        $funnelOpts = get_option('hp_rw_funnel_' . $funnelId, []);
+        if (!empty($funnelOpts)) {
+            return $funnelOpts;
+        }
+
+        return [];
     }
 }
 
