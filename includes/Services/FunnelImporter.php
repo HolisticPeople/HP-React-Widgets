@@ -225,7 +225,7 @@ class FunnelImporter
         if (empty($header)) return;
 
         self::setField($postId, 'header_logo', $header['logo'] ?? '');
-        self::setField($postId, 'header_logo_link', $header['logo_link'] ?? '');
+        self::setUrlField($postId, 'header_logo_link', $header['logo_link'] ?? '');
         self::setField($postId, 'header_sticky', !empty($header['sticky']));
         self::setField($postId, 'header_transparent', !empty($header['transparent']));
         
@@ -233,7 +233,7 @@ class FunnelImporter
             self::setField($postId, 'header_nav_items', array_map(function($item) {
                 return [
                     'label' => $item['label'] ?? '',
-                    'url' => $item['url'] ?? '',
+                    'url' => self::toAbsoluteUrl($item['url'] ?? ''),
                     'is_external' => !empty($item['is_external']),
                 ];
             }, $header['nav_items']));
@@ -253,7 +253,7 @@ class FunnelImporter
         self::setField($postId, 'hero_description', $hero['description'] ?? '');
         self::setField($postId, 'hero_image', $hero['image'] ?? '');
         self::setField($postId, 'hero_logo', $hero['logo'] ?? '');
-        self::setField($postId, 'hero_logo_link', $hero['logo_link'] ?? '');
+        self::setUrlField($postId, 'hero_logo_link', $hero['logo_link'] ?? '');
         self::setField($postId, 'hero_cta_text', $hero['cta_text'] ?? 'Get Your Special Offer Now');
     }
 
@@ -367,7 +367,7 @@ class FunnelImporter
         // Article link
         if (!empty($authority['article_link'])) {
             self::setField($postId, 'authority_article_text', $authority['article_link']['text'] ?? '');
-            self::setField($postId, 'authority_article_url', $authority['article_link']['url'] ?? '');
+            self::setUrlField($postId, 'authority_article_url', $authority['article_link']['url'] ?? '');
         }
     }
 
@@ -445,7 +445,7 @@ class FunnelImporter
         self::setField($postId, 'cta_title', $cta['title'] ?? 'Ready to Get Started?');
         self::setField($postId, 'cta_subtitle', $cta['subtitle'] ?? '');
         self::setField($postId, 'cta_button_text', $cta['button_text'] ?? 'Order Now');
-        self::setField($postId, 'cta_button_url', $cta['button_url'] ?? '');
+        self::setUrlField($postId, 'cta_button_url', $cta['button_url'] ?? '');
     }
 
     /**
@@ -455,7 +455,7 @@ class FunnelImporter
     {
         if (empty($checkout)) return;
 
-        self::setField($postId, 'checkout_url', $checkout['url'] ?? '/checkout/');
+        self::setUrlField($postId, 'checkout_url', $checkout['url'] ?? '/checkout/');
         self::setField($postId, 'free_shipping_countries', $checkout['free_shipping_countries'] ?? 'US');
         self::setField($postId, 'global_discount_percent', $checkout['global_discount_percent'] ?? 0);
         self::setField($postId, 'enable_points_redemption', $checkout['enable_points_redemption'] ?? true);
@@ -469,7 +469,7 @@ class FunnelImporter
     {
         if (empty($thankyou)) return;
 
-        self::setField($postId, 'thankyou_url', $thankyou['url'] ?? '/thank-you/');
+        self::setUrlField($postId, 'thankyou_url', $thankyou['url'] ?? '/thank-you/');
         self::setField($postId, 'thankyou_headline', $thankyou['headline'] ?? 'Thank You for Your Order!');
         self::setField($postId, 'thankyou_message', $thankyou['message'] ?? '');
         self::setField($postId, 'show_upsell', !empty($thankyou['show_upsell']));
@@ -514,7 +514,7 @@ class FunnelImporter
             self::setField($postId, 'footer_links', array_map(function($l) {
                 return [
                     'label' => $l['label'] ?? '',
-                    'url' => $l['url'] ?? '',
+                    'url' => self::toAbsoluteUrl($l['url'] ?? ''),
                 ];
             }, $footer['links']));
         }
@@ -530,6 +530,50 @@ class FunnelImporter
         } else {
             self::updateMeta($postId, $fieldName, $value);
         }
+    }
+
+    /**
+     * Set a URL field, converting relative URLs to absolute.
+     * ACF URL fields require full URLs with protocol.
+     */
+    private static function setUrlField(int $postId, string $fieldName, string $value): void
+    {
+        $absoluteUrl = self::toAbsoluteUrl($value);
+        self::setField($postId, $fieldName, $absoluteUrl);
+    }
+
+    /**
+     * Convert a relative URL to absolute URL.
+     * Preserves already-absolute URLs.
+     *
+     * @param string $url URL (relative or absolute)
+     * @return string Absolute URL
+     */
+    private static function toAbsoluteUrl(string $url): string
+    {
+        if (empty($url)) {
+            return '';
+        }
+
+        // Already absolute
+        if (preg_match('#^https?://#i', $url)) {
+            return $url;
+        }
+
+        // Protocol-relative URL
+        if (str_starts_with($url, '//')) {
+            return 'https:' . $url;
+        }
+
+        // Relative URL - prepend site URL
+        $siteUrl = rtrim(home_url(), '/');
+        
+        // Ensure URL starts with /
+        if (!str_starts_with($url, '/')) {
+            $url = '/' . $url;
+        }
+
+        return $siteUrl . $url;
     }
 
     /**
