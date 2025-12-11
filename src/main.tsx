@@ -4,6 +4,10 @@ import './index.css'
 import { MultiAddress } from './components/MultiAddress'
 import { MyAccountHeader } from '@/components/MyAccountHeader'
 import { AddressCardPicker } from '@/components/AddressCardPicker'
+import { FunnelHero } from '@/components/FunnelHero'
+import { FunnelCheckout } from '@/components/FunnelCheckout'
+import { FunnelUpsell } from '@/components/FunnelUpsell'
+import { FunnelThankYou } from '@/components/FunnelThankYou'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
 // Global settings injected by PHP
@@ -23,9 +27,16 @@ const widgetRegistry: Record<string, React.ComponentType<any>> = window.hpReactW
 window.hpReactWidgets = widgetRegistry;
 
 // Register built-in widgets.
+// Account components
 widgetRegistry.MultiAddress = MultiAddress;
 widgetRegistry.MyAccountHeader = MyAccountHeader;
 widgetRegistry.AddressCardPicker = AddressCardPicker;
+
+// Funnel components
+widgetRegistry.FunnelHero = FunnelHero;
+widgetRegistry.FunnelCheckout = FunnelCheckout;
+widgetRegistry.FunnelUpsell = FunnelUpsell;
+widgetRegistry.FunnelThankYou = FunnelThankYou;
 
 document.addEventListener('DOMContentLoaded', () => {
     const nodes = document.querySelectorAll<HTMLElement>('[data-hp-widget=\"1\"]');

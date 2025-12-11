@@ -25,6 +25,7 @@ class Plugin
      * @var array<string,array<string,string>>
      */
     private const DEFAULT_SHORTCODES = [
+        // Account components
         'hp_multi_address' => [
             'label'       => 'My Account Multi-Address',
             'description' => 'Replaces the WooCommerce My Account addresses section with a React-based multi-address UI.',
@@ -49,6 +50,31 @@ class Plugin
             'root_id'     => 'hp-address-card-picker-root',
             'hydrator_class' => 'AddressCardPickerShortcode',
         ],
+        // Funnel components
+        'hp_funnel_hero' => [
+            'label'       => 'Funnel Hero',
+            'description' => 'Landing page hero section for sales funnels with product selection.',
+            'example'     => '[hp_funnel_hero funnel="illumodine"]',
+            'component'   => 'FunnelHero',
+            'root_id'     => 'hp-funnel-hero-root',
+            'hydrator_class' => 'FunnelHeroShortcode',
+        ],
+        'hp_funnel_checkout' => [
+            'label'       => 'Funnel Checkout',
+            'description' => 'Checkout page for sales funnels with product selection and payment.',
+            'example'     => '[hp_funnel_checkout funnel="illumodine"]',
+            'component'   => 'FunnelCheckout',
+            'root_id'     => 'hp-funnel-checkout-root',
+            'hydrator_class' => 'FunnelCheckoutShortcode',
+        ],
+        'hp_funnel_thankyou' => [
+            'label'       => 'Funnel Thank You',
+            'description' => 'Thank you page with order summary and upsell offers.',
+            'example'     => '[hp_funnel_thankyou funnel="illumodine"]',
+            'component'   => 'FunnelThankYou',
+            'root_id'     => 'hp-funnel-thankyou-root',
+            'hydrator_class' => 'FunnelThankYouShortcode',
+        ],
     ];
 
     /**
@@ -62,6 +88,18 @@ class Plugin
         // Register REST API endpoints for widget interactions.
         $addressApi = new AddressApi();
         $addressApi->register();
+
+        // Register checkout REST API endpoints.
+        $checkoutApi = new Rest\CheckoutApi();
+        $checkoutApi->register();
+
+        // Register upsell REST API endpoints.
+        $upsellApi = new Rest\UpsellApi();
+        $upsellApi->register();
+
+        // Register shipping rates REST API endpoints.
+        $shippingApi = new Rest\ShippingApi();
+        $shippingApi->register_routes();
 
         // Register shortcodes based on current settings.
         $shortcodeRegistry = new ShortcodeRegistry($assetLoader);
