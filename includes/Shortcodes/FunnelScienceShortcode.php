@@ -44,7 +44,7 @@ class FunnelScienceShortcode extends AbstractShortcode
         ], $atts, 'hp_funnel_science');
 
         $slug = sanitize_key($atts['funnel']);
-        $config = $slug ? FunnelConfigLoader::getConfigBySlug($slug) : [];
+        $config = $slug ? FunnelConfigLoader::getBySlug($slug) : [];
 
         $science = $config['science'] ?? [];
         $sections = [];

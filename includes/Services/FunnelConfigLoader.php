@@ -205,16 +205,21 @@ class FunnelConfigLoader
             
             // Hero section
             'hero' => [
-                'title'         => get_field('hero_title', $postId) ?: '',
-                'subtitle'      => get_field('hero_subtitle', $postId) ?: '',
-                'tagline'       => get_field('hero_tagline', $postId) ?: '',
-                'description'   => get_field('hero_description', $postId) ?: '',
-                'image'         => get_field('hero_image', $postId) ?: '',
-                'logo'          => get_field('hero_logo', $postId) ?: '',
-                'logo_link'     => get_field('hero_logo_link', $postId) ?: home_url('/'),
-                'cta_text'      => get_field('hero_cta_text', $postId) ?: 'Get Your Special Offer Now',
-                'benefits_title' => get_field('hero_benefits_title', $postId) ?: 'Why Choose Us?',
-                'benefits'      => self::extractBenefits(get_field('hero_benefits', $postId) ?: []),
+                'title'            => get_field('hero_title', $postId) ?: '',
+                'subtitle'         => get_field('hero_subtitle', $postId) ?: '',
+                'tagline'          => get_field('hero_tagline', $postId) ?: '',
+                'description'      => get_field('hero_description', $postId) ?: '',
+                'image'            => self::resolveImageUrl(get_field('hero_image', $postId)),
+                'logo'             => self::resolveImageUrl(get_field('hero_logo', $postId)),
+                'logo_link'        => get_field('hero_logo_link', $postId) ?: home_url('/'),
+                'cta_text'         => get_field('hero_cta_text', $postId) ?: 'Get Your Special Offer Now',
+            ],
+            
+            // Benefits section
+            'benefits' => [
+                'title'    => get_field('hero_benefits_title', $postId) ?: 'Why Choose Us?',
+                'subtitle' => get_field('hero_benefits_subtitle', $postId) ?: '',
+                'items'    => self::extractBenefitsWithIcons(get_field('hero_benefits', $postId) ?: []),
             ],
             
             // Products
@@ -251,6 +256,55 @@ class FunnelConfigLoader
             'footer' => [
                 'text'       => get_field('footer_text', $postId) ?: '',
                 'disclaimer' => get_field('footer_disclaimer', $postId) ?: '',
+                'links'      => self::extractFooterLinks(get_field('footer_links', $postId) ?: []),
+            ],
+            
+            // Features section
+            'features' => [
+                'title'    => get_field('features_title', $postId) ?: 'Key Features',
+                'subtitle' => get_field('features_subtitle', $postId) ?: '',
+                'items'    => self::extractFeatures(get_field('features_list', $postId) ?: []),
+            ],
+            
+            // Authority section
+            'authority' => [
+                'title'           => get_field('authority_title', $postId) ?: 'Who We Are',
+                'subtitle'        => get_field('authority_subtitle', $postId) ?: '',
+                'name'            => get_field('authority_name', $postId) ?: '',
+                'credentials'     => get_field('authority_credentials', $postId) ?: '',
+                'image'           => self::resolveImageUrl(get_field('authority_image', $postId)),
+                'bio'             => get_field('authority_bio', $postId) ?: '',
+                'quotes'          => self::extractQuotes(get_field('authority_quotes', $postId) ?: []),
+                'quoteCategories' => self::extractQuoteCategories(get_field('authority_quote_categories', $postId) ?: []),
+                'articleLink'     => self::extractArticleLink($postId),
+            ],
+            
+            // Testimonials section
+            'testimonials' => [
+                'title'    => get_field('testimonials_title', $postId) ?: 'What Our Customers Say',
+                'subtitle' => get_field('testimonials_subtitle', $postId) ?: '',
+                'items'    => self::extractTestimonials(get_field('testimonials_list', $postId) ?: []),
+            ],
+            
+            // FAQ section
+            'faq' => [
+                'title' => get_field('faq_title', $postId) ?: 'Frequently Asked Questions',
+                'items' => self::extractFaqItems(get_field('faq_list', $postId) ?: []),
+            ],
+            
+            // CTA section
+            'cta' => [
+                'title'      => get_field('cta_title', $postId) ?: 'Ready to Get Started?',
+                'subtitle'   => get_field('cta_subtitle', $postId) ?: '',
+                'buttonText' => get_field('cta_button_text', $postId) ?: 'Order Now',
+                'buttonUrl'  => get_field('cta_button_url', $postId) ?: '',
+            ],
+            
+            // Science section
+            'science' => [
+                'title'    => get_field('science_title', $postId) ?: 'The Science Behind Our Product',
+                'subtitle' => get_field('science_subtitle', $postId) ?: '',
+                'sections' => self::extractScienceSections(get_field('science_sections', $postId) ?: []),
             ],
         ];
 
@@ -290,6 +344,201 @@ class FunnelConfigLoader
         foreach ($benefits as $row) {
             if (isset($row['text']) && !empty($row['text'])) {
                 $result[] = (string) $row['text'];
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Extract benefits with icons from ACF repeater.
+     *
+     * @param array $benefits ACF repeater data
+     * @return array Array of benefit objects with text and icon
+     */
+    private static function extractBenefitsWithIcons(array $benefits): array
+    {
+        $result = [];
+        foreach ($benefits as $row) {
+            if (isset($row['text']) && !empty($row['text'])) {
+                $result[] = [
+                    'text' => (string) $row['text'],
+                    'icon' => $row['icon'] ?? 'check',
+                ];
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Extract features from ACF repeater.
+     *
+     * @param array $features ACF repeater data
+     * @return array Array of feature objects
+     */
+    private static function extractFeatures(array $features): array
+    {
+        $result = [];
+        foreach ($features as $row) {
+            if (!empty($row['title'])) {
+                $result[] = [
+                    'icon'        => $row['icon'] ?? 'check',
+                    'title'       => (string) $row['title'],
+                    'description' => $row['description'] ?? '',
+                ];
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Extract quotes from ACF repeater.
+     *
+     * @param array $quotes ACF repeater data
+     * @return array Array of quote objects
+     */
+    private static function extractQuotes(array $quotes): array
+    {
+        $result = [];
+        foreach ($quotes as $row) {
+            if (!empty($row['text'])) {
+                $result[] = ['text' => (string) $row['text']];
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Extract quote categories from ACF repeater.
+     *
+     * @param array $categories ACF repeater data
+     * @return array Array of quote category objects
+     */
+    private static function extractQuoteCategories(array $categories): array
+    {
+        $result = [];
+        foreach ($categories as $row) {
+            if (!empty($row['title'])) {
+                // Quotes can be stored as newline-separated text or array
+                $quotesRaw = $row['quotes'] ?? '';
+                $quotes = is_string($quotesRaw) 
+                    ? array_filter(array_map('trim', explode("\n", $quotesRaw)))
+                    : (array) $quotesRaw;
+                
+                $result[] = [
+                    'title'  => (string) $row['title'],
+                    'quotes' => $quotes,
+                ];
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Extract article link from ACF fields.
+     *
+     * @param int $postId Post ID
+     * @return array|null Article link object or null
+     */
+    private static function extractArticleLink(int $postId): ?array
+    {
+        $text = get_field('authority_article_text', $postId);
+        $url = get_field('authority_article_url', $postId);
+        
+        if ($text && $url) {
+            return [
+                'text' => (string) $text,
+                'url'  => (string) $url,
+            ];
+        }
+        return null;
+    }
+
+    /**
+     * Extract testimonials from ACF repeater.
+     *
+     * @param array $testimonials ACF repeater data
+     * @return array Array of testimonial objects
+     */
+    private static function extractTestimonials(array $testimonials): array
+    {
+        $result = [];
+        foreach ($testimonials as $row) {
+            if (!empty($row['name']) && !empty($row['quote'])) {
+                $result[] = [
+                    'name'   => (string) $row['name'],
+                    'role'   => $row['role'] ?? '',
+                    'title'  => $row['title'] ?? '',
+                    'quote'  => (string) $row['quote'],
+                    'image'  => self::resolveImageUrl($row['image'] ?? null),
+                    'rating' => (int) ($row['rating'] ?? 5),
+                ];
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Extract FAQ items from ACF repeater.
+     *
+     * @param array $faqs ACF repeater data
+     * @return array Array of FAQ objects
+     */
+    private static function extractFaqItems(array $faqs): array
+    {
+        $result = [];
+        foreach ($faqs as $row) {
+            if (!empty($row['question']) && !empty($row['answer'])) {
+                $result[] = [
+                    'question' => (string) $row['question'],
+                    'answer'   => (string) $row['answer'],
+                ];
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Extract science sections from ACF repeater.
+     *
+     * @param array $sections ACF repeater data
+     * @return array Array of science section objects
+     */
+    private static function extractScienceSections(array $sections): array
+    {
+        $result = [];
+        foreach ($sections as $row) {
+            if (!empty($row['title'])) {
+                // Bullets can be stored as newline-separated text or array
+                $bulletsRaw = $row['bullets'] ?? '';
+                $bullets = is_string($bulletsRaw) 
+                    ? array_filter(array_map('trim', explode("\n", $bulletsRaw)))
+                    : (array) $bulletsRaw;
+                
+                $result[] = [
+                    'title'       => (string) $row['title'],
+                    'description' => $row['description'] ?? '',
+                    'bullets'     => $bullets,
+                ];
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Extract footer links from ACF repeater.
+     *
+     * @param array $links ACF repeater data
+     * @return array Array of link objects
+     */
+    private static function extractFooterLinks(array $links): array
+    {
+        $result = [];
+        foreach ($links as $row) {
+            if (!empty($row['label']) && !empty($row['url'])) {
+                $result[] = [
+                    'label' => (string) $row['label'],
+                    'url'   => (string) $row['url'],
+                ];
             }
         }
         return $result;
