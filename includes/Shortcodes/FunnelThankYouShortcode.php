@@ -2,71 +2,108 @@
 namespace HP_RW\Shortcodes;
 
 use HP_RW\AssetLoader;
+use HP_RW\Services\FunnelConfigLoader;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+/**
+ * FunnelThankYou shortcode - renders the thank you page for sales funnels.
+ * 
+ * Usage:
+ *   [hp_funnel_thankyou funnel="illumodine"]  - by slug
+ *   [hp_funnel_thankyou id="123"]             - by post ID
+ * 
+ * The funnel configuration is loaded from the hp_funnel CPT via ACF fields.
+ * Order details are loaded from URL parameters (orderId, piId).
+ */
 class FunnelThankYouShortcode
 {
+    /**
+     * Render the shortcode.
+     *
+     * @param array $atts Shortcode attributes
+     * @return string HTML output
+     */
     public function render(array $atts = []): string
     {
         AssetLoader::enqueue_bundle();
 
-        $default_atts = [
-            'funnel_id'          => 'default',
-            'logo_url'           => HP_RW_URL . 'src/assets/holisticpeople-logo.png',
-            'footer_text'        => '© 2024 HolisticPeople.com - Manufactured for Dr. Gabriel Cousens',
-            'footer_disclaimer'  => 'These statements have not been evaluated by the FDA. This product is not intended to diagnose, treat, cure or prevent any disease.',
-            // Upsell config (JSON encoded)
-            'upsell_product_sku'         => '',
-            'upsell_product_qty'         => 1,
-            'upsell_product_price'       => 0,
-            'upsell_product_title'       => '',
-            'upsell_product_description' => '',
-            'upsell_product_image_url'   => '',
-            'upsell_product_image_alt'   => '',
-        ];
+        $atts = shortcode_atts([
+            'funnel' => '',    // Funnel slug
+            'id'     => '',    // Funnel post ID
+        ], $atts);
 
-        $atts = shortcode_atts($default_atts, $atts);
+        // Load config by ID or slug
+        $config = null;
+        if (!empty($atts['id'])) {
+            $config = FunnelConfigLoader::getById((int) $atts['id']);
+        } elseif (!empty($atts['funnel'])) {
+            $config = FunnelConfigLoader::getBySlug($atts['funnel']);
+        }
 
-        // Get order/payment info from URL params
-        $order_id = isset($_GET['orderId']) ? absint($_GET['orderId']) : null;
-        $pi_id    = isset($_GET['piId']) ? sanitize_text_field($_GET['piId']) : null;
+        if (!$config || !$config['active']) {
+            return '<div class="hp-funnel-error" style="padding: 20px; background: #fee; color: #c00; border: 1px solid #c00; border-radius: 4px;">Funnel not found or inactive. Please check the funnel slug/ID.</div>';
+        }
+
+        // Get order info from URL params
+        $orderId = isset($_GET['orderId']) ? absint($_GET['orderId']) : null;
+        $piId = isset($_GET['piId']) ? sanitize_text_field($_GET['piId']) : null;
         
         // Check if upsell was already accepted/skipped
-        $upsell_accepted = isset($_GET['upsellAccepted']);
-        $upsell_skipped  = isset($_GET['upsellSkipped']);
+        $upsellAccepted = isset($_GET['upsellAccepted']);
+        $upsellSkipped = isset($_GET['upsellSkipped']);
 
-        // Build upsell config if provided
-        $upsell_config = null;
-        if (!empty($atts['upsell_product_sku']) && !$upsell_accepted && !$upsell_skipped) {
-            $upsell_config = [
-                'upsellProductSku'         => sanitize_text_field($atts['upsell_product_sku']),
-                'upsellProductQty'         => absint($atts['upsell_product_qty']),
-                'upsellProductPrice'       => (float) $atts['upsell_product_price'],
-                'upsellProductTitle'       => sanitize_text_field($atts['upsell_product_title']),
-                'upsellProductDescription' => sanitize_text_field($atts['upsell_product_description']),
-                'upsellProductImageUrl'    => esc_url($atts['upsell_product_image_url']),
-                'upsellProductImageAlt'    => sanitize_text_field($atts['upsell_product_image_alt']),
+        // Build upsell config if enabled and not yet processed
+        $upsellConfig = null;
+        if ($config['thankyou']['show_upsell'] && 
+            $config['thankyou']['upsell'] && 
+            !$upsellAccepted && 
+            !$upsellSkipped) {
+            $upsell = $config['thankyou']['upsell'];
+            $upsellConfig = [
+                'upsellProductSku'         => $upsell['sku'],
+                'upsellProductQty'         => $upsell['qty'],
+                'upsellProductPrice'       => $upsell['price'],
+                'upsellProductTitle'       => $upsell['productName'],
+                'upsellProductDescription' => $upsell['description'],
+                'upsellProductImageUrl'    => $upsell['image'],
+                'upsellProductImageAlt'    => $upsell['productName'],
             ];
         }
 
+        // Build props for React component
         $props = [
-            'funnelId'         => sanitize_text_field($atts['funnel_id']),
-            'logoUrl'          => esc_url($atts['logo_url']),
-            'orderId'          => $order_id,
-            'piId'             => $pi_id,
-            'upsellConfig'     => $upsell_config,
-            'footerText'       => sanitize_text_field($atts['footer_text']),
-            'footerDisclaimer' => sanitize_text_field($atts['footer_disclaimer']),
+            'funnelId'         => $config['slug'],
+            'funnelName'       => $config['name'],
+            'logoUrl'          => $config['hero']['logo'],
+            'orderId'          => $orderId,
+            'piId'             => $piId,
+            'headline'         => $config['thankyou']['headline'],
+            'message'          => $config['thankyou']['message'],
+            'upsellConfig'     => $upsellConfig,
+            'accentColor'      => $config['styling']['accent_color'],
+            'footerText'       => $config['footer']['text'],
+            'footerDisclaimer' => $config['footer']['disclaimer'],
         ];
 
-        $root_id = 'hp-funnel-thankyou-' . uniqid();
+        // Add custom CSS if present
+        $customCss = '';
+        if (!empty($config['styling']['custom_css'])) {
+            $customCss = sprintf(
+                '<style>.hp-funnel-%s { %s }</style>',
+                esc_attr($config['slug']),
+                wp_strip_all_tags($config['styling']['custom_css'])
+            );
+        }
 
-        return sprintf(
-            '<div id="%s" data-hp-widget="1" data-component="%s" data-props="%s"></div>',
-            esc_attr($root_id),
+        $rootId = 'hp-funnel-thankyou-' . esc_attr($config['slug']) . '-' . uniqid();
+
+        return $customCss . sprintf(
+            '<div id="%s" class="hp-funnel-%s" data-hp-widget="1" data-component="%s" data-props="%s"></div>',
+            esc_attr($rootId),
+            esc_attr($config['slug']),
             esc_attr('FunnelThankYou'),
             esc_attr(wp_json_encode($props))
         );

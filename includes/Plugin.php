@@ -82,6 +82,15 @@ class Plugin
      */
     public static function init(): void
     {
+        // Register Funnel CPT
+        FunnelPostType::init();
+
+        // Set up ACF JSON save/load paths
+        self::setupAcfJson();
+
+        // Initialize Funnel Export/Import admin page
+        Admin\FunnelExportImport::init();
+
         $assetLoader = new AssetLoader();
         $assetLoader->register();
 
@@ -121,6 +130,28 @@ class Plugin
             $shortcodes = array_keys(self::get_shortcodes());
             update_option(self::OPTION_ENABLED_SHORTCODES, $shortcodes);
         }
+    }
+
+    /**
+     * Set up ACF JSON save/load paths for this plugin.
+     */
+    private static function setupAcfJson(): void
+    {
+        // Load ACF JSON from plugin's acf-json folder
+        add_filter('acf/settings/load_json', function (array $paths): array {
+            $paths[] = HP_RW_PATH . 'acf-json';
+            return $paths;
+        });
+
+        // Save ACF JSON to plugin's acf-json folder (for development)
+        add_filter('acf/settings/save_json', function (string $path): string {
+            // Only save to plugin folder if we're editing a funnel field group
+            if (isset($_POST['acf_field_group']['key']) && 
+                strpos($_POST['acf_field_group']['key'], 'group_hp_funnel') === 0) {
+                return HP_RW_PATH . 'acf-json';
+            }
+            return $path;
+        });
     }
 
     /**

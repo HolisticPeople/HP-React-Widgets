@@ -2,18 +2,20 @@
 namespace HP_RW\Shortcodes;
 
 use HP_RW\AssetLoader;
-use HP_RW\Util\Resolver;
+use HP_RW\Services\FunnelConfigLoader;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
 /**
- * FunnelCheckout shortcode - renders a checkout page for sales funnels.
+ * FunnelCheckout shortcode - renders the checkout page for sales funnels.
  * 
- * Usage: [hp_funnel_checkout funnel="illumodine"]
+ * Usage:
+ *   [hp_funnel_checkout funnel="illumodine"]  - by slug
+ *   [hp_funnel_checkout id="123"]             - by post ID
  * 
- * The funnel configuration is loaded from hp_rw_settings option.
+ * The funnel configuration is loaded from the hp_funnel CPT via ACF fields.
  */
 class FunnelCheckoutShortcode
 {
@@ -28,159 +30,122 @@ class FunnelCheckoutShortcode
         AssetLoader::enqueue_bundle();
 
         $atts = shortcode_atts([
-            'funnel'  => 'default',
-            'product' => '', // Optional: pre-select a product
+            'funnel' => '',    // Funnel slug
+            'id'     => '',    // Funnel post ID
         ], $atts);
 
-        $funnelId = sanitize_key($atts['funnel']);
-        
-        // Check for product from query string
-        $selectedProduct = sanitize_key($atts['product']);
-        if (empty($selectedProduct) && isset($_GET['product'])) {
-            $selectedProduct = sanitize_key($_GET['product']);
+        // Load config by ID or slug
+        $config = null;
+        if (!empty($atts['id'])) {
+            $config = FunnelConfigLoader::getById((int) $atts['id']);
+        } elseif (!empty($atts['funnel'])) {
+            $config = FunnelConfigLoader::getBySlug($atts['funnel']);
         }
 
-        // Get funnel configuration
-        $config = $this->getFunnelConfig($funnelId);
-
-        if (empty($config)) {
-            return '<div class="hp-funnel-error">Funnel configuration not found.</div>';
-        }
-
-        // Build product data from SKUs
-        $products = $this->buildProductsFromConfig($config);
-
-        if (empty($products)) {
-            return '<div class="hp-funnel-error">No products configured for this funnel.</div>';
+        if (!$config || !$config['active']) {
+            return '<div class="hp-funnel-error" style="padding: 20px; background: #fee; color: #c00; border: 1px solid #c00; border-radius: 4px;">Funnel not found or inactive. Please check the funnel slug/ID.</div>';
         }
 
         // Build props for React component
         $props = [
-            'funnelId'              => $funnelId,
-            'funnelName'            => $config['name'] ?? ucfirst($funnelId),
-            'products'              => $products,
-            'thankYouUrl'           => $this->getThankYouUrl($funnelId, $config),
-            'backUrl'               => $this->getBackUrl($funnelId, $config),
-            'logoUrl'               => $config['logo_url'] ?? '',
-            'logoLink'              => $config['logo_link'] ?? home_url('/'),
-            'freeShippingCountries' => $config['free_shipping_countries'] ?? ['US'],
-            'apiBase'               => rest_url('hp-rw/v1'),
+            'funnelId'              => $config['slug'],
+            'funnelName'            => $config['name'],
+            'logoUrl'               => $config['hero']['logo'],
+            'products'              => $this->formatProductsForReact($config['products']),
+            'defaultOffer'          => $this->getDefaultOffer($config['products']),
+            'checkoutSuccessUrl'    => $config['thankyou']['url'],
+            'checkoutReturnUrl'     => $config['checkout']['url'],
+            'landingUrl'            => '/', // Back button destination
+            'freeShippingCountries' => $config['checkout']['free_shipping_countries'],
+            'globalDiscountPercent' => $config['checkout']['global_discount_percent'],
+            'enablePoints'          => $config['checkout']['enable_points'],
+            'showOrderSummary'      => $config['checkout']['show_order_summary'],
+            'stripeMode'            => $config['stripe_mode'],
+            'accentColor'           => $config['styling']['accent_color'],
+            'footerText'            => $config['footer']['text'],
+            'footerDisclaimer'      => $config['footer']['disclaimer'],
         ];
 
-        // Add selected product if specified
-        if ($selectedProduct) {
-            $props['selectedProductId'] = $selectedProduct;
+        // Add custom CSS if present
+        $customCss = '';
+        if (!empty($config['styling']['custom_css'])) {
+            $customCss = sprintf(
+                '<style>.hp-funnel-%s { %s }</style>',
+                esc_attr($config['slug']),
+                wp_strip_all_tags($config['styling']['custom_css'])
+            );
         }
 
-        $rootId = 'hp-funnel-checkout-' . esc_attr($funnelId) . '-' . uniqid();
+        $rootId = 'hp-funnel-checkout-' . esc_attr($config['slug']) . '-' . uniqid();
 
-        return sprintf(
-            '<div id="%s" data-hp-widget="1" data-component="%s" data-props="%s"></div>',
+        return $customCss . sprintf(
+            '<div id="%s" class="hp-funnel-%s" data-hp-widget="1" data-component="%s" data-props="%s"></div>',
             esc_attr($rootId),
+            esc_attr($config['slug']),
             esc_attr('FunnelCheckout'),
             esc_attr(wp_json_encode($props))
         );
     }
 
     /**
-     * Get funnel configuration from settings.
+     * Format products for React component.
+     *
+     * @param array $products Products from config
+     * @return array Formatted for React
      */
-    private function getFunnelConfig(string $funnelId): array
+    private function formatProductsForReact(array $products): array
     {
-        $opts = get_option('hp_rw_settings', []);
+        $result = [];
         
-        if (!empty($opts['funnel_configs']) && isset($opts['funnel_configs'][$funnelId])) {
-            return $opts['funnel_configs'][$funnelId];
-        }
-
-        // Try to load from a separate option for the funnel
-        $funnelOpts = get_option('hp_rw_funnel_' . $funnelId, []);
-        if (!empty($funnelOpts)) {
-            return $funnelOpts;
-        }
-
-        return [];
-    }
-
-    /**
-     * Build product data from funnel configuration.
-     */
-    private function buildProductsFromConfig(array $config): array
-    {
-        $products = [];
-        
-        if (empty($config['products']) || !is_array($config['products'])) {
-            return $products;
-        }
-
-        foreach ($config['products'] as $productConfig) {
-            if (!is_array($productConfig) || empty($productConfig['sku'])) {
-                continue;
-            }
-
-            $sku = (string) $productConfig['sku'];
-            $wcProduct = Resolver::resolveProductFromItem(['sku' => $sku]);
-
-            if (!$wcProduct) {
-                continue;
-            }
-
-            $productData = Resolver::getProductDisplayData($wcProduct);
-
-            $products[] = [
-                'id'           => $productConfig['id'] ?? $sku,
-                'sku'          => $sku,
-                'name'         => $productConfig['display_name'] ?? $productData['name'],
-                'description'  => $productConfig['description'] ?? '',
-                'price'        => (float) ($productConfig['display_price'] ?? $productData['price']),
-                'image'        => $productConfig['image'] ?? $productData['image'],
-                'badge'        => $productConfig['badge'] ?? '',
-                'freeItemSku'  => $productConfig['free_item_sku'] ?? '',
-                'freeItemQty'  => (int) ($productConfig['free_item_qty'] ?? 1),
-                'isBestValue'  => !empty($productConfig['is_best_value']),
+        foreach ($products as $product) {
+            $formatted = [
+                'id'           => $product['id'] ?? $product['sku'],
+                'sku'          => $product['sku'],
+                'name'         => $product['name'],
+                'description'  => $product['description'] ?? '',
+                'price'        => $product['price'],
+                'regularPrice' => $product['regularPrice'] ?? null,
+                'image'        => $product['image'],
+                'imageAlt'     => $product['name'],
+                'badge'        => $product['badge'] ?? '',
+                'features'     => $product['features'] ?? [],
+                'isBestValue'  => $product['isBestValue'] ?? false,
             ];
+
+            // Add free item info if present
+            if (!empty($product['freeItem']['sku'])) {
+                $formatted['freeItem'] = [
+                    'sku' => $product['freeItem']['sku'],
+                    'qty' => $product['freeItem']['qty'],
+                ];
+            }
+
+            $result[] = $formatted;
         }
 
-        return $products;
+        return $result;
     }
 
     /**
-     * Get the thank you URL for this funnel.
+     * Get the default selected offer ID.
+     *
+     * @param array $products Products from config
+     * @return string Default product ID
      */
-    private function getThankYouUrl(string $funnelId, array $config): string
+    private function getDefaultOffer(array $products): string
     {
-        if (!empty($config['thankyou_url'])) {
-            return $config['thankyou_url'];
+        // Prefer "best value" product
+        foreach ($products as $product) {
+            if (!empty($product['isBestValue'])) {
+                return $product['id'] ?? $product['sku'];
+            }
         }
 
-        // Default: look for a page with the funnel thank-you shortcode
-        $thankYouPage = get_page_by_path("funnels/{$funnelId}/thank-you");
-        if ($thankYouPage) {
-            return get_permalink($thankYouPage);
-        }
-
-        // Fallback to a query param based URL
-        return add_query_arg([
-            'hp_funnel_thankyou' => $funnelId,
-        ], home_url('/'));
-    }
-
-    /**
-     * Get the back URL for this funnel (landing page).
-     */
-    private function getBackUrl(string $funnelId, array $config): string
-    {
-        if (!empty($config['landing_url'])) {
-            return $config['landing_url'];
-        }
-
-        // Default: look for a page with the funnel hero shortcode
-        $landingPage = get_page_by_path("funnels/{$funnelId}");
-        if ($landingPage) {
-            return get_permalink($landingPage);
+        // Fall back to first product
+        if (!empty($products[0])) {
+            return $products[0]['id'] ?? $products[0]['sku'];
         }
 
         return '';
     }
 }
-
