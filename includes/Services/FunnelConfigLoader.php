@@ -1,7 +1,7 @@
 <?php
 namespace HP_RW\Services;
 
-use HP_RW\FunnelPostType;
+use HP_RW\Plugin;
 use HP_RW\Util\Resolver;
 
 if (!defined('ABSPATH')) {
@@ -53,7 +53,7 @@ class FunnelConfigLoader
         }
 
         // Find the funnel post
-        $post = FunnelPostType::getBySlug($slug);
+        $post = self::findPostBySlug($slug);
         if (!$post) {
             // Try legacy options as fallback
             return self::getLegacyConfig($slug);
@@ -87,7 +87,7 @@ class FunnelConfigLoader
         }
 
         $post = get_post($postId);
-        if (!$post || $post->post_type !== FunnelPostType::POST_TYPE) {
+        if (!$post || $post->post_type !== Plugin::FUNNEL_POST_TYPE) {
             return null;
         }
 
@@ -120,6 +120,53 @@ class FunnelConfigLoader
         if ($post) {
             delete_transient(self::CACHE_PREFIX . 'slug_' . $post->post_name);
         }
+    }
+
+    /**
+     * Find a funnel post by slug.
+     *
+     * @param string $slug Funnel slug
+     * @return \WP_Post|null
+     */
+    public static function findPostBySlug(string $slug): ?\WP_Post
+    {
+        // First try ACF field
+        $posts = get_posts([
+            'post_type'      => Plugin::FUNNEL_POST_TYPE,
+            'post_status'    => 'publish',
+            'posts_per_page' => 1,
+            'meta_query'     => [
+                [
+                    'key'   => 'funnel_slug',
+                    'value' => $slug,
+                ],
+            ],
+        ]);
+
+        if (!empty($posts)) {
+            return $posts[0];
+        }
+
+        // Fallback to post_name (WP slug)
+        $post = get_page_by_path($slug, OBJECT, Plugin::FUNNEL_POST_TYPE);
+        
+        return $post instanceof \WP_Post ? $post : null;
+    }
+
+    /**
+     * Get all published funnel posts.
+     *
+     * @return array Array of WP_Post objects
+     */
+    public static function getAllPosts(): array
+    {
+        return get_posts([
+            'post_type'      => Plugin::FUNNEL_POST_TYPE,
+            'post_status'    => 'publish',
+            'posts_per_page' => -1,
+            'orderby'        => 'title',
+            'order'          => 'ASC',
+        ]);
     }
 
     /**
@@ -428,7 +475,7 @@ class FunnelConfigLoader
      */
     public static function getAllActive(): array
     {
-        $funnels = FunnelPostType::getAll();
+        $funnels = self::getAllPosts();
         $result = [];
 
         foreach ($funnels as $post) {
@@ -441,4 +488,3 @@ class FunnelConfigLoader
         return $result;
     }
 }
-

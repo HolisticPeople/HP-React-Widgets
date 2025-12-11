@@ -1,7 +1,8 @@
 <?php
 namespace HP_RW\Admin;
 
-use HP_RW\FunnelPostType;
+use HP_RW\Plugin;
+use HP_RW\Services\FunnelConfigLoader;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -29,7 +30,7 @@ class FunnelExportImport
     public static function addSubmenuPage(): void
     {
         add_submenu_page(
-            'edit.php?post_type=' . FunnelPostType::POST_TYPE,
+            'edit.php?post_type=' . Plugin::FUNNEL_POST_TYPE,
             __('Export / Import', 'hp-react-widgets'),
             __('Export / Import', 'hp-react-widgets'),
             'manage_options',
@@ -69,7 +70,7 @@ class FunnelExportImport
         $data = [];
 
         if ($exportAll) {
-            $funnels = FunnelPostType::getAll();
+            $funnels = FunnelConfigLoader::getAllPosts();
             foreach ($funnels as $funnel) {
                 $data['funnels'][] = self::exportFunnel($funnel->ID);
             }
@@ -108,7 +109,7 @@ class FunnelExportImport
     private static function exportFunnel(int $postId): array
     {
         $post = get_post($postId);
-        if (!$post || $post->post_type !== FunnelPostType::POST_TYPE) {
+        if (!$post || $post->post_type !== Plugin::FUNNEL_POST_TYPE) {
             return [];
         }
 
@@ -219,7 +220,7 @@ class FunnelExportImport
         }
 
         // Check if funnel already exists
-        $existing = FunnelPostType::getBySlug($slug);
+        $existing = FunnelConfigLoader::findPostBySlug($slug);
 
         if ($existing && !$update) {
             return 'skipped';
@@ -240,7 +241,7 @@ class FunnelExportImport
         } else {
             // Create new
             $postId = wp_insert_post([
-                'post_type'    => FunnelPostType::POST_TYPE,
+                'post_type'    => Plugin::FUNNEL_POST_TYPE,
                 'post_title'   => $postData['post_title'] ?? ucfirst($slug),
                 'post_name'    => $postData['post_name'] ?? $slug,
                 'post_status'  => $postData['post_status'] ?? 'publish',
@@ -262,9 +263,7 @@ class FunnelExportImport
         }
 
         // Clear cache
-        if (class_exists('HP_RW\\Services\\FunnelConfigLoader')) {
-            \HP_RW\Services\FunnelConfigLoader::clearCache($postId);
-        }
+        FunnelConfigLoader::clearCache($postId);
 
         return $result;
     }
@@ -274,7 +273,7 @@ class FunnelExportImport
      */
     public static function renderPage(): void
     {
-        $funnels = FunnelPostType::getAll();
+        $funnels = FunnelConfigLoader::getAllPosts();
         ?>
         <div class="wrap">
             <h1><?php echo esc_html__('Funnel Export / Import', 'hp-react-widgets'); ?></h1>
@@ -305,7 +304,7 @@ class FunnelExportImport
                                         add_query_arg([
                                             'hp_funnel_export' => 1,
                                             'funnel_id' => $funnel->ID,
-                                        ], admin_url('edit.php?post_type=' . FunnelPostType::POST_TYPE . '&page=hp-funnel-export-import')),
+                                        ], admin_url('edit.php?post_type=' . Plugin::FUNNEL_POST_TYPE . '&page=hp-funnel-export-import')),
                                         'hp_funnel_export'
                                     );
                                 ?>
@@ -327,7 +326,7 @@ class FunnelExportImport
                             add_query_arg([
                                 'hp_funnel_export' => 1,
                                 'export_all' => 1,
-                            ], admin_url('edit.php?post_type=' . FunnelPostType::POST_TYPE . '&page=hp-funnel-export-import')),
+                            ], admin_url('edit.php?post_type=' . Plugin::FUNNEL_POST_TYPE . '&page=hp-funnel-export-import')),
                             'hp_funnel_export'
                         );
                         ?>
@@ -397,4 +396,3 @@ class FunnelExportImport
         <?php
     }
 }
-

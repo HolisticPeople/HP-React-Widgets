@@ -4,6 +4,11 @@ namespace HP_RW;
 class Plugin
 {
     /**
+     * Post type for funnels (registered via ACF Pro).
+     */
+    public const FUNNEL_POST_TYPE = 'hp-funnel';
+
+    /**
      * Option name used to store which shortcodes are enabled.
      */
     private const OPTION_ENABLED_SHORTCODES = 'hp_rw_enabled_shortcodes';
@@ -82,11 +87,8 @@ class Plugin
      */
     public static function init(): void
     {
-        // Register Funnel CPT
-        FunnelPostType::init();
-
-        // Set up ACF JSON save/load paths
-        self::setupAcfJson();
+        // Set up funnel CPT customizations (CPT registered via ACF Pro)
+        self::setupFunnelCptHooks();
 
         // Initialize Funnel Export/Import admin page
         Admin\FunnelExportImport::init();
@@ -126,6 +128,114 @@ class Plugin
     }
 
     /**
+     * Set up hooks for customizing the funnel CPT admin UI.
+     * Note: The CPT itself is registered via ACF Pro.
+     */
+    private static function setupFunnelCptHooks(): void
+    {
+        // Add custom columns to the funnels list table
+        add_filter('manage_' . self::FUNNEL_POST_TYPE . '_posts_columns', [self::class, 'addFunnelColumns']);
+        add_action('manage_' . self::FUNNEL_POST_TYPE . '_posts_custom_column', [self::class, 'renderFunnelColumn'], 10, 2);
+        
+        // Clear cache on save
+        add_action('save_post_' . self::FUNNEL_POST_TYPE, [self::class, 'onFunnelSave'], 10, 3);
+    }
+
+    /**
+     * Add custom columns to the funnels list table.
+     *
+     * @param array $columns Existing columns
+     * @return array Modified columns
+     */
+    public static function addFunnelColumns(array $columns): array
+    {
+        $new_columns = [];
+        
+        foreach ($columns as $key => $value) {
+            $new_columns[$key] = $value;
+            
+            // Add our columns after title
+            if ($key === 'title') {
+                $new_columns['funnel_slug'] = __('Slug', 'hp-react-widgets');
+                $new_columns['shortcode'] = __('Shortcode', 'hp-react-widgets');
+                $new_columns['status'] = __('Status', 'hp-react-widgets');
+            }
+        }
+        
+        return $new_columns;
+    }
+
+    /**
+     * Render custom column content.
+     *
+     * @param string $column Column name
+     * @param int $post_id Post ID
+     */
+    public static function renderFunnelColumn(string $column, int $post_id): void
+    {
+        switch ($column) {
+            case 'funnel_slug':
+                $slug = get_field('funnel_slug', $post_id);
+                if (!$slug) {
+                    $slug = get_post_field('post_name', $post_id);
+                }
+                echo '<code>' . esc_html($slug) . '</code>';
+                break;
+                
+            case 'shortcode':
+                $slug = get_field('funnel_slug', $post_id);
+                if (!$slug) {
+                    $slug = get_post_field('post_name', $post_id);
+                }
+                $shortcode = '[hp_funnel_hero funnel="' . esc_attr($slug) . '"]';
+                echo '<code style="font-size: 11px; background: #f0f0f1; padding: 2px 6px; border-radius: 3px;">' . esc_html($shortcode) . '</code>';
+                break;
+                
+            case 'status':
+                $status = get_field('funnel_status', $post_id);
+                if ($status === 'inactive') {
+                    echo '<span style="color: #d63638;">●</span> ' . __('Inactive', 'hp-react-widgets');
+                } else {
+                    echo '<span style="color: #00a32a;">●</span> ' . __('Active', 'hp-react-widgets');
+                }
+                break;
+        }
+    }
+
+    /**
+     * Handle funnel post save - clear caches and auto-generate slug.
+     *
+     * @param int $post_id Post ID
+     * @param \WP_Post $post Post object
+     * @param bool $update Whether this is an update
+     */
+    public static function onFunnelSave(int $post_id, \WP_Post $post, bool $update): void
+    {
+        // Skip autosaves and revisions
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+        
+        if (wp_is_post_revision($post_id)) {
+            return;
+        }
+
+        // Clear the funnel config cache
+        if (class_exists('HP_RW\\Services\\FunnelConfigLoader')) {
+            Services\FunnelConfigLoader::clearCache($post_id);
+        }
+
+        // Auto-generate slug from title if not set
+        if (function_exists('get_field') && function_exists('update_field')) {
+            $slug = get_field('funnel_slug', $post_id);
+            if (empty($slug)) {
+                $auto_slug = sanitize_title($post->post_title);
+                update_field('funnel_slug', $auto_slug, $post_id);
+            }
+        }
+    }
+
+    /**
      * Activation hook callback. Ensures default settings exist.
      */
     public static function activate(): void
@@ -152,7 +262,7 @@ class Plugin
             return;
         }
 
-        if (!$post || $post->post_type !== FunnelPostType::POST_TYPE) {
+        if (!$post || $post->post_type !== self::FUNNEL_POST_TYPE) {
             return;
         }
 
@@ -170,28 +280,6 @@ class Plugin
             'restUrl' => rest_url(),
             'nonce'   => wp_create_nonce('wp_rest'),
         ]);
-    }
-
-    /**
-     * Set up ACF JSON save/load paths for this plugin.
-     */
-    private static function setupAcfJson(): void
-    {
-        // Load ACF JSON from plugin's acf-json folder
-        add_filter('acf/settings/load_json', function (array $paths): array {
-            $paths[] = HP_RW_PATH . 'acf-json';
-            return $paths;
-        });
-
-        // Save ACF JSON to plugin's acf-json folder (for development)
-        add_filter('acf/settings/save_json', function (string $path): string {
-            // Only save to plugin folder if we're editing a funnel field group
-            if (isset($_POST['acf_field_group']['key']) && 
-                strpos($_POST['acf_field_group']['key'], 'group_hp_funnel') === 0) {
-                return HP_RW_PATH . 'acf-json';
-            }
-            return $path;
-        });
     }
 
     /**
@@ -311,5 +399,3 @@ class Plugin
         update_option(self::OPTION_SHORTCODE_DESCRIPTIONS, $descriptions);
     }
 }
-
-
