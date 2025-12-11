@@ -10,6 +10,20 @@ import { FunnelUpsell } from '@/components/FunnelUpsell'
 import { FunnelThankYou } from '@/components/FunnelThankYou'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
+// Modular funnel section components
+import {
+  FunnelHeader,
+  FunnelHeroSection,
+  FunnelBenefits,
+  FunnelProducts,
+  FunnelFeatures,
+  FunnelAuthority,
+  FunnelTestimonials,
+  FunnelFaq,
+  FunnelCta,
+  FunnelFooter,
+} from '@/components/funnel'
+
 // Global settings injected by PHP
 declare global {
     interface Window {
@@ -32,11 +46,23 @@ widgetRegistry.MultiAddress = MultiAddress;
 widgetRegistry.MyAccountHeader = MyAccountHeader;
 widgetRegistry.AddressCardPicker = AddressCardPicker;
 
-// Funnel components
+// Funnel components (legacy monolithic)
 widgetRegistry.FunnelHero = FunnelHero;
 widgetRegistry.FunnelCheckout = FunnelCheckout;
 widgetRegistry.FunnelUpsell = FunnelUpsell;
 widgetRegistry.FunnelThankYou = FunnelThankYou;
+
+// Funnel section components (modular)
+widgetRegistry.FunnelHeader = FunnelHeader;
+widgetRegistry.FunnelHeroSection = FunnelHeroSection;
+widgetRegistry.FunnelBenefits = FunnelBenefits;
+widgetRegistry.FunnelProducts = FunnelProducts;
+widgetRegistry.FunnelFeatures = FunnelFeatures;
+widgetRegistry.FunnelAuthority = FunnelAuthority;
+widgetRegistry.FunnelTestimonials = FunnelTestimonials;
+widgetRegistry.FunnelFaq = FunnelFaq;
+widgetRegistry.FunnelCta = FunnelCta;
+widgetRegistry.FunnelFooter = FunnelFooter;
 
 document.addEventListener('DOMContentLoaded', () => {
     const nodes = document.querySelectorAll<HTMLElement>('[data-hp-widget=\"1\"]');

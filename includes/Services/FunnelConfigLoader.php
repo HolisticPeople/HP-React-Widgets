@@ -194,6 +194,15 @@ class FunnelConfigLoader
             'slug'        => get_field('funnel_slug', $postId) ?: $post->post_name,
             'stripe_mode' => get_field('stripe_mode', $postId) ?: 'auto',
             
+            // Header section
+            'header' => [
+                'logo'        => get_field('header_logo', $postId) ?: '',
+                'logo_link'   => get_field('header_logo_link', $postId) ?: home_url('/'),
+                'nav_items'   => self::extractNavItems(get_field('header_nav_items', $postId) ?: []),
+                'sticky'      => (bool) get_field('header_sticky', $postId),
+                'transparent' => (bool) get_field('header_transparent', $postId),
+            ],
+            
             // Hero section
             'hero' => [
                 'title'         => get_field('hero_title', $postId) ?: '',
@@ -246,6 +255,27 @@ class FunnelConfigLoader
         ];
 
         return $config;
+    }
+
+    /**
+     * Extract navigation items from ACF repeater.
+     *
+     * @param array $navItems ACF repeater data
+     * @return array Array of nav item objects
+     */
+    private static function extractNavItems(array $navItems): array
+    {
+        $result = [];
+        foreach ($navItems as $row) {
+            if (isset($row['label']) && !empty($row['label'])) {
+                $result[] = [
+                    'label'      => (string) $row['label'],
+                    'url'        => (string) ($row['url'] ?? '#'),
+                    'isExternal' => !empty($row['is_external']),
+                ];
+            }
+        }
+        return $result;
     }
 
     /**
