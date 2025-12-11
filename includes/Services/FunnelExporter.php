@@ -104,6 +104,7 @@ class FunnelExporter
             'thankyou' => self::exportThankYou($postId),
             'styling' => self::exportStyling($postId),
             'footer' => self::exportFooter($postId),
+            'science' => self::exportScience($postId),
         ];
 
         // Remove empty sections
@@ -243,22 +244,46 @@ class FunnelExporter
      */
     private static function exportAuthority(int $postId): array
     {
+        // Simple quotes
         $quotes = get_field('authority_quotes', $postId) ?: [];
         $quoteItems = [];
-
         foreach ($quotes as $q) {
             if (!empty($q['text'])) {
                 $quoteItems[] = ['text' => $q['text']];
             }
         }
 
+        // Quote categories
+        $categories = get_field('authority_quote_categories', $postId) ?: [];
+        $categoryItems = [];
+        foreach ($categories as $cat) {
+            if (!empty($cat['title'])) {
+                $quotesText = $cat['quotes'] ?? '';
+                $categoryItems[] = [
+                    'title' => $cat['title'],
+                    'quotes' => is_string($quotesText) ? array_filter(explode("\n", $quotesText)) : (array) $quotesText,
+                ];
+            }
+        }
+
+        // Article link
+        $articleLink = null;
+        $articleText = get_field('authority_article_text', $postId);
+        $articleUrl = get_field('authority_article_url', $postId);
+        if ($articleText && $articleUrl) {
+            $articleLink = ['text' => $articleText, 'url' => $articleUrl];
+        }
+
         return [
             'title' => get_field('authority_title', $postId) ?: 'Who We Are',
+            'subtitle' => get_field('authority_subtitle', $postId) ?: '',
             'name' => get_field('authority_name', $postId) ?: '',
             'credentials' => get_field('authority_credentials', $postId) ?: '',
             'image' => self::resolveImageUrl(get_field('authority_image', $postId)),
             'bio' => get_field('authority_bio', $postId) ?: '',
             'quotes' => $quoteItems,
+            'quote_categories' => $categoryItems,
+            'article_link' => $articleLink,
         ];
     }
 
@@ -275,6 +300,7 @@ class FunnelExporter
                 $items[] = [
                     'name' => $t['name'],
                     'role' => $t['role'] ?? '',
+                    'title' => $t['title'] ?? '',
                     'quote' => $t['quote'],
                     'image' => self::resolveImageUrl($t['image'] ?? null),
                     'rating' => (int) ($t['rating'] ?? 5),
@@ -284,7 +310,34 @@ class FunnelExporter
 
         return [
             'title' => get_field('testimonials_title', $postId) ?: 'What Our Customers Say',
+            'subtitle' => get_field('testimonials_subtitle', $postId) ?: '',
             'items' => $items,
+        ];
+    }
+
+    /**
+     * Export science section.
+     */
+    private static function exportScience(int $postId): array
+    {
+        $sections = get_field('science_sections', $postId) ?: [];
+        $items = [];
+
+        foreach ($sections as $s) {
+            if (!empty($s['title'])) {
+                $bulletsText = $s['bullets'] ?? '';
+                $items[] = [
+                    'title' => $s['title'],
+                    'description' => $s['description'] ?? '',
+                    'bullets' => is_string($bulletsText) ? array_filter(explode("\n", $bulletsText)) : (array) $bulletsText,
+                ];
+            }
+        }
+
+        return [
+            'title' => get_field('science_title', $postId) ?: 'The Science Behind Our Product',
+            'subtitle' => get_field('science_subtitle', $postId) ?: '',
+            'sections' => $items,
         ];
     }
 

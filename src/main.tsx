@@ -22,6 +22,7 @@ import {
   FunnelFaq,
   FunnelCta,
   FunnelFooter,
+  FunnelScience,
 } from '@/components/funnel'
 
 // Global settings injected by PHP
@@ -63,6 +64,7 @@ widgetRegistry.FunnelTestimonials = FunnelTestimonials;
 widgetRegistry.FunnelFaq = FunnelFaq;
 widgetRegistry.FunnelCta = FunnelCta;
 widgetRegistry.FunnelFooter = FunnelFooter;
+widgetRegistry.FunnelScience = FunnelScience;
 
 document.addEventListener('DOMContentLoaded', () => {
     const nodes = document.querySelectorAll<HTMLElement>('[data-hp-widget=\"1\"]');

@@ -1,3 +1,5 @@
+import { useState, useRef, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
@@ -19,9 +21,22 @@ const QuoteIcon = () => (
   </svg>
 );
 
+const ArrowLeftIcon = () => (
+  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M19 12H5M12 19l-7-7 7-7" />
+  </svg>
+);
+
+const ArrowRightIcon = () => (
+  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 12h14M12 5l7 7-7 7" />
+  </svg>
+);
+
 export interface Testimonial {
   name: string;
   role?: string;
+  title?: string;  // Review title like "Excellent!" or "Love this stuff"
   quote: string;
   image?: string;
   rating?: number;
@@ -34,6 +49,8 @@ export interface FunnelTestimonialsProps {
   columns?: 2 | 3;
   showRatings?: boolean;
   layout?: 'cards' | 'carousel' | 'simple';
+  ctaText?: string;
+  ctaUrl?: string;
   className?: string;
 }
 
@@ -44,20 +61,38 @@ export const FunnelTestimonials = ({
   columns = 3,
   showRatings = true,
   layout = 'cards',
+  ctaText,
+  ctaUrl,
   className,
 }: FunnelTestimonialsProps) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
+
   const gridCols = {
     2: 'md:grid-cols-2',
     3: 'md:grid-cols-2 lg:grid-cols-3',
   };
 
   const renderRating = (rating: number = 5) => (
-    <div className="flex gap-1 mb-3">
+    <div className="flex gap-0.5 mb-3">
       {[1, 2, 3, 4, 5].map((star) => (
         <StarIcon key={star} filled={star <= rating} />
       ))}
     </div>
   );
+
+  const scrollCarousel = (direction: 'prev' | 'next') => {
+    if (!carouselRef.current) return;
+    const cardWidth = 320 + 24; // card width + gap
+    const newIndex = direction === 'next' 
+      ? Math.min(currentIndex + 1, testimonials.length - 1)
+      : Math.max(currentIndex - 1, 0);
+    setCurrentIndex(newIndex);
+    carouselRef.current.scrollTo({
+      left: newIndex * cardWidth,
+      behavior: 'smooth'
+    });
+  };
 
   return (
     <section
@@ -98,6 +133,12 @@ export const FunnelTestimonials = ({
 
                   {showRatings && renderRating(testimonial.rating)}
 
+                  {testimonial.title && (
+                    <h3 className="text-lg font-bold text-foreground mb-2 relative z-10">
+                      {testimonial.title}
+                    </h3>
+                  )}
+
                   <p className="text-foreground/90 italic mb-6 relative z-10">
                     "{testimonial.quote}"
                   </p>
@@ -111,7 +152,7 @@ export const FunnelTestimonials = ({
                       />
                     )}
                     <div>
-                      <p className="font-bold text-foreground">{testimonial.name}</p>
+                      <p className="font-semibold text-foreground">— {testimonial.name}</p>
                       {testimonial.role && (
                         <p className="text-sm text-muted-foreground">{testimonial.role}</p>
                       )}
@@ -136,6 +177,12 @@ export const FunnelTestimonials = ({
                   </div>
                 )}
 
+                {testimonial.title && (
+                  <h3 className="text-xl font-bold text-foreground mb-3">
+                    {testimonial.title}
+                  </h3>
+                )}
+
                 <p className="text-xl text-foreground/90 italic mb-6">
                   "{testimonial.quote}"
                 </p>
@@ -149,7 +196,7 @@ export const FunnelTestimonials = ({
                     />
                   )}
                   <div className="text-left">
-                    <p className="font-bold text-foreground">{testimonial.name}</p>
+                    <p className="font-bold text-foreground">— {testimonial.name}</p>
                     {testimonial.role && (
                       <p className="text-sm text-muted-foreground">{testimonial.role}</p>
                     )}
@@ -160,39 +207,80 @@ export const FunnelTestimonials = ({
           </div>
         )}
 
-        {/* Note: Carousel layout would require additional dependencies */}
+        {/* Carousel layout with navigation */}
         {layout === 'carousel' && (
-          <div className="overflow-x-auto pb-4 -mx-4 px-4">
-            <div className="flex gap-6" style={{ minWidth: 'max-content' }}>
-              {testimonials.map((testimonial, index) => (
-                <Card
-                  key={index}
-                  className="p-6 bg-card/50 backdrop-blur-sm border-border/50 w-80 flex-shrink-0"
-                >
-                  {showRatings && renderRating(testimonial.rating)}
+          <div className="relative">
+            <div 
+              ref={carouselRef}
+              className="overflow-x-auto pb-4 scroll-smooth scrollbar-hide"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              <div className="flex gap-6" style={{ minWidth: 'max-content', paddingLeft: '1rem', paddingRight: '1rem' }}>
+                {testimonials.map((testimonial, index) => (
+                  <Card
+                    key={index}
+                    className="p-6 bg-card/50 backdrop-blur-sm border-border/50 w-80 flex-shrink-0"
+                  >
+                    {showRatings && renderRating(testimonial.rating)}
 
-                  <p className="text-foreground/90 italic mb-6">
-                    "{testimonial.quote}"
-                  </p>
-
-                  <div className="flex items-center gap-4">
-                    {testimonial.image && (
-                      <img
-                        src={testimonial.image}
-                        alt={testimonial.name}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
+                    {testimonial.title && (
+                      <h3 className="text-lg font-bold text-foreground mb-2">
+                        {testimonial.title}
+                      </h3>
                     )}
-                    <div>
-                      <p className="font-bold text-foreground">{testimonial.name}</p>
-                      {testimonial.role && (
-                        <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+
+                    <p className="text-foreground/90 italic mb-6 text-sm">
+                      "{testimonial.quote}"
+                    </p>
+
+                    <div className="flex items-center gap-3">
+                      {testimonial.image && (
+                        <img
+                          src={testimonial.image}
+                          alt={testimonial.name}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
                       )}
+                      <div>
+                        <p className="font-semibold text-foreground text-sm">— {testimonial.name}</p>
+                        {testimonial.role && (
+                          <p className="text-xs text-muted-foreground">{testimonial.role}</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                ))}
+              </div>
             </div>
+
+            {/* Navigation arrows */}
+            <button
+              onClick={() => scrollCarousel('prev')}
+              disabled={currentIndex === 0}
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 w-10 h-10 rounded-full bg-background/80 border border-border/50 flex items-center justify-center text-foreground hover:bg-accent/20 hover:border-accent/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ArrowLeftIcon />
+            </button>
+            <button
+              onClick={() => scrollCarousel('next')}
+              disabled={currentIndex >= testimonials.length - 3}
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 w-10 h-10 rounded-full bg-background/80 border border-border/50 flex items-center justify-center text-foreground hover:bg-accent/20 hover:border-accent/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ArrowRightIcon />
+            </button>
+          </div>
+        )}
+
+        {/* CTA */}
+        {ctaText && ctaUrl && (
+          <div className="text-center mt-12">
+            <Button
+              size="lg"
+              onClick={() => window.location.href = ctaUrl}
+              className="bg-gradient-to-r from-accent to-accent/90 hover:from-accent/90 hover:to-accent text-accent-foreground font-bold text-xl px-12 py-6 rounded-full shadow-[0_0_30px_hsl(45_95%_60%/0.4)]"
+            >
+              {ctaText}
+            </Button>
           </div>
         )}
       </div>
@@ -201,4 +289,3 @@ export const FunnelTestimonials = ({
 };
 
 export default FunnelTestimonials;
-

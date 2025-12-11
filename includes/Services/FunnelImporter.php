@@ -141,6 +141,7 @@ class FunnelImporter
             self::importThankYou($postId, $data['thankyou'] ?? []);
             self::importStyling($postId, $data['styling'] ?? []);
             self::importFooter($postId, $data['footer'] ?? []);
+            self::importScience($postId, $data['science'] ?? []);
 
             // Clear cache
             FunnelConfigLoader::clearCache($postId);
@@ -340,15 +341,33 @@ class FunnelImporter
         if (empty($authority)) return;
 
         self::setField($postId, 'authority_title', $authority['title'] ?? 'Who We Are');
+        self::setField($postId, 'authority_subtitle', $authority['subtitle'] ?? '');
         self::setField($postId, 'authority_name', $authority['name'] ?? '');
         self::setField($postId, 'authority_credentials', $authority['credentials'] ?? '');
         self::setField($postId, 'authority_image', $authority['image'] ?? '');
         self::setField($postId, 'authority_bio', $authority['bio'] ?? '');
         
+        // Simple quotes (flat list)
         if (!empty($authority['quotes'])) {
             self::setField($postId, 'authority_quotes', array_map(function($q) {
-                return ['text' => $q['text'] ?? ''];
+                return ['text' => is_string($q) ? $q : ($q['text'] ?? '')];
             }, $authority['quotes']));
+        }
+
+        // Quote categories (grouped)
+        if (!empty($authority['quote_categories'])) {
+            self::setField($postId, 'authority_quote_categories', array_map(function($cat) {
+                return [
+                    'title' => $cat['title'] ?? '',
+                    'quotes' => implode("\n", $cat['quotes'] ?? []),
+                ];
+            }, $authority['quote_categories']));
+        }
+
+        // Article link
+        if (!empty($authority['article_link'])) {
+            self::setField($postId, 'authority_article_text', $authority['article_link']['text'] ?? '');
+            self::setField($postId, 'authority_article_url', $authority['article_link']['url'] ?? '');
         }
     }
 
@@ -360,17 +379,40 @@ class FunnelImporter
         if (empty($testimonials)) return;
 
         self::setField($postId, 'testimonials_title', $testimonials['title'] ?? 'What Our Customers Say');
+        self::setField($postId, 'testimonials_subtitle', $testimonials['subtitle'] ?? '');
         
         if (!empty($testimonials['items'])) {
             self::setField($postId, 'testimonials_list', array_map(function($t) {
                 return [
                     'name' => $t['name'] ?? '',
                     'role' => $t['role'] ?? '',
+                    'title' => $t['title'] ?? '',
                     'quote' => $t['quote'] ?? '',
                     'image' => $t['image'] ?? '',
                     'rating' => $t['rating'] ?? 5,
                 ];
             }, $testimonials['items']));
+        }
+    }
+
+    /**
+     * Import science section.
+     */
+    private static function importScience(int $postId, array $science): void
+    {
+        if (empty($science)) return;
+
+        self::setField($postId, 'science_title', $science['title'] ?? 'The Science Behind Our Product');
+        self::setField($postId, 'science_subtitle', $science['subtitle'] ?? '');
+        
+        if (!empty($science['sections'])) {
+            self::setField($postId, 'science_sections', array_map(function($s) {
+                return [
+                    'title' => $s['title'] ?? '',
+                    'description' => $s['description'] ?? '',
+                    'bullets' => implode("\n", $s['bullets'] ?? []),
+                ];
+            }, $science['sections']));
         }
     }
 

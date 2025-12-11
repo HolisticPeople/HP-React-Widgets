@@ -145,6 +145,7 @@ class FunnelSchema
                     'description' => '"Who We Are" section with expert bio and credentials',
                     'properties' => [
                         'title' => ['type' => 'string', 'default' => 'Who We Are'],
+                        'subtitle' => ['type' => 'string'],
                         'name' => ['type' => 'string', 'description' => 'Expert/authority name'],
                         'credentials' => ['type' => 'string', 'description' => 'Credentials and titles'],
                         'image' => ['type' => 'string', 'description' => 'Photo URL'],
@@ -158,6 +159,43 @@ class FunnelSchema
                                 ],
                             ],
                         ],
+                        'quote_categories' => [
+                            'type' => 'array',
+                            'description' => 'Grouped quotes by category (e.g., "On Detoxification")',
+                            'items' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'title' => ['type' => 'string'],
+                                    'quotes' => ['type' => 'array', 'items' => ['type' => 'string']],
+                                ],
+                            ],
+                        ],
+                        'article_link' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'text' => ['type' => 'string'],
+                                'url' => ['type' => 'string'],
+                            ],
+                        ],
+                    ],
+                ],
+                'science' => [
+                    'type' => 'object',
+                    'description' => 'Scientific/technical information section',
+                    'properties' => [
+                        'title' => ['type' => 'string', 'default' => 'The Science Behind Our Product'],
+                        'subtitle' => ['type' => 'string'],
+                        'sections' => [
+                            'type' => 'array',
+                            'items' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'title' => ['type' => 'string'],
+                                    'description' => ['type' => 'string'],
+                                    'bullets' => ['type' => 'array', 'items' => ['type' => 'string']],
+                                ],
+                            ],
+                        ],
                     ],
                 ],
                 'testimonials' => [
@@ -165,6 +203,7 @@ class FunnelSchema
                     'description' => 'Customer testimonials section',
                     'properties' => [
                         'title' => ['type' => 'string', 'default' => 'What Our Customers Say'],
+                        'subtitle' => ['type' => 'string'],
                         'items' => [
                             'type' => 'array',
                             'description' => 'Array of testimonials, recommend 3-6',
@@ -173,6 +212,7 @@ class FunnelSchema
                                 'properties' => [
                                     'name' => ['type' => 'string'],
                                     'role' => ['type' => 'string', 'description' => 'Role or location'],
+                                    'title' => ['type' => 'string', 'description' => 'Review title like "Excellent!"'],
                                     'quote' => ['type' => 'string'],
                                     'image' => ['type' => 'string'],
                                     'rating' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 5, 'default' => 5],

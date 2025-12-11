@@ -1,8 +1,9 @@
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 const QuoteIcon = () => (
-  <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor" opacity={0.3}>
+  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor" opacity={0.5}>
     <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
   </svg>
 );
@@ -11,24 +12,48 @@ export interface Quote {
   text: string;
 }
 
+export interface QuoteCategory {
+  title: string;
+  quotes: string[];
+}
+
+export interface ArticleLink {
+  text: string;
+  url: string;
+}
+
 export interface FunnelAuthorityProps {
   title?: string;
+  subtitle?: string;
   name: string;
   credentials?: string;
   image?: string;
   bio?: string;
+  // Simple quotes (flat list)
   quotes?: Quote[] | string[];
-  layout?: 'side-by-side' | 'centered' | 'card';
+  // Categorized quotes (grouped by topic)
+  quoteCategories?: QuoteCategory[];
+  // Optional article link
+  articleLink?: ArticleLink;
+  // CTA
+  ctaText?: string;
+  ctaUrl?: string;
+  layout?: 'side-by-side' | 'centered' | 'card' | 'illumodine';
   className?: string;
 }
 
 export const FunnelAuthority = ({
   title = 'Who We Are',
+  subtitle,
   name,
   credentials,
   image,
   bio,
   quotes = [],
+  quoteCategories = [],
+  articleLink,
+  ctaText,
+  ctaUrl,
   layout = 'side-by-side',
   className,
 }: FunnelAuthorityProps) => {
@@ -36,6 +61,8 @@ export const FunnelAuthority = ({
   const normalizedQuotes = quotes.map((q) =>
     typeof q === 'string' ? { text: q } : q
   );
+
+  const hasQuoteCategories = quoteCategories && quoteCategories.length > 0;
 
   return (
     <section
@@ -47,12 +74,54 @@ export const FunnelAuthority = ({
       <div className="max-w-6xl mx-auto">
         {/* Section Title */}
         {title && (
-          <h2 className="text-4xl md:text-5xl font-bold text-center text-accent mb-12">
-            {title}
-          </h2>
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold text-accent mb-4">
+              {title}
+            </h2>
+            {subtitle && (
+              <p className="text-xl text-muted-foreground">{subtitle}</p>
+            )}
+          </div>
         )}
 
-        {layout === 'side-by-side' && (
+        {/* Illumodine-style layout with categorized quotes */}
+        {(layout === 'illumodine' || hasQuoteCategories) && (
+          <div className="grid md:grid-cols-2 gap-12 items-start">
+            {/* Image Column */}
+            {image && (
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-accent/20 to-primary/20 rounded-2xl blur-2xl" />
+                <img
+                  src={image}
+                  alt={name}
+                  className="relative rounded-2xl shadow-2xl w-full max-w-md mx-auto"
+                />
+              </div>
+            )}
+
+            {/* Quote Categories Column */}
+            <div className="space-y-8">
+              {quoteCategories.map((category, catIndex) => (
+                <div key={catIndex} className="space-y-3">
+                  <h3 className="text-xl font-bold text-accent">{category.title}</h3>
+                  <div className="space-y-2">
+                    {category.quotes.map((quote, quoteIndex) => (
+                      <blockquote
+                        key={quoteIndex}
+                        className="pl-4 border-l-2 border-accent/30 text-foreground/90 italic"
+                      >
+                        "{quote}"
+                      </blockquote>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Side-by-side layout (original) */}
+        {layout === 'side-by-side' && !hasQuoteCategories && (
           <div className="grid md:grid-cols-2 gap-12 items-center">
             {/* Image */}
             {image && (
@@ -101,9 +170,9 @@ export const FunnelAuthority = ({
           </div>
         )}
 
-        {layout === 'centered' && (
+        {/* Centered layout */}
+        {layout === 'centered' && !hasQuoteCategories && (
           <div className="text-center max-w-3xl mx-auto">
-            {/* Image */}
             {image && (
               <div className="relative inline-block mb-8">
                 <div className="absolute inset-0 bg-gradient-to-br from-accent/30 to-primary/30 rounded-full blur-xl" />
@@ -115,13 +184,11 @@ export const FunnelAuthority = ({
               </div>
             )}
 
-            {/* Name & Credentials */}
             <h3 className="text-3xl font-bold text-foreground">{name}</h3>
             {credentials && (
               <p className="text-xl text-accent mt-2">{credentials}</p>
             )}
 
-            {/* Bio */}
             {bio && (
               <div
                 className="text-muted-foreground prose prose-invert max-w-none mt-6"
@@ -129,7 +196,6 @@ export const FunnelAuthority = ({
               />
             )}
 
-            {/* Quotes */}
             {normalizedQuotes.length > 0 && (
               <div className="space-y-6 mt-8">
                 {normalizedQuotes.map((quote, index) => (
@@ -148,10 +214,10 @@ export const FunnelAuthority = ({
           </div>
         )}
 
-        {layout === 'card' && (
+        {/* Card layout */}
+        {layout === 'card' && !hasQuoteCategories && (
           <Card className="p-8 md:p-12 bg-card/50 backdrop-blur-sm border-border/50 max-w-4xl mx-auto">
             <div className="flex flex-col md:flex-row gap-8 items-center">
-              {/* Image */}
               {image && (
                 <div className="flex-shrink-0">
                   <img
@@ -162,7 +228,6 @@ export const FunnelAuthority = ({
                 </div>
               )}
 
-              {/* Content */}
               <div className="flex-1 text-center md:text-left">
                 <h3 className="text-2xl font-bold text-foreground">{name}</h3>
                 {credentials && (
@@ -178,7 +243,6 @@ export const FunnelAuthority = ({
               </div>
             </div>
 
-            {/* Quotes */}
             {normalizedQuotes.length > 0 && (
               <div className="mt-8 pt-8 border-t border-border/50 space-y-4">
                 {normalizedQuotes.map((quote, index) => (
@@ -193,10 +257,36 @@ export const FunnelAuthority = ({
             )}
           </Card>
         )}
+
+        {/* Article Link & CTA */}
+        {(articleLink || ctaText) && (
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-12">
+            {articleLink && (
+              <Button
+                variant="outline"
+                onClick={() => window.location.href = articleLink.url}
+                className="border-accent/50 text-accent hover:bg-accent/10"
+              >
+                {articleLink.text}
+                <svg className="w-4 h-4 ml-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </Button>
+            )}
+            {ctaText && ctaUrl && (
+              <Button
+                size="lg"
+                onClick={() => window.location.href = ctaUrl}
+                className="bg-gradient-to-r from-accent to-accent/90 hover:from-accent/90 hover:to-accent text-accent-foreground font-bold px-8 py-3 rounded-full shadow-[0_0_20px_hsl(45_95%_60%/0.4)]"
+              >
+                {ctaText}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );
 };
 
 export default FunnelAuthority;
-

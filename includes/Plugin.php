@@ -161,6 +161,14 @@ class Plugin
             'root_id'     => 'hp-funnel-footer-root',
             'hydrator_class' => 'FunnelFooterShortcode',
         ],
+        'hp_funnel_science' => [
+            'label'       => 'Funnel Science',
+            'description' => 'Scientific/technical information section.',
+            'example'     => '[hp_funnel_science funnel="illumodine"]',
+            'component'   => 'FunnelScience',
+            'root_id'     => 'hp-funnel-science-root',
+            'hydrator_class' => 'FunnelScienceShortcode',
+        ],
     ];
 
     /**
