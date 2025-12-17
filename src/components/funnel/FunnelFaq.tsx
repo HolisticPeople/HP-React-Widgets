@@ -122,3 +122,16 @@ export const FunnelFaq = ({
 
 export default FunnelFaq;
 
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -181,3 +181,16 @@ function hp_add_illumodine_to_main_settings() {
 // wp eval "require 'examples/illumodine-funnel-config.php'; hp_register_illumodine_funnel_config(); hp_add_illumodine_to_main_settings();"
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+

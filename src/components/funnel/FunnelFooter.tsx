@@ -75,3 +75,16 @@ export const FunnelFooter = ({
 
 export default FunnelFooter;
 
+
+
+
+
+
+
+
+
+
+
+
+
+

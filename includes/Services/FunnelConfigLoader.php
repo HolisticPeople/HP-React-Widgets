@@ -44,17 +44,54 @@ class FunnelConfigLoader
      */
     public static function getFromContext(): ?array
     {
-        global $post;
+        // Method 1: Check get_queried_object() first - most reliable for single post views
+        $queried = get_queried_object();
+        if ($queried instanceof \WP_Post && $queried->post_type === Plugin::FUNNEL_POST_TYPE) {
+            return self::getById($queried->ID);
+        }
         
-        // Check if we're on a funnel post
+        // Method 2: Check global $post
+        global $post;
         if ($post && $post->post_type === Plugin::FUNNEL_POST_TYPE) {
             return self::getById($post->ID);
         }
         
-        // Also try get_queried_object for archive/template contexts
-        $queried = get_queried_object();
-        if ($queried instanceof \WP_Post && $queried->post_type === Plugin::FUNNEL_POST_TYPE) {
-            return self::getById($queried->ID);
+        // Method 3: Try Elementor's document system (for theme builder templates)
+        if (class_exists('\\Elementor\\Plugin')) {
+            $elementor = \Elementor\Plugin::instance();
+            
+            // Check if Elementor Pro is active and has the documents manager
+            if (isset($elementor->documents) && method_exists($elementor->documents, 'get_current')) {
+                $document = $elementor->documents->get_current();
+                if ($document) {
+                    // Get the post ID that the template is rendering for
+                    $postId = $document->get_main_id();
+                    $templatePost = get_post($postId);
+                    
+                    // If the document is a template, we need to find the actual post being rendered
+                    if ($templatePost && $templatePost->post_type === 'elementor_library') {
+                        // Try get_the_ID() which Elementor usually sets correctly during render
+                        $renderedPostId = get_the_ID();
+                        if ($renderedPostId && $renderedPostId !== $postId) {
+                            $renderedPost = get_post($renderedPostId);
+                            if ($renderedPost && $renderedPost->post_type === Plugin::FUNNEL_POST_TYPE) {
+                                return self::getById($renderedPostId);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Method 4: Parse URL to extract funnel slug as last resort
+        // This handles cases where WordPress query hasn't fully set up the post context
+        $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+        if (preg_match('#/express-shop/([^/]+)/?#', $requestUri, $matches)) {
+            $slug = sanitize_title($matches[1]);
+            $funnelPost = self::findPostBySlug($slug);
+            if ($funnelPost) {
+                return self::getById($funnelPost->ID);
+            }
         }
         
         return null;
