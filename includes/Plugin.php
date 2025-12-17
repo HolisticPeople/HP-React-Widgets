@@ -304,7 +304,11 @@ class Plugin
     }
 
     /**
-     * Handle funnel post save - clear caches and auto-generate slug.
+     * Handle funnel post save - clear caches.
+     * 
+     * Note: We no longer auto-generate funnel_slug as we now use the native
+     * WordPress post_name (slug) as the canonical identifier. This provides
+     * better SEO compatibility with Yoast, FiboSearch, and other plugins.
      *
      * @param int $post_id Post ID
      * @param \WP_Post $post Post object
@@ -324,15 +328,6 @@ class Plugin
         // Clear the funnel config cache
         if (class_exists('HP_RW\\Services\\FunnelConfigLoader')) {
             Services\FunnelConfigLoader::clearCache($post_id);
-        }
-
-        // Auto-generate slug from title if not set
-        if (function_exists('get_field') && function_exists('update_field')) {
-            $slug = get_field('funnel_slug', $post_id);
-            if (empty($slug)) {
-                $auto_slug = sanitize_title($post->post_title);
-                update_field('funnel_slug', $auto_slug, $post_id);
-            }
         }
     }
 

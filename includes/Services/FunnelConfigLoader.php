@@ -34,6 +34,33 @@ class FunnelConfigLoader
     }
 
     /**
+     * Get funnel config from current post context.
+     * 
+     * This method auto-detects the current funnel when used within an Elementor
+     * template or single funnel page, similar to how WooCommerce product shortcodes
+     * work on single product templates.
+     *
+     * @return array|null Normalized config array or null if not in funnel context
+     */
+    public static function getFromContext(): ?array
+    {
+        global $post;
+        
+        // Check if we're on a funnel post
+        if ($post && $post->post_type === Plugin::FUNNEL_POST_TYPE) {
+            return self::getById($post->ID);
+        }
+        
+        // Also try get_queried_object for archive/template contexts
+        $queried = get_queried_object();
+        if ($queried instanceof \WP_Post && $queried->post_type === Plugin::FUNNEL_POST_TYPE) {
+            return self::getById($queried->ID);
+        }
+        
+        return null;
+    }
+
+    /**
      * Get funnel config by slug.
      *
      * @param string $slug Funnel slug
@@ -109,31 +136,40 @@ class FunnelConfigLoader
         // Clear by ID
         delete_transient(self::CACHE_PREFIX . 'id_' . $postId);
         
-        // Clear by slug (try ACF then post meta)
-        $slug = function_exists('get_field') ? get_field('funnel_slug', $postId) : null;
-        if (!$slug) {
-            $slug = get_post_meta($postId, 'funnel_slug', true);
-        }
-        if ($slug) {
-            delete_transient(self::CACHE_PREFIX . 'slug_' . $slug);
-        }
-        
-        // Also clear by post_name
+        // Clear by post_name (native WP slug - primary)
         $post = get_post($postId);
         if ($post) {
             delete_transient(self::CACHE_PREFIX . 'slug_' . $post->post_name);
+        }
+        
+        // Also clear legacy ACF funnel_slug cache for backward compatibility
+        $legacySlug = function_exists('get_field') ? get_field('funnel_slug', $postId) : null;
+        if (!$legacySlug) {
+            $legacySlug = get_post_meta($postId, 'funnel_slug', true);
+        }
+        if ($legacySlug && $legacySlug !== ($post->post_name ?? '')) {
+            delete_transient(self::CACHE_PREFIX . 'slug_' . $legacySlug);
         }
     }
 
     /**
      * Find a funnel post by slug.
+     * 
+     * Uses native WordPress post_name (slug) as the primary lookup.
+     * Falls back to legacy ACF funnel_slug field for backward compatibility.
      *
      * @param string $slug Funnel slug
      * @return \WP_Post|null
      */
     public static function findPostBySlug(string $slug): ?\WP_Post
     {
-        // First try ACF field
+        // Primary: Use native WordPress post_name (slug)
+        $post = get_page_by_path($slug, OBJECT, Plugin::FUNNEL_POST_TYPE);
+        if ($post instanceof \WP_Post) {
+            return $post;
+        }
+
+        // Fallback: Try legacy ACF funnel_slug field for backward compatibility
         $posts = get_posts([
             'post_type'      => Plugin::FUNNEL_POST_TYPE,
             'post_status'    => 'publish',
@@ -149,11 +185,8 @@ class FunnelConfigLoader
         if (!empty($posts)) {
             return $posts[0];
         }
-
-        // Fallback to post_name (WP slug)
-        $post = get_page_by_path($slug, OBJECT, Plugin::FUNNEL_POST_TYPE);
         
-        return $post instanceof \WP_Post ? $post : null;
+        return null;
     }
 
     /**
@@ -189,12 +222,13 @@ class FunnelConfigLoader
         }
 
         // Build normalized config
+        // Use native WordPress post_name as the canonical slug (not ACF funnel_slug)
         $config = [
             'id'          => $postId,
             'status'      => $status,
             'active'      => true,
             'name'        => $post->post_title,
-            'slug'        => self::getFieldValue('funnel_slug', $postId, $post->post_name),
+            'slug'        => $post->post_name,
             'stripe_mode' => self::getFieldValue('stripe_mode', $postId, 'auto'),
             
             // Header section

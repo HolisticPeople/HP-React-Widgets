@@ -36,6 +36,7 @@ class FunnelScienceShortcode extends AbstractShortcode
     {
         $atts = shortcode_atts([
             'funnel' => '',
+            'id' => '',
             'title' => '',
             'subtitle' => '',
             'layout' => 'columns',
@@ -43,8 +44,20 @@ class FunnelScienceShortcode extends AbstractShortcode
             'cta_url' => '',
         ], $atts, 'hp_funnel_science');
 
-        $slug = sanitize_key($atts['funnel']);
-        $config = $slug ? FunnelConfigLoader::getBySlug($slug) : [];
+        // Load config by ID, slug, or auto-detect from context
+        $config = null;
+        if (!empty($atts['id'])) {
+            $config = FunnelConfigLoader::getById((int) $atts['id']);
+        } elseif (!empty($atts['funnel'])) {
+            $config = FunnelConfigLoader::getBySlug(sanitize_key($atts['funnel']));
+        } else {
+            // Auto-detect from current post context (for use in CPT templates)
+            $config = FunnelConfigLoader::getFromContext();
+        }
+        
+        if (!$config || empty($config['active'])) {
+            return '';
+        }
 
         $science = $config['science'] ?? [];
         $sections = [];

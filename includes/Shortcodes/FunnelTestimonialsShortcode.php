@@ -95,6 +95,9 @@ class FunnelTestimonialsShortcode
             $config = FunnelConfigLoader::getById((int) $atts['id']);
         } elseif (!empty($atts['funnel'])) {
             $config = FunnelConfigLoader::getBySlug($atts['funnel']);
+        } else {
+            // Auto-detect from current post context (for use in CPT templates)
+            $config = FunnelConfigLoader::getFromContext();
         }
         return ($config && !empty($config['active'])) ? $config : null;
     }

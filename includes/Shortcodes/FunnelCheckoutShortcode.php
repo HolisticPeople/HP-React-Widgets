@@ -34,12 +34,15 @@ class FunnelCheckoutShortcode
             'id'     => '',    // Funnel post ID
         ], $atts);
 
-        // Load config by ID or slug
+        // Load config by ID, slug, or auto-detect from context
         $config = null;
         if (!empty($atts['id'])) {
             $config = FunnelConfigLoader::getById((int) $atts['id']);
         } elseif (!empty($atts['funnel'])) {
             $config = FunnelConfigLoader::getBySlug($atts['funnel']);
+        } else {
+            // Auto-detect from current post context (for use in CPT templates)
+            $config = FunnelConfigLoader::getFromContext();
         }
 
         if (!$config || !$config['active']) {

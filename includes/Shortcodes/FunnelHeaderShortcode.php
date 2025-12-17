@@ -54,7 +54,10 @@ class FunnelHeaderShortcode
     }
 
     /**
-     * Load funnel config from attributes.
+     * Load funnel config from attributes or auto-detect from context.
+     * 
+     * When used in an Elementor template for the funnel CPT, no attributes
+     * are needed - the funnel is detected automatically from the current post.
      *
      * @param array $atts Shortcode attributes
      * @return array|null Config or null
@@ -62,10 +65,15 @@ class FunnelHeaderShortcode
     private function loadConfig(array $atts): ?array
     {
         $config = null;
+        
+        // Try explicit attributes first
         if (!empty($atts['id'])) {
             $config = FunnelConfigLoader::getById((int) $atts['id']);
         } elseif (!empty($atts['funnel'])) {
             $config = FunnelConfigLoader::getBySlug($atts['funnel']);
+        } else {
+            // Auto-detect from current post context (for use in CPT templates)
+            $config = FunnelConfigLoader::getFromContext();
         }
 
         if (!$config || empty($config['active'])) {
@@ -113,4 +121,17 @@ class FunnelHeaderShortcode
         );
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
