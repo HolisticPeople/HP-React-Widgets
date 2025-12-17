@@ -36,17 +36,40 @@ class FunnelHeroShortcode
 
         // Load config by ID, slug, or auto-detect from context
         $config = null;
+        $debugInfo = '';
+        
         if (!empty($atts['id'])) {
             $config = FunnelConfigLoader::getById((int) $atts['id']);
+            $debugInfo = 'Method: id=' . $atts['id'];
         } elseif (!empty($atts['funnel'])) {
             $config = FunnelConfigLoader::getBySlug($atts['funnel']);
+            $debugInfo = 'Method: funnel=' . $atts['funnel'];
         } else {
             // Auto-detect from current post context (for use in CPT templates)
             $config = FunnelConfigLoader::getFromContext();
+            
+            // Debug info
+            global $post;
+            $queried = get_queried_object();
+            $debugInfo = sprintf(
+                'Method: context | queried_object: %s (type: %s) | global $post: %s (type: %s) | get_the_ID: %s | URI: %s',
+                is_object($queried) ? (property_exists($queried, 'ID') ? $queried->ID : get_class($queried)) : 'null',
+                is_object($queried) && $queried instanceof \WP_Post ? $queried->post_type : 'n/a',
+                $post instanceof \WP_Post ? $post->ID : 'null',
+                $post instanceof \WP_Post ? $post->post_type : 'n/a',
+                get_the_ID(),
+                $_SERVER['REQUEST_URI'] ?? 'unknown'
+            );
         }
 
         if (!$config || !$config['active']) {
-            return '<div class="hp-funnel-error" style="padding: 20px; background: #fee; color: #c00; border: 1px solid #c00; border-radius: 4px;">Funnel not found or inactive. Please check the funnel slug/ID.</div>';
+            $errorMsg = $config ? 'Config found but active=' . var_export($config['active'] ?? 'not set', true) : 'Config is null';
+            return sprintf(
+                '<!-- HP-RW Debug: %s | Result: %s -->
+                <div class="hp-funnel-error" style="padding: 20px; background: #fee; color: #c00; border: 1px solid #c00; border-radius: 4px;">Funnel not found or inactive.</div>',
+                esc_html($debugInfo),
+                esc_html($errorMsg)
+            );
         }
 
         // Build props for React component
