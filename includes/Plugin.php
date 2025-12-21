@@ -80,6 +80,15 @@ class Plugin
             'root_id'     => 'hp-funnel-thankyou-root',
             'hydrator_class' => 'FunnelThankYouShortcode',
         ],
+        // Checkout SPA (hybrid approach - checkout->upsell->thankyou in one component)
+        'hp_funnel_checkout_app' => [
+            'label'       => 'Funnel Checkout App (SPA)',
+            'description' => 'Full checkout SPA with checkout, upsell, and thank you steps. Use on a dedicated checkout page.',
+            'example'     => '[hp_funnel_checkout_app funnel="illumodine"]',
+            'component'   => 'FunnelCheckoutApp',
+            'root_id'     => 'hp-funnel-checkout-app-root',
+            'hydrator_class' => 'FunnelCheckoutAppShortcode',
+        ],
         // Modular funnel section components
         'hp_funnel_styles' => [
             'label'       => 'Funnel Global Styles',

@@ -8,6 +8,9 @@ import { FunnelHero } from '@/components/FunnelHero'
 import { FunnelCheckout } from '@/components/FunnelCheckout'
 import { FunnelUpsell } from '@/components/FunnelUpsell'
 import { FunnelThankYou } from '@/components/FunnelThankYou'
+
+// Checkout SPA (new hybrid approach)
+import { FunnelCheckoutApp } from '@/components/checkout-app'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
 // Modular funnel section components
@@ -52,6 +55,9 @@ widgetRegistry.FunnelHero = FunnelHero;
 widgetRegistry.FunnelCheckout = FunnelCheckout;
 widgetRegistry.FunnelUpsell = FunnelUpsell;
 widgetRegistry.FunnelThankYou = FunnelThankYou;
+
+// Checkout SPA (hybrid approach - single component handles checkout->upsell->thankyou)
+widgetRegistry.FunnelCheckoutApp = FunnelCheckoutApp;
 
 // Funnel section components (modular)
 widgetRegistry.FunnelHeader = FunnelHeader;
