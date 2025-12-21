@@ -193,6 +193,9 @@ class Plugin
      */
     public static function init(): void
     {
+        // Check for plugin upgrade and run migrations
+        self::checkForUpgrade();
+        
         // Set up funnel CPT customizations (CPT registered via ACF Pro)
         self::setupFunnelCptHooks();
 
@@ -373,6 +376,27 @@ class Plugin
             update_post_meta($post_id, '_hp_funnel_previous_slug', $currentSlug);
         }
 
+        // SYNC: Keep post_name in sync with funnel_slug (this controls the WordPress URL)
+        if ($currentSlug && $post->post_name !== $currentSlug) {
+            // Use wpdb directly to avoid triggering save_post again
+            global $wpdb;
+            $wpdb->update(
+                $wpdb->posts,
+                ['post_name' => $currentSlug],
+                ['ID' => $post_id],
+                ['%s'],
+                ['%d']
+            );
+            
+            // Clean post cache so WP sees the updated post_name
+            clean_post_cache($post_id);
+            
+            // Flush rewrite rules to update permalinks
+            flush_rewrite_rules(false);
+            
+            error_log("[HP-RW] Synced post_name to funnel_slug: {$currentSlug} for post {$post_id}");
+        }
+
         // Clear the funnel config cache (pass old slug for cascade invalidation)
         if (class_exists('HP_RW\\Services\\FunnelConfigLoader')) {
             Services\FunnelConfigLoader::clearCache($post_id, $oldSlug ?: '');
@@ -428,6 +452,27 @@ class Plugin
     }
 
     /**
+     * Check for plugin upgrade and run migrations.
+     */
+    private static function checkForUpgrade(): void
+    {
+        $storedVersion = get_option('hp_rw_version', '0');
+        $currentVersion = defined('HP_RW_VERSION') ? HP_RW_VERSION : '0';
+        
+        if (version_compare($storedVersion, $currentVersion, '<')) {
+            // Run upgrade migrations
+            
+            // v2.7.1+: Sync all funnel slugs to ensure URL consistency
+            if (version_compare($storedVersion, '2.7.1', '<')) {
+                self::syncAllFunnelSlugs();
+            }
+            
+            // Update stored version
+            update_option('hp_rw_version', $currentVersion);
+        }
+    }
+    
+    /**
      * Activation hook callback. Ensures default settings exist.
      */
     public static function activate(): void
@@ -437,6 +482,77 @@ class Plugin
         if ($stored === null) {
             $shortcodes = array_keys(self::get_shortcodes());
             update_option(self::OPTION_ENABLED_SHORTCODES, $shortcodes);
+        }
+        
+        // Sync all funnel slugs to ensure consistency
+        self::syncAllFunnelSlugs();
+    }
+    
+    /**
+     * Sync all funnel post_names to match their funnel_slug values.
+     * This ensures URLs align with the admin-defined slugs.
+     */
+    public static function syncAllFunnelSlugs(): void
+    {
+        $funnels = get_posts([
+            'post_type'      => self::FUNNEL_POST_TYPE,
+            'post_status'    => ['publish', 'draft', 'private'],
+            'posts_per_page' => -1,
+            'fields'         => 'ids',
+        ]);
+        
+        if (empty($funnels)) {
+            return;
+        }
+        
+        global $wpdb;
+        $updated = 0;
+        
+        foreach ($funnels as $post_id) {
+            $post = get_post($post_id);
+            if (!$post) {
+                continue;
+            }
+            
+            // Get funnel_slug
+            $funnelSlug = '';
+            if (function_exists('get_field')) {
+                $funnelSlug = get_field('funnel_slug', $post_id);
+            }
+            if (empty($funnelSlug)) {
+                $funnelSlug = get_post_meta($post_id, 'funnel_slug', true);
+            }
+            
+            // If no funnel_slug, generate from title
+            if (empty($funnelSlug) && !empty($post->post_title)) {
+                $funnelSlug = sanitize_title($post->post_title);
+                $funnelSlug = self::ensureUniqueFunnelSlug($funnelSlug, $post_id);
+                
+                if (function_exists('update_field')) {
+                    update_field('funnel_slug', $funnelSlug, $post_id);
+                } else {
+                    update_post_meta($post_id, 'funnel_slug', $funnelSlug);
+                }
+            }
+            
+            // Sync post_name if different
+            if ($funnelSlug && $post->post_name !== $funnelSlug) {
+                $wpdb->update(
+                    $wpdb->posts,
+                    ['post_name' => $funnelSlug],
+                    ['ID' => $post_id],
+                    ['%s'],
+                    ['%d']
+                );
+                clean_post_cache($post_id);
+                $updated++;
+                error_log("[HP-RW] syncAllFunnelSlugs: Updated post {$post_id} from '{$post->post_name}' to '{$funnelSlug}'");
+            }
+        }
+        
+        if ($updated > 0) {
+            flush_rewrite_rules(false);
+            error_log("[HP-RW] syncAllFunnelSlugs: Synced {$updated} funnel(s)");
         }
     }
 
