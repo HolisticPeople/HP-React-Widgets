@@ -119,10 +119,10 @@ class FunnelCheckoutAppShortcode
             'enablePoints'        => (bool) ($config['checkout']['enable_points'] ?? true),
             'enableCustomerLookup' => (bool) ($config['checkout']['enable_customer_lookup'] ?? true),
             'stripePublishableKey' => $stripeKey,
-            'upsellOffers'        => $this->formatUpsellsForReact($config['upsells'] ?? []),
-            'showUpsell'          => !empty($config['upsells']) && ($config['checkout']['show_upsell'] ?? true),
-            'thankYouHeadline'    => $config['thank_you']['headline'] ?? 'Thank You for Your Order!',
-            'thankYouMessage'     => $config['thank_you']['message'] ?? 'Your order has been confirmed.',
+            'upsellOffers'        => $this->buildUpsellOffers($config['thankyou']['upsell'] ?? null),
+            'showUpsell'          => (bool) ($config['thankyou']['show_upsell'] ?? false),
+            'thankYouHeadline'    => $config['thankyou']['headline'] ?? 'Thank You for Your Order!',
+            'thankYouMessage'     => $config['thankyou']['message'] ?? 'Your order has been confirmed.',
             'accentColor'         => $config['styling']['accent_color'] ?? 'hsl(45, 95%, 60%)',
             'footerText'          => $config['footer']['text'] ?? '',
             'footerDisclaimer'    => $config['footer']['disclaimer'] ?? '',
@@ -183,22 +183,37 @@ class FunnelCheckoutAppShortcode
     }
 
     /**
-     * Format upsell offers for React consumption.
+     * Build upsell offers array from the thankyou upsell config.
+     * 
+     * The config loader returns a single upsell object or null, but we need an array
+     * for the React component.
+     *
+     * @param array|null $upsellConfig Single upsell config from FunnelConfigLoader
+     * @return array Array of upsell offers for React
      */
-    private function formatUpsellsForReact(array $upsells): array
+    private function buildUpsellOffers(?array $upsellConfig): array
     {
-        return array_map(function ($upsell) {
-            return [
-                'sku'             => $upsell['sku'] ?? '',
-                'name'            => $upsell['name'] ?? '',
-                'description'     => $upsell['description'] ?? '',
-                'image'           => $upsell['image'] ?? '',
-                'regularPrice'    => (float) ($upsell['regular_price'] ?? 0),
-                'offerPrice'      => (float) ($upsell['offer_price'] ?? 0),
-                'discountPercent' => (int) ($upsell['discount_percent'] ?? 0),
-                'features'        => $upsell['features'] ?? [],
-            ];
-        }, $upsells);
+        if (!$upsellConfig || empty($upsellConfig['sku'])) {
+            return [];
+        }
+
+        // Calculate regular price from discount
+        $discountPercent = (float) ($upsellConfig['discount'] ?? 0);
+        $offerPrice = (float) ($upsellConfig['price'] ?? 0);
+        $regularPrice = $discountPercent > 0 
+            ? $offerPrice / (1 - $discountPercent / 100) 
+            : $offerPrice;
+
+        return [[
+            'sku'             => $upsellConfig['sku'] ?? '',
+            'name'            => $upsellConfig['productName'] ?? '',
+            'description'     => $upsellConfig['description'] ?? '',
+            'image'           => $upsellConfig['image'] ?? '',
+            'regularPrice'    => round($regularPrice, 2),
+            'offerPrice'      => round($offerPrice, 2),
+            'discountPercent' => (int) $discountPercent,
+            'features'        => [],
+        ]];
     }
 
     /**
