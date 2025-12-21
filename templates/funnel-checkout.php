@@ -7,7 +7,7 @@
  *
  * This template attempts to load an Elementor template in this order:
  * 1. Template ID from funnel ACF field 'checkout_template_id'
- * 2. Template named "Funnel Checkout Template"
+ * 2. Template named "HP Express Shop Checkout"
  * 3. Fallback to direct shortcode rendering
  *
  * @package HP_React_Widgets
@@ -25,7 +25,7 @@ if (!$funnel) {
 
 /**
  * Get the Elementor template ID for checkout.
- * Priority: Funnel-specific > Global setting > Named template > Hardcoded default
+ * Priority: Funnel-specific ACF field > Named template "HP Express Shop Checkout"
  */
 function hp_get_checkout_template_id($funnel) {
     // 1. Check funnel-specific template ID (ACF field)
@@ -36,25 +36,18 @@ function hp_get_checkout_template_id($funnel) {
         }
     }
     
-    // 2. Check global option
-    $global_template = get_option('hp_funnel_checkout_template_id');
-    if ($global_template) {
-        return (int) $global_template;
-    }
-    
-    // 3. Look for template by name "Funnel Checkout Template"
+    // 2. Look for template by name "HP Express Shop Checkout"
     $templates = get_posts([
         'post_type' => 'elementor_library',
         'post_status' => 'publish',
         'posts_per_page' => 1,
-        'title' => 'Funnel Checkout Template',
+        'title' => 'HP Express Shop Checkout',
     ]);
     if (!empty($templates)) {
         return $templates[0]->ID;
     }
     
-    // 4. Hardcoded default (can be updated)
-    return 125308;
+    return null;
 }
 
 $template_id = hp_get_checkout_template_id($funnel);
