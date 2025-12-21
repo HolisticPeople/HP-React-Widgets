@@ -193,8 +193,8 @@ class Plugin
      */
     public static function init(): void
     {
-        // Check for plugin upgrade and run migrations
-        self::checkForUpgrade();
+        // Schedule upgrade check for later (after WP is fully initialized)
+        add_action('init', [self::class, 'checkForUpgrade'], 99);
         
         // Set up funnel CPT customizations (CPT registered via ACF Pro)
         self::setupFunnelCptHooks();
@@ -453,8 +453,9 @@ class Plugin
 
     /**
      * Check for plugin upgrade and run migrations.
+     * Called on 'init' hook with priority 99 to ensure WP is fully loaded.
      */
-    private static function checkForUpgrade(): void
+    public static function checkForUpgrade(): void
     {
         $storedVersion = get_option('hp_rw_version', '0');
         $currentVersion = defined('HP_RW_VERSION') ? HP_RW_VERSION : '0';
