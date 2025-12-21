@@ -46,6 +46,25 @@ class FunnelConfigLoader
     {
         $debug = defined('WP_DEBUG') && WP_DEBUG;
         
+        // Method 0: Check query var set by funnel sub-routes (checkout, thankyou, etc.)
+        // This is set by Plugin::handleFunnelSubRoutes() for virtual route pages
+        $queryVarFunnel = get_query_var('hp_current_funnel');
+        if (!empty($queryVarFunnel) && is_array($queryVarFunnel)) {
+            if ($debug) {
+                error_log('[HP-RW] getFromContext: Found via hp_current_funnel query var - ID: ' . ($queryVarFunnel['id'] ?? 'unknown'));
+            }
+            return $queryVarFunnel;
+        }
+        
+        // Method 0b: Check query var for funnel slug (set by rewrite rules)
+        $queryVarSlug = get_query_var('hp_funnel_slug');
+        if (!empty($queryVarSlug)) {
+            if ($debug) {
+                error_log('[HP-RW] getFromContext: Found hp_funnel_slug query var: ' . $queryVarSlug);
+            }
+            return self::getBySlug($queryVarSlug);
+        }
+        
         // Method 1: Check get_queried_object() first - most reliable for single post views
         $queried = get_queried_object();
         if ($queried instanceof \WP_Post && $queried->post_type === Plugin::FUNNEL_POST_TYPE) {
