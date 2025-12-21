@@ -10,6 +10,8 @@
  * 2. Template named "HP Express Shop Thank You"
  * 3. Fallback to direct shortcode rendering
  *
+ * It automatically injects funnel styles (CSS variables, background) before the content.
+ *
  * @package HP_React_Widgets
  */
 
@@ -21,6 +23,84 @@ $funnel = get_query_var('hp_current_funnel');
 if (!$funnel) {
     wp_redirect(home_url('/'));
     exit;
+}
+
+/**
+ * Build funnel styles CSS (same logic as FunnelStylesShortcode).
+ * This ensures the thank you page has the same look as the landing page.
+ */
+if (!function_exists('hp_build_funnel_styles')) {
+    function hp_build_funnel_styles($funnel) {
+        $styling = $funnel['styling'] ?? [];
+        $slug = esc_attr($funnel['slug'] ?? 'thankyou');
+        
+        $accentColor = $styling['accent_color'] ?? '#eab308';
+        $bgType = strtolower($styling['background_type'] ?? 'gradient');
+        $bgColor = $styling['background_color'] ?? '';
+        $bgImage = $styling['background_image'] ?? '';
+        $customCss = $styling['custom_css'] ?? '';
+        
+        // Build background
+        if (strpos($bgType, 'solid') !== false || $bgType === 'color') {
+            $background = $bgColor ?: '#1a1a2e';
+        } elseif (strpos($bgType, 'image') !== false && $bgImage) {
+            $background = "url('{$bgImage}') center/cover no-repeat fixed";
+        } else {
+            // Default gradient
+            $background = 'linear-gradient(135deg, #0f0f1a 0%, #1a1525 25%, #151520 50%, #1a1a25 75%, #0f0f1a 100%)';
+        }
+        
+        // Convert hex to RGB for glow effects
+        $hex = ltrim($accentColor, '#');
+        if (strlen($hex) === 3) {
+            $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+        }
+        $accentRgb = hexdec(substr($hex, 0, 2)) . ', ' . hexdec(substr($hex, 2, 2)) . ', ' . hexdec(substr($hex, 4, 2));
+        
+        return "
+        <style id=\"hp-funnel-styles-{$slug}\">
+            :root {
+                --hp-funnel-accent: {$accentColor};
+                --hp-funnel-accent-rgb: {$accentRgb};
+                --hp-funnel-bg: {$background};
+            }
+            
+            /* Global funnel page background */
+            body.hp-funnel-{$slug},
+            body.hp-funnel-{$slug} .elementor,
+            body.hp-funnel-{$slug} .elementor-inner,
+            body.hp-funnel-{$slug} .elementor-section-wrap,
+            body.hp-funnel-{$slug} .e-con,
+            .hp-funnel-page-{$slug} {
+                background: {$background} !important;
+            }
+            
+            body.hp-funnel-{$slug} {
+                min-height: 100vh;
+            }
+            
+            /* Make Elementor sections transparent */
+            body.hp-funnel-{$slug} .elementor-section,
+            body.hp-funnel-{$slug} .elementor-element,
+            body.hp-funnel-{$slug} .e-con {
+                background-color: transparent !important;
+            }
+            
+            /* HP Funnel sections - transparent by default */
+            .hp-funnel-section {
+                background: transparent;
+            }
+            
+            /* Accent color utilities */
+            .hp-funnel-accent { color: var(--hp-funnel-accent); }
+            .hp-funnel-accent-bg { background-color: var(--hp-funnel-accent); }
+            .hp-funnel-accent-glow { box-shadow: 0 0 30px rgba(var(--hp-funnel-accent-rgb), 0.5); }
+            
+            {$customCss}
+        </style>
+        <script>(function(){document.body.classList.add('hp-funnel-{$slug}');})();</script>
+        ";
+    }
 }
 
 /**
@@ -52,6 +132,9 @@ function hp_get_thankyou_template_id($funnel) {
 
 $template_id = hp_get_thankyou_template_id($funnel);
 
+// Build funnel styles (injected right after header)
+$funnel_styles = hp_build_funnel_styles($funnel);
+
 // Check if Elementor is active and template exists
 if (class_exists('\Elementor\Plugin') && $template_id) {
     // Get the Elementor content
@@ -60,8 +143,10 @@ if (class_exists('\Elementor\Plugin') && $template_id) {
     
     if ($content) {
         get_header();
+        // Inject funnel styles for consistent look
+        echo $funnel_styles;
         ?>
-        <div id="hp-funnel-thankyou-page" class="hp-funnel-page hp-funnel-thankyou-page">
+        <div id="hp-funnel-thankyou-page" class="hp-funnel-page hp-funnel-thankyou-page hp-funnel-page-<?php echo esc_attr($funnel['slug']); ?>">
             <?php echo $content; ?>
         </div>
         <?php
@@ -72,9 +157,11 @@ if (class_exists('\Elementor\Plugin') && $template_id) {
 
 // Fallback: Direct shortcode rendering
 get_header();
+// Inject funnel styles for consistent look
+echo $funnel_styles;
 ?>
 
-<div id="hp-funnel-thankyou-page" class="hp-funnel-page hp-funnel-thankyou-page">
+<div id="hp-funnel-thankyou-page" class="hp-funnel-page hp-funnel-thankyou-page hp-funnel-page-<?php echo esc_attr($funnel['slug']); ?>">
     <?php 
     // Render the thank you shortcode
     echo do_shortcode('[hp_funnel_thankyou funnel="' . esc_attr($funnel['slug']) . '"]'); 

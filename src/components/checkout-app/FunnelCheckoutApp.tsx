@@ -295,3 +295,4 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
 
 export default FunnelCheckoutApp;
 
+
