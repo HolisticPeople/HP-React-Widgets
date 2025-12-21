@@ -87,8 +87,12 @@ export function useStripePayment(options: UseStripePaymentOptions) {
       return;
     }
 
-    // Create Elements instance
+    // Create Elements instance with deferred PaymentIntent mode
+    // 'mode: payment' allows us to collect payment details before creating a PaymentIntent
     elementsRef.current = stripeRef.current.elements({
+      mode: 'payment',
+      amount: 1000, // Placeholder - will be updated when we have final amount
+      currency: 'usd',
       appearance: {
         theme: 'night',
         variables: {
