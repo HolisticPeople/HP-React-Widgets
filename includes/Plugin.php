@@ -252,6 +252,128 @@ class Plugin
         
         // Clear cache on save
         add_action('save_post_' . self::FUNNEL_POST_TYPE, [self::class, 'onFunnelSave'], 10, 3);
+        
+        // Add rewrite rules for funnel sub-routes (checkout, thankyou, etc.)
+        add_action('init', [self::class, 'addFunnelRewriteRules'], 10);
+        add_filter('query_vars', [self::class, 'addFunnelQueryVars']);
+        add_action('template_redirect', [self::class, 'handleFunnelSubRoutes']);
+    }
+    
+    /**
+     * Add rewrite rules for funnel sub-routes.
+     * Handles: /express-shop/{slug}/checkout/, /express-shop/{slug}/thankyou/
+     */
+    public static function addFunnelRewriteRules(): void
+    {
+        // Pattern: /express-shop/{funnel_slug}/checkout/
+        add_rewrite_rule(
+            '^express-shop/([^/]+)/checkout/?$',
+            'index.php?hp_funnel_route=checkout&hp_funnel_slug=$matches[1]',
+            'top'
+        );
+        
+        // Pattern: /express-shop/{funnel_slug}/thankyou/
+        add_rewrite_rule(
+            '^express-shop/([^/]+)/thankyou/?$',
+            'index.php?hp_funnel_route=thankyou&hp_funnel_slug=$matches[1]',
+            'top'
+        );
+    }
+    
+    /**
+     * Register custom query vars for funnel routes.
+     */
+    public static function addFunnelQueryVars(array $vars): array
+    {
+        $vars[] = 'hp_funnel_route';
+        $vars[] = 'hp_funnel_slug';
+        return $vars;
+    }
+    
+    /**
+     * Handle funnel sub-route requests by loading the appropriate template.
+     */
+    public static function handleFunnelSubRoutes(): void
+    {
+        $route = get_query_var('hp_funnel_route');
+        $slug = get_query_var('hp_funnel_slug');
+        
+        if (empty($route) || empty($slug)) {
+            return;
+        }
+        
+        // Find the funnel by slug
+        $funnel = Services\FunnelConfigLoader::getBySlug($slug);
+        if (!$funnel || !$funnel['active']) {
+            // Funnel not found - let WordPress handle 404
+            return;
+        }
+        
+        // Store funnel data for template use
+        set_query_var('hp_current_funnel', $funnel);
+        
+        // Find the checkout page that has our shortcode
+        // Or render directly using a minimal template
+        $template = self::getFunnelRouteTemplate($route, $funnel);
+        
+        if ($template) {
+            include $template;
+            exit;
+        }
+    }
+    
+    /**
+     * Get the template file for a funnel route.
+     */
+    private static function getFunnelRouteTemplate(string $route, array $funnel): ?string
+    {
+        // First, check if there's a custom template in the theme
+        $themeTemplate = locate_template([
+            "hp-funnel-{$route}.php",
+            "funnel/{$route}.php",
+        ]);
+        
+        if ($themeTemplate) {
+            return $themeTemplate;
+        }
+        
+        // Use our built-in template
+        $pluginTemplate = HP_RW_PATH . "templates/funnel-{$route}.php";
+        if (file_exists($pluginTemplate)) {
+            return $pluginTemplate;
+        }
+        
+        // Fallback: render inline
+        self::renderFunnelRouteInline($route, $funnel);
+        return null;
+    }
+    
+    /**
+     * Render a funnel route inline (fallback when no template exists).
+     */
+    private static function renderFunnelRouteInline(string $route, array $funnel): void
+    {
+        // Get the header
+        get_header();
+        
+        echo '<div id="primary" class="content-area"><main id="main" class="site-main">';
+        
+        // Render the appropriate shortcode
+        switch ($route) {
+            case 'checkout':
+                echo do_shortcode('[hp_funnel_checkout_app funnel="' . esc_attr($funnel['slug']) . '"]');
+                break;
+            case 'thankyou':
+                echo do_shortcode('[hp_funnel_thankyou funnel="' . esc_attr($funnel['slug']) . '"]');
+                break;
+            default:
+                echo '<p>Unknown funnel route.</p>';
+        }
+        
+        echo '</main></div>';
+        
+        get_footer();
+        exit;
     }
 
     /**
@@ -468,6 +590,11 @@ class Plugin
                 self::syncAllFunnelSlugs();
             }
             
+            // v2.7.3+: Flush rewrite rules for new funnel sub-routes
+            if (version_compare($storedVersion, '2.7.3', '<')) {
+                flush_rewrite_rules(false);
+            }
+            
             // Update stored version
             update_option('hp_rw_version', $currentVersion);
         }
@@ -484,6 +611,10 @@ class Plugin
             $shortcodes = array_keys(self::get_shortcodes());
             update_option(self::OPTION_ENABLED_SHORTCODES, $shortcodes);
         }
+        
+        // Register rewrite rules and flush to make them active immediately
+        self::addFunnelRewriteRules();
+        flush_rewrite_rules(false);
         
         // Sync all funnel slugs to ensure consistency
         self::syncAllFunnelSlugs();
