@@ -250,7 +250,7 @@ class FunnelConfigLoader
      */
     public static function findPostBySlug(string $slug): ?\WP_Post
     {
-        // Query by funnel_slug ACF field - this is the single source of truth
+        // Primary: Query by funnel_slug ACF field - this is the single source of truth
         $posts = get_posts([
             'post_type'      => Plugin::FUNNEL_POST_TYPE,
             'post_status'    => ['publish', 'draft', 'private'],
@@ -264,6 +264,23 @@ class FunnelConfigLoader
         ]);
 
         if (!empty($posts)) {
+            return $posts[0];
+        }
+        
+        // Fallback: Check post_name for transition period
+        // This handles funnels where post_name hasn't been synced to funnel_slug yet
+        $posts = get_posts([
+            'post_type'      => Plugin::FUNNEL_POST_TYPE,
+            'post_status'    => ['publish', 'draft', 'private'],
+            'posts_per_page' => 1,
+            'name'           => $slug,
+        ]);
+
+        if (!empty($posts)) {
+            // Log this so we know syncing is needed
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("[HP-RW] findPostBySlug: Found via post_name fallback for '{$slug}'. Consider re-saving funnel to sync slugs.");
+            }
             return $posts[0];
         }
         
