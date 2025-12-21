@@ -197,50 +197,44 @@ class FunnelConfigLoader
     /**
      * Clear cache for a specific funnel.
      *
-     * @param int $postId Post ID
+     * @param int    $postId  Post ID
+     * @param string $oldSlug Optional old slug to clear (for when slug changes)
      */
-    public static function clearCache(int $postId): void
+    public static function clearCache(int $postId, string $oldSlug = ''): void
     {
         // Clear by ID
         delete_transient(self::CACHE_PREFIX . 'id_' . $postId);
         
-        // Clear by post_name (native WP slug - primary)
-        $post = get_post($postId);
-        if ($post) {
-            delete_transient(self::CACHE_PREFIX . 'slug_' . $post->post_name);
+        // Clear by funnel_slug (single source of truth)
+        $currentSlug = function_exists('get_field') ? get_field('funnel_slug', $postId) : null;
+        if (!$currentSlug) {
+            $currentSlug = get_post_meta($postId, 'funnel_slug', true);
+        }
+        if ($currentSlug) {
+            delete_transient(self::CACHE_PREFIX . 'slug_' . $currentSlug);
         }
         
-        // Also clear legacy ACF funnel_slug cache for backward compatibility
-        $legacySlug = function_exists('get_field') ? get_field('funnel_slug', $postId) : null;
-        if (!$legacySlug) {
-            $legacySlug = get_post_meta($postId, 'funnel_slug', true);
-        }
-        if ($legacySlug && $legacySlug !== ($post->post_name ?? '')) {
-            delete_transient(self::CACHE_PREFIX . 'slug_' . $legacySlug);
+        // If old slug provided (slug was changed), clear that cache too
+        if ($oldSlug && $oldSlug !== $currentSlug) {
+            delete_transient(self::CACHE_PREFIX . 'slug_' . $oldSlug);
         }
     }
 
     /**
      * Find a funnel post by slug.
      * 
-     * Uses native WordPress post_name (slug) as the primary lookup.
-     * Falls back to legacy ACF funnel_slug field for backward compatibility.
+     * Uses the ACF funnel_slug field as the SINGLE SOURCE OF TRUTH.
+     * No fallbacks - the funnel_slug field is definitive.
      *
      * @param string $slug Funnel slug
      * @return \WP_Post|null
      */
     public static function findPostBySlug(string $slug): ?\WP_Post
     {
-        // Primary: Use native WordPress post_name (slug)
-        $post = get_page_by_path($slug, OBJECT, Plugin::FUNNEL_POST_TYPE);
-        if ($post instanceof \WP_Post) {
-            return $post;
-        }
-
-        // Fallback: Try legacy ACF funnel_slug field for backward compatibility
+        // Query by funnel_slug ACF field - this is the single source of truth
         $posts = get_posts([
             'post_type'      => Plugin::FUNNEL_POST_TYPE,
-            'post_status'    => 'publish',
+            'post_status'    => ['publish', 'draft', 'private'],
             'posts_per_page' => 1,
             'meta_query'     => [
                 [
@@ -289,14 +283,20 @@ class FunnelConfigLoader
             return ['status' => 'inactive', 'active' => false];
         }
 
+        // Get the funnel_slug from ACF - this is the SINGLE SOURCE OF TRUTH for all URLs
+        // If not set, derive from post title (this will be auto-saved on next post save)
+        $funnelSlug = self::getFieldValue('funnel_slug', $postId, '');
+        if (empty($funnelSlug)) {
+            $funnelSlug = sanitize_title($post->post_title);
+        }
+
         // Build normalized config
-        // Use native WordPress post_name as the canonical slug (not ACF funnel_slug)
         $config = [
             'id'          => $postId,
             'status'      => $status,
             'active'      => true,
             'name'        => $post->post_title,
-            'slug'        => $post->post_name,
+            'slug'        => $funnelSlug,
             'stripe_mode' => self::getFieldValue('stripe_mode', $postId, 'auto'),
             
             // Header section
@@ -331,8 +331,11 @@ class FunnelConfigLoader
             'products' => self::extractProducts(self::getFieldValue('funnel_products', $postId, [])),
             
             // Checkout
+            // Auto-generate checkout URL based on funnel_slug (single source of truth)
+            // Pattern: /express-shop/{funnel_slug}/checkout/
             'checkout' => [
-                'url'                    => self::getFieldValue('checkout_url', $postId, '/checkout/'),
+                'url'                    => '/express-shop/' . $funnelSlug . '/checkout/',
+                'back_url'               => '/express-shop/' . $funnelSlug . '/',
                 'free_shipping_countries' => self::getFieldValue('free_shipping_countries', $postId, ['US']),
                 'global_discount_percent' => (float) self::getFieldValue('global_discount_percent', $postId, 0),
                 'enable_points'          => (bool) self::getFieldValue('enable_points_redemption', $postId, false),

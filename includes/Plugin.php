@@ -334,10 +334,97 @@ class Plugin
             return;
         }
 
-        // Clear the funnel config cache
-        if (class_exists('HP_RW\\Services\\FunnelConfigLoader')) {
-            Services\FunnelConfigLoader::clearCache($post_id);
+        // Prevent infinite loop when we update meta
+        static $saving = [];
+        if (isset($saving[$post_id])) {
+            return;
         }
+        $saving[$post_id] = true;
+
+        // Get old slug before any changes (for cache invalidation)
+        $oldSlug = get_post_meta($post_id, '_hp_funnel_previous_slug', true);
+        
+        // Get current funnel_slug from ACF/meta
+        $currentSlug = '';
+        if (function_exists('get_field')) {
+            $currentSlug = get_field('funnel_slug', $post_id);
+        }
+        if (empty($currentSlug)) {
+            $currentSlug = get_post_meta($post_id, 'funnel_slug', true);
+        }
+
+        // AUTO-GENERATE: If funnel_slug is empty, derive from post title
+        if (empty($currentSlug) && !empty($post->post_title)) {
+            $currentSlug = sanitize_title($post->post_title);
+            
+            // Ensure uniqueness by checking for conflicts
+            $currentSlug = self::ensureUniqueFunnelSlug($currentSlug, $post_id);
+            
+            // Save the auto-generated slug
+            if (function_exists('update_field')) {
+                update_field('funnel_slug', $currentSlug, $post_id);
+            } else {
+                update_post_meta($post_id, 'funnel_slug', $currentSlug);
+            }
+        }
+
+        // Store current slug for next save comparison
+        if ($currentSlug) {
+            update_post_meta($post_id, '_hp_funnel_previous_slug', $currentSlug);
+        }
+
+        // Clear the funnel config cache (pass old slug for cascade invalidation)
+        if (class_exists('HP_RW\\Services\\FunnelConfigLoader')) {
+            Services\FunnelConfigLoader::clearCache($post_id, $oldSlug ?: '');
+        }
+
+        unset($saving[$post_id]);
+    }
+
+    /**
+     * Ensure a funnel slug is unique across all funnels.
+     *
+     * @param string $slug Base slug to check
+     * @param int $excludePostId Post ID to exclude from check
+     * @return string Unique slug (may have suffix added)
+     */
+    private static function ensureUniqueFunnelSlug(string $slug, int $excludePostId): string
+    {
+        $originalSlug = $slug;
+        $suffix = 1;
+
+        while (self::funnelSlugExists($slug, $excludePostId)) {
+            $slug = $originalSlug . '-' . $suffix;
+            $suffix++;
+        }
+
+        return $slug;
+    }
+
+    /**
+     * Check if a funnel_slug already exists.
+     *
+     * @param string $slug Slug to check
+     * @param int $excludePostId Post ID to exclude
+     * @return bool True if exists
+     */
+    private static function funnelSlugExists(string $slug, int $excludePostId): bool
+    {
+        $posts = get_posts([
+            'post_type'      => self::FUNNEL_POST_TYPE,
+            'post_status'    => ['publish', 'draft', 'private'],
+            'posts_per_page' => 1,
+            'post__not_in'   => [$excludePostId],
+            'meta_query'     => [
+                [
+                    'key'   => 'funnel_slug',
+                    'value' => $slug,
+                ],
+            ],
+            'fields' => 'ids',
+        ]);
+
+        return !empty($posts);
     }
 
     /**
