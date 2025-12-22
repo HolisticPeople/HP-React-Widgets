@@ -43,29 +43,37 @@ class FunnelOfferFields
             return;
         }
 
-        // Get saved offers data
+        // Get saved offers data - try both get_field and direct meta
         $offers = get_field('funnel_offers', $post->ID);
-        if (!$offers || !is_array($offers)) {
-            return;
-        }
-
+        
         // Build map of offer index => products_data
         $productsMap = [];
-        foreach ($offers as $index => $offer) {
-            $productsData = $offer['products_data'] ?? '';
-            if ($productsData) {
-                $productsMap[$index] = $productsData;
+        
+        if ($offers && is_array($offers)) {
+            foreach ($offers as $index => $offer) {
+                $productsData = $offer['products_data'] ?? '';
+                if ($productsData) {
+                    $productsMap[$index] = $productsData;
+                }
             }
         }
-
+        
+        // Also try direct meta lookup as fallback
         if (empty($productsMap)) {
-            return;
+            $numOffers = (int) get_post_meta($post->ID, 'funnel_offers', true);
+            for ($i = 0; $i < $numOffers; $i++) {
+                $productsData = get_post_meta($post->ID, "funnel_offers_{$i}_products_data", true);
+                if ($productsData) {
+                    $productsMap[$i] = $productsData;
+                }
+            }
         }
 
         ?>
         <script>
         window.hpOfferSavedProducts = <?php echo json_encode($productsMap); ?>;
         console.log('[HP Offer PHP] Injected saved products:', window.hpOfferSavedProducts);
+        console.log('[HP Offer PHP] Post ID:', <?php echo $post->ID; ?>);
         </script>
         <?php
     }
@@ -522,13 +530,11 @@ class FunnelOfferFields
                         'label' => '',
                         'name' => 'container',
                         'type' => 'message',
-                        'message' => '<div class="hp-products-section" data-offer-products>
-                            <div class="hp-products-header">
-                                <div class="hp-search-wrapper">
-                                    <input type="text" class="hp-offer-search-input" placeholder="Search to add products...">
-                                </div>
+                        'message' => '<div class="hp-products-section" data-offer-products style="border: 1px solid #ddd; border-radius: 6px; background: #fff;">
+                            <div class="hp-products-header" style="padding: 12px; border-bottom: 1px solid #eee; background: #f9f9f9;">
+                                <input type="text" class="hp-offer-search-input" placeholder="Search to add products..." style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
                             </div>
-                            <div class="hp-products-list"></div>
+                            <div class="hp-products-list" style="min-height: 60px;"></div>
                         </div>',
                         'esc_html' => 0,
                     ],
