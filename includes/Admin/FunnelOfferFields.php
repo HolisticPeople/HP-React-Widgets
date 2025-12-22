@@ -7,46 +7,37 @@ if (!defined('ABSPATH')) {
 
 /**
  * Registers ACF fields for the Funnel Offers system.
- * 
- * This replaces the legacy "Products" tab with a new "Offers" system
- * supporting single products, fixed bundles, and customizable kits.
+ * Replaces the legacy "Products" tab.
  */
 class FunnelOfferFields
 {
-    /**
-     * Initialize the ACF field registration.
-     */
     public static function init(): void
     {
         add_action('acf/init', [self::class, 'registerFields']);
-        add_action('acf/init', [self::class, 'hideLegacyProductsTab'], 20);
-        add_action('acf/input/admin_enqueue_scripts', [self::class, 'enqueueCalculatorScript']);
-        
-        // Auto-generate offer IDs
+        add_action('acf/init', [self::class, 'removeLegacyProductsTab'], 99);
+        add_action('acf/input/admin_enqueue_scripts', [self::class, 'enqueueScripts']);
         add_filter('acf/update_value/key=field_offer_id', [self::class, 'generateOfferId'], 10, 3);
     }
 
     /**
-     * Hide the legacy Products tab if it exists.
-     * This removes the old tab registered via ACF admin UI.
+     * Remove the legacy Products tab from the Funnel Configuration field group.
      */
-    public static function hideLegacyProductsTab(): void
+    public static function removeLegacyProductsTab(): void
     {
-        // Remove any legacy field group with Products for funnels
-        add_filter('acf/get_field_groups', function($groups) {
-            return array_filter($groups, function($group) {
-                // Keep our new offers group, remove legacy products groups
-                if (isset($group['key']) && $group['key'] === 'group_hp_funnel_products_legacy') {
-                    return false;
-                }
-                return true;
-            });
+        // Remove the Products tab field from any field group
+        add_filter('acf/load_field', function($field) {
+            // Remove the Products tab itself
+            if (isset($field['name']) && $field['name'] === 'products_tab') {
+                return false;
+            }
+            // Remove funnel_products repeater
+            if (isset($field['name']) && $field['name'] === 'funnel_products') {
+                return false;
+            }
+            return $field;
         });
     }
 
-    /**
-     * Generate unique offer ID if empty.
-     */
     public static function generateOfferId($value, $postId, $field)
     {
         if (empty($value)) {
@@ -55,85 +46,137 @@ class FunnelOfferFields
         return $value;
     }
 
-    /**
-     * Enqueue the offer calculator script for admin.
-     */
-    public static function enqueueCalculatorScript(): void
+    public static function enqueueScripts(): void
     {
         global $post;
-
         if (!$post || $post->post_type !== 'hp-funnel') {
             return;
         }
 
         wp_enqueue_script(
-            'hp-rw-offer-calculator',
+            'hp-rw-offer-admin',
             HP_RW_URL . 'assets/admin/offer-calculator.js',
             ['jquery', 'acf-input'],
             HP_RW_VERSION,
             true
         );
 
-        wp_localize_script('hp-rw-offer-calculator', 'hpOfferCalc', [
+        wp_localize_script('hp-rw-offer-admin', 'hpOfferCalc', [
             'restUrl' => rest_url('hp-rw/v1/'),
             'nonce'   => wp_create_nonce('wp_rest'),
         ]);
-        
-        // Add inline styles for product display
-        wp_add_inline_style('acf-input', self::getAdminStyles());
+
+        // Compact styles
+        wp_add_inline_style('acf-input', self::getStyles());
     }
-    
-    /**
-     * Get admin styles for product display.
-     */
-    private static function getAdminStyles(): string
+
+    private static function getStyles(): string
     {
         return '
-            .hp-product-display {
+            /* Compact offer form */
+            .acf-field[data-key="field_funnel_offers"] .acf-row {
+                background: #fafafa;
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+                margin-bottom: 12px;
+            }
+            .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed {
+                background: #fff;
+            }
+            
+            /* Product display card */
+            .hp-product-card {
                 display: flex;
                 align-items: center;
                 gap: 12px;
-                padding: 10px;
-                background: #f8f9fa;
+                padding: 12px;
+                background: #fff;
+                border: 1px solid #e0e0e0;
                 border-radius: 6px;
                 margin-top: 8px;
             }
-            .hp-product-display img {
-                width: 50px;
-                height: 50px;
+            .hp-product-card img {
+                width: 48px;
+                height: 48px;
                 object-fit: cover;
                 border-radius: 4px;
+                flex-shrink: 0;
             }
-            .hp-product-display .product-info {
+            .hp-product-card .hp-product-info {
                 flex: 1;
+                min-width: 0;
             }
-            .hp-product-display .product-name {
+            .hp-product-card .hp-product-name {
                 font-weight: 600;
                 color: #1e1e1e;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
-            .hp-product-display .product-sku {
+            .hp-product-card .hp-product-sku {
                 font-size: 12px;
                 color: #757575;
             }
-            .hp-product-display .product-price {
+            .hp-product-card .hp-product-price {
                 font-weight: 600;
                 color: #00a32a;
+                font-size: 15px;
             }
-            .hp-product-remove {
+            .hp-product-card .hp-product-qty {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            .hp-product-card .hp-product-qty input {
+                width: 60px;
+                text-align: center;
+            }
+            .hp-product-card .hp-product-remove {
                 color: #d63638;
                 cursor: pointer;
                 padding: 4px 8px;
                 border-radius: 4px;
+                font-size: 18px;
             }
-            .hp-product-remove:hover {
+            .hp-product-card .hp-product-remove:hover {
                 background: #fcf0f1;
+            }
+            
+            /* Hide instruction text, show on hover */
+            .acf-field[data-key^="field_offer"] > .acf-label .description,
+            .acf-field[data-key^="field_single"] > .acf-label .description,
+            .acf-field[data-key^="field_bundle"] > .acf-label .description,
+            .acf-field[data-key^="field_kit"] > .acf-label .description {
+                display: none;
+            }
+            
+            /* Collapsed offer summary */
+            .hp-offer-summary {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                padding: 4px 0;
+            }
+            .hp-offer-summary img {
+                width: 40px;
+                height: 40px;
+                object-fit: cover;
+                border-radius: 4px;
+            }
+            .hp-offer-summary-name {
+                font-weight: 600;
+            }
+            .hp-offer-summary-product {
+                color: #666;
+                font-size: 13px;
+            }
+            .hp-offer-summary-price {
+                color: #00a32a;
+                font-weight: 600;
             }
         ';
     }
 
-    /**
-     * Register the ACF field group for funnel offers.
-     */
     public static function registerFields(): void
     {
         if (!function_exists('acf_add_local_field_group')) {
@@ -146,55 +189,29 @@ class FunnelOfferFields
             'fields' => self::getOfferFields(),
             'location' => [
                 [
-                    [
-                        'param' => 'post_type',
-                        'operator' => '==',
-                        'value' => 'hp-funnel',
-                    ],
+                    ['param' => 'post_type', 'operator' => '==', 'value' => 'hp-funnel'],
                 ],
             ],
             'menu_order' => 5,
             'position' => 'normal',
             'style' => 'default',
-            'label_placement' => 'top',
-            'instruction_placement' => 'label',
         ]);
     }
 
-    /**
-     * Get the field definitions for offers.
-     */
     private static function getOfferFields(): array
     {
         return [
-            // Tab
             [
                 'key' => 'field_offers_tab',
                 'label' => 'Offers',
-                'name' => '',
                 'type' => 'tab',
                 'placement' => 'top',
             ],
-            // Instructions
-            [
-                'key' => 'field_offers_instructions',
-                'label' => '',
-                'name' => '',
-                'type' => 'message',
-                'message' => '<div style="background:#f0f6fc; padding:15px; border-radius:6px; border-left:4px solid #0073aa; margin-bottom:10px;">
-                    <strong style="font-size:14px;">📦 Offers</strong>
-                    <p style="margin:8px 0 0;">Each offer can be: <strong>Single Product</strong>, <strong>Fixed Bundle</strong>, or <strong>Customizable Kit</strong>.</p>
-                </div>',
-                'esc_html' => 0,
-            ],
-            // Offers Repeater
             [
                 'key' => 'field_funnel_offers',
-                'label' => 'Offers',
+                'label' => '',
                 'name' => 'funnel_offers',
                 'type' => 'repeater',
-                'instructions' => '',
-                'required' => 0,
                 'min' => 0,
                 'max' => 10,
                 'layout' => 'block',
@@ -205,232 +222,146 @@ class FunnelOfferFields
         ];
     }
 
-    /**
-     * Get sub-fields for each offer in the repeater.
-     */
     private static function getOfferSubFields(): array
     {
         return [
-            // Row 1: Core info
+            // Row 1: Core fields
             [
                 'key' => 'field_offer_name',
                 'label' => 'Offer Name',
                 'name' => 'offer_name',
                 'type' => 'text',
-                'instructions' => 'Display name shown to customers.',
                 'required' => 1,
-                'wrapper' => ['width' => '40'],
+                'wrapper' => ['width' => '35'],
             ],
             [
                 'key' => 'field_offer_type',
-                'label' => 'Offer Type',
+                'label' => 'Type',
                 'name' => 'offer_type',
                 'type' => 'select',
-                'instructions' => 'What kind of offer?',
                 'required' => 1,
                 'choices' => [
-                    'single' => '🛒 Single Product',
-                    'fixed_bundle' => '📦 Fixed Bundle',
-                    'customizable_kit' => '🎨 Customizable Kit',
+                    'single' => 'Single Product',
+                    'fixed_bundle' => 'Fixed Bundle',
+                    'customizable_kit' => 'Custom Kit',
                 ],
                 'default_value' => 'single',
-                'wrapper' => ['width' => '30'],
+                'wrapper' => ['width' => '20'],
+            ],
+            [
+                'key' => 'field_offer_badge',
+                'label' => 'Badge',
+                'name' => 'offer_badge',
+                'type' => 'text',
+                'placeholder' => 'e.g. BEST VALUE',
+                'wrapper' => ['width' => '20'],
             ],
             [
                 'key' => 'field_offer_is_featured',
                 'label' => 'Featured',
                 'name' => 'offer_is_featured',
                 'type' => 'true_false',
-                'instructions' => 'Highlight this offer.',
                 'ui' => 1,
-                'wrapper' => ['width' => '15'],
+                'wrapper' => ['width' => '10'],
             ],
             [
                 'key' => 'field_offer_id',
                 'label' => 'ID',
                 'name' => 'offer_id',
                 'type' => 'text',
-                'instructions' => 'Auto-generated.',
                 'readonly' => 1,
                 'wrapper' => ['width' => '15'],
             ],
             
-            // Row 2: Marketing
-            [
-                'key' => 'field_offer_badge',
-                'label' => 'Badge',
-                'name' => 'offer_badge',
-                'type' => 'text',
-                'instructions' => 'e.g., "BEST VALUE", "POPULAR"',
-                'wrapper' => ['width' => '25'],
-            ],
-            [
-                'key' => 'field_offer_discount_label',
-                'label' => 'Discount Label',
-                'name' => 'offer_discount_label',
-                'type' => 'text',
-                'instructions' => 'e.g., "Save 25%"',
-                'wrapper' => ['width' => '25'],
-            ],
+            // Row 2: Discount
             [
                 'key' => 'field_offer_discount_type',
-                'label' => 'Discount Type',
+                'label' => 'Discount',
                 'name' => 'offer_discount_type',
                 'type' => 'select',
                 'choices' => [
-                    'none' => 'No Discount',
-                    'percent' => 'Percentage (%)',
-                    'fixed' => 'Fixed Amount ($)',
+                    'none' => 'None',
+                    'percent' => '% Off',
+                    'fixed' => '$ Off',
                 ],
                 'default_value' => 'none',
-                'wrapper' => ['width' => '25'],
+                'wrapper' => ['width' => '20'],
             ],
             [
                 'key' => 'field_offer_discount_value',
-                'label' => 'Discount Value',
+                'label' => 'Amount',
                 'name' => 'offer_discount_value',
                 'type' => 'number',
                 'default_value' => 0,
                 'min' => 0,
-                'wrapper' => ['width' => '25'],
+                'wrapper' => ['width' => '15'],
                 'conditional_logic' => [
-                    [
-                        [
-                            'field' => 'field_offer_discount_type',
-                            'operator' => '!=',
-                            'value' => 'none',
-                        ],
-                    ],
+                    [['field' => 'field_offer_discount_type', 'operator' => '!=', 'value' => 'none']],
                 ],
             ],
-            
-            // Row 3: Description & Image
+            [
+                'key' => 'field_offer_discount_label',
+                'label' => 'Label',
+                'name' => 'offer_discount_label',
+                'type' => 'text',
+                'placeholder' => 'Save 25%',
+                'wrapper' => ['width' => '20'],
+                'conditional_logic' => [
+                    [['field' => 'field_offer_discount_type', 'operator' => '!=', 'value' => 'none']],
+                ],
+            ],
             [
                 'key' => 'field_offer_description',
                 'label' => 'Description',
                 'name' => 'offer_description',
-                'type' => 'textarea',
-                'rows' => 2,
-                'wrapper' => ['width' => '70'],
-            ],
-            [
-                'key' => 'field_offer_image',
-                'label' => 'Image Override',
-                'name' => 'offer_image',
-                'type' => 'image',
-                'return_format' => 'url',
-                'preview_size' => 'thumbnail',
-                'wrapper' => ['width' => '30'],
+                'type' => 'text',
+                'wrapper' => ['width' => '45'],
             ],
             
-            // === SINGLE PRODUCT FIELDS ===
-            [
-                'key' => 'field_single_section',
-                'label' => '',
-                'name' => '',
-                'type' => 'message',
-                'message' => '<h4 style="margin:0; padding:15px 0 5px; border-top:1px solid #ddd;">🛒 Product Selection</h4>',
-                'esc_html' => 0,
-                'conditional_logic' => [
-                    [
-                        [
-                            'field' => 'field_offer_type',
-                            'operator' => '==',
-                            'value' => 'single',
-                        ],
-                    ],
-                ],
-            ],
+            // === SINGLE PRODUCT ===
             [
                 'key' => 'field_single_product_search',
-                'label' => 'Search Product',
+                'label' => 'Product',
                 'name' => 'single_product_search',
                 'type' => 'text',
-                'instructions' => 'Type to search products by name or SKU.',
-                'placeholder' => 'Start typing to search...',
-                'wrapper' => ['width' => '50', 'class' => 'hp-product-search-field'],
+                'placeholder' => 'Search by name or SKU...',
+                'wrapper' => ['width' => '100', 'class' => 'hp-product-search-field'],
                 'conditional_logic' => [
-                    [
-                        [
-                            'field' => 'field_offer_type',
-                            'operator' => '==',
-                            'value' => 'single',
-                        ],
-                    ],
+                    [['field' => 'field_offer_type', 'operator' => '==', 'value' => 'single']],
                 ],
             ],
             [
                 'key' => 'field_single_product_sku',
-                'label' => 'Selected Product SKU',
                 'name' => 'single_product_sku',
-                'type' => 'text',
-                'instructions' => 'WooCommerce product SKU',
-                'wrapper' => ['width' => '30'],
+                'type' => 'hidden',
                 'conditional_logic' => [
-                    [
-                        [
-                            'field' => 'field_offer_type',
-                            'operator' => '==',
-                            'value' => 'single',
-                        ],
-                    ],
+                    [['field' => 'field_offer_type', 'operator' => '==', 'value' => 'single']],
                 ],
             ],
             [
                 'key' => 'field_single_product_qty',
-                'label' => 'Qty',
                 'name' => 'single_product_qty',
-                'type' => 'number',
+                'type' => 'hidden',
                 'default_value' => 1,
-                'min' => 1,
-                'wrapper' => ['width' => '20'],
                 'conditional_logic' => [
-                    [
-                        [
-                            'field' => 'field_offer_type',
-                            'operator' => '==',
-                            'value' => 'single',
-                        ],
-                    ],
+                    [['field' => 'field_offer_type', 'operator' => '==', 'value' => 'single']],
                 ],
             ],
-            // Product display (will be populated by JS)
+            // Product display container (populated by JS)
             [
                 'key' => 'field_single_product_display',
-                'label' => '',
                 'name' => '',
                 'type' => 'message',
-                'message' => '<div class="hp-selected-product-display" data-target="single_product_sku"></div>',
+                'label' => '',
+                'message' => '<div class="hp-single-product-container" data-type="single"></div>',
                 'esc_html' => 0,
+                'wrapper' => ['class' => 'hp-product-display-wrapper'],
                 'conditional_logic' => [
-                    [
-                        [
-                            'field' => 'field_offer_type',
-                            'operator' => '==',
-                            'value' => 'single',
-                        ],
-                    ],
+                    [['field' => 'field_offer_type', 'operator' => '==', 'value' => 'single']],
                 ],
             ],
             
-            // === FIXED BUNDLE FIELDS ===
-            [
-                'key' => 'field_bundle_section',
-                'label' => '',
-                'name' => '',
-                'type' => 'message',
-                'message' => '<h4 style="margin:0; padding:15px 0 5px; border-top:1px solid #ddd;">📦 Bundle Products</h4>',
-                'esc_html' => 0,
-                'conditional_logic' => [
-                    [
-                        [
-                            'field' => 'field_offer_type',
-                            'operator' => '==',
-                            'value' => 'fixed_bundle',
-                        ],
-                    ],
-                ],
-            ],
+            // === FIXED BUNDLE ===
             [
                 'key' => 'field_bundle_items',
                 'label' => 'Bundle Items',
@@ -439,15 +370,9 @@ class FunnelOfferFields
                 'min' => 1,
                 'max' => 10,
                 'layout' => 'block',
-                'button_label' => 'Add Product to Bundle',
+                'button_label' => 'Add Product',
                 'conditional_logic' => [
-                    [
-                        [
-                            'field' => 'field_offer_type',
-                            'operator' => '==',
-                            'value' => 'fixed_bundle',
-                        ],
-                    ],
+                    [['field' => 'field_offer_type', 'operator' => '==', 'value' => 'fixed_bundle']],
                 ],
                 'sub_fields' => [
                     [
@@ -455,98 +380,42 @@ class FunnelOfferFields
                         'label' => 'Search Product',
                         'name' => 'product_search',
                         'type' => 'text',
-                        'placeholder' => 'Type to search...',
-                        'wrapper' => ['width' => '45', 'class' => 'hp-product-search-field'],
+                        'placeholder' => 'Search...',
+                        'wrapper' => ['width' => '100', 'class' => 'hp-product-search-field'],
                     ],
                     [
                         'key' => 'field_bundle_item_sku',
-                        'label' => 'SKU',
                         'name' => 'sku',
-                        'type' => 'text',
-                        'wrapper' => ['width' => '35'],
+                        'type' => 'hidden',
                     ],
                     [
                         'key' => 'field_bundle_item_qty',
-                        'label' => 'Qty',
                         'name' => 'qty',
-                        'type' => 'number',
+                        'type' => 'hidden',
                         'default_value' => 1,
-                        'min' => 1,
-                        'wrapper' => ['width' => '20'],
                     ],
-                    // Product info display (populated by JS)
                     [
                         'key' => 'field_bundle_item_display',
-                        'label' => '',
                         'name' => '',
                         'type' => 'message',
-                        'message' => '<div class="hp-selected-product-display" data-target="sku"></div>',
+                        'label' => '',
+                        'message' => '<div class="hp-bundle-product-container" data-type="bundle"></div>',
                         'esc_html' => 0,
                     ],
                 ],
             ],
             
-            // === CUSTOMIZABLE KIT FIELDS ===
-            [
-                'key' => 'field_kit_section',
-                'label' => '',
-                'name' => '',
-                'type' => 'message',
-                'message' => '<h4 style="margin:0; padding:15px 0 5px; border-top:1px solid #ddd;">🎨 Kit Configuration</h4>',
-                'esc_html' => 0,
-                'conditional_logic' => [
-                    [
-                        [
-                            'field' => 'field_offer_type',
-                            'operator' => '==',
-                            'value' => 'customizable_kit',
-                        ],
-                    ],
-                ],
-            ],
+            // === CUSTOMIZABLE KIT ===
             [
                 'key' => 'field_kit_max_items',
-                'label' => 'Max Total Items',
+                'label' => 'Max Items',
                 'name' => 'kit_max_items',
                 'type' => 'number',
-                'instructions' => 'Maximum items customer can add (0 = unlimited).',
                 'default_value' => 6,
                 'min' => 0,
-                'wrapper' => ['width' => '25'],
+                'wrapper' => ['width' => '20'],
                 'conditional_logic' => [
-                    [
-                        [
-                            'field' => 'field_offer_type',
-                            'operator' => '==',
-                            'value' => 'customizable_kit',
-                        ],
-                    ],
-                ],
-            ],
-            [
-                'key' => 'field_kit_calculator',
-                'label' => 'Discount Calculator',
-                'name' => '',
-                'type' => 'message',
-                'message' => '<div id="hp-kit-calculator" style="background:#f8f9fa; padding:15px; border-radius:6px; font-family:monospace; font-size:13px;">
-                    <div style="display:grid; gap:4px;">
-                        <div>Original Total: <strong id="calc-original">$0.00</strong></div>
-                        <div>After Product Discounts: <strong id="calc-after-products">$0.00</strong></div>
-                        <div>After Kit Discount: <strong id="calc-final">$0.00</strong></div>
-                        <hr style="margin:8px 0; border:0; border-top:1px solid #ddd;">
-                        <div style="font-size:14px; color:#00a32a;">Actual Savings: <strong id="calc-savings">$0.00 (0%)</strong></div>
-                    </div>
-                </div>',
-                'esc_html' => 0,
-                'wrapper' => ['width' => '75'],
-                'conditional_logic' => [
-                    [
-                        [
-                            'field' => 'field_offer_type',
-                            'operator' => '==',
-                            'value' => 'customizable_kit',
-                        ],
-                    ],
+                    [['field' => 'field_offer_type', 'operator' => '==', 'value' => 'customizable_kit']],
                 ],
             ],
             [
@@ -554,35 +423,26 @@ class FunnelOfferFields
                 'label' => 'Kit Products',
                 'name' => 'kit_products',
                 'type' => 'repeater',
-                'instructions' => '',
                 'min' => 1,
                 'max' => 20,
                 'layout' => 'block',
-                'button_label' => 'Add Kit Product',
+                'button_label' => 'Add Product',
                 'conditional_logic' => [
-                    [
-                        [
-                            'field' => 'field_offer_type',
-                            'operator' => '==',
-                            'value' => 'customizable_kit',
-                        ],
-                    ],
+                    [['field' => 'field_offer_type', 'operator' => '==', 'value' => 'customizable_kit']],
                 ],
                 'sub_fields' => [
                     [
                         'key' => 'field_kit_product_search',
-                        'label' => 'Search Product',
+                        'label' => 'Product',
                         'name' => 'product_search',
                         'type' => 'text',
-                        'placeholder' => 'Type to search...',
-                        'wrapper' => ['width' => '30', 'class' => 'hp-product-search-field'],
+                        'placeholder' => 'Search...',
+                        'wrapper' => ['width' => '40', 'class' => 'hp-product-search-field'],
                     ],
                     [
                         'key' => 'field_kit_product_sku',
-                        'label' => 'SKU',
                         'name' => 'sku',
-                        'type' => 'text',
-                        'wrapper' => ['width' => '20'],
+                        'type' => 'hidden',
                     ],
                     [
                         'key' => 'field_kit_product_role',
@@ -590,16 +450,16 @@ class FunnelOfferFields
                         'name' => 'role',
                         'type' => 'select',
                         'choices' => [
-                            'must' => '🔒 Must (Required)',
-                            'default' => '✅ Default (Pre-selected)',
-                            'optional' => '➕ Optional',
+                            'must' => 'Required',
+                            'default' => 'Default',
+                            'optional' => 'Optional',
                         ],
                         'default_value' => 'optional',
                         'wrapper' => ['width' => '20'],
                     ],
                     [
                         'key' => 'field_kit_product_qty',
-                        'label' => 'Default Qty',
+                        'label' => 'Qty',
                         'name' => 'qty',
                         'type' => 'number',
                         'default_value' => 1,
@@ -608,7 +468,7 @@ class FunnelOfferFields
                     ],
                     [
                         'key' => 'field_kit_product_max_qty',
-                        'label' => 'Max Qty',
+                        'label' => 'Max',
                         'name' => 'max_qty',
                         'type' => 'number',
                         'default_value' => 3,
@@ -620,24 +480,41 @@ class FunnelOfferFields
                         'label' => 'Discount',
                         'name' => 'discount_type',
                         'type' => 'select',
-                        'choices' => [
-                            'none' => 'None',
-                            'percent' => '%',
-                            'fixed' => '$',
-                        ],
+                        'choices' => ['none' => '-', 'percent' => '%', 'fixed' => '$'],
                         'default_value' => 'none',
                         'wrapper' => ['width' => '10'],
                     ],
-                    // Product info display
+                    [
+                        'key' => 'field_kit_product_discount_value',
+                        'label' => 'Value',
+                        'name' => 'discount_value',
+                        'type' => 'number',
+                        'default_value' => 0,
+                        'wrapper' => ['width' => '10'],
+                        'conditional_logic' => [
+                            [['field' => 'field_kit_product_discount_type', 'operator' => '!=', 'value' => 'none']],
+                        ],
+                    ],
                     [
                         'key' => 'field_kit_product_display',
-                        'label' => '',
                         'name' => '',
                         'type' => 'message',
-                        'message' => '<div class="hp-selected-product-display" data-target="sku"></div>',
+                        'label' => '',
+                        'message' => '<div class="hp-kit-product-container" data-type="kit"></div>',
                         'esc_html' => 0,
                     ],
                 ],
+            ],
+            
+            // Image override (optional)
+            [
+                'key' => 'field_offer_image',
+                'label' => 'Image Override',
+                'name' => 'offer_image',
+                'type' => 'image',
+                'return_format' => 'url',
+                'preview_size' => 'thumbnail',
+                'wrapper' => ['width' => '30'],
             ],
         ];
     }
