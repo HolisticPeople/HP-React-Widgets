@@ -18,23 +18,36 @@
     // ========================================
 
     function init() {
-        console.log('[HP Offer] Initializing v2...');
+        console.log('[HP Offer] Initializing v3...');
 
-        // Wait for ACF to be ready
+        // Multiple initialization strategies
         if (typeof acf !== 'undefined') {
+            console.log('[HP Offer] ACF found, adding ready action');
             acf.addAction('ready', function() {
+                console.log('[HP Offer] ACF ready fired');
                 setTimeout(initializeAllOffers, 300);
             });
             
             // Handle new offer rows
             acf.addAction('append', function($el) {
+                console.log('[HP Offer] ACF append fired');
                 setTimeout(function() {
                     initializeOfferRow($el);
                 }, 100);
             });
-        } else {
-            setTimeout(initializeAllOffers, 500);
         }
+        
+        // Fallback: also try on document ready
+        $(document).ready(function() {
+            console.log('[HP Offer] Document ready');
+            setTimeout(initializeAllOffers, 500);
+        });
+        
+        // Additional fallback for late-loading ACF
+        $(window).on('load', function() {
+            console.log('[HP Offer] Window load');
+            setTimeout(initializeAllOffers, 200);
+        });
 
         // Bind events
         bindEvents();
@@ -104,10 +117,25 @@
     function initializeAllOffers() {
         console.log('[HP Offer] Initializing all offers...');
         
-        const $offerRows = $('.acf-field[data-name="funnel_offers"] .acf-row:not(.acf-clone)');
+        // Try multiple selectors
+        let $offerRows = $('.acf-field[data-name="funnel_offers"] .acf-row:not(.acf-clone)');
+        
+        if ($offerRows.length === 0) {
+            // Try alternative selector
+            $offerRows = $('.acf-field[data-key="field_funnel_offers"] .acf-row:not(.acf-clone)');
+            console.log('[HP Offer] Using key selector, found:', $offerRows.length);
+        }
+        
+        if ($offerRows.length === 0) {
+            // Try even broader selector
+            $offerRows = $('[data-name="funnel_offers"]').find('.acf-row').not('.acf-clone');
+            console.log('[HP Offer] Using broad selector, found:', $offerRows.length);
+        }
+        
         console.log('[HP Offer] Found', $offerRows.length, 'offer rows');
         
-        $offerRows.each(function() {
+        $offerRows.each(function(index) {
+            console.log('[HP Offer] Processing row', index);
             initializeOfferRow($(this));
         });
     }
