@@ -30,7 +30,15 @@ class FunnelOfferFields
             return;
         }
         
-        echo '<p style="color: #666; font-size: 12px; margin: -10px 0 10px 0;">HP React Widgets v' . HP_RW_VERSION . '</p>';
+        // Position it below the title input using JS to avoid overlap with Add New button
+        echo '<script>
+        jQuery(function($) {
+            var $titleWrap = $("#titlewrap");
+            if ($titleWrap.length) {
+                $titleWrap.after("<p style=\"color: #666; font-size: 12px; margin: 5px 0 15px 0;\">HP React Widgets v' . HP_RW_VERSION . '</p>");
+            }
+        });
+        </script>';
     }
 
     /**
@@ -516,7 +524,7 @@ class FunnelOfferFields
                 'rows' => 2,
             ],
             
-            // Products UI container - using a group with message inside
+            // Products UI container - JS will inject the search input
             [
                 'key' => 'field_offer_products_wrapper',
                 'label' => 'Products',
@@ -530,12 +538,7 @@ class FunnelOfferFields
                         'label' => '',
                         'name' => 'container',
                         'type' => 'message',
-                        'message' => '<div class="hp-products-section" data-offer-products style="border: 1px solid #ddd; border-radius: 6px; background: #fff;">
-                            <div class="hp-products-header" style="padding: 12px; border-bottom: 1px solid #eee; background: #f9f9f9;">
-                                <input type="text" class="hp-offer-search-input" placeholder="Search to add products..." style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
-                            </div>
-                            <div class="hp-products-list" style="min-height: 60px;"></div>
-                        </div>',
+                        'message' => '<div class="hp-products-section" data-offer-products></div>',
                         'esc_html' => 0,
                     ],
                 ],
