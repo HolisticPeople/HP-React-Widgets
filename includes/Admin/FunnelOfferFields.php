@@ -18,6 +18,7 @@ class FunnelOfferFields
         add_action('acf/input/admin_enqueue_scripts', [self::class, 'enqueueScripts']);
         add_filter('acf/update_value/key=field_offer_id', [self::class, 'generateOfferId'], 10, 3);
         add_action('edit_form_top', [self::class, 'displayVersionLabel']);
+        add_action('admin_footer', [self::class, 'injectSavedProductsData']);
     }
 
     /**
@@ -30,6 +31,43 @@ class FunnelOfferFields
         }
         
         echo '<p style="color: #666; font-size: 12px; margin: -10px 0 10px 0;">HP React Widgets v' . HP_RW_VERSION . '</p>';
+    }
+
+    /**
+     * Inject saved products data via JS since ACF textarea values aren't pre-populated.
+     */
+    public static function injectSavedProductsData(): void
+    {
+        global $post;
+        if (!$post || $post->post_type !== 'hp-funnel') {
+            return;
+        }
+
+        // Get saved offers data
+        $offers = get_field('funnel_offers', $post->ID);
+        if (!$offers || !is_array($offers)) {
+            return;
+        }
+
+        // Build map of offer index => products_data
+        $productsMap = [];
+        foreach ($offers as $index => $offer) {
+            $productsData = $offer['products_data'] ?? '';
+            if ($productsData) {
+                $productsMap[$index] = $productsData;
+            }
+        }
+
+        if (empty($productsMap)) {
+            return;
+        }
+
+        ?>
+        <script>
+        window.hpOfferSavedProducts = <?php echo json_encode($productsMap); ?>;
+        console.log('[HP Offer PHP] Injected saved products:', window.hpOfferSavedProducts);
+        </script>
+        <?php
     }
 
     /**

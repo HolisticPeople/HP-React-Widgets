@@ -433,24 +433,26 @@
     // ========================================
 
     function getProductsData($row) {
-        // Try multiple selectors to find the products_data field
+        // First, check if we have PHP-injected data (for initial page load)
+        const rowIndex = getRowIndex($row);
+        if (typeof window.hpOfferSavedProducts !== 'undefined' && window.hpOfferSavedProducts[rowIndex]) {
+            const savedJson = window.hpOfferSavedProducts[rowIndex];
+            console.log('[HP Offer] Using PHP-injected data for row', rowIndex);
+            try {
+                const products = typeof savedJson === 'string' ? JSON.parse(savedJson) : savedJson;
+                // Clear from the map so we don't reload it again after user edits
+                delete window.hpOfferSavedProducts[rowIndex];
+                return products;
+            } catch (e) {
+                console.warn('[HP Offer] Error parsing injected data:', e);
+            }
+        }
+
+        // Fall back to textarea value (for user-edited data)
         let $field = $row.find('.acf-field[data-name="products_data"] textarea');
-        
-        // If not found, try finding it with broader selector
         if (!$field.length) {
             $field = $row.find('textarea[name*="products_data"]');
         }
-        
-        // Debug: log all textareas in the row
-        const allTextareas = $row.find('textarea');
-        console.log('[HP Offer] Found', allTextareas.length, 'textareas in row');
-        allTextareas.each(function() {
-            const name = $(this).attr('name') || '(no name)';
-            const val = $(this).val() || '(empty)';
-            if (name.includes('products') || val.includes('sku')) {
-                console.log('[HP Offer] Textarea:', name, '=', val.substring(0, 50));
-            }
-        });
         
         if (!$field.length) {
             console.warn('[HP Offer] products_data field not found');
@@ -458,8 +460,6 @@
         }
 
         const json = $field.val();
-        console.log('[HP Offer] products_data JSON:', json ? json.substring(0, 80) : '(empty)');
-        
         if (!json) return [];
 
         try {
@@ -468,6 +468,12 @@
             console.warn('[HP Offer] Invalid JSON in products_data:', e);
             return [];
         }
+    }
+
+    function getRowIndex($row) {
+        // Get the index of this row within the repeater
+        const $allRows = $row.closest('.acf-repeater').find('> .acf-row:not(.acf-clone)');
+        return $allRows.index($row);
     }
 
     function saveProductsData($row, products) {
@@ -484,22 +490,15 @@
     }
 
     function loadExistingProducts($row, $container) {
-        // First, ensure the products_data field exists and get its value
-        const $field = $row.find('.acf-field[data-name="products_data"] textarea');
-        console.log('[HP Offer] products_data field found:', $field.length > 0);
-        
-        if ($field.length) {
-            const rawValue = $field.val();
-            console.log('[HP Offer] products_data raw value:', rawValue ? rawValue.substring(0, 100) + '...' : '(empty)');
-        }
-        
         const products = getProductsData($row);
         const offerType = getOfferType($row);
         
-        console.log('[HP Offer] Parsed products:', products.length, products);
+        console.log('[HP Offer] Loaded products:', products.length);
         
         if (products.length > 0) {
             renderProductsList($container.find('.hp-products-list'), products, offerType);
+            // Also save to textarea for form submission
+            saveProductsData($row, products);
         }
     }
 
