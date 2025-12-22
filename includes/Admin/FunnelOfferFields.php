@@ -95,9 +95,20 @@ class FunnelOfferFields
                 border: 1px solid #e0e0e0;
                 border-radius: 8px;
                 margin-bottom: 12px;
+                position: relative;
             }
             .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed {
                 background: #fff;
+            }
+            
+            /* Ensure delete/remove button is visible */
+            .acf-field[data-key="field_funnel_offers"] .acf-row-handle .acf-icon.-minus {
+                display: block !important;
+                visibility: visible !important;
+            }
+            .acf-field[data-key="field_funnel_offers"] .acf-row > .acf-row-handle {
+                display: flex !important;
+                align-items: center;
             }
             
             /* Hide SKU/qty fields - they are managed by the product card */
@@ -232,17 +243,13 @@ class FunnelOfferFields
     private static function getOfferFields(): array
     {
         return [
-            [
-                'key' => 'field_offers_tab',
-                'label' => 'Offers',
-                'type' => 'tab',
-                'placement' => 'top',
-            ],
+            // No tab - directly show the offers repeater
             [
                 'key' => 'field_funnel_offers',
-                'label' => '',
+                'label' => 'Offers',
                 'name' => 'funnel_offers',
                 'type' => 'repeater',
+                'instructions' => '',
                 'min' => 0,
                 'max' => 10,
                 'layout' => 'block',

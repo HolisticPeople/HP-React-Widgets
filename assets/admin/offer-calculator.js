@@ -116,25 +116,25 @@
     // ========================================
     
     function findSkuField($row) {
-        // Try different field patterns
-        let $field = $row.find('[data-name="single_product_sku"] input[type="hidden"]');
+        // Try different field patterns - fields are text type (hidden via CSS)
+        let $field = $row.find('[data-name="single_product_sku"] input');
         if ($field.length) return $field;
         
-        $field = $row.find('[data-name="sku"] input[type="hidden"]');
+        $field = $row.find('[data-name="sku"] input');
         if ($field.length) return $field;
         
-        // Fallback: any hidden input with sku in name
-        $field = $row.find('input[type="hidden"][name*="[single_product_sku]"]');
+        // Fallback: any input with sku in name
+        $field = $row.find('input[name*="[single_product_sku]"]');
         if ($field.length) return $field;
         
-        $field = $row.find('input[type="hidden"][name*="[sku]"]');
+        $field = $row.find('input[name*="[sku]"]').not('[name*="[product_search]"]');
         if ($field.length) return $field;
         
         return $();
     }
     
     function findQtyField($row) {
-        let $field = $row.find('[data-name="single_product_qty"] input[type="hidden"]');
+        let $field = $row.find('[data-name="single_product_qty"] input');
         if ($field.length) return $field;
         
         $field = $row.find('[data-name="qty"] input');
@@ -143,7 +143,7 @@
         $field = $row.find('input[name*="[single_product_qty]"]');
         if ($field.length) return $field;
         
-        $field = $row.find('input[name*="[qty]"]');
+        $field = $row.find('input[name*="[qty]"]').not('.hp-qty-input');
         if ($field.length) return $field;
         
         return $();
