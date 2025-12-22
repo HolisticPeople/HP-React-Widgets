@@ -24,24 +24,34 @@ class FunnelOfferFields
      */
     public static function removeLegacyProductsTab(): void
     {
-        // Remove the Products tab and funnel_products repeater
-        add_filter('acf/load_field', function($field) {
-            if (!$field) return $field;
+        // Hide Products tab and funnel_products via CSS instead of filter to avoid ACF errors
+        add_action('admin_head', function() {
+            global $post;
+            if (!$post || $post->post_type !== 'hp-funnel') return;
             
-            // Remove by field name
-            $removeNames = ['products_tab', 'funnel_products'];
-            if (isset($field['name']) && in_array($field['name'], $removeNames, true)) {
-                return false;
-            }
+            echo '<style>
+                /* Hide legacy Products tab and fields */
+                .acf-tab-wrap a[data-key*="products_tab"],
+                .acf-tab-wrap a:contains("Products"),
+                .acf-field[data-name="funnel_products"],
+                .acf-field[data-name="products_tab"] {
+                    display: none !important;
+                }
+            </style>';
             
-            // Remove Products tab by label (tab type with label "Products")
-            if (isset($field['type']) && $field['type'] === 'tab' && 
-                isset($field['label']) && $field['label'] === 'Products') {
-                return false;
-            }
-            
-            return $field;
-        }, 5);
+            // Also hide via JS for more reliable matching
+            echo '<script>
+                jQuery(function($) {
+                    // Hide Products tab
+                    $(".acf-tab-wrap a").filter(function() {
+                        return $(this).text().trim() === "Products";
+                    }).hide();
+                    
+                    // Hide funnel_products field
+                    $(".acf-field[data-name=\'funnel_products\']").hide();
+                });
+            </script>';
+        });
     }
 
     public static function generateOfferId($value, $postId, $field)
@@ -90,6 +100,24 @@ class FunnelOfferFields
                 background: #fff;
             }
             
+            /* Hide SKU/qty fields - they are managed by the product card */
+            .hp-hidden-field {
+                display: none !important;
+            }
+            
+            /* Product display container - no extra margin when empty */
+            .acf-field[data-key="field_single_product_display"],
+            .acf-field[data-key="field_bundle_item_display"],
+            .acf-field[data-key="field_kit_product_display"] {
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .acf-field[data-key="field_single_product_display"] > .acf-label,
+            .acf-field[data-key="field_bundle_item_display"] > .acf-label,
+            .acf-field[data-key="field_kit_product_display"] > .acf-label {
+                display: none;
+            }
+            
             /* Product display card */
             .hp-product-card {
                 display: flex;
@@ -99,7 +127,7 @@ class FunnelOfferFields
                 background: #fff;
                 border: 1px solid #e0e0e0;
                 border-radius: 6px;
-                margin-top: 8px;
+                margin: 8px 12px;
             }
             .hp-product-card img {
                 width: 48px;
@@ -148,7 +176,7 @@ class FunnelOfferFields
                 background: #fcf0f1;
             }
             
-            /* Hide instruction text, show on hover */
+            /* Hide field descriptions */
             .acf-field[data-key^="field_offer"] > .acf-label .description,
             .acf-field[data-key^="field_single"] > .acf-label .description,
             .acf-field[data-key^="field_bundle"] > .acf-label .description,
@@ -158,19 +186,16 @@ class FunnelOfferFields
             
             /* Collapsed offer summary */
             .hp-offer-summary {
-                display: flex;
+                display: inline-flex;
                 align-items: center;
-                gap: 16px;
-                padding: 4px 0;
+                gap: 12px;
+                margin-left: 8px;
             }
             .hp-offer-summary img {
-                width: 40px;
-                height: 40px;
+                width: 32px;
+                height: 32px;
                 object-fit: cover;
                 border-radius: 4px;
-            }
-            .hp-offer-summary-name {
-                font-weight: 600;
             }
             .hp-offer-summary-product {
                 color: #666;
@@ -338,17 +363,21 @@ class FunnelOfferFields
             ],
             [
                 'key' => 'field_single_product_sku',
+                'label' => '',
                 'name' => 'single_product_sku',
-                'type' => 'hidden',
+                'type' => 'text',
+                'wrapper' => ['class' => 'hp-hidden-field'],
                 'conditional_logic' => [
                     [['field' => 'field_offer_type', 'operator' => '==', 'value' => 'single']],
                 ],
             ],
             [
                 'key' => 'field_single_product_qty',
+                'label' => '',
                 'name' => 'single_product_qty',
-                'type' => 'hidden',
+                'type' => 'number',
                 'default_value' => 1,
+                'wrapper' => ['class' => 'hp-hidden-field'],
                 'conditional_logic' => [
                     [['field' => 'field_offer_type', 'operator' => '==', 'value' => 'single']],
                 ],
@@ -391,14 +420,18 @@ class FunnelOfferFields
                     ],
                     [
                         'key' => 'field_bundle_item_sku',
+                        'label' => '',
                         'name' => 'sku',
-                        'type' => 'hidden',
+                        'type' => 'text',
+                        'wrapper' => ['class' => 'hp-hidden-field'],
                     ],
                     [
                         'key' => 'field_bundle_item_qty',
+                        'label' => '',
                         'name' => 'qty',
-                        'type' => 'hidden',
+                        'type' => 'number',
                         'default_value' => 1,
+                        'wrapper' => ['class' => 'hp-hidden-field'],
                     ],
                     [
                         'key' => 'field_bundle_item_display',
@@ -447,8 +480,10 @@ class FunnelOfferFields
                     ],
                     [
                         'key' => 'field_kit_product_sku',
+                        'label' => '',
                         'name' => 'sku',
-                        'type' => 'hidden',
+                        'type' => 'text',
+                        'wrapper' => ['class' => 'hp-hidden-field'],
                     ],
                     [
                         'key' => 'field_kit_product_role',

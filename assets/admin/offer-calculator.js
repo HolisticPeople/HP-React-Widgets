@@ -112,6 +112,57 @@
     }
 
     // ========================================
+    // FIND SKU FIELD IN ROW
+    // ========================================
+    
+    function findSkuField($row) {
+        // Try different field patterns
+        let $field = $row.find('[data-name="single_product_sku"] input[type="hidden"]');
+        if ($field.length) return $field;
+        
+        $field = $row.find('[data-name="sku"] input[type="hidden"]');
+        if ($field.length) return $field;
+        
+        // Fallback: any hidden input with sku in name
+        $field = $row.find('input[type="hidden"][name*="[single_product_sku]"]');
+        if ($field.length) return $field;
+        
+        $field = $row.find('input[type="hidden"][name*="[sku]"]');
+        if ($field.length) return $field;
+        
+        return $();
+    }
+    
+    function findQtyField($row) {
+        let $field = $row.find('[data-name="single_product_qty"] input[type="hidden"]');
+        if ($field.length) return $field;
+        
+        $field = $row.find('[data-name="qty"] input');
+        if ($field.length) return $field;
+        
+        $field = $row.find('input[name*="[single_product_qty]"]');
+        if ($field.length) return $field;
+        
+        $field = $row.find('input[name*="[qty]"]');
+        if ($field.length) return $field;
+        
+        return $();
+    }
+    
+    function findProductContainer($row) {
+        let $container = $row.find('.hp-single-product-container');
+        if ($container.length) return $container;
+        
+        $container = $row.find('.hp-bundle-product-container');
+        if ($container.length) return $container;
+        
+        $container = $row.find('.hp-kit-product-container');
+        if ($container.length) return $container;
+        
+        return $();
+    }
+
+    // ========================================
     // PRODUCT SELECTION
     // ========================================
 
@@ -121,14 +172,14 @@
         hideDropdown($input);
         cache[product.sku] = product;
 
-        // Find SKU field and set value
-        const $skuField = $row.find('input[type="hidden"][name*="[sku]"], input[type="hidden"][name*="[single_product_sku]"]');
+        // Set SKU field
+        const $skuField = findSkuField($row);
         if ($skuField.length) {
             $skuField.val(product.sku).trigger('change');
         }
 
-        // Find qty field
-        const $qtyField = $row.find('input[name*="[qty]"], input[name*="[single_product_qty]"]');
+        // Get qty
+        const $qtyField = findQtyField($row);
         const qty = parseInt($qtyField.val()) || 1;
 
         // Show product card
@@ -136,10 +187,10 @@
     }
 
     function showProductCard($row, product, qty = 1) {
-        const $container = $row.find('[class*="hp-"][class*="-product-container"]');
+        const $container = findProductContainer($row);
         if (!$container.length) return;
 
-        const isKit = $container.data('type') === 'kit';
+        const isKit = $container.hasClass('hp-kit-product-container');
         
         $container.html(`
             <div class="hp-product-card">
@@ -160,22 +211,23 @@
         `);
 
         // Handle qty change
-        $container.find('.hp-qty-input').on('change', function() {
+        $container.find('.hp-qty-input').on('change input', function() {
             const newQty = parseInt($(this).val()) || 1;
-            const $qtyField = $row.find('input[name*="[qty]"], input[name*="[single_product_qty]"]');
+            const $qtyField = findQtyField($row);
             $qtyField.val(newQty);
             $container.find('.hp-product-price').text(fmt(product.price * newQty));
         });
 
         // Handle remove
-        $container.find('.hp-product-remove').on('click', function() {
+        $container.find('.hp-product-remove').on('click', function(e) {
+            e.preventDefault();
             clearProduct($row);
         });
     }
 
     function clearProduct($row) {
-        $row.find('input[type="hidden"][name*="[sku]"], input[type="hidden"][name*="[single_product_sku]"]').val('');
-        $row.find('[class*="hp-"][class*="-product-container"]').html('');
+        findSkuField($row).val('').trigger('change');
+        findProductContainer($row).html('');
     }
 
     // ========================================
@@ -183,55 +235,36 @@
     // ========================================
 
     async function loadExistingProducts() {
-        // Find all rows with SKU values
-        $('.acf-row:not(.acf-clone)').each(async function() {
-            const $row = $(this);
-            const $skuField = $row.find('input[type="hidden"][name*="[sku]"], input[type="hidden"][name*="[single_product_sku]"]');
-            const sku = $skuField.val();
+        console.log('[HP Offer] Loading existing products...');
+        
+        // Find all offer rows (not clones)
+        const $offerRows = $('[data-key="field_funnel_offers"] > .acf-input > .acf-repeater > .acf-row:not(.acf-clone)');
+        
+        for (const row of $offerRows) {
+            const $row = $(row);
+            await loadProductForRow($row);
             
-            if (!sku) return;
-            
-            const $qtyField = $row.find('input[name*="[qty]"], input[name*="[single_product_qty]"]');
-            const qty = parseInt($qtyField.val()) || 1;
-            
-            const product = await fetchProductBySku(sku);
-            if (product) {
-                showProductCard($row, product, qty);
-            }
-        });
+            // Also load bundle/kit products
+            $row.find('[data-key="field_bundle_items"] .acf-row:not(.acf-clone), [data-key="field_kit_products"] .acf-row:not(.acf-clone)').each(async function() {
+                await loadProductForRow($(this));
+            });
+        }
     }
-
-    // ========================================
-    // COLLAPSED SUMMARY
-    // ========================================
-
-    function updateCollapsedSummary($offerRow) {
-        const offerName = $offerRow.find('[data-name="offer_name"] input').val() || 'Untitled Offer';
-        const $skuField = $offerRow.find('input[type="hidden"][name*="[single_product_sku]"]');
+    
+    async function loadProductForRow($row) {
+        const $skuField = findSkuField($row);
         const sku = $skuField.val();
         
-        // Get the collapsed handle
-        const $handle = $offerRow.find('> .acf-row-handle');
+        if (!sku) return;
         
-        // Remove existing summary
-        $handle.find('.hp-offer-summary').remove();
+        console.log('[HP Offer] Loading product for SKU:', sku);
         
-        if (!sku) {
-            $handle.append(`<span class="hp-offer-summary"><span class="hp-offer-summary-name">${esc(offerName)}</span></span>`);
-            return;
-        }
+        const $qtyField = findQtyField($row);
+        const qty = parseInt($qtyField.val()) || 1;
         
-        const product = cache[sku];
+        const product = await fetchProductBySku(sku);
         if (product) {
-            const qty = parseInt($offerRow.find('input[name*="[single_product_qty]"]').val()) || 1;
-            $handle.append(`
-                <span class="hp-offer-summary">
-                    ${product.image_url ? `<img src="${esc(product.image_url)}">` : ''}
-                    <span class="hp-offer-summary-name">${esc(offerName)}</span>
-                    <span class="hp-offer-summary-product">${esc(product.name)}</span>
-                    <span class="hp-offer-summary-price">${fmt(product.price * qty)}</span>
-                </span>
-            `);
+            showProductCard($row, product, qty);
         }
     }
 
@@ -256,10 +289,21 @@
     // ========================================
 
     function init() {
-        if (typeof hpOfferCalc === 'undefined') return;
+        if (typeof hpOfferCalc === 'undefined') {
+            console.warn('[HP Offer] hpOfferCalc not defined');
+            return;
+        }
 
-        // Load existing products after a short delay
-        setTimeout(loadExistingProducts, 500);
+        console.log('[HP Offer] Initializing...');
+
+        // Load existing products after ACF is ready
+        if (typeof acf !== 'undefined') {
+            acf.addAction('ready', function() {
+                setTimeout(loadExistingProducts, 300);
+            });
+        } else {
+            setTimeout(loadExistingProducts, 500);
+        }
 
         // Search input
         $(document).on('input', '.hp-product-search-field input', function() {
@@ -283,20 +327,6 @@
             }
         });
 
-        // Update summary when offer name changes
-        $(document).on('change', '[data-name="offer_name"] input', function() {
-            const $offerRow = $(this).closest('[data-key="field_funnel_offers"] > .acf-input > .acf-repeater > .acf-row');
-            if ($offerRow.length) {
-                updateCollapsedSummary($offerRow);
-            }
-        });
-
-        // Update summary when row is collapsed
-        $(document).on('click', '.acf-row-handle', function() {
-            const $row = $(this).closest('.acf-row');
-            setTimeout(() => updateCollapsedSummary($row), 100);
-        });
-
         // Clear product display on new rows
         if (typeof acf !== 'undefined') {
             acf.addAction('append', function($el) {
@@ -304,7 +334,7 @@
             });
         }
 
-        console.log('HP Offer Admin initialized');
+        console.log('[HP Offer] Admin initialized');
     }
 
     $(document).ready(init);
