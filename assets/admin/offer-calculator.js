@@ -263,34 +263,56 @@
     async function loadExistingProducts() {
         console.log('[HP Offer] Loading existing products...');
         
-        // Find all offer rows (not clones)
-        const $offerRows = $('[data-key="field_funnel_offers"] > .acf-input > .acf-repeater > .acf-row:not(.acf-clone)');
+        // Find all offer rows (not clones) - use broader selector
+        const $offerRows = $('.acf-field[data-name="funnel_offers"] .acf-row:not(.acf-clone)');
+        console.log('[HP Offer] Found', $offerRows.length, 'offer rows to process');
         
-        for (const row of $offerRows) {
-            const $row = $(row);
-            await loadProductForRow($row);
+        for (let i = 0; i < $offerRows.length; i++) {
+            const $row = $($offerRows[i]);
+            
+            // Check if this is a top-level offer row (has offer_name field)
+            if ($row.find('[data-name="offer_name"]').length > 0) {
+                console.log('[HP Offer] Processing offer row', i);
+                await loadProductForRow($row);
+            }
             
             // Also load bundle/kit products
-            $row.find('[data-key="field_bundle_items"] .acf-row:not(.acf-clone), [data-key="field_kit_products"] .acf-row:not(.acf-clone)').each(async function() {
-                await loadProductForRow($(this));
-            });
+            const $bundleRows = $row.find('.acf-field[data-name="bundle_items"] .acf-row:not(.acf-clone)');
+            for (let j = 0; j < $bundleRows.length; j++) {
+                await loadProductForRow($($bundleRows[j]));
+            }
+            
+            const $kitRows = $row.find('.acf-field[data-name="kit_products"] .acf-row:not(.acf-clone)');
+            for (let j = 0; j < $kitRows.length; j++) {
+                await loadProductForRow($($kitRows[j]));
+            }
         }
+        
+        console.log('[HP Offer] Finished loading existing products');
     }
     
     async function loadProductForRow($row) {
         const $skuField = findSkuField($row);
         const sku = $skuField.val();
         
-        if (!sku) return;
+        console.log('[HP Offer] loadProductForRow - SKU field found:', $skuField.length > 0, 'value:', sku);
         
-        console.log('[HP Offer] Loading product for SKU:', sku);
+        if (!sku) {
+            console.log('[HP Offer] No SKU value, skipping');
+            return;
+        }
+        
+        console.log('[HP Offer] Fetching product for SKU:', sku);
         
         const $qtyField = findQtyField($row);
         const qty = parseInt($qtyField.val()) || 1;
         
         const product = await fetchProductBySku(sku);
         if (product) {
+            console.log('[HP Offer] Product found, showing card:', product.name);
             showProductCard($row, product, qty);
+        } else {
+            console.warn('[HP Offer] Product not found for SKU:', sku);
         }
     }
 
@@ -322,13 +344,31 @@
 
         console.log('[HP Offer] Initializing...');
 
-        // Load existing products after ACF is ready
+        // Load existing products - try multiple approaches
+        function tryLoadProducts() {
+            console.log('[HP Offer] Attempting to load existing products...');
+            
+            // Check if ACF repeater rows exist
+            const $rows = $('.acf-field[data-name="funnel_offers"] .acf-row:not(.acf-clone)');
+            console.log('[HP Offer] Found', $rows.length, 'offer rows');
+            
+            if ($rows.length > 0) {
+                loadExistingProducts();
+            } else {
+                // Retry after a delay if rows not found yet
+                setTimeout(tryLoadProducts, 500);
+            }
+        }
+
+        // Start loading after DOM is ready
+        setTimeout(tryLoadProducts, 500);
+
+        // Also try on ACF ready if available
         if (typeof acf !== 'undefined') {
             acf.addAction('ready', function() {
+                console.log('[HP Offer] ACF ready event fired');
                 setTimeout(loadExistingProducts, 300);
             });
-        } else {
-            setTimeout(loadExistingProducts, 500);
         }
 
         // Search input
