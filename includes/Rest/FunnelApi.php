@@ -140,6 +140,22 @@ class FunnelApi
                 ],
             ],
         ]);
+
+        // Search products by name or SKU (for admin offer editor)
+        register_rest_route(self::NAMESPACE, '/products/search', [
+            [
+                'methods' => WP_REST_Server::READABLE,
+                'callback' => [$this, 'searchProducts'],
+                'permission_callback' => [$this, 'canExport'],
+                'args' => [
+                    'term' => [
+                        'required' => true,
+                        'type' => 'string',
+                        'sanitize_callback' => 'sanitize_text_field',
+                    ],
+                ],
+            ],
+        ]);
     }
 
     /**
@@ -358,6 +374,74 @@ class FunnelApi
             'success' => true,
             'prices' => $prices,
         ]);
+    }
+
+    /**
+     * GET /products/search - Search products by name or SKU.
+     * Used by the admin offer editor.
+     */
+    public function searchProducts(WP_REST_Request $request): WP_REST_Response
+    {
+        $term = $request->get_param('term');
+
+        if (!function_exists('wc_get_products')) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error' => 'WooCommerce not active',
+            ], 500);
+        }
+
+        // Search by SKU first
+        $productId = wc_get_product_id_by_sku($term);
+        $results = [];
+
+        if ($productId) {
+            $product = wc_get_product($productId);
+            if ($product && $product->get_status() === 'publish') {
+                $results[] = $this->formatProductForSearch($product);
+            }
+        }
+
+        // Also search by name
+        $products = wc_get_products([
+            'status' => 'publish',
+            'limit' => 10,
+            's' => $term,
+            'orderby' => 'title',
+            'order' => 'ASC',
+        ]);
+
+        foreach ($products as $product) {
+            // Skip if already added via SKU match
+            $sku = $product->get_sku();
+            if (array_filter($results, fn($r) => $r['sku'] === $sku)) {
+                continue;
+            }
+            $results[] = $this->formatProductForSearch($product);
+        }
+
+        // Limit to 15 results
+        $results = array_slice($results, 0, 15);
+
+        return new WP_REST_Response($results);
+    }
+
+    /**
+     * Format a product for search results.
+     */
+    private function formatProductForSearch(\WC_Product $product): array
+    {
+        $imageId = $product->get_image_id();
+        $image = $imageId ? wp_get_attachment_image_url($imageId, 'thumbnail') : wc_placeholder_img_src('thumbnail');
+
+        return [
+            'id' => $product->get_id(),
+            'sku' => $product->get_sku(),
+            'name' => $product->get_name(),
+            'price' => (float) $product->get_price(),
+            'regular_price' => (float) $product->get_regular_price(),
+            'image' => $image,
+        ];
     }
 }
 
