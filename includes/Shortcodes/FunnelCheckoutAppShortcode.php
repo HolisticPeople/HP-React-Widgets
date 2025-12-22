@@ -59,30 +59,34 @@ class FunnelCheckoutAppShortcode
             return '<div class="hp-funnel-error" style="padding: 20px; background: #fee; color: #c00; border: 1px solid #c00; border-radius: 4px;">Funnel not found or inactive.</div>';
         }
 
-        // Determine default product ID
-        $defaultProductId = '';
+        // Get offers from config
+        $offers = $config['offers'] ?? [];
+        
+        // Determine default offer ID
+        $defaultOfferId = '';
         if (!empty($atts['product'])) {
-            // Find product by SKU
-            foreach ($config['products'] as $product) {
-                if ($product['sku'] === $atts['product']) {
-                    $defaultProductId = (string) $product['id'];
+            // Find offer by product SKU (for single offers) or offer ID
+            foreach ($offers as $offer) {
+                if (($offer['productSku'] ?? '') === $atts['product'] || $offer['id'] === $atts['product']) {
+                    $defaultOfferId = $offer['id'];
                     break;
                 }
             }
         }
         // Fallback: check URL parameter
-        if (empty($defaultProductId) && isset($_GET['product'])) {
-            $productParam = sanitize_text_field($_GET['product']);
-            foreach ($config['products'] as $product) {
-                if ($product['sku'] === $productParam || (string) $product['id'] === $productParam) {
-                    $defaultProductId = (string) $product['id'];
+        if (empty($defaultOfferId) && isset($_GET['offer'])) {
+            $offerParam = sanitize_text_field($_GET['offer']);
+            foreach ($offers as $offer) {
+                if ($offer['id'] === $offerParam) {
+                    $defaultOfferId = $offer['id'];
                     break;
                 }
             }
         }
-        // Fallback: use first product
-        if (empty($defaultProductId) && !empty($config['products'])) {
-            $defaultProductId = (string) $config['products'][0]['id'];
+        // Fallback: use featured offer or first offer
+        if (empty($defaultOfferId) && !empty($offers)) {
+            $featured = array_filter($offers, fn($o) => !empty($o['isFeatured']));
+            $defaultOfferId = !empty($featured) ? reset($featured)['id'] : $offers[0]['id'];
         }
 
         // Build the landing URL (for "back" link)
@@ -109,13 +113,12 @@ class FunnelCheckoutAppShortcode
             'funnelId'            => (string) $config['id'],
             'funnelName'          => $config['name'],
             'funnelSlug'          => $config['slug'],
-            'products'            => $this->formatProductsForReact($config['products']),
-            'defaultProductId'    => $defaultProductId,
+            'offers'              => $offers, // New offers system
+            'defaultOfferId'      => $defaultOfferId,
             'logoUrl'             => $config['hero']['logo'] ?? '',
             'logoLink'            => $config['hero']['logo_link'] ?? home_url('/'),
             'landingUrl'          => $landingUrl,
             'freeShippingCountries' => $config['checkout']['free_shipping_countries'] ?? ['US'],
-            'globalDiscountPercent' => (float) ($config['checkout']['global_discount_percent'] ?? 0),
             'enablePoints'        => (bool) ($config['checkout']['enable_points'] ?? true),
             'enableCustomerLookup' => (bool) ($config['checkout']['enable_customer_lookup'] ?? true),
             'stripePublishableKey' => $stripeKey,

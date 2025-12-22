@@ -205,6 +205,9 @@ class Plugin
         // Initialize Product Lookup API for admin
         Admin\ProductLookupApi::init();
 
+        // Initialize Funnel Offer ACF fields
+        Admin\FunnelOfferFields::init();
+
         // Enqueue admin scripts for funnel editing
         add_action('admin_enqueue_scripts', [self::class, 'enqueueAdminScripts']);
 

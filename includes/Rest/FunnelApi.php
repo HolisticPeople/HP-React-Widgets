@@ -124,6 +124,22 @@ class FunnelApi
                 'permission_callback' => [$this, 'canExport'],
             ],
         ]);
+
+        // Get product prices by SKUs (for admin calculator)
+        register_rest_route('hp-react-widgets/v1', '/products/prices', [
+            [
+                'methods' => WP_REST_Server::CREATABLE,
+                'callback' => [$this, 'getProductPrices'],
+                'permission_callback' => [$this, 'canExport'],
+                'args' => [
+                    'skus' => [
+                        'required' => true,
+                        'type' => 'array',
+                        'items' => ['type' => 'string'],
+                    ],
+                ],
+            ],
+        ]);
     }
 
     /**
@@ -305,6 +321,42 @@ class FunnelApi
             'success' => true,
             'count' => count($funnels),
             'funnels' => $funnels,
+        ]);
+    }
+
+    /**
+     * POST /products/prices - Get prices for multiple products by SKU.
+     * Used by the admin offer calculator.
+     */
+    public function getProductPrices(WP_REST_Request $request): WP_REST_Response
+    {
+        $skus = $request->get_param('skus');
+        $prices = [];
+
+        if (!function_exists('wc_get_product_id_by_sku')) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error' => 'WooCommerce not active',
+            ], 500);
+        }
+
+        foreach ($skus as $sku) {
+            $productId = wc_get_product_id_by_sku($sku);
+            if ($productId) {
+                $product = wc_get_product($productId);
+                if ($product) {
+                    $prices[$sku] = (float) $product->get_price();
+                } else {
+                    $prices[$sku] = 0;
+                }
+            } else {
+                $prices[$sku] = 0;
+            }
+        }
+
+        return new WP_REST_Response([
+            'success' => true,
+            'prices' => $prices,
         ]);
     }
 }

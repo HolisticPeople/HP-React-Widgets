@@ -9,7 +9,12 @@ import { useCustomerLookup } from '../hooks/useCustomerLookup';
 import { useCheckoutApi } from '../hooks/useCheckoutApi';
 import { useStripePayment } from '../hooks/useStripePayment';
 import type { 
-  CheckoutProduct, 
+  Offer,
+  SingleOffer,
+  FixedBundleOffer,
+  CustomizableKitOffer,
+  KitProduct,
+  KitSelection,
   CartItem, 
   Address, 
   ShippingRate, 
@@ -65,14 +70,28 @@ const StarIcon = () => (
   </svg>
 );
 
+const CheckIcon = () => (
+  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+
+const LockIcon = () => (
+  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+);
+
 interface CheckoutStepProps {
   funnelId: string;
   funnelName: string;
-  products: CheckoutProduct[];
-  selectedProductId: string;
-  onSelectProduct: (id: string) => void;
-  quantity: number;
-  onQuantityChange: (qty: number) => void;
+  offers: Offer[];
+  selectedOfferId: string;
+  onSelectOffer: (id: string) => void;
+  kitSelection: KitSelection;
+  onKitQuantityChange: (sku: string, qty: number) => void;
+  offerPrice: { original: number; discounted: number };
   customerData: CustomerData | null;
   onCustomerLookup: (data: CustomerData) => void;
   shippingAddress: Address | null;
@@ -94,11 +113,12 @@ interface CheckoutStepProps {
 export const CheckoutStep = ({
   funnelId,
   funnelName,
-  products,
-  selectedProductId,
-  onSelectProduct,
-  quantity,
-  onQuantityChange,
+  offers,
+  selectedOfferId,
+  onSelectOffer,
+  kitSelection,
+  onKitQuantityChange,
+  offerPrice,
   customerData,
   onCustomerLookup,
   shippingAddress,
@@ -143,7 +163,6 @@ export const CheckoutStep = ({
     apiBase,
     onSuccess: (data) => {
       onCustomerLookup(data);
-      // Auto-fill address from shipping
       if (data.shipping) {
         setFormData(prev => ({
           ...prev,
@@ -184,10 +203,10 @@ export const CheckoutStep = ({
     },
   });
 
-  // Selected product
-  const selectedProduct = useMemo(
-    () => products.find(p => p.id === selectedProductId),
-    [products, selectedProductId]
+  // Get selected offer
+  const selectedOffer = useMemo(
+    () => offers.find(o => o.id === selectedOfferId) as Offer | undefined,
+    [offers, selectedOfferId]
   );
 
   // Check if free shipping applies
@@ -245,7 +264,6 @@ export const CheckoutStep = ({
 
       let currentRate = selectedRate;
 
-      // Handle free shipping
       if (isFreeShipping) {
         const freeRate: ShippingRate = {
           serviceCode: 'free_shipping',
@@ -259,7 +277,6 @@ export const CheckoutStep = ({
           setShippingRates([freeRate]);
         }
       } else if (!currentRate && formData.zipCode && formData.country && formData.address) {
-        // Fetch real shipping rates
         try {
           const rates = await api.getShippingRates(address, items);
           if (rates.length > 0) {
@@ -272,7 +289,6 @@ export const CheckoutStep = ({
         }
       }
 
-      // Fetch totals
       const result = await api.calculateTotals(address, items, currentRate, pointsToRedeem);
       setTotals(result);
     } catch (err) {
@@ -282,10 +298,10 @@ export const CheckoutStep = ({
     }
   }, [formData, getCartItems, selectedRate, isFreeShipping, pointsToRedeem, api, onSelectRate]);
 
-  // Trigger totals update when cart changes
+  // Trigger totals update when selection changes
   useEffect(() => {
     fetchTotals();
-  }, [selectedProductId, quantity]); // eslint-disable-line
+  }, [selectedOfferId, kitSelection]); // eslint-disable-line
 
   // Debounced address change
   useEffect(() => {
@@ -296,7 +312,7 @@ export const CheckoutStep = ({
     }
   }, [formData.address, formData.city, formData.state, formData.zipCode, formData.country]); // eslint-disable-line
 
-  // Email blur handler for customer lookup
+  // Email blur handler
   const handleEmailBlur = useCallback(() => {
     if (enableCustomerLookup && formData.email && formData.email.includes('@')) {
       customerLookup.lookup(formData.email);
@@ -340,7 +356,6 @@ export const CheckoutStep = ({
         email: formData.email,
       };
 
-      // Ensure we have a shipping rate
       let submitRate = selectedRate;
       if (!submitRate && isFreeShipping) {
         submitRate = {
@@ -351,7 +366,6 @@ export const CheckoutStep = ({
         };
       }
 
-      // Create payment intent
       const result = await api.createPaymentIntent(
         items,
         address,
@@ -362,7 +376,6 @@ export const CheckoutStep = ({
         pointsToRedeem
       );
 
-      // Confirm payment with Stripe
       const success = await stripePayment.confirmPayment(result.clientSecret, {
         name: `${formData.firstName} ${formData.lastName}`,
         email: formData.email,
@@ -379,7 +392,6 @@ export const CheckoutStep = ({
       if (!success) {
         setIsSubmitting(false);
       }
-      // onComplete will be called by the onPaymentSuccess callback
     } catch (err: any) {
       console.error('[CheckoutStep] Checkout failed', err);
       if (err.code === 'funnel_off' && err.redirect) {
@@ -391,7 +403,161 @@ export const CheckoutStep = ({
     }
   };
 
-  const displayTotal = totals?.grandTotal ?? (selectedProduct ? selectedProduct.price * quantity : 0);
+  const displayTotal = totals?.grandTotal ?? offerPrice.discounted;
+
+  // Render offer card based on type
+  const renderOfferCard = (offer: Offer) => {
+    const isSelected = selectedOfferId === offer.id;
+    
+    return (
+      <div
+        key={offer.id}
+        onClick={() => onSelectOffer(offer.id)}
+        className={cn(
+          "p-6 rounded-lg border-2 cursor-pointer transition-all duration-300 mb-4 relative",
+          isSelected
+            ? "border-accent bg-accent/10 shadow-[0_0_20px_hsl(45_95%_60%/0.3)]"
+            : "border-border/50 hover:border-accent/50"
+        )}
+      >
+        {offer.badge && (
+          <div className="absolute -top-3 right-4 bg-accent text-accent-foreground px-3 py-1 rounded-full text-sm font-bold">
+            {offer.badge}
+          </div>
+        )}
+        
+        <div className="flex items-start gap-6">
+          {offer.image && (
+            <img src={offer.image} alt={offer.name} className="w-20 h-auto rounded" />
+          )}
+          <div className="flex-1">
+            <h3 className="text-xl font-bold text-foreground mb-1">{offer.name}</h3>
+            {offer.description && (
+              <p className="text-muted-foreground text-sm mb-2">{offer.description}</p>
+            )}
+            
+            {/* Price display */}
+            <div className="flex items-baseline gap-2">
+              {offer.discountLabel && (
+                <span className="text-green-500 text-sm font-semibold">{offer.discountLabel}</span>
+              )}
+              <span className="text-2xl font-bold text-accent">
+                ${(offer.calculatedPrice || 0).toFixed(2)}
+              </span>
+              {offer.originalPrice && offer.originalPrice > (offer.calculatedPrice || 0) && (
+                <span className="text-muted-foreground line-through text-sm">
+                  ${offer.originalPrice.toFixed(2)}
+                </span>
+              )}
+            </div>
+            
+            {isFreeShipping && (
+              <p className="text-sm text-muted-foreground">+ FREE Shipping</p>
+            )}
+            
+            {/* Offer type indicator */}
+            <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+              {offer.type === 'single' && (
+                <span className="px-2 py-0.5 bg-secondary rounded">Single Product</span>
+              )}
+              {offer.type === 'fixed_bundle' && (
+                <span className="px-2 py-0.5 bg-secondary rounded">
+                  {(offer as FixedBundleOffer).bundleItems.length} Items Bundle
+                </span>
+              )}
+              {offer.type === 'customizable_kit' && (
+                <span className="px-2 py-0.5 bg-accent/20 text-accent rounded">Customize Your Kit</span>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* Kit customization UI - only show when selected and is a kit */}
+        {isSelected && offer.type === 'customizable_kit' && (
+          <div className="mt-6 pt-4 border-t border-border/50">
+            <h4 className="font-semibold text-accent mb-4">Customize Your Selection:</h4>
+            <div className="space-y-3">
+              {(offer as CustomizableKitOffer).kitProducts.map((product: KitProduct) => (
+                <div key={product.sku} className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {product.image && (
+                      <img src={product.image} alt={product.name} className="w-12 h-12 object-cover rounded" />
+                    )}
+                    <div>
+                      <p className="font-medium text-foreground">{product.name}</p>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-accent">${product.discountedPrice.toFixed(2)}</span>
+                        {product.discountedPrice < product.price && (
+                          <span className="text-muted-foreground line-through">${product.price.toFixed(2)}</span>
+                        )}
+                      </div>
+                      {product.role === 'must' && (
+                        <span className="text-xs text-orange-500 flex items-center gap-1">
+                          <LockIcon /> Required
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const newQty = (kitSelection[product.sku] || 0) - 1;
+                        if (product.role === 'must' && newQty < 1) return;
+                        onKitQuantityChange(product.sku, newQty);
+                      }}
+                      disabled={product.role === 'must' && (kitSelection[product.sku] || 0) <= 1}
+                      className="h-8 w-8 border-accent/50 hover:bg-accent/20"
+                    >
+                      <MinusIcon />
+                    </Button>
+                    <span className="w-8 text-center font-bold text-accent">
+                      {kitSelection[product.sku] || 0}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const current = kitSelection[product.sku] || 0;
+                        if (current < product.maxQty) {
+                          onKitQuantityChange(product.sku, current + 1);
+                        }
+                      }}
+                      disabled={(kitSelection[product.sku] || 0) >= product.maxQty}
+                      className="h-8 w-8 border-accent/50 hover:bg-accent/20"
+                    >
+                      <PlusIcon />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {/* Kit total */}
+            <div className="mt-4 p-3 bg-accent/10 rounded-lg">
+              <div className="flex justify-between items-center">
+                <span className="font-semibold text-foreground">Kit Total:</span>
+                <div className="text-right">
+                  <span className="text-2xl font-bold text-accent">${offerPrice.discounted.toFixed(2)}</span>
+                  {offerPrice.original > offerPrice.discounted && (
+                    <span className="ml-2 text-muted-foreground line-through text-sm">
+                      ${offerPrice.original.toFixed(2)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -406,84 +572,12 @@ export const CheckoutStep = ({
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
-        {/* Left Column - Product Selection */}
+        {/* Left Column - Offer Selection */}
         <div className="space-y-6">
           <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
             <h2 className="text-2xl font-bold mb-6 text-accent">Select Your Package</h2>
             
-            {products.map((product) => (
-              <div
-                key={product.id}
-                onClick={() => {
-                  onSelectProduct(product.id);
-                  onQuantityChange(1);
-                }}
-                className={cn(
-                  "p-6 rounded-lg border-2 cursor-pointer transition-all duration-300 mb-4 relative",
-                  selectedProductId === product.id
-                    ? "border-accent bg-accent/10 shadow-[0_0_20px_hsl(45_95%_60%/0.3)]"
-                    : "border-border/50 hover:border-accent/50"
-                )}
-              >
-                {product.badge && (
-                  <div className="absolute -top-3 right-4 bg-accent text-accent-foreground px-3 py-1 rounded-full text-sm font-bold">
-                    {product.badge}
-                  </div>
-                )}
-                <div className="flex items-center gap-6">
-                  {product.image && (
-                    <img src={product.image} alt={product.name} className="w-20 h-auto" />
-                  )}
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-foreground mb-1">{product.name}</h3>
-                    {product.description && (
-                      <p className="text-accent font-semibold">{product.description}</p>
-                    )}
-                    <p className="text-2xl font-bold text-accent mt-2">
-                      ${product.price.toFixed(2)}
-                    </p>
-                    {isFreeShipping && (
-                      <p className="text-sm text-muted-foreground">+ FREE Shipping</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </Card>
-
-          {/* Quantity Selector */}
-          <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
-            <h3 className="text-xl font-bold mb-4 text-accent">Quantity</h3>
-            <div className="flex items-center gap-4">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => onQuantityChange(Math.max(1, quantity - 1))}
-                className="border-accent/50 hover:bg-accent/20"
-              >
-                <MinusIcon />
-              </Button>
-              <div className="text-3xl font-bold text-accent w-16 text-center">{quantity}</div>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => onQuantityChange(quantity + 1)}
-                className="border-accent/50 hover:bg-accent/20"
-              >
-                <PlusIcon />
-              </Button>
-            </div>
-            
-            {selectedProduct?.freeItem?.sku && (
-              <div className="mt-4 p-4 bg-accent/10 rounded-lg border border-accent/30">
-                <p className="text-accent font-semibold flex items-center gap-2">
-                  <PackageIcon />
-                  You'll receive {(selectedProduct.freeItem.qty || 1) * quantity} FREE bonus item{((selectedProduct.freeItem.qty || 1) * quantity) > 1 ? 's' : ''}!
-                </p>
-              </div>
-            )}
+            {offers.map(renderOfferCard)}
           </Card>
 
           {/* Trust Badges */}
@@ -517,16 +611,16 @@ export const CheckoutStep = ({
             
             <div className="space-y-3 mb-6">
               <div className="flex justify-between text-foreground">
-                <span>{selectedProduct?.name} × {quantity}</span>
+                <span>{selectedOffer?.name}</span>
                 <span className="font-semibold">
-                  ${((selectedProduct?.price || 0) * quantity).toFixed(2)}
+                  ${offerPrice.discounted.toFixed(2)}
                 </span>
               </div>
 
-              {totals?.globalDiscount && totals.globalDiscount > 0 && (
+              {offerPrice.original > offerPrice.discounted && (
                 <div className="flex justify-between text-green-500">
-                  <span>Discount</span>
-                  <span>-${totals.globalDiscount.toFixed(2)}</span>
+                  <span>Savings</span>
+                  <span>-${(offerPrice.original - offerPrice.discounted).toFixed(2)}</span>
                 </div>
               )}
 
@@ -617,8 +711,8 @@ export const CheckoutStep = ({
                   </p>
                 )}
                 {customerData && customerData.userId > 0 && (
-                  <p className="text-xs text-accent mt-1">
-                    ✓ Welcome back! Your info has been loaded.
+                  <p className="text-xs text-accent mt-1 flex items-center gap-1">
+                    <CheckIcon /> Welcome back! Your info has been loaded.
                   </p>
                 )}
               </div>
@@ -782,5 +876,3 @@ export const CheckoutStep = ({
 };
 
 export default CheckoutStep;
-
-

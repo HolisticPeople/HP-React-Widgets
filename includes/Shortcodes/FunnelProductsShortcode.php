@@ -46,24 +46,21 @@ class FunnelProductsShortcode
             return $this->renderError('Funnel not found or inactive.');
         }
 
-        $products = $config['products'] ?? [];
+        $offers = $config['offers'] ?? [];
 
-        // Don't render if no products
-        if (empty($products)) {
+        // Don't render if no offers
+        if (empty($offers)) {
             if (current_user_can('manage_options')) {
-                return $this->renderError('No products configured for this funnel.');
+                return $this->renderError('No offers configured for this funnel.');
             }
             return '';
         }
-
-        // Format products for React
-        $formattedProducts = $this->formatProductsForReact($products);
 
         // Build props for React component
         $props = [
             'title'              => !empty($atts['title']) ? $atts['title'] : 'Choose Your Package',
             'subtitle'           => $atts['subtitle'],
-            'products'           => $formattedProducts,
+            'offers'             => $offers, // Using new offers system
             'defaultCtaText'     => $atts['cta_text'],
             'defaultCtaUrl'      => $config['checkout']['url'],
             'showPrices'         => filter_var($atts['show_prices'], FILTER_VALIDATE_BOOLEAN),

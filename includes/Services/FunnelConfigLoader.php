@@ -363,8 +363,8 @@ class FunnelConfigLoader
                 'items'    => self::extractBenefitsWithIcons(self::getFieldValue('hero_benefits', $postId, [])),
             ],
             
-            // Products
-            'products' => self::extractProducts(self::getFieldValue('funnel_products', $postId, [])),
+            // Offers (replaces legacy products)
+            'offers' => self::extractOffers(self::getFieldValue('funnel_offers', $postId, [])),
             
             // Checkout
             // Auto-generate checkout URL based on funnel_slug (single source of truth)
@@ -689,53 +689,233 @@ class FunnelConfigLoader
     }
 
     /**
-     * Extract and enrich products array from ACF repeater.
+     * Extract and enrich offers array from ACF repeater.
      *
-     * @param array $products ACF repeater data
-     * @return array Enriched product data
+     * @param array $offers ACF repeater data
+     * @return array Enriched offer data with WooCommerce product info
      */
-    private static function extractProducts(array $products): array
+    private static function extractOffers(array $offers): array
     {
         $result = [];
+        $offerIndex = 0;
         
-        foreach ($products as $row) {
-            if (empty($row['sku'])) {
-                continue;
-            }
-
-            $sku = (string) $row['sku'];
-            $wcProduct = Resolver::resolveProductFromItem(['sku' => $sku]);
-            $wcData = $wcProduct ? Resolver::getProductDisplayData($wcProduct) : [];
-
-            // Extract features
-            $features = [];
-            if (!empty($row['features']) && is_array($row['features'])) {
-                foreach ($row['features'] as $feature) {
-                    if (isset($feature['text']) && !empty($feature['text'])) {
-                        $features[] = (string) $feature['text'];
-                    }
-                }
-            }
-
-            $result[] = [
-                'id'           => $sku,
-                'sku'          => $sku,
-                'name'         => !empty($row['display_name']) ? (string) $row['display_name'] : ($wcData['name'] ?? $sku),
-                'description'  => $row['description'] ?? '',
-                'price'        => !empty($row['display_price']) ? (float) $row['display_price'] : ($wcData['price'] ?? 0),
-                'regularPrice' => $wcData['regular_price'] ?? null,
-                'image'        => self::resolveImageUrl($row['image'] ?? null, $wcData['image'] ?? ''),
-                'badge'        => $row['badge'] ?? '',
-                'features'     => $features,
-                'isBestValue'  => !empty($row['is_best_value']),
-                'freeItem'     => [
-                    'sku' => $row['free_item_sku'] ?? '',
-                    'qty' => (int) ($row['free_item_qty'] ?? 1),
-                ],
+        foreach ($offers as $row) {
+            $offerType = $row['offer_type'] ?? 'single';
+            $offerId = $row['offer_id'] ?? ('offer-' . ++$offerIndex);
+            
+            // Base offer data
+            $offer = [
+                'id'            => $offerId,
+                'name'          => $row['offer_name'] ?? '',
+                'description'   => $row['offer_description'] ?? '',
+                'type'          => $offerType,
+                'badge'         => $row['offer_badge'] ?? '',
+                'isFeatured'    => !empty($row['offer_is_featured']),
+                'image'         => self::resolveImageUrl($row['offer_image'] ?? null),
+                'discountLabel' => $row['offer_discount_label'] ?? '',
+                'discountType'  => $row['offer_discount_type'] ?? 'none',
+                'discountValue' => (float) ($row['offer_discount_value'] ?? 0),
             ];
+            
+            // Type-specific data
+            switch ($offerType) {
+                case 'single':
+                    $offer = self::enrichSingleOffer($offer, $row);
+                    break;
+                    
+                case 'fixed_bundle':
+                    $offer = self::enrichBundleOffer($offer, $row);
+                    break;
+                    
+                case 'customizable_kit':
+                    $offer = self::enrichKitOffer($offer, $row);
+                    break;
+            }
+            
+            $result[] = $offer;
         }
 
         return $result;
+    }
+
+    /**
+     * Enrich single product offer with WooCommerce data.
+     */
+    private static function enrichSingleOffer(array $offer, array $row): array
+    {
+        $sku = $row['single_product_sku'] ?? '';
+        $qty = (int) ($row['single_product_qty'] ?? 1);
+        
+        $offer['productSku'] = $sku;
+        $offer['quantity'] = $qty;
+        
+        // Get WooCommerce product data
+        if ($sku) {
+            $wcProduct = Resolver::resolveProductFromItem(['sku' => $sku]);
+            $wcData = $wcProduct ? Resolver::getProductDisplayData($wcProduct) : [];
+            
+            $offer['product'] = [
+                'sku'          => $sku,
+                'name'         => $wcData['name'] ?? $sku,
+                'price'        => (float) ($wcData['price'] ?? 0),
+                'regularPrice' => (float) ($wcData['regular_price'] ?? $wcData['price'] ?? 0),
+                'image'        => $wcData['image'] ?? '',
+            ];
+            
+            // Use product image if no offer image set
+            if (empty($offer['image']) && !empty($wcData['image'])) {
+                $offer['image'] = $wcData['image'];
+            }
+            
+            // Calculate final price
+            $offer['calculatedPrice'] = self::applyDiscount(
+                $offer['product']['price'] * $qty,
+                $offer['discountType'],
+                $offer['discountValue']
+            );
+            $offer['originalPrice'] = $offer['product']['price'] * $qty;
+        }
+        
+        return $offer;
+    }
+
+    /**
+     * Enrich fixed bundle offer with WooCommerce data.
+     */
+    private static function enrichBundleOffer(array $offer, array $row): array
+    {
+        $bundleItems = $row['bundle_items'] ?? [];
+        $offer['bundleItems'] = [];
+        $totalPrice = 0;
+        $totalRegularPrice = 0;
+        
+        foreach ($bundleItems as $item) {
+            $sku = $item['sku'] ?? '';
+            $qty = (int) ($item['qty'] ?? 1);
+            
+            if (empty($sku)) {
+                continue;
+            }
+            
+            $wcProduct = Resolver::resolveProductFromItem(['sku' => $sku]);
+            $wcData = $wcProduct ? Resolver::getProductDisplayData($wcProduct) : [];
+            
+            $price = (float) ($wcData['price'] ?? 0);
+            $regularPrice = (float) ($wcData['regular_price'] ?? $price);
+            
+            $offer['bundleItems'][] = [
+                'sku'          => $sku,
+                'qty'          => $qty,
+                'name'         => $wcData['name'] ?? $sku,
+                'price'        => $price,
+                'regularPrice' => $regularPrice,
+                'image'        => $wcData['image'] ?? '',
+            ];
+            
+            $totalPrice += $price * $qty;
+            $totalRegularPrice += $regularPrice * $qty;
+            
+            // Use first product image if no offer image set
+            if (empty($offer['image']) && !empty($wcData['image'])) {
+                $offer['image'] = $wcData['image'];
+            }
+        }
+        
+        $offer['originalPrice'] = $totalPrice;
+        $offer['calculatedPrice'] = self::applyDiscount(
+            $totalPrice,
+            $offer['discountType'],
+            $offer['discountValue']
+        );
+        
+        return $offer;
+    }
+
+    /**
+     * Enrich customizable kit offer with WooCommerce data.
+     */
+    private static function enrichKitOffer(array $offer, array $row): array
+    {
+        $kitProducts = $row['kit_products'] ?? [];
+        $offer['kitProducts'] = [];
+        $offer['maxTotalItems'] = (int) ($row['kit_max_items'] ?? 6);
+        
+        $defaultTotalPrice = 0;
+        $defaultTotalRegularPrice = 0;
+        
+        foreach ($kitProducts as $item) {
+            $sku = $item['sku'] ?? '';
+            $role = $item['role'] ?? 'optional';
+            $qty = (int) ($item['qty'] ?? ($role === 'optional' ? 0 : 1));
+            $maxQty = (int) ($item['max_qty'] ?? 3);
+            $productDiscountType = $item['discount_type'] ?? 'none';
+            $productDiscountValue = (float) ($item['discount_value'] ?? 0);
+            
+            if (empty($sku)) {
+                continue;
+            }
+            
+            $wcProduct = Resolver::resolveProductFromItem(['sku' => $sku]);
+            $wcData = $wcProduct ? Resolver::getProductDisplayData($wcProduct) : [];
+            
+            $price = (float) ($wcData['price'] ?? 0);
+            $regularPrice = (float) ($wcData['regular_price'] ?? $price);
+            
+            // Apply per-product discount
+            $discountedPrice = self::applyDiscount($price, $productDiscountType, $productDiscountValue);
+            
+            $kitProduct = [
+                'sku'           => $sku,
+                'role'          => $role,
+                'qty'           => $qty,
+                'maxQty'        => $maxQty,
+                'name'          => $wcData['name'] ?? $sku,
+                'price'         => $price,
+                'regularPrice'  => $regularPrice,
+                'discountType'  => $productDiscountType,
+                'discountValue' => $productDiscountValue,
+                'discountedPrice' => $discountedPrice,
+                'image'         => $wcData['image'] ?? '',
+            ];
+            
+            $offer['kitProducts'][] = $kitProduct;
+            
+            // Calculate default selection totals (must + default items)
+            if ($role === 'must' || $role === 'default') {
+                $defaultTotalPrice += $discountedPrice * $qty;
+                $defaultTotalRegularPrice += $regularPrice * $qty;
+            }
+            
+            // Use first product image if no offer image set
+            if (empty($offer['image']) && !empty($wcData['image'])) {
+                $offer['image'] = $wcData['image'];
+            }
+        }
+        
+        // Apply global kit discount to default selection
+        $offer['defaultOriginalPrice'] = $defaultTotalRegularPrice;
+        $offer['defaultPriceAfterProductDiscounts'] = $defaultTotalPrice;
+        $offer['calculatedPrice'] = self::applyDiscount(
+            $defaultTotalPrice,
+            $offer['discountType'],
+            $offer['discountValue']
+        );
+        
+        return $offer;
+    }
+
+    /**
+     * Apply discount to a price.
+     */
+    private static function applyDiscount(float $price, string $type, float $value): float
+    {
+        if ($type === 'percent' && $value > 0) {
+            return round($price * (1 - $value / 100), 2);
+        }
+        if ($type === 'fixed' && $value > 0) {
+            return round(max(0, $price - $value), 2);
+        }
+        return $price;
     }
 
     /**

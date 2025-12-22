@@ -2,6 +2,112 @@
 
 export type CheckoutStep = 'checkout' | 'processing' | 'upsell' | 'thankyou';
 
+export type OfferType = 'single' | 'fixed_bundle' | 'customizable_kit';
+export type ProductRole = 'must' | 'default' | 'optional';
+export type DiscountType = 'none' | 'percent' | 'fixed';
+
+/**
+ * Base offer structure shared by all offer types
+ */
+export interface BaseOffer {
+  id: string;
+  name: string;
+  description?: string;
+  type: OfferType;
+  badge?: string;
+  isFeatured?: boolean;
+  image?: string;
+  discountLabel?: string;
+  discountType: DiscountType;
+  discountValue: number;
+  calculatedPrice?: number;
+  originalPrice?: number;
+}
+
+/**
+ * Product data from WooCommerce
+ */
+export interface OfferProduct {
+  sku: string;
+  name: string;
+  price: number;
+  regularPrice: number;
+  image?: string;
+}
+
+/**
+ * Single product offer
+ */
+export interface SingleOffer extends BaseOffer {
+  type: 'single';
+  productSku: string;
+  quantity: number;
+  product?: OfferProduct;
+}
+
+/**
+ * Bundle item in a fixed bundle offer
+ */
+export interface BundleItem {
+  sku: string;
+  qty: number;
+  name: string;
+  price: number;
+  regularPrice: number;
+  image?: string;
+}
+
+/**
+ * Fixed bundle offer - pre-configured set of products
+ */
+export interface FixedBundleOffer extends BaseOffer {
+  type: 'fixed_bundle';
+  bundleItems: BundleItem[];
+}
+
+/**
+ * Kit product with role and quantity settings
+ */
+export interface KitProduct {
+  sku: string;
+  role: ProductRole;
+  qty: number;
+  maxQty: number;
+  name: string;
+  price: number;
+  regularPrice: number;
+  discountType: DiscountType;
+  discountValue: number;
+  discountedPrice: number;
+  image?: string;
+}
+
+/**
+ * Customizable kit offer - customer picks products
+ */
+export interface CustomizableKitOffer extends BaseOffer {
+  type: 'customizable_kit';
+  kitProducts: KitProduct[];
+  maxTotalItems: number;
+  defaultOriginalPrice?: number;
+  defaultPriceAfterProductDiscounts?: number;
+}
+
+/**
+ * Union type for all offer types
+ */
+export type Offer = SingleOffer | FixedBundleOffer | CustomizableKitOffer;
+
+/**
+ * Customer's selection for a kit
+ */
+export interface KitSelection {
+  [sku: string]: number; // sku -> quantity
+}
+
+/**
+ * @deprecated Use Offer instead - kept for backward compatibility
+ */
 export interface CheckoutProduct {
   id: string;
   sku: string;
@@ -101,13 +207,12 @@ export interface FunnelCheckoutAppConfig {
   funnelId: string;
   funnelName: string;
   funnelSlug: string;
-  products: CheckoutProduct[];
-  defaultProductId?: string;
+  offers: Offer[];
+  defaultOfferId?: string;
   logoUrl?: string;
   logoLink?: string;
   landingUrl: string;
   freeShippingCountries: string[];
-  globalDiscountPercent: number;
   enablePoints: boolean;
   enableCustomerLookup: boolean;
   stripePublishableKey: string;

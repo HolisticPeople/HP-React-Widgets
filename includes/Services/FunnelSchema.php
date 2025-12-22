@@ -93,31 +93,55 @@ class FunnelSchema
                         ],
                     ],
                 ],
-                'products' => [
+                'offers' => [
                     'type' => 'array',
-                    'description' => 'Products available in this funnel',
+                    'description' => 'Offers available in this funnel (single products, bundles, or customizable kits)',
                     'items' => [
                         'type' => 'object',
-                        'required' => ['sku'],
+                        'required' => ['id', 'name', 'type'],
                         'properties' => [
-                            'sku' => ['type' => 'string', 'description' => 'WooCommerce product SKU'],
-                            'display_name' => ['type' => 'string', 'description' => 'Override product name'],
-                            'display_price' => ['type' => 'number', 'description' => 'Override display price'],
-                            'description' => ['type' => 'string'],
-                            'image' => ['type' => 'string', 'description' => 'Override product image URL'],
-                            'badge' => ['type' => 'string', 'description' => 'Badge text like "Best Value" or "20% Off"'],
-                            'is_best_value' => ['type' => 'boolean', 'default' => false],
-                            'features' => [
+                            'id' => ['type' => 'string', 'description' => 'Unique offer identifier'],
+                            'name' => ['type' => 'string', 'description' => 'Display name for the offer'],
+                            'description' => ['type' => 'string', 'description' => 'Optional offer description'],
+                            'type' => ['type' => 'string', 'enum' => ['single', 'fixed_bundle', 'customizable_kit'], 'description' => 'Offer type'],
+                            'badge' => ['type' => 'string', 'description' => 'Badge text like "BEST VALUE" or "20% OFF"'],
+                            'is_featured' => ['type' => 'boolean', 'default' => false, 'description' => 'Highlight this offer'],
+                            'image' => ['type' => 'string', 'description' => 'Override image URL'],
+                            'discount_label' => ['type' => 'string', 'description' => 'Marketing label shown to customer (e.g., "Save 25%")'],
+                            'discount_type' => ['type' => 'string', 'enum' => ['none', 'percent', 'fixed'], 'default' => 'none'],
+                            'discount_value' => ['type' => 'number', 'default' => 0, 'description' => 'Discount amount (% or $)'],
+                            // Single product fields
+                            'product_sku' => ['type' => 'string', 'description' => 'Product SKU (for single type)'],
+                            'quantity' => ['type' => 'integer', 'default' => 1, 'description' => 'Quantity (for single type)'],
+                            // Fixed bundle fields
+                            'bundle_items' => [
                                 'type' => 'array',
+                                'description' => 'Products in the bundle (for fixed_bundle type)',
                                 'items' => [
                                     'type' => 'object',
                                     'properties' => [
-                                        'text' => ['type' => 'string'],
+                                        'sku' => ['type' => 'string'],
+                                        'qty' => ['type' => 'integer', 'default' => 1],
                                     ],
                                 ],
                             ],
-                            'free_item_sku' => ['type' => 'string', 'description' => 'SKU of free item to add'],
-                            'free_item_qty' => ['type' => 'integer', 'default' => 1],
+                            // Customizable kit fields
+                            'kit_products' => [
+                                'type' => 'array',
+                                'description' => 'Products available in the kit (for customizable_kit type)',
+                                'items' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'sku' => ['type' => 'string'],
+                                        'role' => ['type' => 'string', 'enum' => ['must', 'default', 'optional']],
+                                        'qty' => ['type' => 'integer', 'default' => 1, 'description' => 'Default/starting quantity'],
+                                        'max_qty' => ['type' => 'integer', 'default' => 3, 'description' => 'Max quantity allowed'],
+                                        'discount_type' => ['type' => 'string', 'enum' => ['none', 'percent', 'fixed'], 'default' => 'none'],
+                                        'discount_value' => ['type' => 'number', 'default' => 0, 'description' => 'Per-product discount'],
+                                    ],
+                                ],
+                            ],
+                            'max_total_items' => ['type' => 'integer', 'description' => 'Max items in kit (0 = no limit)'],
                         ],
                     ],
                 ],
@@ -328,7 +352,10 @@ class FunnelSchema
             'hero.subtitle' => 'Secondary headline that expands on the title, 5-12 words',
             'hero.cta_text' => 'Call-to-action button text, 3-6 words, action verbs. Examples: "Get Your Special Offer Now", "Start Your Journey"',
             'benefits.items' => 'Array of 6-12 benefit statements. Each should be 5-15 words, specific and compelling',
-            'products' => 'Array of products with WooCommerce SKUs. Mark the best value option with is_best_value: true',
+            'offers' => 'Array of offers: single products, fixed bundles, or customizable kits. Each offer has a type, discount settings, and product configuration.',
+            'offers[].type' => 'Offer type: "single" (one product), "fixed_bundle" (pre-configured set), or "customizable_kit" (customer picks products)',
+            'offers[].discount_label' => 'Marketing-friendly discount label shown to customers, e.g., "Save 25%"',
+            'offers[].kit_products[].role' => 'Product role in kit: "must" (required), "default" (pre-selected), or "optional" (customer adds)',
             'features.items' => 'Array of 4-6 detailed features with icons. Good for technical/scientific products',
             'authority' => 'Expert/authority section to build trust. Include credentials, bio, and notable quotes',
             'testimonials.items' => 'Array of 3-6 customer testimonials. Include name, role/location, and quote',
@@ -375,28 +402,47 @@ class FunnelSchema
                     ['text' => 'Made in the USA', 'icon' => 'star'],
                 ],
             ],
-            'products' => [
+            'offers' => [
                 [
-                    'sku' => 'ILL-SMALL',
-                    'display_name' => 'Small Bottle (0.5 oz)',
+                    'id' => 'offer-small',
+                    'name' => 'Small Bottle (0.5 oz)',
                     'description' => 'Perfect for trying Illumodine',
+                    'type' => 'single',
                     'badge' => '',
-                    'is_best_value' => false,
-                    'features' => [
-                        ['text' => '30-day supply'],
-                        ['text' => 'Travel friendly'],
-                    ],
+                    'is_featured' => false,
+                    'discount_label' => '',
+                    'discount_type' => 'none',
+                    'discount_value' => 0,
+                    'product_sku' => 'ILL-SMALL',
+                    'quantity' => 1,
                 ],
                 [
-                    'sku' => 'ILL-LARGE',
-                    'display_name' => 'Large Bottle (2 oz)',
+                    'id' => 'offer-large',
+                    'name' => 'Large Bottle (2 oz)',
                     'description' => '4x more product, best value',
+                    'type' => 'single',
                     'badge' => 'BEST VALUE',
-                    'is_best_value' => true,
-                    'features' => [
-                        ['text' => '120-day supply'],
-                        ['text' => 'Save 25% per oz'],
-                        ['text' => 'Free shipping'],
+                    'is_featured' => true,
+                    'discount_label' => 'Save 25%',
+                    'discount_type' => 'percent',
+                    'discount_value' => 25,
+                    'product_sku' => 'ILL-LARGE',
+                    'quantity' => 1,
+                ],
+                [
+                    'id' => 'offer-kit',
+                    'name' => 'Build Your Kit',
+                    'description' => 'Customize your supplement kit',
+                    'type' => 'customizable_kit',
+                    'badge' => 'CUSTOMIZE',
+                    'is_featured' => false,
+                    'discount_label' => 'Save up to 30%',
+                    'discount_type' => 'percent',
+                    'discount_value' => 10,
+                    'max_total_items' => 6,
+                    'kit_products' => [
+                        ['sku' => 'ILL-SMALL', 'role' => 'default', 'qty' => 1, 'max_qty' => 3, 'discount_type' => 'percent', 'discount_value' => 15],
+                        ['sku' => 'ILL-LARGE', 'role' => 'optional', 'qty' => 0, 'max_qty' => 2, 'discount_type' => 'percent', 'discount_value' => 20],
                     ],
                 ],
             ],
@@ -488,11 +534,29 @@ class FunnelSchema
             $errors[] = 'Invalid funnel.slug: must be lowercase alphanumeric with hyphens only';
         }
 
-        // Validate products if present
-        if (isset($data['products']) && is_array($data['products'])) {
-            foreach ($data['products'] as $i => $product) {
-                if (empty($product['sku'])) {
-                    $errors[] = "Product at index $i is missing required 'sku' field";
+        // Validate offers if present
+        if (isset($data['offers']) && is_array($data['offers'])) {
+            foreach ($data['offers'] as $i => $offer) {
+                if (empty($offer['id'])) {
+                    $errors[] = "Offer at index $i is missing required 'id' field";
+                }
+                if (empty($offer['name'])) {
+                    $errors[] = "Offer at index $i is missing required 'name' field";
+                }
+                if (empty($offer['type'])) {
+                    $errors[] = "Offer at index $i is missing required 'type' field";
+                } elseif (!in_array($offer['type'], ['single', 'fixed_bundle', 'customizable_kit'])) {
+                    $errors[] = "Offer at index $i has invalid 'type' (must be single, fixed_bundle, or customizable_kit)";
+                }
+                // Type-specific validation
+                if (($offer['type'] ?? '') === 'single' && empty($offer['product_sku'])) {
+                    $errors[] = "Offer at index $i (single) is missing required 'product_sku' field";
+                }
+                if (($offer['type'] ?? '') === 'fixed_bundle' && empty($offer['bundle_items'])) {
+                    $errors[] = "Offer at index $i (fixed_bundle) is missing required 'bundle_items' field";
+                }
+                if (($offer['type'] ?? '') === 'customizable_kit' && empty($offer['kit_products'])) {
+                    $errors[] = "Offer at index $i (customizable_kit) is missing required 'kit_products' field";
                 }
             }
         }

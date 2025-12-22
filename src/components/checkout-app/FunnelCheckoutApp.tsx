@@ -12,6 +12,10 @@ import type {
   ShippingRate,
   OrderSummary,
   CustomerData,
+  Offer,
+  KitSelection,
+  KitProduct,
+  CustomizableKitOffer,
 } from './types';
 
 export interface FunnelCheckoutAppProps extends FunnelCheckoutAppConfig {
@@ -23,8 +27,8 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     funnelId,
     funnelName,
     funnelSlug,
-    products,
-    defaultProductId,
+    offers,
+    defaultOfferId,
     logoUrl,
     logoLink = '/',
     landingUrl,
@@ -45,11 +49,31 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
   // Current step in the checkout flow
   const [currentStep, setCurrentStep] = useState<CheckoutStepType>('checkout');
   
+  // Offer selection - now uses offer ID instead of product ID
+  const [selectedOfferId, setSelectedOfferId] = useState<string>(() => {
+    if (defaultOfferId) return defaultOfferId;
+    // Default to featured offer or first offer
+    const featured = offers.find(o => o.isFeatured);
+    return featured?.id || (offers.length > 0 ? offers[0].id : '');
+  });
+  
+  // Kit selection for customizable kits
+  const [kitSelection, setKitSelection] = useState<KitSelection>(() => {
+    // Initialize with default quantities for kit offers
+    const selection: KitSelection = {};
+    const offer = offers.find(o => o.id === selectedOfferId);
+    if (offer?.type === 'customizable_kit') {
+      const kitOffer = offer as CustomizableKitOffer;
+      kitOffer.kitProducts.forEach((product: KitProduct) => {
+        if (product.role === 'must' || product.role === 'default') {
+          selection[product.sku] = product.qty;
+        }
+      });
+    }
+    return selection;
+  });
+  
   // Checkout data that persists across steps
-  const [selectedProductId, setSelectedProductId] = useState<string>(
-    defaultProductId || (products.length > 0 ? products[0].id : '')
-  );
-  const [quantity, setQuantity] = useState(1);
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [shippingAddress, setShippingAddress] = useState<Address | null>(null);
   const [selectedRate, setSelectedRate] = useState<ShippingRate | null>(null);
@@ -66,32 +90,126 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
   // API hook
   const api = useCheckoutApi({ apiBase, funnelId, funnelName });
 
-  // Get the selected product
-  const selectedProduct = useMemo(
-    () => products.find(p => p.id === selectedProductId),
-    [products, selectedProductId]
+  // Get the selected offer
+  const selectedOffer = useMemo(
+    () => offers.find(o => o.id === selectedOfferId) as Offer | undefined,
+    [offers, selectedOfferId]
   );
+
+  // Handle offer selection change - reset kit selection if needed
+  const handleOfferSelect = useCallback((offerId: string) => {
+    setSelectedOfferId(offerId);
+    
+    // Reset kit selection for the new offer
+    const offer = offers.find(o => o.id === offerId);
+    if (offer?.type === 'customizable_kit') {
+      const kitOffer = offer as CustomizableKitOffer;
+      const newSelection: KitSelection = {};
+      kitOffer.kitProducts.forEach((product: KitProduct) => {
+        if (product.role === 'must' || product.role === 'default') {
+          newSelection[product.sku] = product.qty;
+        }
+      });
+      setKitSelection(newSelection);
+    } else {
+      setKitSelection({});
+    }
+  }, [offers]);
+
+  // Handle kit product quantity change
+  const handleKitQuantityChange = useCallback((sku: string, qty: number) => {
+    setKitSelection(prev => ({
+      ...prev,
+      [sku]: Math.max(0, qty),
+    }));
+  }, []);
 
   // Build cart items from selection
   const getCartItems = useCallback((): CartItem[] => {
-    if (!selectedProduct) return [];
+    if (!selectedOffer) return [];
     
-    const items: CartItem[] = [
-      { sku: selectedProduct.sku, qty: quantity }
-    ];
+    const items: CartItem[] = [];
     
-    // Add free item if configured
-    if (selectedProduct.freeItem?.sku) {
-      items.push({
-        sku: selectedProduct.freeItem.sku,
-        qty: (selectedProduct.freeItem.qty || 1) * quantity,
-        excludeGlobalDiscount: true,
-        itemDiscountPercent: 100,
-      });
+    switch (selectedOffer.type) {
+      case 'single': {
+        items.push({ 
+          sku: selectedOffer.productSku, 
+          qty: selectedOffer.quantity,
+          itemDiscountPercent: selectedOffer.discountType === 'percent' ? selectedOffer.discountValue : undefined,
+        });
+        break;
+      }
+      
+      case 'fixed_bundle': {
+        selectedOffer.bundleItems.forEach(item => {
+          items.push({ 
+            sku: item.sku, 
+            qty: item.qty,
+          });
+        });
+        break;
+      }
+      
+      case 'customizable_kit': {
+        // Add selected kit products
+        selectedOffer.kitProducts.forEach((product: KitProduct) => {
+          const qty = kitSelection[product.sku] || 0;
+          if (qty > 0) {
+            items.push({
+              sku: product.sku,
+              qty,
+              itemDiscountPercent: product.discountType === 'percent' ? product.discountValue : undefined,
+            });
+          }
+        });
+        break;
+      }
     }
     
     return items;
-  }, [selectedProduct, quantity]);
+  }, [selectedOffer, kitSelection]);
+
+  // Calculate current price for display
+  const calculateOfferPrice = useMemo(() => {
+    if (!selectedOffer) return { original: 0, discounted: 0 };
+    
+    switch (selectedOffer.type) {
+      case 'single':
+      case 'fixed_bundle':
+        return {
+          original: selectedOffer.originalPrice || 0,
+          discounted: selectedOffer.calculatedPrice || 0,
+        };
+        
+      case 'customizable_kit': {
+        let subtotal = 0;
+        let originalTotal = 0;
+        
+        selectedOffer.kitProducts.forEach((product: KitProduct) => {
+          const qty = kitSelection[product.sku] || 0;
+          if (qty > 0) {
+            originalTotal += product.regularPrice * qty;
+            subtotal += product.discountedPrice * qty;
+          }
+        });
+        
+        // Apply global kit discount
+        let finalPrice = subtotal;
+        if (selectedOffer.discountType === 'percent' && selectedOffer.discountValue > 0) {
+          finalPrice = subtotal * (1 - selectedOffer.discountValue / 100);
+        } else if (selectedOffer.discountType === 'fixed' && selectedOffer.discountValue > 0) {
+          finalPrice = Math.max(0, subtotal - selectedOffer.discountValue);
+        }
+        
+        return {
+          original: originalTotal,
+          discounted: Math.round(finalPrice * 100) / 100,
+        };
+      }
+    }
+    
+    return { original: 0, discounted: 0 };
+  }, [selectedOffer, kitSelection]);
 
   // Handle customer lookup success
   const handleCustomerLookup = useCallback((data: CustomerData) => {
@@ -227,11 +345,12 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
           <CheckoutStep
             funnelId={funnelId}
             funnelName={funnelName}
-            products={products}
-            selectedProductId={selectedProductId}
-            onSelectProduct={setSelectedProductId}
-            quantity={quantity}
-            onQuantityChange={setQuantity}
+            offers={offers}
+            selectedOfferId={selectedOfferId}
+            onSelectOffer={handleOfferSelect}
+            kitSelection={kitSelection}
+            onKitQuantityChange={handleKitQuantityChange}
+            offerPrice={calculateOfferPrice}
             customerData={customerData}
             onCustomerLookup={handleCustomerLookup}
             shippingAddress={shippingAddress}
@@ -294,5 +413,3 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
 };
 
 export default FunnelCheckoutApp;
-
-
