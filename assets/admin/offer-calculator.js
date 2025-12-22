@@ -118,18 +118,31 @@
     function findSkuField($row) {
         // Try different field patterns - fields are text type (hidden via CSS)
         let $field = $row.find('[data-name="single_product_sku"] input');
-        if ($field.length) return $field;
+        if ($field.length) {
+            console.log('[HP Offer] Found SKU via data-name single_product_sku');
+            return $field;
+        }
         
         $field = $row.find('[data-name="sku"] input');
-        if ($field.length) return $field;
+        if ($field.length) {
+            console.log('[HP Offer] Found SKU via data-name sku');
+            return $field;
+        }
         
         // Fallback: any input with sku in name
         $field = $row.find('input[name*="[single_product_sku]"]');
-        if ($field.length) return $field;
+        if ($field.length) {
+            console.log('[HP Offer] Found SKU via name contains single_product_sku');
+            return $field;
+        }
         
         $field = $row.find('input[name*="[sku]"]').not('[name*="[product_search]"]');
-        if ($field.length) return $field;
+        if ($field.length) {
+            console.log('[HP Offer] Found SKU via name contains sku');
+            return $field;
+        }
         
+        console.warn('[HP Offer] SKU field not found');
         return $();
     }
     
@@ -174,8 +187,21 @@
 
         // Set SKU field
         const $skuField = findSkuField($row);
+        console.log('[HP Offer] Setting SKU field:', {
+            found: $skuField.length > 0,
+            fieldName: $skuField.attr('name'),
+            sku: product.sku
+        });
+        
         if ($skuField.length) {
-            $skuField.val(product.sku).trigger('change');
+            $skuField.val(product.sku).trigger('change').trigger('input');
+            console.log('[HP Offer] SKU field value after set:', $skuField.val());
+        } else {
+            console.error('[HP Offer] SKU field not found in row!');
+            // Debug: show all inputs in the row
+            $row.find('input').each(function() {
+                console.log('[HP Offer] Input found:', $(this).attr('name'), $(this).attr('type'));
+            });
         }
 
         // Get qty

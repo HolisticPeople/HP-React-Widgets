@@ -17,6 +17,19 @@ class FunnelOfferFields
         add_action('acf/init', [self::class, 'removeLegacyProductsTab'], 99);
         add_action('acf/input/admin_enqueue_scripts', [self::class, 'enqueueScripts']);
         add_filter('acf/update_value/key=field_offer_id', [self::class, 'generateOfferId'], 10, 3);
+        add_action('edit_form_top', [self::class, 'displayVersionLabel']);
+    }
+
+    /**
+     * Display plugin version under the Edit Funnel heading.
+     */
+    public static function displayVersionLabel($post): void
+    {
+        if ($post->post_type !== 'hp-funnel') {
+            return;
+        }
+        
+        echo '<p style="color: #666; font-size: 12px; margin: -10px 0 10px 0;">HP React Widgets v' . HP_RW_VERSION . '</p>';
     }
 
     /**
@@ -243,10 +256,10 @@ class FunnelOfferFields
     private static function getOfferFields(): array
     {
         return [
-            // No tab - directly show the offers repeater
+            // No tab, no label - directly show the offers repeater
             [
                 'key' => 'field_funnel_offers',
-                'label' => 'Offers',
+                'label' => '',
                 'name' => 'funnel_offers',
                 'type' => 'repeater',
                 'instructions' => '',
