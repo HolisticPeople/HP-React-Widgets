@@ -126,7 +126,7 @@ class FunnelApi
         ]);
 
         // Get product prices by SKUs (for admin calculator)
-        register_rest_route('hp-react-widgets/v1', '/products/prices', [
+        register_rest_route(self::NAMESPACE, '/products/prices', [
             [
                 'methods' => WP_REST_Server::CREATABLE,
                 'callback' => [$this, 'getProductPrices'],

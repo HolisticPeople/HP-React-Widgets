@@ -37,8 +37,13 @@ class ProductLookupApi
             },
             'args'                => [
                 'search' => [
-                    'required'          => true,
+                    'required'          => false,
                     'sanitize_callback' => 'sanitize_text_field',
+                ],
+                'sku' => [
+                    'required'          => false,
+                    'sanitize_callback' => 'sanitize_text_field',
+                    'description'       => 'Exact SKU lookup',
                 ],
                 'limit' => [
                     'default'           => 10,
@@ -74,9 +79,28 @@ class ProductLookupApi
     public static function handleSearch(WP_REST_Request $request): WP_REST_Response
     {
         $search = $request->get_param('search');
+        $sku = $request->get_param('sku');
         $limit = min((int) $request->get_param('limit'), 20);
 
-        if (strlen($search) < 2) {
+        // Exact SKU lookup takes precedence
+        if (!empty($sku)) {
+            $productId = wc_get_product_id_by_sku($sku);
+            if ($productId) {
+                $product = wc_get_product($productId);
+                if ($product) {
+                    return new WP_REST_Response([
+                        'success' => true,
+                        'products' => [self::formatProductData($product)],
+                    ]);
+                }
+            }
+            return new WP_REST_Response([
+                'success' => true,
+                'products' => [],
+            ]);
+        }
+
+        if (empty($search) || strlen($search) < 2) {
             return new WP_REST_Response([
                 'success' => true,
                 'products' => [],
@@ -126,31 +150,41 @@ class ProductLookupApi
         $results = [];
         foreach ($products as $product) {
             if (!$product) continue;
-            
-            $imageUrl = '';
-            $imageId = $product->get_image_id();
-            if ($imageId) {
-                $imageData = wp_get_attachment_image_src($imageId, 'thumbnail');
-                if ($imageData) {
-                    $imageUrl = $imageData[0];
-                }
-            }
-
-            $results[] = [
-                'id'        => $product->get_id(),
-                'sku'       => $product->get_sku(),
-                'name'      => $product->get_name(),
-                'price'     => (float) $product->get_price(),
-                'image_url' => $imageUrl,
-                'image_id'  => $imageId,
-                'in_stock'  => $product->is_in_stock(),
-            ];
+            $results[] = self::formatProductData($product);
         }
 
         return new WP_REST_Response([
             'success'  => true,
             'products' => $results,
         ]);
+    }
+
+    /**
+     * Format product data for API response.
+     *
+     * @param \WC_Product $product
+     * @return array
+     */
+    private static function formatProductData($product): array
+    {
+        $imageUrl = '';
+        $imageId = $product->get_image_id();
+        if ($imageId) {
+            $imageData = wp_get_attachment_image_src($imageId, 'thumbnail');
+            if ($imageData) {
+                $imageUrl = $imageData[0];
+            }
+        }
+
+        return [
+            'id'        => $product->get_id(),
+            'sku'       => $product->get_sku(),
+            'name'      => $product->get_name(),
+            'price'     => (float) $product->get_price(),
+            'image_url' => $imageUrl,
+            'image_id'  => $imageId,
+            'in_stock'  => $product->is_in_stock(),
+        ];
     }
 
     /**
