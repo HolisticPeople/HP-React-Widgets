@@ -1,407 +1,504 @@
 /**
- * Offer Admin - Product Search & Display
+ * Funnel Offer Admin - Product Management
+ * EAO-style single search + product list approach
  */
 (function($) {
     'use strict';
 
-    const cache = {};
-
-    function debounce(fn, wait) {
-        let t;
-        return function(...args) {
-            clearTimeout(t);
-            t = setTimeout(() => fn.apply(this, args), wait);
-        };
+    if (typeof hpOfferCalc === 'undefined') {
+        console.warn('[HP Offer] hpOfferCalc not defined');
+        return;
     }
 
-    function esc(text) {
-        if (!text) return '';
-        const d = document.createElement('div');
-        d.textContent = text;
-        return d.innerHTML;
-    }
-
-    function fmt(n) {
-        return '$' + (parseFloat(n) || 0).toFixed(2);
-    }
+    let searchTimeout = null;
+    let searchRequest = null;
 
     // ========================================
-    // PRODUCT SEARCH API
+    // INITIALIZATION
     // ========================================
 
-    async function searchProducts(query) {
-        const res = await fetch(
-            `${hpOfferCalc.restUrl}admin/product-search?search=${encodeURIComponent(query)}`,
-            { headers: { 'X-WP-Nonce': hpOfferCalc.nonce } }
-        );
-        if (!res.ok) throw new Error('Search failed');
-        return res.json();
-    }
+    function init() {
+        console.log('[HP Offer] Initializing v2...');
 
-    async function fetchProductBySku(sku) {
-        if (!sku) return null;
-        if (cache[sku]) return cache[sku];
-        
-        try {
-            const res = await fetch(
-                `${hpOfferCalc.restUrl}admin/product-search?sku=${encodeURIComponent(sku)}`,
-                { headers: { 'X-WP-Nonce': hpOfferCalc.nonce } }
-            );
-            if (!res.ok) return null;
-            const data = await res.json();
-            if (data.success && data.products?.length) {
-                cache[sku] = data.products[0];
-                return data.products[0];
-            }
-        } catch (e) {
-            console.error('Fetch product error:', e);
+        // Wait for ACF to be ready
+        if (typeof acf !== 'undefined') {
+            acf.addAction('ready', function() {
+                setTimeout(initializeAllOffers, 300);
+            });
+            
+            // Handle new offer rows
+            acf.addAction('append', function($el) {
+                setTimeout(function() {
+                    initializeOfferRow($el);
+                }, 100);
+            });
+        } else {
+            setTimeout(initializeAllOffers, 500);
         }
-        return null;
+
+        // Bind events
+        bindEvents();
+
+        console.log('[HP Offer] Admin initialized');
+    }
+
+    function bindEvents() {
+        // Search input
+        $(document).on('input', '.hp-offer-search-input', function() {
+            handleSearch($(this));
+        });
+
+        // Prevent form submit on enter in search
+        $(document).on('keydown', '.hp-offer-search-input', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+            }
+        });
+
+        // Close dropdown on outside click
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.hp-search-wrapper').length) {
+                $('.hp-search-dropdown').remove();
+            }
+        });
+
+        // Product quantity change
+        $(document).on('change', '.hp-product-item .hp-qty-input', function() {
+            const $item = $(this).closest('.hp-product-item');
+            const $section = $(this).closest('.hp-products-section');
+            const sku = $item.data('sku');
+            const qty = parseInt($(this).val()) || 1;
+            
+            updateProductQty($section, sku, qty);
+        });
+
+        // Product role change (for kits)
+        $(document).on('change', '.hp-product-item .hp-role-select', function() {
+            const $item = $(this).closest('.hp-product-item');
+            const $section = $(this).closest('.hp-products-section');
+            const sku = $item.data('sku');
+            const role = $(this).val();
+            
+            updateProductRole($section, sku, role);
+        });
+
+        // Remove product
+        $(document).on('click', '.hp-product-remove', function(e) {
+            e.preventDefault();
+            const $item = $(this).closest('.hp-product-item');
+            const $section = $(this).closest('.hp-products-section');
+            const sku = $item.data('sku');
+            
+            removeProduct($section, sku);
+        });
+
+        // Offer type change - preserve products
+        $(document).on('change', '.acf-field[data-name="offer_type"] select', function() {
+            const $offerRow = $(this).closest('.acf-row');
+            setTimeout(function() {
+                refreshOfferUI($offerRow);
+            }, 50);
+        });
+    }
+
+    function initializeAllOffers() {
+        console.log('[HP Offer] Initializing all offers...');
+        
+        const $offerRows = $('.acf-field[data-name="funnel_offers"] .acf-row:not(.acf-clone)');
+        console.log('[HP Offer] Found', $offerRows.length, 'offer rows');
+        
+        $offerRows.each(function() {
+            initializeOfferRow($(this));
+        });
+    }
+
+    function initializeOfferRow($row) {
+        const $container = $row.find('[data-offer-products]');
+        if (!$container.length) {
+            console.log('[HP Offer] No products container in row');
+            return;
+        }
+
+        // Check if already initialized
+        if ($container.data('initialized')) {
+            return;
+        }
+        $container.data('initialized', true);
+
+        const offerType = getOfferType($row);
+        console.log('[HP Offer] Initializing offer row, type:', offerType);
+
+        // Build the UI
+        buildProductsUI($container, offerType);
+
+        // Load existing products from JSON field
+        loadExistingProducts($row, $container);
     }
 
     // ========================================
-    // SEARCH DROPDOWN
+    // UI BUILDING
     // ========================================
 
-    function showDropdown($input, products) {
-        hideDropdown($input);
-        if (!products.length) return;
+    function buildProductsUI($container, offerType) {
+        const maxProducts = offerType === 'single' ? 1 : (offerType === 'customizable_kit' ? 20 : 10);
+        const placeholder = offerType === 'single' 
+            ? 'Search to select a product...' 
+            : 'Search to add products...';
 
-        const $wrap = $input.closest('.acf-input');
-        $wrap.css('position', 'relative');
-
-        const $dd = $('<div class="hp-search-dropdown"></div>').css({
-            position: 'absolute',
-            zIndex: 99999,
-            background: '#fff',
-            border: '1px solid #ddd',
-            borderRadius: '6px',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-            maxHeight: '280px',
-            overflowY: 'auto',
-            width: '100%',
-            marginTop: '4px'
-        });
-
-        products.forEach(p => {
-            const $item = $(`
-                <div class="hp-search-item" style="display:flex; align-items:center; gap:10px; padding:10px 12px; cursor:pointer; border-bottom:1px solid #f0f0f0;">
-                    ${p.image_url ? `<img src="${esc(p.image_url)}" style="width:40px; height:40px; object-fit:cover; border-radius:4px;">` : '<div style="width:40px; height:40px; background:#f0f0f0; border-radius:4px;"></div>'}
-                    <div style="flex:1; min-width:0;">
-                        <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(p.name)}</div>
-                        <div style="font-size:12px; color:#666;">SKU: ${esc(p.sku)}</div>
-                    </div>
-                    <div style="font-weight:600; color:#00a32a;">${fmt(p.price)}</div>
+        const html = `
+            <div class="hp-products-header">
+                <div class="hp-search-wrapper">
+                    <input type="text" 
+                           class="hp-offer-search-input" 
+                           placeholder="${placeholder}"
+                           data-max="${maxProducts}">
                 </div>
-            `);
-            $item.on('click', () => selectProduct($input, p));
-            $item.on('mouseenter', function() { $(this).css('background', '#f8f8f8'); });
-            $item.on('mouseleave', function() { $(this).css('background', '#fff'); });
-            $dd.append($item);
-        });
+            </div>
+            <div class="hp-products-list" data-type="${offerType}"></div>
+        `;
 
-        $wrap.append($dd);
+        $container.html(html);
+    }
+
+    function refreshOfferUI($row) {
+        const $container = $row.find('[data-offer-products]');
+        if (!$container.length) return;
+
+        const newType = getOfferType($row);
+        const $list = $container.find('.hp-products-list');
+        
+        // Update the list type
+        $list.attr('data-type', newType);
+
+        // Update max products in search
+        const maxProducts = newType === 'single' ? 1 : (newType === 'customizable_kit' ? 20 : 10);
+        $container.find('.hp-offer-search-input').attr('data-max', maxProducts);
+
+        // If switching TO single and we have multiple products, keep only the first
+        if (newType === 'single') {
+            const products = getProductsData($row);
+            if (products.length > 1) {
+                const firstProduct = products[0];
+                saveProductsData($row, [firstProduct]);
+                renderProductsList($container.find('.hp-products-list'), [firstProduct], newType);
+            }
+        }
+
+        // Re-render to update controls (role selector for kits, etc)
+        const products = getProductsData($row);
+        renderProductsList($container.find('.hp-products-list'), products, newType);
+    }
+
+    // ========================================
+    // SEARCH FUNCTIONALITY
+    // ========================================
+
+    function handleSearch($input) {
+        const term = $input.val().trim();
+        
+        if (term.length < 2) {
+            hideDropdown($input);
+            return;
+        }
+
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function() {
+            performSearch($input, term);
+        }, 300);
+    }
+
+    async function performSearch($input, term) {
+        if (searchRequest) {
+            searchRequest.abort();
+        }
+
+        const $wrapper = $input.closest('.hp-search-wrapper');
+        
+        // Show loading
+        showDropdown($wrapper, '<div style="padding: 12px; color: #666;">Searching...</div>');
+
+        try {
+            const response = await fetch(`${hpOfferCalc.restUrl}products/search?term=${encodeURIComponent(term)}`, {
+                headers: { 'X-WP-Nonce': hpOfferCalc.nonce }
+            });
+
+            if (!response.ok) throw new Error('Search failed');
+
+            const products = await response.json();
+            
+            if (products.length === 0) {
+                showDropdown($wrapper, '<div style="padding: 12px; color: #666;">No products found</div>');
+                return;
+            }
+
+            const $section = $input.closest('.hp-products-section');
+            const $row = $section.closest('.acf-row');
+            const existingProducts = getProductsData($row);
+            const existingSkus = existingProducts.map(p => p.sku);
+
+            let html = '';
+            products.forEach(product => {
+                const isAdded = existingSkus.includes(product.sku);
+                const addedClass = isAdded ? 'is-added' : '';
+                const addedLabel = isAdded ? '<span style="color:#00a32a;font-size:11px;">✓ Added</span>' : '';
+                
+                html += `
+                    <div class="hp-search-item ${addedClass}" 
+                         data-sku="${escapeAttr(product.sku)}"
+                         data-name="${escapeAttr(product.name)}"
+                         data-price="${product.price}"
+                         data-image="${escapeAttr(product.image || '')}">
+                        <img src="${product.image || ''}" alt="">
+                        <div class="hp-search-item-info">
+                            <div class="hp-search-item-name">${escapeHtml(product.name)}</div>
+                            <div class="hp-search-item-sku">SKU: ${escapeHtml(product.sku)} ${addedLabel}</div>
+                        </div>
+                        <div class="hp-search-item-price">$${parseFloat(product.price).toFixed(2)}</div>
+                    </div>
+                `;
+            });
+
+            showDropdown($wrapper, html);
+
+            // Bind click on results
+            $wrapper.find('.hp-search-dropdown .hp-search-item').on('click', function() {
+                if ($(this).hasClass('is-added')) return;
+                
+                const productData = {
+                    sku: $(this).data('sku'),
+                    name: $(this).data('name'),
+                    price: parseFloat($(this).data('price')),
+                    image: $(this).data('image'),
+                    qty: 1,
+                    role: 'optional' // default for kits
+                };
+
+                addProduct($section, productData);
+                hideDropdown($input);
+                $input.val('');
+            });
+
+        } catch (error) {
+            console.error('[HP Offer] Search error:', error);
+            showDropdown($wrapper, '<div style="padding: 12px; color: #d63638;">Search error</div>');
+        }
+    }
+
+    function showDropdown($wrapper, content) {
+        let $dropdown = $wrapper.find('.hp-search-dropdown');
+        if (!$dropdown.length) {
+            $dropdown = $('<div class="hp-search-dropdown"></div>');
+            $wrapper.append($dropdown);
+        }
+        $dropdown.html(content).show();
     }
 
     function hideDropdown($input) {
-        if ($input?.length) {
-            $input.closest('.acf-input').find('.hp-search-dropdown').remove();
+        if ($input) {
+            $input.closest('.hp-search-wrapper').find('.hp-search-dropdown').remove();
         } else {
             $('.hp-search-dropdown').remove();
         }
     }
 
     // ========================================
-    // FIND SKU FIELD IN ROW
-    // ========================================
-    
-    function findSkuField($row) {
-        // Try different field patterns - fields are text type (hidden via CSS)
-        let $field = $row.find('[data-name="single_product_sku"] input');
-        if ($field.length) {
-            console.log('[HP Offer] Found SKU via data-name single_product_sku');
-            return $field;
-        }
-        
-        $field = $row.find('[data-name="sku"] input');
-        if ($field.length) {
-            console.log('[HP Offer] Found SKU via data-name sku');
-            return $field;
-        }
-        
-        // Fallback: any input with sku in name
-        $field = $row.find('input[name*="[single_product_sku]"]');
-        if ($field.length) {
-            console.log('[HP Offer] Found SKU via name contains single_product_sku');
-            return $field;
-        }
-        
-        $field = $row.find('input[name*="[sku]"]').not('[name*="[product_search]"]');
-        if ($field.length) {
-            console.log('[HP Offer] Found SKU via name contains sku');
-            return $field;
-        }
-        
-        console.warn('[HP Offer] SKU field not found');
-        return $();
-    }
-    
-    function findQtyField($row) {
-        let $field = $row.find('[data-name="single_product_qty"] input');
-        if ($field.length) return $field;
-        
-        $field = $row.find('[data-name="qty"] input');
-        if ($field.length) return $field;
-        
-        $field = $row.find('input[name*="[single_product_qty]"]');
-        if ($field.length) return $field;
-        
-        $field = $row.find('input[name*="[qty]"]').not('.hp-qty-input');
-        if ($field.length) return $field;
-        
-        return $();
-    }
-    
-    function findProductContainer($row) {
-        let $container = $row.find('.hp-single-product-container');
-        if ($container.length) return $container;
-        
-        $container = $row.find('.hp-bundle-product-container');
-        if ($container.length) return $container;
-        
-        $container = $row.find('.hp-kit-product-container');
-        if ($container.length) return $container;
-        
-        return $();
-    }
-
-    // ========================================
-    // PRODUCT SELECTION
+    // PRODUCT MANAGEMENT
     // ========================================
 
-    function selectProduct($input, product) {
-        const $row = $input.closest('.acf-row');
-        $input.val('');
-        hideDropdown($input);
-        cache[product.sku] = product;
-
-        // Set SKU field
-        const $skuField = findSkuField($row);
-        console.log('[HP Offer] Setting SKU field:', {
-            found: $skuField.length > 0,
-            fieldName: $skuField.attr('name'),
-            sku: product.sku
-        });
+    function addProduct($section, productData) {
+        const $row = $section.closest('.acf-row');
+        const offerType = getOfferType($row);
+        const maxProducts = offerType === 'single' ? 1 : 10;
         
-        if ($skuField.length) {
-            $skuField.val(product.sku).trigger('change').trigger('input');
-            console.log('[HP Offer] SKU field value after set:', $skuField.val());
-        } else {
-            console.error('[HP Offer] SKU field not found in row!');
-            // Debug: show all inputs in the row
-            $row.find('input').each(function() {
-                console.log('[HP Offer] Input found:', $(this).attr('name'), $(this).attr('type'));
-            });
-        }
+        let products = getProductsData($row);
 
-        // Get qty
-        const $qtyField = findQtyField($row);
-        const qty = parseInt($qtyField.val()) || 1;
-
-        // Show product card
-        showProductCard($row, product, qty);
-    }
-
-    function showProductCard($row, product, qty = 1) {
-        const $container = findProductContainer($row);
-        if (!$container.length) return;
-
-        const isKit = $container.hasClass('hp-kit-product-container');
-        
-        $container.html(`
-            <div class="hp-product-card">
-                ${product.image_url ? `<img src="${esc(product.image_url)}" alt="">` : '<div style="width:48px; height:48px; background:#f0f0f0; border-radius:4px;"></div>'}
-                <div class="hp-product-info">
-                    <div class="hp-product-name">${esc(product.name)}</div>
-                    <div class="hp-product-sku">SKU: ${esc(product.sku)}</div>
-                </div>
-                ${!isKit ? `
-                <div class="hp-product-qty">
-                    <span>Qty:</span>
-                    <input type="number" value="${qty}" min="1" max="99" class="hp-qty-input">
-                </div>
-                ` : ''}
-                <div class="hp-product-price">${fmt(product.price * qty)}</div>
-                <span class="hp-product-remove" title="Remove">×</span>
-            </div>
-        `);
-
-        // Handle qty change
-        $container.find('.hp-qty-input').on('change input', function() {
-            const newQty = parseInt($(this).val()) || 1;
-            const $qtyField = findQtyField($row);
-            $qtyField.val(newQty);
-            $container.find('.hp-product-price').text(fmt(product.price * newQty));
-        });
-
-        // Handle remove
-        $container.find('.hp-product-remove').on('click', function(e) {
-            e.preventDefault();
-            clearProduct($row);
-        });
-    }
-
-    function clearProduct($row) {
-        findSkuField($row).val('').trigger('change');
-        findProductContainer($row).html('');
-    }
-
-    // ========================================
-    // LOAD EXISTING PRODUCTS
-    // ========================================
-
-    async function loadExistingProducts() {
-        console.log('[HP Offer] Loading existing products...');
-        
-        // Find all offer rows (not clones) - use broader selector
-        const $offerRows = $('.acf-field[data-name="funnel_offers"] .acf-row:not(.acf-clone)');
-        console.log('[HP Offer] Found', $offerRows.length, 'offer rows to process');
-        
-        for (let i = 0; i < $offerRows.length; i++) {
-            const $row = $($offerRows[i]);
-            
-            // Check if this is a top-level offer row (has offer_name field)
-            if ($row.find('[data-name="offer_name"]').length > 0) {
-                console.log('[HP Offer] Processing offer row', i);
-                await loadProductForRow($row);
-            }
-            
-            // Also load bundle/kit products
-            const $bundleRows = $row.find('.acf-field[data-name="bundle_items"] .acf-row:not(.acf-clone)');
-            for (let j = 0; j < $bundleRows.length; j++) {
-                await loadProductForRow($($bundleRows[j]));
-            }
-            
-            const $kitRows = $row.find('.acf-field[data-name="kit_products"] .acf-row:not(.acf-clone)');
-            for (let j = 0; j < $kitRows.length; j++) {
-                await loadProductForRow($($kitRows[j]));
-            }
-        }
-        
-        console.log('[HP Offer] Finished loading existing products');
-    }
-    
-    async function loadProductForRow($row) {
-        const $skuField = findSkuField($row);
-        const sku = $skuField.val();
-        
-        console.log('[HP Offer] loadProductForRow - SKU field found:', $skuField.length > 0, 'value:', sku);
-        
-        if (!sku) {
-            console.log('[HP Offer] No SKU value, skipping');
+        // Check if already exists
+        if (products.some(p => p.sku === productData.sku)) {
+            console.log('[HP Offer] Product already in list:', productData.sku);
             return;
         }
-        
-        console.log('[HP Offer] Fetching product for SKU:', sku);
-        
-        const $qtyField = findQtyField($row);
-        const qty = parseInt($qtyField.val()) || 1;
-        
-        const product = await fetchProductBySku(sku);
-        if (product) {
-            console.log('[HP Offer] Product found, showing card:', product.name);
-            showProductCard($row, product, qty);
-        } else {
-            console.warn('[HP Offer] Product not found for SKU:', sku);
-        }
-    }
 
-    // Debounced search
-    const debouncedSearch = debounce(function($input) {
-        const q = $input.val().trim();
-        if (q.length < 2) {
-            hideDropdown($input);
-            return;
-        }
-        searchProducts(q).then(data => {
-            if (data.success && data.products?.length) {
-                showDropdown($input, data.products);
+        // Check max
+        if (products.length >= maxProducts) {
+            if (offerType === 'single') {
+                // Replace existing product
+                products = [productData];
             } else {
-                hideDropdown($input);
+                alert(`Maximum ${maxProducts} products allowed`);
+                return;
             }
-        }).catch(() => hideDropdown($input));
-    }, 300);
+        } else {
+            products.push(productData);
+        }
+
+        saveProductsData($row, products);
+        renderProductsList($section.find('.hp-products-list'), products, offerType);
+
+        console.log('[HP Offer] Product added:', productData.sku);
+    }
+
+    function removeProduct($section, sku) {
+        const $row = $section.closest('.acf-row');
+        let products = getProductsData($row);
+        
+        products = products.filter(p => p.sku !== sku);
+        
+        saveProductsData($row, products);
+        renderProductsList($section.find('.hp-products-list'), products, getOfferType($row));
+
+        console.log('[HP Offer] Product removed:', sku);
+    }
+
+    function updateProductQty($section, sku, qty) {
+        const $row = $section.closest('.acf-row');
+        let products = getProductsData($row);
+        
+        const product = products.find(p => p.sku === sku);
+        if (product) {
+            product.qty = qty;
+            saveProductsData($row, products);
+        }
+    }
+
+    function updateProductRole($section, sku, role) {
+        const $row = $section.closest('.acf-row');
+        let products = getProductsData($row);
+        
+        const product = products.find(p => p.sku === sku);
+        if (product) {
+            product.role = role;
+            saveProductsData($row, products);
+        }
+    }
+
+    // ========================================
+    // RENDER PRODUCTS LIST
+    // ========================================
+
+    function renderProductsList($list, products, offerType) {
+        if (!products || products.length === 0) {
+            $list.html('');
+            return;
+        }
+
+        let html = '';
+        products.forEach(product => {
+            const isKit = offerType === 'customizable_kit';
+            const kitClass = isKit ? 'is-kit' : '';
+            
+            html += `
+                <div class="hp-product-item ${kitClass}" data-sku="${escapeAttr(product.sku)}">
+                    <img src="${product.image || ''}" alt="">
+                    <div class="hp-product-info">
+                        <div class="hp-product-name">${escapeHtml(product.name)}</div>
+                        <div class="hp-product-sku">SKU: ${escapeHtml(product.sku)}</div>
+                    </div>
+                    <div class="hp-product-controls">
+                        ${isKit ? getRoleSelector(product.role || 'optional') : ''}
+                        <div class="hp-qty-control">
+                            <label>Qty:</label>
+                            <input type="number" class="hp-qty-input" value="${product.qty || 1}" min="1" max="99">
+                        </div>
+                        <div class="hp-product-price">$${parseFloat(product.price).toFixed(2)}</div>
+                        <button type="button" class="hp-product-remove" title="Remove">×</button>
+                    </div>
+                </div>
+            `;
+        });
+
+        $list.html(html);
+    }
+
+    function getRoleSelector(currentRole) {
+        const options = [
+            { value: 'must', label: 'Required' },
+            { value: 'default', label: 'Default' },
+            { value: 'optional', label: 'Optional' }
+        ];
+
+        let html = '<div class="hp-role-control"><select class="hp-role-select">';
+        options.forEach(opt => {
+            const selected = opt.value === currentRole ? 'selected' : '';
+            html += `<option value="${opt.value}" ${selected}>${opt.label}</option>`;
+        });
+        html += '</select></div>';
+        
+        return html;
+    }
+
+    // ========================================
+    // DATA PERSISTENCE
+    // ========================================
+
+    function getProductsData($row) {
+        const $field = $row.find('.acf-field[data-name="products_data"] textarea');
+        if (!$field.length) {
+            console.warn('[HP Offer] products_data field not found');
+            return [];
+        }
+
+        const json = $field.val();
+        if (!json) return [];
+
+        try {
+            return JSON.parse(json);
+        } catch (e) {
+            console.warn('[HP Offer] Invalid JSON in products_data');
+            return [];
+        }
+    }
+
+    function saveProductsData($row, products) {
+        const $field = $row.find('.acf-field[data-name="products_data"] textarea');
+        if (!$field.length) {
+            console.warn('[HP Offer] products_data field not found for saving');
+            return;
+        }
+
+        const json = JSON.stringify(products);
+        $field.val(json);
+        
+        console.log('[HP Offer] Saved products data:', products.length, 'products');
+    }
+
+    function loadExistingProducts($row, $container) {
+        const products = getProductsData($row);
+        const offerType = getOfferType($row);
+        
+        console.log('[HP Offer] Loading existing products:', products.length);
+        
+        if (products.length > 0) {
+            renderProductsList($container.find('.hp-products-list'), products, offerType);
+        }
+    }
+
+    // ========================================
+    // HELPERS
+    // ========================================
+
+    function getOfferType($row) {
+        return $row.find('.acf-field[data-name="offer_type"] select').val() || 'single';
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function escapeAttr(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;');
+    }
 
     // ========================================
     // INIT
     // ========================================
-
-    function init() {
-        if (typeof hpOfferCalc === 'undefined') {
-            console.warn('[HP Offer] hpOfferCalc not defined');
-            return;
-        }
-
-        console.log('[HP Offer] Initializing...');
-
-        // Load existing products - try multiple approaches
-        function tryLoadProducts() {
-            console.log('[HP Offer] Attempting to load existing products...');
-            
-            // Check if ACF repeater rows exist
-            const $rows = $('.acf-field[data-name="funnel_offers"] .acf-row:not(.acf-clone)');
-            console.log('[HP Offer] Found', $rows.length, 'offer rows');
-            
-            if ($rows.length > 0) {
-                loadExistingProducts();
-            } else {
-                // Retry after a delay if rows not found yet
-                setTimeout(tryLoadProducts, 500);
-            }
-        }
-
-        // Start loading after DOM is ready
-        setTimeout(tryLoadProducts, 500);
-
-        // Also try on ACF ready if available
-        if (typeof acf !== 'undefined') {
-            acf.addAction('ready', function() {
-                console.log('[HP Offer] ACF ready event fired');
-                setTimeout(loadExistingProducts, 300);
-            });
-        }
-
-        // Search input
-        $(document).on('input', '.hp-product-search-field input', function() {
-            debouncedSearch($(this));
-        });
-
-        // Hide on blur
-        $(document).on('blur', '.hp-product-search-field input', function() {
-            setTimeout(() => hideDropdown($(this)), 200);
-        });
-
-        // Prevent enter submit
-        $(document).on('keydown', '.hp-product-search-field input', function(e) {
-            if (e.key === 'Enter') e.preventDefault();
-        });
-
-        // Close dropdown on outside click
-        $(document).on('click', function(e) {
-            if (!$(e.target).closest('.hp-search-dropdown, .hp-product-search-field').length) {
-                hideDropdown();
-            }
-        });
-
-        // Clear product display on new rows
-        if (typeof acf !== 'undefined') {
-            acf.addAction('append', function($el) {
-                $el.find('[class*="hp-"][class*="-product-container"]').html('');
-            });
-        }
-
-        console.log('[HP Offer] Admin initialized');
-    }
 
     $(document).ready(init);
 

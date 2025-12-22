@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
 
 /**
  * Registers ACF fields for the Funnel Offers system.
- * Replaces the legacy "Products" tab.
+ * Uses EAO-style single search field with product list.
  */
 class FunnelOfferFields
 {
@@ -37,30 +37,21 @@ class FunnelOfferFields
      */
     public static function removeLegacyProductsTab(): void
     {
-        // Hide Products tab and funnel_products via CSS instead of filter to avoid ACF errors
         add_action('admin_head', function() {
             global $post;
             if (!$post || $post->post_type !== 'hp-funnel') return;
             
             echo '<style>
-                /* Hide legacy Products tab and fields */
                 .acf-tab-wrap a[data-key*="products_tab"],
-                .acf-tab-wrap a:contains("Products"),
                 .acf-field[data-name="funnel_products"],
-                .acf-field[data-name="products_tab"] {
-                    display: none !important;
-                }
+                .acf-field[data-name="products_tab"] { display: none !important; }
             </style>';
             
-            // Also hide via JS for more reliable matching
             echo '<script>
                 jQuery(function($) {
-                    // Hide Products tab
                     $(".acf-tab-wrap a").filter(function() {
                         return $(this).text().trim() === "Products";
                     }).hide();
-                    
-                    // Hide funnel_products field
                     $(".acf-field[data-name=\'funnel_products\']").hide();
                 });
             </script>';
@@ -95,137 +86,225 @@ class FunnelOfferFields
             'nonce'   => wp_create_nonce('wp_rest'),
         ]);
 
-        // Compact styles
         wp_add_inline_style('acf-input', self::getStyles());
     }
 
     private static function getStyles(): string
     {
         return '
-            /* Compact offer form */
+            /* Offer row styling */
             .acf-field[data-key="field_funnel_offers"] .acf-row {
                 background: #fafafa;
                 border: 1px solid #e0e0e0;
                 border-radius: 8px;
                 margin-bottom: 12px;
-                position: relative;
             }
             .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed {
                 background: #fff;
             }
-            
-            /* Ensure delete/remove button is visible */
             .acf-field[data-key="field_funnel_offers"] .acf-row-handle .acf-icon.-minus {
                 display: block !important;
-                visibility: visible !important;
-            }
-            .acf-field[data-key="field_funnel_offers"] .acf-row > .acf-row-handle {
-                display: flex !important;
-                align-items: center;
             }
             
-            /* Hide SKU/qty fields - they are managed by the product card */
-            .hp-hidden-field {
-                display: none !important;
+            /* Products section */
+            .hp-products-section {
+                background: #fff;
+                border: 1px solid #ddd;
+                border-radius: 6px;
+                margin: 12px;
+                padding: 0;
             }
-            
-            /* Product display container - no extra margin when empty */
-            .acf-field[data-key="field_single_product_display"],
-            .acf-field[data-key="field_bundle_item_display"],
-            .acf-field[data-key="field_kit_product_display"] {
-                padding: 0 !important;
-                margin: 0 !important;
-            }
-            .acf-field[data-key="field_single_product_display"] > .acf-label,
-            .acf-field[data-key="field_bundle_item_display"] > .acf-label,
-            .acf-field[data-key="field_kit_product_display"] > .acf-label {
-                display: none;
-            }
-            
-            /* Product display card */
-            .hp-product-card {
+            .hp-products-header {
                 display: flex;
                 align-items: center;
                 gap: 12px;
                 padding: 12px;
-                background: #fff;
-                border: 1px solid #e0e0e0;
-                border-radius: 6px;
-                margin: 8px 12px;
+                border-bottom: 1px solid #eee;
+                background: #f9f9f9;
+                border-radius: 6px 6px 0 0;
             }
-            .hp-product-card img {
+            .hp-products-header .hp-search-wrapper {
+                flex: 1;
+                position: relative;
+            }
+            .hp-products-header input[type="text"] {
+                width: 100%;
+                padding: 8px 12px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+            }
+            .hp-products-header .hp-max-notice {
+                color: #d63638;
+                font-size: 12px;
+                padding: 4px 8px;
+                background: #fcf0f1;
+                border-radius: 4px;
+            }
+            
+            /* Search dropdown */
+            .hp-search-dropdown {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: #fff;
+                border: 1px solid #ddd;
+                border-radius: 0 0 4px 4px;
+                max-height: 300px;
+                overflow-y: auto;
+                z-index: 1000;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
+            .hp-search-dropdown .hp-search-item {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 10px 12px;
+                cursor: pointer;
+                border-bottom: 1px solid #f0f0f0;
+            }
+            .hp-search-dropdown .hp-search-item:hover {
+                background: #f0f7ff;
+            }
+            .hp-search-dropdown .hp-search-item img {
+                width: 40px;
+                height: 40px;
+                object-fit: cover;
+                border-radius: 4px;
+            }
+            .hp-search-dropdown .hp-search-item-info {
+                flex: 1;
+            }
+            .hp-search-dropdown .hp-search-item-name {
+                font-weight: 500;
+            }
+            .hp-search-dropdown .hp-search-item-sku {
+                color: #0073aa;
+                font-size: 12px;
+            }
+            .hp-search-dropdown .hp-search-item-price {
+                font-weight: 600;
+                color: #00a32a;
+            }
+            
+            /* Products list */
+            .hp-products-list {
+                padding: 0;
+            }
+            .hp-products-list:empty::after {
+                content: "No products added. Use search above to add products.";
+                display: block;
+                padding: 20px;
+                text-align: center;
+                color: #999;
+                font-style: italic;
+            }
+            .hp-product-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px;
+                border-bottom: 1px solid #f0f0f0;
+            }
+            .hp-product-item:last-child {
+                border-bottom: none;
+            }
+            .hp-product-item img {
                 width: 48px;
                 height: 48px;
                 object-fit: cover;
                 border-radius: 4px;
                 flex-shrink: 0;
             }
-            .hp-product-card .hp-product-info {
+            .hp-product-item .hp-product-info {
                 flex: 1;
                 min-width: 0;
             }
-            .hp-product-card .hp-product-name {
+            .hp-product-item .hp-product-name {
                 font-weight: 600;
                 color: #1e1e1e;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
+                margin-bottom: 2px;
             }
-            .hp-product-card .hp-product-sku {
+            .hp-product-item .hp-product-sku {
                 font-size: 12px;
-                color: #757575;
+                color: #0073aa;
             }
-            .hp-product-card .hp-product-price {
-                font-weight: 600;
-                color: #00a32a;
-                font-size: 15px;
+            .hp-product-item .hp-product-controls {
+                display: flex;
+                align-items: center;
+                gap: 12px;
             }
-            .hp-product-card .hp-product-qty {
+            .hp-product-item .hp-qty-control {
                 display: flex;
                 align-items: center;
                 gap: 6px;
             }
-            .hp-product-card .hp-product-qty input {
+            .hp-product-item .hp-qty-control label {
+                font-size: 12px;
+                color: #666;
+            }
+            .hp-product-item .hp-qty-control input {
                 width: 60px;
                 text-align: center;
+                padding: 4px;
             }
-            .hp-product-card .hp-product-remove {
+            .hp-product-item .hp-role-control select {
+                padding: 4px 8px;
+            }
+            .hp-product-item .hp-product-price {
+                font-weight: 600;
+                color: #00a32a;
+                min-width: 70px;
+                text-align: right;
+            }
+            .hp-product-item .hp-product-remove {
                 color: #d63638;
                 cursor: pointer;
-                padding: 4px 8px;
+                padding: 6px;
                 border-radius: 4px;
+                background: transparent;
+                border: none;
                 font-size: 18px;
             }
-            .hp-product-card .hp-product-remove:hover {
+            .hp-product-item .hp-product-remove:hover {
                 background: #fcf0f1;
             }
             
-            /* Hide field descriptions */
-            .acf-field[data-key^="field_offer"] > .acf-label .description,
-            .acf-field[data-key^="field_single"] > .acf-label .description,
-            .acf-field[data-key^="field_bundle"] > .acf-label .description,
-            .acf-field[data-key^="field_kit"] > .acf-label .description {
-                display: none;
+            /* Kit-specific controls */
+            .hp-product-item.is-kit .hp-kit-controls {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-wrap: wrap;
             }
             
-            /* Collapsed offer summary */
-            .hp-offer-summary {
+            /* Hide ACF field placeholders */
+            .acf-field[data-key="field_offer_products_data"] {
+                display: none !important;
+            }
+            .hp-products-container-field {
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .hp-products-container-field > .acf-label {
+                display: none !important;
+            }
+            
+            /* Collapsed summary */
+            .hp-offer-collapsed-summary {
                 display: inline-flex;
                 align-items: center;
-                gap: 12px;
-                margin-left: 8px;
+                gap: 8px;
+                margin-left: 12px;
             }
-            .hp-offer-summary img {
-                width: 32px;
-                height: 32px;
-                object-fit: cover;
-                border-radius: 4px;
+            .hp-offer-collapsed-summary .hp-summary-count {
+                background: #0073aa;
+                color: #fff;
+                padding: 2px 8px;
+                border-radius: 10px;
+                font-size: 11px;
             }
-            .hp-offer-summary-product {
-                color: #666;
-                font-size: 13px;
-            }
-            .hp-offer-summary-price {
+            .hp-offer-collapsed-summary .hp-summary-price {
                 color: #00a32a;
                 font-weight: 600;
             }
@@ -256,13 +335,11 @@ class FunnelOfferFields
     private static function getOfferFields(): array
     {
         return [
-            // No tab, no label - directly show the offers repeater
             [
                 'key' => 'field_funnel_offers',
                 'label' => '',
                 'name' => 'funnel_offers',
                 'type' => 'repeater',
-                'instructions' => '',
                 'min' => 0,
                 'max' => 10,
                 'layout' => 'block',
@@ -369,205 +446,42 @@ class FunnelOfferFields
                 'wrapper' => ['width' => '45'],
             ],
             
-            // === SINGLE PRODUCT ===
-            [
-                'key' => 'field_single_product_search',
-                'label' => 'Product',
-                'name' => 'single_product_search',
-                'type' => 'text',
-                'placeholder' => 'Search by name or SKU...',
-                'wrapper' => ['width' => '100', 'class' => 'hp-product-search-field'],
-                'conditional_logic' => [
-                    [['field' => 'field_offer_type', 'operator' => '==', 'value' => 'single']],
-                ],
-            ],
-            [
-                'key' => 'field_single_product_sku',
-                'label' => '',
-                'name' => 'single_product_sku',
-                'type' => 'text',
-                'wrapper' => ['class' => 'hp-hidden-field'],
-                'conditional_logic' => [
-                    [['field' => 'field_offer_type', 'operator' => '==', 'value' => 'single']],
-                ],
-            ],
-            [
-                'key' => 'field_single_product_qty',
-                'label' => '',
-                'name' => 'single_product_qty',
-                'type' => 'number',
-                'default_value' => 1,
-                'wrapper' => ['class' => 'hp-hidden-field'],
-                'conditional_logic' => [
-                    [['field' => 'field_offer_type', 'operator' => '==', 'value' => 'single']],
-                ],
-            ],
-            // Product display container (populated by JS)
-            [
-                'key' => 'field_single_product_display',
-                'name' => '',
-                'type' => 'message',
-                'label' => '',
-                'message' => '<div class="hp-single-product-container" data-type="single"></div>',
-                'esc_html' => 0,
-                'wrapper' => ['class' => 'hp-product-display-wrapper'],
-                'conditional_logic' => [
-                    [['field' => 'field_offer_type', 'operator' => '==', 'value' => 'single']],
-                ],
-            ],
-            
-            // === FIXED BUNDLE ===
-            [
-                'key' => 'field_bundle_items',
-                'label' => 'Bundle Items',
-                'name' => 'bundle_items',
-                'type' => 'repeater',
-                'min' => 1,
-                'max' => 10,
-                'layout' => 'block',
-                'button_label' => 'Add Product',
-                'conditional_logic' => [
-                    [['field' => 'field_offer_type', 'operator' => '==', 'value' => 'fixed_bundle']],
-                ],
-                'sub_fields' => [
-                    [
-                        'key' => 'field_bundle_item_search',
-                        'label' => 'Search Product',
-                        'name' => 'product_search',
-                        'type' => 'text',
-                        'placeholder' => 'Search...',
-                        'wrapper' => ['width' => '100', 'class' => 'hp-product-search-field'],
-                    ],
-                    [
-                        'key' => 'field_bundle_item_sku',
-                        'label' => '',
-                        'name' => 'sku',
-                        'type' => 'text',
-                        'wrapper' => ['class' => 'hp-hidden-field'],
-                    ],
-                    [
-                        'key' => 'field_bundle_item_qty',
-                        'label' => '',
-                        'name' => 'qty',
-                        'type' => 'number',
-                        'default_value' => 1,
-                        'wrapper' => ['class' => 'hp-hidden-field'],
-                    ],
-                    [
-                        'key' => 'field_bundle_item_display',
-                        'name' => '',
-                        'type' => 'message',
-                        'label' => '',
-                        'message' => '<div class="hp-bundle-product-container" data-type="bundle"></div>',
-                        'esc_html' => 0,
-                    ],
-                ],
-            ],
-            
-            // === CUSTOMIZABLE KIT ===
+            // Kit max items (only for kit type)
             [
                 'key' => 'field_kit_max_items',
                 'label' => 'Max Items',
                 'name' => 'kit_max_items',
                 'type' => 'number',
                 'default_value' => 6,
-                'min' => 0,
-                'wrapper' => ['width' => '20'],
-                'conditional_logic' => [
-                    [['field' => 'field_offer_type', 'operator' => '==', 'value' => 'customizable_kit']],
-                ],
-            ],
-            [
-                'key' => 'field_kit_products',
-                'label' => 'Kit Products',
-                'name' => 'kit_products',
-                'type' => 'repeater',
                 'min' => 1,
-                'max' => 20,
-                'layout' => 'block',
-                'button_label' => 'Add Product',
+                'wrapper' => ['width' => '15'],
                 'conditional_logic' => [
                     [['field' => 'field_offer_type', 'operator' => '==', 'value' => 'customizable_kit']],
-                ],
-                'sub_fields' => [
-                    [
-                        'key' => 'field_kit_product_search',
-                        'label' => 'Product',
-                        'name' => 'product_search',
-                        'type' => 'text',
-                        'placeholder' => 'Search...',
-                        'wrapper' => ['width' => '40', 'class' => 'hp-product-search-field'],
-                    ],
-                    [
-                        'key' => 'field_kit_product_sku',
-                        'label' => '',
-                        'name' => 'sku',
-                        'type' => 'text',
-                        'wrapper' => ['class' => 'hp-hidden-field'],
-                    ],
-                    [
-                        'key' => 'field_kit_product_role',
-                        'label' => 'Role',
-                        'name' => 'role',
-                        'type' => 'select',
-                        'choices' => [
-                            'must' => 'Required',
-                            'default' => 'Default',
-                            'optional' => 'Optional',
-                        ],
-                        'default_value' => 'optional',
-                        'wrapper' => ['width' => '20'],
-                    ],
-                    [
-                        'key' => 'field_kit_product_qty',
-                        'label' => 'Qty',
-                        'name' => 'qty',
-                        'type' => 'number',
-                        'default_value' => 1,
-                        'min' => 0,
-                        'wrapper' => ['width' => '10'],
-                    ],
-                    [
-                        'key' => 'field_kit_product_max_qty',
-                        'label' => 'Max',
-                        'name' => 'max_qty',
-                        'type' => 'number',
-                        'default_value' => 3,
-                        'min' => 1,
-                        'wrapper' => ['width' => '10'],
-                    ],
-                    [
-                        'key' => 'field_kit_product_discount_type',
-                        'label' => 'Discount',
-                        'name' => 'discount_type',
-                        'type' => 'select',
-                        'choices' => ['none' => '-', 'percent' => '%', 'fixed' => '$'],
-                        'default_value' => 'none',
-                        'wrapper' => ['width' => '10'],
-                    ],
-                    [
-                        'key' => 'field_kit_product_discount_value',
-                        'label' => 'Value',
-                        'name' => 'discount_value',
-                        'type' => 'number',
-                        'default_value' => 0,
-                        'wrapper' => ['width' => '10'],
-                        'conditional_logic' => [
-                            [['field' => 'field_kit_product_discount_type', 'operator' => '!=', 'value' => 'none']],
-                        ],
-                    ],
-                    [
-                        'key' => 'field_kit_product_display',
-                        'name' => '',
-                        'type' => 'message',
-                        'label' => '',
-                        'message' => '<div class="hp-kit-product-container" data-type="kit"></div>',
-                        'esc_html' => 0,
-                    ],
                 ],
             ],
             
-            // Image override (optional)
+            // Products data (JSON stored, hidden)
+            [
+                'key' => 'field_offer_products_data',
+                'label' => '',
+                'name' => 'products_data',
+                'type' => 'textarea',
+                'wrapper' => ['class' => 'hp-hidden-field'],
+                'rows' => 2,
+            ],
+            
+            // Products UI container (rendered by JS)
+            [
+                'key' => 'field_offer_products_container',
+                'label' => 'Products',
+                'name' => '',
+                'type' => 'message',
+                'message' => '<div class="hp-products-section" data-offer-products></div>',
+                'esc_html' => 0,
+                'wrapper' => ['width' => '100', 'class' => 'hp-products-container-field'],
+            ],
+            
+            // Image override
             [
                 'key' => 'field_offer_image',
                 'label' => 'Image Override',

@@ -739,12 +739,77 @@ class FunnelConfigLoader
     }
 
     /**
+     * Get products from the new products_data JSON field or fall back to legacy fields.
+     */
+    private static function getProductsFromRow(array $row): array
+    {
+        // Try new products_data JSON field first
+        $productsJson = $row['products_data'] ?? '';
+        if (!empty($productsJson)) {
+            $products = json_decode($productsJson, true);
+            if (is_array($products)) {
+                return $products;
+            }
+        }
+        
+        // Fall back to legacy format based on type
+        $offerType = $row['offer_type'] ?? 'single';
+        
+        if ($offerType === 'single') {
+            $sku = $row['single_product_sku'] ?? '';
+            if ($sku) {
+                return [[
+                    'sku' => $sku,
+                    'qty' => (int) ($row['single_product_qty'] ?? 1),
+                ]];
+            }
+        } elseif ($offerType === 'fixed_bundle') {
+            $items = $row['bundle_items'] ?? [];
+            $products = [];
+            foreach ($items as $item) {
+                if (!empty($item['sku'])) {
+                    $products[] = [
+                        'sku' => $item['sku'],
+                        'qty' => (int) ($item['qty'] ?? 1),
+                    ];
+                }
+            }
+            return $products;
+        } elseif ($offerType === 'customizable_kit') {
+            $items = $row['kit_products'] ?? [];
+            $products = [];
+            foreach ($items as $item) {
+                if (!empty($item['sku'])) {
+                    $products[] = [
+                        'sku' => $item['sku'],
+                        'qty' => (int) ($item['qty'] ?? 1),
+                        'role' => $item['role'] ?? 'optional',
+                        'max_qty' => (int) ($item['max_qty'] ?? 3),
+                        'discount_type' => $item['discount_type'] ?? 'none',
+                        'discount_value' => (float) ($item['discount_value'] ?? 0),
+                    ];
+                }
+            }
+            return $products;
+        }
+        
+        return [];
+    }
+
+    /**
      * Enrich single product offer with WooCommerce data.
      */
     private static function enrichSingleOffer(array $offer, array $row): array
     {
-        $sku = $row['single_product_sku'] ?? '';
-        $qty = (int) ($row['single_product_qty'] ?? 1);
+        $products = self::getProductsFromRow($row);
+        $product = $products[0] ?? null;
+        
+        if (!$product) {
+            return $offer;
+        }
+        
+        $sku = $product['sku'] ?? '';
+        $qty = (int) ($product['qty'] ?? 1);
         
         $offer['productSku'] = $sku;
         $offer['quantity'] = $qty;
@@ -784,12 +849,12 @@ class FunnelConfigLoader
      */
     private static function enrichBundleOffer(array $offer, array $row): array
     {
-        $bundleItems = $row['bundle_items'] ?? [];
+        $products = self::getProductsFromRow($row);
         $offer['bundleItems'] = [];
         $totalPrice = 0;
         $totalRegularPrice = 0;
         
-        foreach ($bundleItems as $item) {
+        foreach ($products as $item) {
             $sku = $item['sku'] ?? '';
             $qty = (int) ($item['qty'] ?? 1);
             
@@ -836,14 +901,14 @@ class FunnelConfigLoader
      */
     private static function enrichKitOffer(array $offer, array $row): array
     {
-        $kitProducts = $row['kit_products'] ?? [];
+        $products = self::getProductsFromRow($row);
         $offer['kitProducts'] = [];
         $offer['maxTotalItems'] = (int) ($row['kit_max_items'] ?? 6);
         
         $defaultTotalPrice = 0;
         $defaultTotalRegularPrice = 0;
         
-        foreach ($kitProducts as $item) {
+        foreach ($products as $item) {
             $sku = $item['sku'] ?? '';
             $role = $item['role'] ?? 'optional';
             $qty = (int) ($item['qty'] ?? ($role === 'optional' ? 0 : 1));
