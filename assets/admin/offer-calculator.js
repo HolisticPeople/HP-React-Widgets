@@ -468,8 +468,26 @@
 
     function getRowIndex($row) {
         // Get the index of this row within the repeater
-        const $allRows = $row.closest('.acf-repeater').find('> .acf-row:not(.acf-clone)');
-        return $allRows.index($row);
+        // Try multiple selectors as ACF structure can vary
+        const $repeater = $row.closest('.acf-repeater');
+        let $allRows = $repeater.find('> .acf-row:not(.acf-clone)');
+        
+        // If direct child selector fails, try without it
+        if ($allRows.length === 0) {
+            $allRows = $repeater.find('.acf-row:not(.acf-clone)');
+        }
+        
+        // Also try finding via data attribute
+        const dataIndex = $row.attr('data-id');
+        if (dataIndex && dataIndex.match(/^row-\d+$/)) {
+            const idx = parseInt(dataIndex.replace('row-', ''), 10);
+            console.log('[HP Offer] Got row index from data-id:', idx);
+            return idx;
+        }
+        
+        const index = $allRows.index($row);
+        console.log('[HP Offer] Computed row index:', index, 'from', $allRows.length, 'rows');
+        return index >= 0 ? index : 0; // Default to 0 if not found
     }
 
     function saveProductsData($row, products) {

@@ -411,12 +411,19 @@ class FunnelApi
             'order' => 'ASC',
         ]);
 
+        // Track SKUs already in results
+        $addedSkus = [];
+        foreach ($results as $r) {
+            $addedSkus[] = $r['sku'];
+        }
+
         foreach ($products as $product) {
             // Skip if already added via SKU match
             $sku = $product->get_sku();
-            if (array_filter($results, fn($r) => $r['sku'] === $sku)) {
+            if (in_array($sku, $addedSkus, true)) {
                 continue;
             }
+            $addedSkus[] = $sku;
             $results[] = $this->formatProductForSearch($product);
         }
 
