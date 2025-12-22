@@ -24,18 +24,24 @@ class FunnelOfferFields
      */
     public static function removeLegacyProductsTab(): void
     {
-        // Remove the Products tab field from any field group
+        // Remove the Products tab and funnel_products repeater
         add_filter('acf/load_field', function($field) {
-            // Remove the Products tab itself
-            if (isset($field['name']) && $field['name'] === 'products_tab') {
+            if (!$field) return $field;
+            
+            // Remove by field name
+            $removeNames = ['products_tab', 'funnel_products'];
+            if (isset($field['name']) && in_array($field['name'], $removeNames, true)) {
                 return false;
             }
-            // Remove funnel_products repeater
-            if (isset($field['name']) && $field['name'] === 'funnel_products') {
+            
+            // Remove Products tab by label (tab type with label "Products")
+            if (isset($field['type']) && $field['type'] === 'tab' && 
+                isset($field['label']) && $field['label'] === 'Products') {
                 return false;
             }
+            
             return $field;
-        });
+        }, 5);
     }
 
     public static function generateOfferId($value, $postId, $field)
