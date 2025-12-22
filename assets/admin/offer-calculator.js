@@ -131,8 +131,10 @@
         // Build the UI
         buildProductsUI($container, offerType);
 
-        // Load existing products from JSON field
-        loadExistingProducts($row, $container);
+        // Load existing products from JSON field (with small delay to ensure ACF has populated values)
+        setTimeout(function() {
+            loadExistingProducts($row, $container);
+        }, 100);
     }
 
     // ========================================
@@ -431,19 +433,39 @@
     // ========================================
 
     function getProductsData($row) {
-        const $field = $row.find('.acf-field[data-name="products_data"] textarea');
+        // Try multiple selectors to find the products_data field
+        let $field = $row.find('.acf-field[data-name="products_data"] textarea');
+        
+        // If not found, try finding it with broader selector
+        if (!$field.length) {
+            $field = $row.find('textarea[name*="products_data"]');
+        }
+        
+        // Debug: log all textareas in the row
+        const allTextareas = $row.find('textarea');
+        console.log('[HP Offer] Found', allTextareas.length, 'textareas in row');
+        allTextareas.each(function() {
+            const name = $(this).attr('name') || '(no name)';
+            const val = $(this).val() || '(empty)';
+            if (name.includes('products') || val.includes('sku')) {
+                console.log('[HP Offer] Textarea:', name, '=', val.substring(0, 50));
+            }
+        });
+        
         if (!$field.length) {
             console.warn('[HP Offer] products_data field not found');
             return [];
         }
 
         const json = $field.val();
+        console.log('[HP Offer] products_data JSON:', json ? json.substring(0, 80) : '(empty)');
+        
         if (!json) return [];
 
         try {
             return JSON.parse(json);
         } catch (e) {
-            console.warn('[HP Offer] Invalid JSON in products_data');
+            console.warn('[HP Offer] Invalid JSON in products_data:', e);
             return [];
         }
     }
@@ -462,10 +484,19 @@
     }
 
     function loadExistingProducts($row, $container) {
+        // First, ensure the products_data field exists and get its value
+        const $field = $row.find('.acf-field[data-name="products_data"] textarea');
+        console.log('[HP Offer] products_data field found:', $field.length > 0);
+        
+        if ($field.length) {
+            const rawValue = $field.val();
+            console.log('[HP Offer] products_data raw value:', rawValue ? rawValue.substring(0, 100) + '...' : '(empty)');
+        }
+        
         const products = getProductsData($row);
         const offerType = getOfferType($row);
         
-        console.log('[HP Offer] Loading existing products:', products.length);
+        console.log('[HP Offer] Parsed products:', products.length, products);
         
         if (products.length > 0) {
             renderProductsList($container.find('.hp-products-list'), products, offerType);
