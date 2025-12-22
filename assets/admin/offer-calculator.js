@@ -135,10 +135,9 @@
             
         $container.html(`
             <div style="border: 1px solid #ddd; border-radius: 6px; background: #fff;">
-                <div class="hp-products-header" style="padding: 12px; border-bottom: 1px solid #eee; background: #f9f9f9;">
+                <div class="hp-search-wrapper" style="padding: 12px; border-bottom: 1px solid #eee; background: #f9f9f9; position: relative;">
                     <input type="text" class="hp-offer-search-input" placeholder="${placeholder}" 
                            style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
-                    <div class="hp-search-results" style="display: none; position: absolute; z-index: 1000; background: #fff; border: 1px solid #ddd; border-radius: 4px; margin-top: 4px; max-height: 200px; overflow-y: auto; width: calc(100% - 24px);"></div>
                 </div>
                 <div class="hp-products-list" style="min-height: 60px; padding: 12px;"></div>
             </div>
@@ -423,18 +422,23 @@
     // ========================================
 
     function getProductsData($row) {
-        // First, check if we have PHP-injected data (for initial page load)
-        const rowIndex = getRowIndex($row);
-        console.log('[HP Offer] Getting products for row index:', rowIndex);
-        console.log('[HP Offer] window.hpOfferSavedProducts:', window.hpOfferSavedProducts);
+        // Check if this is an EXISTING offer (has an ID that was set on page load)
+        // New offers shouldn't load from PHP-injected data
+        const $idField = $row.find('.acf-field[data-name="offer_id"] input');
+        const offerId = $idField.val();
+        const isExistingOffer = offerId && offerId.length > 5; // Valid IDs are like "offer-7f079867"
         
-        if (typeof window.hpOfferSavedProducts !== 'undefined') {
+        const rowIndex = getRowIndex($row);
+        console.log('[HP Offer] Getting products for row', rowIndex, 'offerId:', offerId, 'isExisting:', isExistingOffer);
+        
+        // Only use PHP-injected data for EXISTING offers (not newly added ones)
+        if (isExistingOffer && typeof window.hpOfferSavedProducts !== 'undefined') {
             const savedJson = window.hpOfferSavedProducts[rowIndex];
-            console.log('[HP Offer] Found injected data for row', rowIndex, ':', savedJson);
+            console.log('[HP Offer] Found injected data for row', rowIndex, ':', savedJson ? 'yes' : 'no');
             if (savedJson) {
                 try {
                     const products = typeof savedJson === 'string' ? JSON.parse(savedJson) : savedJson;
-                    // Clear from the map so we don't reload it again after user edits
+                    // Clear from the map so we don't reload it again
                     delete window.hpOfferSavedProducts[rowIndex];
                     return products;
                 } catch (e) {
@@ -443,19 +447,17 @@
             }
         }
 
-        // Fall back to textarea value (for user-edited data)
+        // Fall back to textarea value
         let $field = $row.find('.acf-field[data-name="products_data"] textarea');
         if (!$field.length) {
             $field = $row.find('textarea[name*="products_data"]');
         }
         
         if (!$field.length) {
-            console.warn('[HP Offer] products_data field not found');
             return [];
         }
 
         const json = $field.val();
-        console.log('[HP Offer] Textarea value:', json);
         if (!json) return [];
 
         try {
