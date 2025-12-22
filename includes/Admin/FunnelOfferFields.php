@@ -508,15 +508,31 @@ class FunnelOfferFields
                 'rows' => 2,
             ],
             
-            // Products UI container (rendered by JS)
+            // Products UI container - using a group with message inside
             [
-                'key' => 'field_offer_products_container',
+                'key' => 'field_offer_products_wrapper',
                 'label' => 'Products',
-                'name' => '',
-                'type' => 'message',
-                'message' => '<div class="hp-products-section" data-offer-products></div>',
-                'esc_html' => 0,
-                'wrapper' => ['width' => '100', 'class' => 'hp-products-container-field'],
+                'name' => 'products_wrapper',
+                'type' => 'group',
+                'wrapper' => ['width' => '100'],
+                'layout' => 'block',
+                'sub_fields' => [
+                    [
+                        'key' => 'field_offer_products_container',
+                        'label' => '',
+                        'name' => 'container',
+                        'type' => 'message',
+                        'message' => '<div class="hp-products-section" data-offer-products>
+                            <div class="hp-products-header">
+                                <div class="hp-search-wrapper">
+                                    <input type="text" class="hp-offer-search-input" placeholder="Search to add products...">
+                                </div>
+                            </div>
+                            <div class="hp-products-list"></div>
+                        </div>',
+                        'esc_html' => 0,
+                    ],
+                ],
             ],
             
             // Image override

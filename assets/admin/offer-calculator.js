@@ -115,7 +115,10 @@
     function initializeOfferRow($row) {
         const $container = $row.find('[data-offer-products]');
         if (!$container.length) {
-            console.log('[HP Offer] No products container in row');
+            console.log('[HP Offer] No products container in row, trying to find group...');
+            // Try to find it via the group wrapper
+            const $group = $row.find('.acf-field[data-name="products_wrapper"]');
+            console.log('[HP Offer] Products wrapper group found:', $group.length > 0);
             return;
         }
 
@@ -128,39 +131,21 @@
         const offerType = getOfferType($row);
         console.log('[HP Offer] Initializing offer row, type:', offerType);
 
-        // Build the UI
-        buildProductsUI($container, offerType);
+        // Update placeholder based on type
+        const $searchInput = $container.find('.hp-offer-search-input');
+        if (offerType === 'single') {
+            $searchInput.attr('placeholder', 'Search to select a product...');
+        } else {
+            $searchInput.attr('placeholder', 'Search to add products...');
+        }
 
-        // Load existing products from JSON field (with small delay to ensure ACF has populated values)
-        setTimeout(function() {
-            loadExistingProducts($row, $container);
-        }, 100);
+        // Load existing products
+        loadExistingProducts($row, $container);
     }
 
     // ========================================
-    // UI BUILDING
+    // UI UPDATES
     // ========================================
-
-    function buildProductsUI($container, offerType) {
-        const maxProducts = offerType === 'single' ? 1 : (offerType === 'customizable_kit' ? 20 : 10);
-        const placeholder = offerType === 'single' 
-            ? 'Search to select a product...' 
-            : 'Search to add products...';
-
-        const html = `
-            <div class="hp-products-header">
-                <div class="hp-search-wrapper">
-                    <input type="text" 
-                           class="hp-offer-search-input" 
-                           placeholder="${placeholder}"
-                           data-max="${maxProducts}">
-                </div>
-            </div>
-            <div class="hp-products-list" data-type="${offerType}"></div>
-        `;
-
-        $container.html(html);
-    }
 
     function refreshOfferUI($row) {
         const $container = $row.find('[data-offer-products]');
