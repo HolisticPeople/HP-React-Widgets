@@ -27,7 +27,7 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     funnelId,
     funnelName,
     funnelSlug,
-    offers,
+    offers: rawOffers,
     defaultOfferId,
     logoUrl,
     logoLink = '/',
@@ -45,6 +45,9 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     footerDisclaimer = '',
     apiBase = '/wp-json/hp-rw/v1',
   } = props;
+
+  // Ensure offers is always an array
+  const offers = Array.isArray(rawOffers) ? rawOffers : [];
 
   // Current step in the checkout flow
   const [currentStep, setCurrentStep] = useState<CheckoutStepType>('checkout');
