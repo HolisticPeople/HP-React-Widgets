@@ -207,6 +207,9 @@ class Plugin
 
         // Initialize Funnel Offer ACF fields
         Admin\FunnelOfferFields::init();
+        
+        // Initialize Funnel Styling ACF fields (text colors)
+        Admin\FunnelStylingFields::init();
 
         // Enqueue admin scripts for funnel editing
         add_action('admin_enqueue_scripts', [self::class, 'enqueueAdminScripts']);

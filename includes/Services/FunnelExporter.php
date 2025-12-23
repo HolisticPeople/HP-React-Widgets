@@ -421,6 +421,10 @@ class FunnelExporter
     {
         return [
             'accent_color' => get_field('accent_color', $postId) ?: '#eab308',
+            'text_color_basic' => get_field('text_color_basic', $postId) ?: '#e5e5e5',
+            'text_color_accent' => get_field('text_color_accent', $postId) ?: '#eab308',
+            'text_color_note' => get_field('text_color_note', $postId) ?: '#a3a3a3',
+            'text_color_discount' => get_field('text_color_discount', $postId) ?: '#22c55e',
             'background_type' => get_field('background_type', $postId) ?: 'gradient',
             'background_color' => get_field('background_color', $postId) ?: '',
             'background_image' => self::resolveImageUrl(get_field('background_image', $postId)),

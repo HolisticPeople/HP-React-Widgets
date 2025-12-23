@@ -494,6 +494,10 @@ class FunnelImporter
         if (empty($styling)) return;
 
         self::setField($postId, 'accent_color', $styling['accent_color'] ?? '#eab308');
+        self::setField($postId, 'text_color_basic', $styling['text_color_basic'] ?? '#e5e5e5');
+        self::setField($postId, 'text_color_accent', $styling['text_color_accent'] ?? '#eab308');
+        self::setField($postId, 'text_color_note', $styling['text_color_note'] ?? '#a3a3a3');
+        self::setField($postId, 'text_color_discount', $styling['text_color_discount'] ?? '#22c55e');
         self::setField($postId, 'background_type', $styling['background_type'] ?? 'gradient');
         self::setField($postId, 'background_color', $styling['background_color'] ?? '');
         self::setField($postId, 'background_image', $styling['background_image'] ?? '');

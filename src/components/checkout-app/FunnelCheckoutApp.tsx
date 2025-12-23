@@ -22,6 +22,14 @@ export interface FunnelCheckoutAppProps extends FunnelCheckoutAppConfig {
   apiBase?: string;
 }
 
+// Default text colors matching the reference funnel
+const DEFAULT_TEXT_COLORS = {
+  basic: '#e5e5e5',
+  accent: '#eab308',
+  note: '#a3a3a3',
+  discount: '#22c55e',
+};
+
 export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
   const {
     funnelId,
@@ -40,11 +48,15 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     showUpsell = true,
     thankYouHeadline = 'Thank You for Your Order!',
     thankYouMessage = 'Your order has been confirmed.',
-    accentColor = 'hsl(45, 95%, 60%)',
+    accentColor = '#eab308',
+    textColors = DEFAULT_TEXT_COLORS,
     footerText = '',
     footerDisclaimer = '',
     apiBase = '/wp-json/hp-rw/v1',
   } = props;
+  
+  // Merge with defaults in case some colors are missing
+  const colors = { ...DEFAULT_TEXT_COLORS, ...textColors };
 
   // Ensure offers is always a stable array reference
   const offers = useMemo(() => Array.isArray(rawOffers) ? rawOffers : [], [rawOffers]);
@@ -335,10 +347,19 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     }
   }, [currentUpsellIndex, upsellOffers.length]);
 
-  // Apply CSS custom properties for accent color
+  // Apply CSS custom properties for colors
   const rootStyle = useMemo(() => ({
     '--funnel-accent': accentColor,
-  } as React.CSSProperties), [accentColor]);
+    '--hp-funnel-text-basic': colors.basic,
+    '--hp-funnel-text-accent': colors.accent,
+    '--hp-funnel-text-note': colors.note,
+    '--hp-funnel-text-discount': colors.discount,
+    // Also set as direct color vars for inline use
+    '--color-foreground': colors.basic,
+    '--color-accent': colors.accent,
+    '--color-muted': colors.note,
+    '--color-discount': colors.discount,
+  } as React.CSSProperties), [accentColor, colors]);
 
   return (
     <div 

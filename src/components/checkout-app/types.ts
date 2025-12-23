@@ -209,6 +209,13 @@ export interface OrderItem {
   sku: string;
 }
 
+export interface TextColors {
+  basic: string;    // Off-white, main text
+  accent: string;   // Orange/gold, highlighted text
+  note: string;     // Muted, secondary text
+  discount: string; // Green, savings/discounts
+}
+
 export interface FunnelCheckoutAppConfig {
   funnelId: string;
   funnelName: string;
@@ -227,6 +234,7 @@ export interface FunnelCheckoutAppConfig {
   thankYouHeadline: string;
   thankYouMessage: string;
   accentColor: string;
+  textColors?: TextColors;
   footerText: string;
   footerDisclaimer: string;
 }

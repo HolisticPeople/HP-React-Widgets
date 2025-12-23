@@ -389,11 +389,15 @@ class FunnelConfigLoader
             
             // Styling
             'styling' => [
-                'accent_color'     => self::getFieldValue('accent_color', $postId, '#eab308'),
-                'background_type'  => self::getFieldValue('background_type', $postId, 'gradient'),
-                'background_color' => self::getFieldValue('background_color', $postId, ''),
-                'background_image' => self::getFieldValue('background_image', $postId, ''),
-                'custom_css'       => self::getFieldValue('custom_css', $postId, ''),
+                'accent_color'       => self::getFieldValue('accent_color', $postId, '#eab308'),
+                'text_color_basic'   => self::getFieldValue('text_color_basic', $postId, '#e5e5e5'),
+                'text_color_accent'  => self::getFieldValue('text_color_accent', $postId, '#eab308'),
+                'text_color_note'    => self::getFieldValue('text_color_note', $postId, '#a3a3a3'),
+                'text_color_discount'=> self::getFieldValue('text_color_discount', $postId, '#22c55e'),
+                'background_type'    => self::getFieldValue('background_type', $postId, 'gradient'),
+                'background_color'   => self::getFieldValue('background_color', $postId, ''),
+                'background_image'   => self::getFieldValue('background_image', $postId, ''),
+                'custom_css'         => self::getFieldValue('custom_css', $postId, ''),
             ],
             
             // Footer

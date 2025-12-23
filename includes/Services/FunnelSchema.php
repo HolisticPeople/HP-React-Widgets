@@ -309,7 +309,11 @@ class FunnelSchema
                     'type' => 'object',
                     'description' => 'Visual styling options',
                     'properties' => [
-                        'accent_color' => ['type' => 'string', 'description' => 'Hex color', 'default' => '#eab308'],
+                        'accent_color' => ['type' => 'string', 'description' => 'Primary accent hex color', 'default' => '#eab308'],
+                        'text_color_basic' => ['type' => 'string', 'description' => 'Main text color (off-white)', 'default' => '#e5e5e5'],
+                        'text_color_accent' => ['type' => 'string', 'description' => 'Accent text color (headings, CTAs)', 'default' => '#eab308'],
+                        'text_color_note' => ['type' => 'string', 'description' => 'Muted text color (descriptions)', 'default' => '#a3a3a3'],
+                        'text_color_discount' => ['type' => 'string', 'description' => 'Discount/savings text color', 'default' => '#22c55e'],
                         'background_type' => ['type' => 'string', 'enum' => ['gradient', 'solid', 'image'], 'default' => 'gradient'],
                         'background_color' => ['type' => 'string'],
                         'background_image' => ['type' => 'string'],

@@ -41,6 +41,10 @@ class FunnelStylesShortcode
         
         // Build CSS variables
         $accentColor = $styling['accent_color'] ?? '#eab308';
+        $textBasic = $styling['text_color_basic'] ?? '#e5e5e5';
+        $textAccent = $styling['text_color_accent'] ?? '#eab308';
+        $textNote = $styling['text_color_note'] ?? '#a3a3a3';
+        $textDiscount = $styling['text_color_discount'] ?? '#22c55e';
         $bgType = $styling['background_type'] ?? 'gradient';
         $bgColor = $styling['background_color'] ?? '';
         $bgImage = $styling['background_image'] ?? '';
@@ -53,6 +57,14 @@ class FunnelStylesShortcode
         $cssVars = "
             --hp-funnel-accent: {$accentColor};
             --hp-funnel-accent-rgb: " . $this->hexToRgb($accentColor) . ";
+            --hp-funnel-text-basic: {$textBasic};
+            --hp-funnel-text-basic-rgb: " . $this->hexToRgb($textBasic) . ";
+            --hp-funnel-text-accent: {$textAccent};
+            --hp-funnel-text-accent-rgb: " . $this->hexToRgb($textAccent) . ";
+            --hp-funnel-text-note: {$textNote};
+            --hp-funnel-text-note-rgb: " . $this->hexToRgb($textNote) . ";
+            --hp-funnel-text-discount: {$textDiscount};
+            --hp-funnel-text-discount-rgb: " . $this->hexToRgb($textDiscount) . ";
             --hp-funnel-bg: {$background};
         ";
 
@@ -88,15 +100,46 @@ class FunnelStylesShortcode
                 background: transparent;
             }
             
-            /* Accent color utilities */
-            .hp-funnel-accent {
-                color: var(--hp-funnel-accent);
+            /* Text color utilities */
+            .hp-text-basic, .hp-funnel .text-foreground {
+                color: var(--hp-funnel-text-basic);
             }
+            .hp-text-accent, .hp-funnel-accent {
+                color: var(--hp-funnel-text-accent);
+            }
+            .hp-text-note, .hp-funnel .text-muted-foreground {
+                color: var(--hp-funnel-text-note);
+            }
+            .hp-text-discount {
+                color: var(--hp-funnel-text-discount);
+            }
+            
+            /* Accent color utilities */
             .hp-funnel-accent-bg {
                 background-color: var(--hp-funnel-accent);
             }
             .hp-funnel-accent-glow {
                 box-shadow: 0 0 30px rgba(var(--hp-funnel-accent-rgb), 0.5);
+            }
+            
+            /* Map to Tailwind-like classes used in React */
+            .hp-checkout-app {
+                --foreground: var(--hp-funnel-text-basic-rgb);
+                --muted-foreground: var(--hp-funnel-text-note-rgb);
+                --accent: var(--hp-funnel-text-accent-rgb);
+            }
+            .hp-checkout-app .text-foreground {
+                color: var(--hp-funnel-text-basic);
+            }
+            .hp-checkout-app .text-muted-foreground {
+                color: var(--hp-funnel-text-note);
+            }
+            .hp-checkout-app .text-accent {
+                color: var(--hp-funnel-text-accent);
+            }
+            .hp-checkout-app .text-green-500, 
+            .hp-checkout-app .text-emerald-500 {
+                color: var(--hp-funnel-text-discount);
             }
 
             {$customCss}

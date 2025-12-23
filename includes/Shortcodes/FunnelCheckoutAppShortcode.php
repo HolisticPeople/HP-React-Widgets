@@ -126,7 +126,13 @@ class FunnelCheckoutAppShortcode
             'showUpsell'          => (bool) ($config['thankyou']['show_upsell'] ?? false),
             'thankYouHeadline'    => $config['thankyou']['headline'] ?? 'Thank You for Your Order!',
             'thankYouMessage'     => $config['thankyou']['message'] ?? 'Your order has been confirmed.',
-            'accentColor'         => $config['styling']['accent_color'] ?? 'hsl(45, 95%, 60%)',
+            'accentColor'         => $config['styling']['accent_color'] ?? '#eab308',
+            'textColors'          => [
+                'basic'    => $config['styling']['text_color_basic'] ?? '#e5e5e5',
+                'accent'   => $config['styling']['text_color_accent'] ?? '#eab308',
+                'note'     => $config['styling']['text_color_note'] ?? '#a3a3a3',
+                'discount' => $config['styling']['text_color_discount'] ?? '#22c55e',
+            ],
             'footerText'          => $config['footer']['text'] ?? '',
             'footerDisclaimer'    => $config['footer']['disclaimer'] ?? '',
         ];
