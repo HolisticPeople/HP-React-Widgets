@@ -610,10 +610,11 @@ export const CheckoutStep = ({
             <h2 className="text-2xl font-bold mb-6 text-accent">Order Summary</h2>
             
             <div className="space-y-3 mb-6">
+              {/* Show subtotal (original price) with strikethrough if discounted */}
               <div className="flex justify-between text-foreground">
                 <span>{selectedOffer?.name}</span>
-                <span className="font-semibold">
-                  ${offerPrice.discounted.toFixed(2)}
+                <span className={offerPrice.original > offerPrice.discounted ? 'line-through text-muted-foreground' : 'font-semibold'}>
+                  ${offerPrice.original.toFixed(2)}
                 </span>
               </div>
 

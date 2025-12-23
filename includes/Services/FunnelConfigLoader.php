@@ -836,10 +836,10 @@ class FunnelConfigLoader
                 $offer['image'] = $wcData['image'];
             }
             
-            // Original price is always from WooCommerce
-            $offer['originalPrice'] = $offer['product']['price'] * $qty;
+            // Original price is WooCommerce regular price (before any discounts)
+            $offer['originalPrice'] = $offer['product']['regularPrice'] * $qty;
             
-            // Use admin-set offer_price if available, otherwise calculate from discount
+            // Use admin-set offer_price if available, otherwise calculate from WC sale price + discount
             if ($offer['offerPrice'] !== null) {
                 $offer['calculatedPrice'] = $offer['offerPrice'];
             } else {
@@ -896,7 +896,8 @@ class FunnelConfigLoader
             }
         }
         
-        $offer['originalPrice'] = $totalPrice;
+        // originalPrice is the sum of WooCommerce regular prices (before any discounts)
+        $offer['originalPrice'] = $totalRegularPrice;
         
         // Use admin-set offer_price if available, otherwise calculate from discount
         if ($offer['offerPrice'] !== null) {
