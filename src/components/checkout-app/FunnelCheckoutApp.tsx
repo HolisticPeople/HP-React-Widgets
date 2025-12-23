@@ -61,10 +61,10 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
   const [kitSelection, setKitSelection] = useState<KitSelection>(() => {
     // Initialize with admin-set quantities for kit offers
     const selection: KitSelection = {};
-    const offer = offers.find(o => o.id === selectedOfferId);
-    if (offer?.type === 'customizable_kit') {
-      const kitOffer = offer as CustomizableKitOffer;
-      kitOffer.kitProducts.forEach((product: KitProduct) => {
+    const offer = offers?.find(o => o.id === selectedOfferId);
+    if (offer?.type === 'customizable_kit' && 'kitProducts' in offer) {
+      const kitProducts = (offer as CustomizableKitOffer).kitProducts || [];
+      kitProducts.forEach((product: KitProduct) => {
         // Use admin-set qty as default, but enforce minimum based on role
         const minQty = product.role === 'must' ? 1 : 0;
         selection[product.sku] = Math.max(minQty, product.qty);
@@ -101,11 +101,11 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     setSelectedOfferId(offerId);
     
     // Reset kit selection for the new offer with admin-set quantities
-    const offer = offers.find(o => o.id === offerId);
-    if (offer?.type === 'customizable_kit') {
-      const kitOffer = offer as CustomizableKitOffer;
+    const offer = offers?.find(o => o.id === offerId);
+    if (offer?.type === 'customizable_kit' && 'kitProducts' in offer) {
+      const kitProducts = (offer as CustomizableKitOffer).kitProducts || [];
       const newSelection: KitSelection = {};
-      kitOffer.kitProducts.forEach((product: KitProduct) => {
+      kitProducts.forEach((product: KitProduct) => {
         // Use admin-set qty as default, but enforce minimum based on role
         const minQty = product.role === 'must' ? 1 : 0;
         newSelection[product.sku] = Math.max(minQty, product.qty);
@@ -119,10 +119,10 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
   // Handle kit product quantity change
   const handleKitQuantityChange = useCallback((sku: string, qty: number) => {
     // Get the product to check its role
-    const offer = offers.find(o => o.id === selectedOfferId);
-    if (offer?.type === 'customizable_kit') {
-      const kitOffer = offer as CustomizableKitOffer;
-      const product = kitOffer.kitProducts.find((p: KitProduct) => p.sku === sku);
+    const offer = offers?.find(o => o.id === selectedOfferId);
+    if (offer?.type === 'customizable_kit' && 'kitProducts' in offer) {
+      const kitProducts = (offer as CustomizableKitOffer).kitProducts || [];
+      const product = kitProducts.find((p: KitProduct) => p.sku === sku);
       
       // Enforce minimum based on role: 'must' = min 1, 'optional' = min 0
       const minQty = product?.role === 'must' ? 1 : 0;
