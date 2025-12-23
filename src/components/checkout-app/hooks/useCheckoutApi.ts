@@ -83,6 +83,7 @@ export function useCheckoutApi(options: UseCheckoutApiOptions) {
           qty: item.qty,
           exclude_global_discount: item.excludeGlobalDiscount,
           item_discount_percent: item.itemDiscountPercent,
+          salePrice: item.salePrice,  // Admin-set price per unit
         })),
         selected_rate: selectedRate ? {
           serviceName: selectedRate.serviceName,
@@ -127,6 +128,7 @@ export function useCheckoutApi(options: UseCheckoutApiOptions) {
           qty: item.qty,
           exclude_global_discount: item.excludeGlobalDiscount,
           item_discount_percent: item.itemDiscountPercent,
+          salePrice: item.salePrice,  // Admin-set price per unit
         })),
         shipping_address: {
           first_name: shippingAddress.firstName,
