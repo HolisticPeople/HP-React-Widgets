@@ -262,6 +262,26 @@
                 </div>`;
 
             $summary.html(html);
+
+            // Auto-update the Offer Price field with the calculated total
+            this._updateOfferPriceField($container, totalSale);
+        },
+
+        /**
+         * Update the Offer Price ACF field with the calculated total
+         */
+        _updateOfferPriceField: function($container, totalSale) {
+            // Find the offer row
+            const $row = $container.closest('.acf-row');
+            if (!$row.length) return;
+
+            // Find the offer_price field input
+            const $priceField = $row.find('.acf-field[data-name="offer_price"] input[type="number"]');
+            if (!$priceField.length) return;
+
+            // Only update if empty or if we should auto-sync
+            // For now, always update to match the table total
+            $priceField.val(totalSale.toFixed(2));
         },
 
         /**

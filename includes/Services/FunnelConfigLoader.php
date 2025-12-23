@@ -715,6 +715,10 @@ class FunnelConfigLoader
                 'discountLabel' => $row['offer_discount_label'] ?? '',
                 'discountType'  => $row['offer_discount_type'] ?? 'none',
                 'discountValue' => (float) ($row['offer_discount_value'] ?? 0),
+                // Admin-set offer price (from product table totals)
+                'offerPrice'    => isset($row['offer_price']) && $row['offer_price'] !== '' 
+                                    ? (float) $row['offer_price'] 
+                                    : null,
             ];
             
             // Type-specific data
@@ -832,13 +836,19 @@ class FunnelConfigLoader
                 $offer['image'] = $wcData['image'];
             }
             
-            // Calculate final price
-            $offer['calculatedPrice'] = self::applyDiscount(
-                $offer['product']['price'] * $qty,
-                $offer['discountType'],
-                $offer['discountValue']
-            );
+            // Original price is always from WooCommerce
             $offer['originalPrice'] = $offer['product']['price'] * $qty;
+            
+            // Use admin-set offer_price if available, otherwise calculate from discount
+            if ($offer['offerPrice'] !== null) {
+                $offer['calculatedPrice'] = $offer['offerPrice'];
+            } else {
+                $offer['calculatedPrice'] = self::applyDiscount(
+                    $offer['product']['price'] * $qty,
+                    $offer['discountType'],
+                    $offer['discountValue']
+                );
+            }
         }
         
         return $offer;
@@ -887,11 +897,17 @@ class FunnelConfigLoader
         }
         
         $offer['originalPrice'] = $totalPrice;
-        $offer['calculatedPrice'] = self::applyDiscount(
-            $totalPrice,
-            $offer['discountType'],
-            $offer['discountValue']
-        );
+        
+        // Use admin-set offer_price if available, otherwise calculate from discount
+        if ($offer['offerPrice'] !== null) {
+            $offer['calculatedPrice'] = $offer['offerPrice'];
+        } else {
+            $offer['calculatedPrice'] = self::applyDiscount(
+                $totalPrice,
+                $offer['discountType'],
+                $offer['discountValue']
+            );
+        }
         
         return $offer;
     }
@@ -960,11 +976,17 @@ class FunnelConfigLoader
         // Apply global kit discount to default selection
         $offer['defaultOriginalPrice'] = $defaultTotalRegularPrice;
         $offer['defaultPriceAfterProductDiscounts'] = $defaultTotalPrice;
-        $offer['calculatedPrice'] = self::applyDiscount(
-            $defaultTotalPrice,
-            $offer['discountType'],
-            $offer['discountValue']
-        );
+        
+        // Use admin-set offer_price if available, otherwise calculate from discount
+        if ($offer['offerPrice'] !== null) {
+            $offer['calculatedPrice'] = $offer['offerPrice'];
+        } else {
+            $offer['calculatedPrice'] = self::applyDiscount(
+                $defaultTotalPrice,
+                $offer['discountType'],
+                $offer['discountValue']
+            );
+        }
         
         return $offer;
     }

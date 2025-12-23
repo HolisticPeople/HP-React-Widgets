@@ -501,7 +501,7 @@ class FunnelOfferFields
                 justify-content: center;
             }
             .hp-discount-input {
-                width: 55px;
+                width: 60px;
                 text-align: right;
                 padding: 4px 6px;
             }
@@ -569,7 +569,7 @@ class FunnelOfferFields
                 color: #999;
             }
             .hp-offer-table-summary .hp-discount-value {
-                color: #d63638;
+                color: #333;
             }
             .hp-offer-table-summary .hp-total-row {
                 border-top: 1px solid #ddd;
@@ -583,7 +583,7 @@ class FunnelOfferFields
             .hp-offer-table-summary .hp-total-value {
                 font-size: 15px;
                 font-weight: 600;
-                color: #00a32a;
+                color: #333;
             }
             
             /* Hide ACF field placeholders */
@@ -709,7 +709,29 @@ class FunnelOfferFields
                 'wrapper' => ['width' => '15'],
             ],
             
-            // Row 2: Discount
+            // Row 2: Image and Offer Price
+            [
+                'key' => 'field_offer_image',
+                'label' => 'Image Override',
+                'name' => 'offer_image',
+                'type' => 'image',
+                'return_format' => 'url',
+                'preview_size' => 'thumbnail',
+                'wrapper' => ['width' => '20'],
+            ],
+            [
+                'key' => 'field_offer_price',
+                'label' => 'Offer Price',
+                'name' => 'offer_price',
+                'type' => 'number',
+                'min' => 0,
+                'step' => '0.01',
+                'prepend' => '$',
+                'instructions' => 'Final price shown to customer. Auto-filled from product table totals.',
+                'wrapper' => ['width' => '20', 'class' => 'hp-offer-price-field'],
+            ],
+            
+            // Row 3: Discount
             [
                 'key' => 'field_offer_discount_type',
                 'label' => 'Discount',
@@ -796,17 +818,6 @@ class FunnelOfferFields
                         'esc_html' => 0,
                     ],
                 ],
-            ],
-            
-            // Image override
-            [
-                'key' => 'field_offer_image',
-                'label' => 'Image Override',
-                'name' => 'offer_image',
-                'type' => 'image',
-                'return_format' => 'url',
-                'preview_size' => 'thumbnail',
-                'wrapper' => ['width' => '30'],
             ],
         ];
     }
