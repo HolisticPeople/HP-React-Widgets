@@ -133,7 +133,7 @@ class FunnelSchema
                                     'type' => 'object',
                                     'properties' => [
                                         'sku' => ['type' => 'string'],
-                                        'role' => ['type' => 'string', 'enum' => ['must', 'default', 'optional']],
+                                        'role' => ['type' => 'string', 'enum' => ['must', 'optional']],  // must=min qty 1, optional=min qty 0
                                         'qty' => ['type' => 'integer', 'default' => 1, 'description' => 'Default/starting quantity'],
                                         'max_qty' => ['type' => 'integer', 'default' => 3, 'description' => 'Max quantity allowed'],
                                         'discount_type' => ['type' => 'string', 'enum' => ['none', 'percent', 'fixed'], 'default' => 'none'],
@@ -355,7 +355,7 @@ class FunnelSchema
             'offers' => 'Array of offers: single products, fixed bundles, or customizable kits. Each offer has a type, discount settings, and product configuration.',
             'offers[].type' => 'Offer type: "single" (one product), "fixed_bundle" (pre-configured set), or "customizable_kit" (customer picks products)',
             'offers[].discount_label' => 'Marketing-friendly discount label shown to customers, e.g., "Save 25%"',
-            'offers[].kit_products[].role' => 'Product role in kit: "must" (required), "default" (pre-selected), or "optional" (customer adds)',
+            'offers[].kit_products[].role' => 'Product role in kit: "must" (min qty 1, required), "optional" (min qty 0, can be removed)',
             'features.items' => 'Array of 4-6 detailed features with icons. Good for technical/scientific products',
             'authority' => 'Expert/authority section to build trust. Include credentials, bio, and notable quotes',
             'testimonials.items' => 'Array of 3-6 customer testimonials. Include name, role/location, and quote',
@@ -441,8 +441,8 @@ class FunnelSchema
                     'discount_value' => 10,
                     'max_total_items' => 6,
                     'kit_products' => [
-                        ['sku' => 'ILL-SMALL', 'role' => 'default', 'qty' => 1, 'max_qty' => 3, 'discount_type' => 'percent', 'discount_value' => 15],
-                        ['sku' => 'ILL-LARGE', 'role' => 'optional', 'qty' => 0, 'max_qty' => 2, 'discount_type' => 'percent', 'discount_value' => 20],
+                        ['sku' => 'ILL-SMALL', 'role' => 'must', 'qty' => 1, 'max_qty' => 3, 'discount_type' => 'percent', 'discount_value' => 15],
+                        ['sku' => 'ILL-LARGE', 'role' => 'optional', 'qty' => 1, 'max_qty' => 2, 'discount_type' => 'percent', 'discount_value' => 20],
                     ],
                 ],
             ],

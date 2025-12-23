@@ -250,13 +250,16 @@
 
         /**
          * Render role dropdown for kit products
+         * - must: minimum qty 1 (required in kit)
+         * - optional: minimum qty 0 (can be removed)
          */
         _renderRole: function(p, role) {
             const sku = p.sku || '';
+            // Normalize legacy 'default' role to 'optional'
+            const normalizedRole = (role === 'default') ? 'optional' : role;
             return `<select class="hp-role-select" data-sku="${this._escapeAttr(sku)}">
-                <option value="must" ${role === 'must' ? 'selected' : ''}>Must Have</option>
-                <option value="default" ${role === 'default' ? 'selected' : ''}>Default</option>
-                <option value="optional" ${role === 'optional' ? 'selected' : ''}>Optional</option>
+                <option value="must" ${normalizedRole === 'must' ? 'selected' : ''}>Must Have</option>
+                <option value="optional" ${normalizedRole === 'optional' ? 'selected' : ''}>Optional</option>
             </select>`;
         },
 

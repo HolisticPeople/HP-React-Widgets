@@ -932,8 +932,12 @@ class FunnelConfigLoader
         
         foreach ($products as $item) {
             $sku = $item['sku'] ?? '';
+            // Normalize legacy 'default' role to 'optional'
             $role = $item['role'] ?? 'optional';
-            $qty = (int) ($item['qty'] ?? ($role === 'optional' ? 0 : 1));
+            if ($role === 'default') {
+                $role = 'optional';
+            }
+            $qty = (int) ($item['qty'] ?? 1);
             $maxQty = (int) ($item['max_qty'] ?? 3);
             $productDiscountType = $item['discount_type'] ?? 'none';
             $productDiscountValue = (float) ($item['discount_value'] ?? 0);
@@ -972,8 +976,8 @@ class FunnelConfigLoader
             
             $offer['kitProducts'][] = $kitProduct;
             
-            // Calculate default selection totals (must + default items)
-            if ($role === 'must' || $role === 'default') {
+            // Calculate default selection totals (all items with qty > 0)
+            if ($qty > 0) {
                 $defaultTotalPrice += $discountedPrice * $qty;
                 $defaultTotalRegularPrice += $regularPrice * $qty;
             }

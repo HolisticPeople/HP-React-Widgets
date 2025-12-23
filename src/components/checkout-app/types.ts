@@ -3,7 +3,7 @@
 export type CheckoutStep = 'checkout' | 'processing' | 'upsell' | 'thankyou';
 
 export type OfferType = 'single' | 'fixed_bundle' | 'customizable_kit';
-export type ProductRole = 'must' | 'default' | 'optional';
+export type ProductRole = 'must' | 'optional';  // 'must' = min qty 1, 'optional' = min qty 0
 export type DiscountType = 'none' | 'percent' | 'fixed';
 
 /**
