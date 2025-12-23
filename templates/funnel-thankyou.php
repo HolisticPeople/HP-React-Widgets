@@ -46,9 +46,15 @@ if (!function_exists('hp_build_funnel_styles')) {
         $textNote = $styling['text_color_note'] ?? '#a3a3a3';
         $textDiscount = $styling['text_color_discount'] ?? '#22c55e';
         
+        // UI element colors
+        $borderColor = $styling['border_color'] ?? '#7c3aed';
+        $cardBgColor = $styling['card_bg_color'] ?? '#1a1a1a';
+        $pageBgColor = $styling['page_bg_color'] ?? '#121212';
+        $inputBgColor = $styling['input_bg_color'] ?? '#333333';
+        
         // Build background
         if (strpos($bgType, 'solid') !== false || $bgType === 'color') {
-            $background = $bgColor ?: '#1a1a2e';
+            $background = $bgColor ?: $pageBgColor;
         } elseif (strpos($bgType, 'image') !== false && $bgImage) {
             $background = "url('{$bgImage}') center/cover no-repeat fixed";
         } else {
@@ -57,11 +63,15 @@ if (!function_exists('hp_build_funnel_styles')) {
         }
         
         // Convert hex to RGB for glow effects
-        $hex = ltrim($accentColor, '#');
-        if (strlen($hex) === 3) {
-            $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
-        }
-        $accentRgb = hexdec(substr($hex, 0, 2)) . ', ' . hexdec(substr($hex, 2, 2)) . ', ' . hexdec(substr($hex, 4, 2));
+        $hexToRgb = function($hex) {
+            $hex = ltrim($hex, '#');
+            if (strlen($hex) === 3) {
+                $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+            }
+            return hexdec(substr($hex, 0, 2)) . ', ' . hexdec(substr($hex, 2, 2)) . ', ' . hexdec(substr($hex, 4, 2));
+        };
+        $accentRgb = $hexToRgb($accentColor);
+        $borderRgb = $hexToRgb($borderColor);
         
         return "
         <style id=\"hp-funnel-styles-{$slug}\">
@@ -73,6 +83,11 @@ if (!function_exists('hp_build_funnel_styles')) {
                 --hp-funnel-text-accent: {$textAccent};
                 --hp-funnel-text-note: {$textNote};
                 --hp-funnel-text-discount: {$textDiscount};
+                --hp-funnel-border: {$borderColor};
+                --hp-funnel-border-rgb: {$borderRgb};
+                --hp-funnel-card-bg: {$cardBgColor};
+                --hp-funnel-page-bg: {$pageBgColor};
+                --hp-funnel-input-bg: {$inputBgColor};
             }
             
             /* Global funnel page background */
@@ -136,6 +151,40 @@ if (!function_exists('hp_build_funnel_styles')) {
             }
             .hp-funnel-checkout-app .line-through {
                 color: var(--hp-funnel-text-note) !important;
+            }
+            
+            /* UI Element color overrides for React checkout app */
+            .hp-funnel-checkout-app {
+                --background: var(--hp-funnel-page-bg);
+                --card: var(--hp-funnel-card-bg);
+                --border: var(--hp-funnel-border);
+                --input: var(--hp-funnel-input-bg);
+            }
+            
+            /* Border color overrides */
+            .hp-funnel-checkout-app [class*='border-border'],
+            .hp-funnel-checkout-app [class*='border-accent'],
+            .hp-funnel-checkout-app .border {
+                border-color: var(--hp-funnel-border) !important;
+            }
+            
+            /* Card background overrides */
+            .hp-funnel-checkout-app [class*='bg-card'],
+            .hp-funnel-checkout-app [class*='bg-secondary'] {
+                background-color: var(--hp-funnel-card-bg) !important;
+            }
+            
+            /* Input background overrides */
+            .hp-funnel-checkout-app [class*='bg-input'],
+            .hp-funnel-checkout-app input,
+            .hp-funnel-checkout-app select,
+            .hp-funnel-checkout-app textarea {
+                background-color: var(--hp-funnel-input-bg) !important;
+            }
+            
+            /* Page background for the checkout app container */
+            .hp-funnel-checkout-app [class*='bg-background'] {
+                background-color: var(--hp-funnel-page-bg) !important;
             }
             
             {$customCss}

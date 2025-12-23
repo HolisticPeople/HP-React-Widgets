@@ -314,6 +314,12 @@ class FunnelSchema
                         'text_color_accent' => ['type' => 'string', 'description' => 'Accent text color (headings, CTAs)', 'default' => '#eab308'],
                         'text_color_note' => ['type' => 'string', 'description' => 'Muted text color (descriptions)', 'default' => '#a3a3a3'],
                         'text_color_discount' => ['type' => 'string', 'description' => 'Discount/savings text color', 'default' => '#22c55e'],
+                        // UI element colors
+                        'border_color' => ['type' => 'string', 'description' => 'Border/divider color', 'default' => '#7c3aed'],
+                        'card_bg_color' => ['type' => 'string', 'description' => 'Card/panel background color', 'default' => '#1a1a1a'],
+                        'page_bg_color' => ['type' => 'string', 'description' => 'Page background color', 'default' => '#121212'],
+                        'input_bg_color' => ['type' => 'string', 'description' => 'Form input background color', 'default' => '#333333'],
+                        // Background settings
                         'background_type' => ['type' => 'string', 'enum' => ['gradient', 'solid', 'image'], 'default' => 'gradient'],
                         'background_color' => ['type' => 'string'],
                         'background_image' => ['type' => 'string'],

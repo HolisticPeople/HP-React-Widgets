@@ -39,19 +39,27 @@ class FunnelStylesShortcode
 
         $styling = $config['styling'] ?? [];
         
-        // Build CSS variables
+        // Build CSS variables - text colors
         $accentColor = $styling['accent_color'] ?? '#eab308';
         $textBasic = $styling['text_color_basic'] ?? '#e5e5e5';
         $textAccent = $styling['text_color_accent'] ?? '#eab308';
         $textNote = $styling['text_color_note'] ?? '#a3a3a3';
         $textDiscount = $styling['text_color_discount'] ?? '#22c55e';
+        
+        // UI element colors
+        $borderColor = $styling['border_color'] ?? '#7c3aed';
+        $cardBgColor = $styling['card_bg_color'] ?? '#1a1a1a';
+        $pageBgColor = $styling['page_bg_color'] ?? '#121212';
+        $inputBgColor = $styling['input_bg_color'] ?? '#333333';
+        
+        // Background settings
         $bgType = $styling['background_type'] ?? 'gradient';
         $bgColor = $styling['background_color'] ?? '';
         $bgImage = $styling['background_image'] ?? '';
         $customCss = $styling['custom_css'] ?? '';
 
         // Build background CSS
-        $background = $this->buildBackground($bgType, $bgColor, $bgImage);
+        $background = $this->buildBackground($bgType, $bgColor, $bgImage, $pageBgColor);
         $slug = esc_attr($config['slug']);
 
         $cssVars = "
@@ -66,6 +74,11 @@ class FunnelStylesShortcode
             --hp-funnel-text-discount: {$textDiscount};
             --hp-funnel-text-discount-rgb: " . $this->hexToRgb($textDiscount) . ";
             --hp-funnel-bg: {$background};
+            --hp-funnel-border: {$borderColor};
+            --hp-funnel-border-rgb: " . $this->hexToRgb($borderColor) . ";
+            --hp-funnel-card-bg: {$cardBgColor};
+            --hp-funnel-page-bg: {$pageBgColor};
+            --hp-funnel-input-bg: {$inputBgColor};
         ";
 
         // Output CSS with high specificity to override Elementor
@@ -167,6 +180,40 @@ class FunnelStylesShortcode
             .hp-funnel-checkout-app .line-through {
                 color: var(--hp-funnel-text-note) !important;
             }
+            
+            /* UI Element color overrides for React checkout app */
+            .hp-funnel-checkout-app {
+                --background: var(--hp-funnel-page-bg);
+                --card: var(--hp-funnel-card-bg);
+                --border: var(--hp-funnel-border);
+                --input: var(--hp-funnel-input-bg);
+            }
+            
+            /* Border color overrides */
+            .hp-funnel-checkout-app [class*='border-border'],
+            .hp-funnel-checkout-app [class*='border-accent'],
+            .hp-funnel-checkout-app .border {
+                border-color: var(--hp-funnel-border) !important;
+            }
+            
+            /* Card background overrides */
+            .hp-funnel-checkout-app [class*='bg-card'],
+            .hp-funnel-checkout-app [class*='bg-secondary'] {
+                background-color: var(--hp-funnel-card-bg) !important;
+            }
+            
+            /* Input background overrides */
+            .hp-funnel-checkout-app [class*='bg-input'],
+            .hp-funnel-checkout-app input,
+            .hp-funnel-checkout-app select,
+            .hp-funnel-checkout-app textarea {
+                background-color: var(--hp-funnel-input-bg) !important;
+            }
+            
+            /* Page background for the checkout app container */
+            .hp-funnel-checkout-app [class*='bg-background'] {
+                background-color: var(--hp-funnel-page-bg) !important;
+            }
 
             {$customCss}
         </style>";
@@ -180,14 +227,14 @@ class FunnelStylesShortcode
     /**
      * Build background CSS value.
      */
-    private function buildBackground(string $type, string $color, string $image): string
+    private function buildBackground(string $type, string $color, string $image, string $pageBgColor = '#121212'): string
     {
         // Normalize type value (ACF might store "Default Gradient", "Solid Color", etc.)
         $normalizedType = strtolower(trim($type));
         
         // Check for solid color
         if (strpos($normalizedType, 'solid') !== false || $normalizedType === 'color') {
-            return $color ?: '#1a1a2e';
+            return $color ?: $pageBgColor;
         }
         
         // Check for image
@@ -195,7 +242,7 @@ class FunnelStylesShortcode
             if ($image) {
                 return "url('{$image}') center/cover no-repeat fixed";
             }
-            return '#1a1a2e';
+            return $pageBgColor;
         }
         
         // Default: gradient (matches "gradient", "default gradient", etc.)

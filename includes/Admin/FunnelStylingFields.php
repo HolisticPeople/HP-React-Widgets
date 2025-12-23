@@ -93,6 +93,68 @@ class FunnelStylingFields
                         'width' => '25',
                     ],
                 ],
+                // Section break for UI colors
+                [
+                    'key' => 'field_ui_colors_divider',
+                    'label' => '',
+                    'name' => '',
+                    'type' => 'message',
+                    'message' => '<hr style="margin:20px 0 10px;border:0;border-top:1px solid #ccc;"><p style="margin:0;color:#666;font-weight:600;">UI Element Colors</p>',
+                    'new_lines' => '',
+                    'esc_html' => 0,
+                ],
+                [
+                    'key' => 'field_border_color',
+                    'label' => 'Border Color',
+                    'name' => 'border_color',
+                    'type' => 'color_picker',
+                    'instructions' => 'Card borders, dividers (purple)',
+                    'default_value' => '#7c3aed',
+                    'enable_opacity' => 0,
+                    'return_format' => 'string',
+                    'wrapper' => [
+                        'width' => '25',
+                    ],
+                ],
+                [
+                    'key' => 'field_card_bg_color',
+                    'label' => 'Card Background',
+                    'name' => 'card_bg_color',
+                    'type' => 'color_picker',
+                    'instructions' => 'Card/panel backgrounds',
+                    'default_value' => '#1a1a1a',
+                    'enable_opacity' => 0,
+                    'return_format' => 'string',
+                    'wrapper' => [
+                        'width' => '25',
+                    ],
+                ],
+                [
+                    'key' => 'field_page_bg_color',
+                    'label' => 'Page Background',
+                    'name' => 'page_bg_color',
+                    'type' => 'color_picker',
+                    'instructions' => 'Overall page background',
+                    'default_value' => '#121212',
+                    'enable_opacity' => 0,
+                    'return_format' => 'string',
+                    'wrapper' => [
+                        'width' => '25',
+                    ],
+                ],
+                [
+                    'key' => 'field_input_bg_color',
+                    'label' => 'Input Background',
+                    'name' => 'input_bg_color',
+                    'type' => 'color_picker',
+                    'instructions' => 'Form input fields background',
+                    'default_value' => '#333333',
+                    'enable_opacity' => 0,
+                    'return_format' => 'string',
+                    'wrapper' => [
+                        'width' => '25',
+                    ],
+                ],
             ],
             'location' => [
                 [

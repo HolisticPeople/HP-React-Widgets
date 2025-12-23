@@ -498,6 +498,12 @@ class FunnelImporter
         self::setField($postId, 'text_color_accent', $styling['text_color_accent'] ?? '#eab308');
         self::setField($postId, 'text_color_note', $styling['text_color_note'] ?? '#a3a3a3');
         self::setField($postId, 'text_color_discount', $styling['text_color_discount'] ?? '#22c55e');
+        // UI element colors
+        self::setField($postId, 'border_color', $styling['border_color'] ?? '#7c3aed');
+        self::setField($postId, 'card_bg_color', $styling['card_bg_color'] ?? '#1a1a1a');
+        self::setField($postId, 'page_bg_color', $styling['page_bg_color'] ?? '#121212');
+        self::setField($postId, 'input_bg_color', $styling['input_bg_color'] ?? '#333333');
+        // Background settings
         self::setField($postId, 'background_type', $styling['background_type'] ?? 'gradient');
         self::setField($postId, 'background_color', $styling['background_color'] ?? '');
         self::setField($postId, 'background_image', $styling['background_image'] ?? '');
