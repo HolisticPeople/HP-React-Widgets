@@ -498,11 +498,12 @@ class FunnelOfferFields
             .hp-discount-control {
                 display: flex;
                 align-items: center;
+                justify-content: center;
             }
             .hp-discount-input {
-                width: 50px;
+                width: 55px;
                 text-align: right;
-                padding: 4px;
+                padding: 4px 6px;
             }
             .hp-percent-symbol {
                 color: #666;
@@ -511,21 +512,21 @@ class FunnelOfferFields
             .hp-sale-price-control {
                 display: flex;
                 align-items: center;
+                justify-content: center;
             }
             .hp-sale-price-control .hp-currency {
-                color: #00a32a;
-                font-weight: 600;
+                color: #333;
             }
             .hp-sale-price-input {
                 width: 70px;
                 text-align: right;
-                padding: 4px;
-                font-weight: 600;
-                color: #00a32a;
+                padding: 4px 6px;
             }
             .hp-line-total {
-                font-weight: 600;
-                color: #00a32a;
+                color: #333;
+            }
+            .hp-price-original {
+                color: #333;
             }
             .hp-remove-btn {
                 color: #d63638;
@@ -543,14 +544,17 @@ class FunnelOfferFields
             .hp-offer-table-summary {
                 background: #f9f9f9;
                 border-top: 2px solid #ddd;
-                padding: 12px;
+                padding: 10px 12px;
                 margin-top: 0;
+                max-width: 280px;
+                margin-left: auto;
             }
             .hp-offer-table-summary .hp-summary-row {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding: 4px 0;
+                padding: 3px 0;
+                gap: 20px;
             }
             .hp-offer-table-summary .hp-summary-label {
                 color: #666;
@@ -558,6 +562,7 @@ class FunnelOfferFields
             }
             .hp-offer-table-summary .hp-summary-value {
                 font-weight: 500;
+                text-align: right;
             }
             .hp-offer-table-summary .hp-summary-value.strikethrough {
                 text-decoration: line-through;
@@ -565,20 +570,19 @@ class FunnelOfferFields
             }
             .hp-offer-table-summary .hp-discount-value {
                 color: #d63638;
-                font-weight: 600;
             }
             .hp-offer-table-summary .hp-total-row {
                 border-top: 1px solid #ddd;
                 margin-top: 4px;
-                padding-top: 8px;
+                padding-top: 6px;
             }
             .hp-offer-table-summary .hp-total-row .hp-summary-label {
                 font-weight: 600;
                 color: #1e1e1e;
             }
             .hp-offer-table-summary .hp-total-value {
-                font-size: 16px;
-                font-weight: 700;
+                font-size: 15px;
+                font-weight: 600;
                 color: #00a32a;
             }
             

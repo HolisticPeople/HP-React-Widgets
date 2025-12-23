@@ -239,6 +239,7 @@
 
             const totalDiscount = totalOriginal - totalSale;
             const hasDiscount = totalDiscount > 0;
+            const discountPercent = totalOriginal > 0 ? ((totalDiscount / totalOriginal) * 100) : 0;
 
             let html = `
                 <div class="hp-summary-row">
@@ -249,7 +250,7 @@
             if (hasDiscount) {
                 html += `
                 <div class="hp-summary-row hp-discount-row">
-                    <span class="hp-summary-label">Discount:</span>
+                    <span class="hp-summary-label">Discount (${discountPercent.toFixed(1)}%):</span>
                     <span class="hp-summary-value hp-discount-value">-$${totalDiscount.toFixed(2)}</span>
                 </div>`;
             }
