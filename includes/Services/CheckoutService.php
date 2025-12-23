@@ -80,7 +80,8 @@ class CheckoutService
         ?array $selectedRate = null,
         int $pointsToRedeem = 0,
         float $globalDiscountPercent = 0.0,
-        array $funnelConfig = []
+        array $funnelConfig = [],
+        ?float $offerTotal = null  // Admin-set total price for entire offer
     ): array {
         $order_id = 0;
         
@@ -204,7 +205,14 @@ class CheckoutService
 
             $shippingTotal = (float) $order->get_shipping_total();
             $taxTotal = (float) $order->get_total_tax();
-            $grandTotal = max(0.0, $itemsTotalAfterDiscounts + $feesTotal + $shippingTotal + $taxTotal);
+            
+            // Use admin-set offer total if provided, otherwise calculate from items
+            if ($offerTotal !== null) {
+                // Use the exact offer total set by admin, plus shipping and any fees
+                $grandTotal = max(0.0, $offerTotal + $shippingTotal - $pointsDiscount);
+            } else {
+                $grandTotal = max(0.0, $itemsTotalAfterDiscounts + $feesTotal + $shippingTotal + $taxTotal);
+            }
 
             return [
                 'subtotal'            => $allProductsSubtotal,

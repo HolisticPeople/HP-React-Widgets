@@ -289,14 +289,15 @@ export const CheckoutStep = ({
         }
       }
 
-      const result = await api.calculateTotals(address, items, currentRate, pointsToRedeem);
+      // Pass the admin-set offer total to override calculated sum
+      const result = await api.calculateTotals(address, items, currentRate, pointsToRedeem, offerPrice.discounted);
       setTotals(result);
     } catch (err) {
       console.error('[CheckoutStep] Failed to fetch totals', err);
     } finally {
       setIsCalculating(false);
     }
-  }, [formData, getCartItems, selectedRate, isFreeShipping, pointsToRedeem, api, onSelectRate]);
+  }, [formData, getCartItems, selectedRate, isFreeShipping, pointsToRedeem, api, onSelectRate, offerPrice.discounted]);
 
   // Trigger totals update when selection changes
   useEffect(() => {
@@ -373,7 +374,8 @@ export const CheckoutStep = ({
         formData.firstName,
         formData.lastName,
         submitRate,
-        pointsToRedeem
+        pointsToRedeem,
+        offerPrice.discounted  // Admin-set offer total
       );
 
       const success = await stripePayment.confirmPayment(result.clientSecret, {

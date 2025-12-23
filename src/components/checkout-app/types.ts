@@ -173,6 +173,11 @@ export interface CartItem {
   salePrice?: number;  // Admin-set price per unit (overrides WC price)
 }
 
+export interface CartData {
+  items: CartItem[];
+  offerTotal?: number;  // Admin-set total price for the entire offer (overrides sum of items)
+}
+
 export interface TotalsResponse {
   subtotal: number;
   discountTotal: number;

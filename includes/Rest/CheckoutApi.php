@@ -189,6 +189,7 @@ class CheckoutApi
         $selectedRate = $request->get_param('selected_rate');
         $pointsToRedeem = (int) ($request->get_param('points_to_redeem') ?? 0);
         $funnelId = (string) ($request->get_param('funnel_id') ?? 'default');
+        $offerTotal = $request->get_param('offer_total');  // Admin-set total price
 
         if (empty($items)) {
             return new WP_Error('bad_request', 'Items required', ['status' => 400]);
@@ -203,7 +204,9 @@ class CheckoutApi
             $address,
             $selectedRate,
             $pointsToRedeem,
-            $globalDiscountPercent
+            $globalDiscountPercent,
+            [],
+            $offerTotal !== null ? (float) $offerTotal : null  // Pass offer total
         );
 
         return new WP_REST_Response($totals);
@@ -222,6 +225,7 @@ class CheckoutApi
         $selectedRate = $request->get_param('selected_rate');
         $pointsToRedeem = (int) ($request->get_param('points_to_redeem') ?? 0);
         $analytics = (array) ($request->get_param('analytics') ?? []);
+        $offerTotal = $request->get_param('offer_total');  // Admin-set total price
 
         if (empty($items)) {
             return new WP_Error('bad_request', 'Items required', ['status' => 400]);
@@ -259,7 +263,9 @@ class CheckoutApi
             $address,
             $selectedRate,
             $pointsToRedeem,
-            $globalDiscountPercent
+            $globalDiscountPercent,
+            [],
+            $offerTotal !== null ? (float) $offerTotal : null  // Pass offer total
         );
 
         $grandTotal = $totals['grand_total'];

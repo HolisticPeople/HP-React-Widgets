@@ -59,7 +59,8 @@ export function useCheckoutApi(options: UseCheckoutApiOptions) {
     address: Address,
     items: CartItem[],
     selectedRate: ShippingRate | null,
-    pointsToRedeem: number = 0
+    pointsToRedeem: number = 0,
+    offerTotal?: number  // Admin-set total for entire offer
   ): Promise<TotalsResponse> => {
     const res = await fetch(`${apiBase}/checkout/totals`, {
       method: 'POST',
@@ -90,6 +91,7 @@ export function useCheckoutApi(options: UseCheckoutApiOptions) {
           amount: selectedRate.shipmentCost + selectedRate.otherCost,
         } : null,
         points_to_redeem: pointsToRedeem,
+        offer_total: offerTotal,  // Admin-set total price for entire offer
       }),
     });
 
@@ -115,7 +117,8 @@ export function useCheckoutApi(options: UseCheckoutApiOptions) {
     customerFirstName: string,
     customerLastName: string,
     selectedRate: ShippingRate | null,
-    pointsToRedeem: number = 0
+    pointsToRedeem: number = 0,
+    offerTotal?: number  // Admin-set total for entire offer
   ): Promise<CreatePaymentIntentResponse> => {
     const res = await fetch(`${apiBase}/checkout/create-intent`, {
       method: 'POST',
@@ -130,6 +133,7 @@ export function useCheckoutApi(options: UseCheckoutApiOptions) {
           item_discount_percent: item.itemDiscountPercent,
           salePrice: item.salePrice,  // Admin-set price per unit
         })),
+        offer_total: offerTotal,  // Admin-set total price for entire offer
         shipping_address: {
           first_name: shippingAddress.firstName,
           last_name: shippingAddress.lastName,
