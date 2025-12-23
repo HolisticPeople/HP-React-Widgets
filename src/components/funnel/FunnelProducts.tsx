@@ -122,7 +122,7 @@ export const FunnelProducts = ({
             >
               {/* Badge */}
               {product.badge && (
-                <div className="absolute -top-4 right-4 bg-accent text-accent-foreground px-4 py-1 rounded-full font-bold text-sm">
+                <div className="absolute -top-3 right-4 bg-accent text-accent-foreground px-4 py-1.5 rounded-full font-bold text-sm uppercase tracking-wide shadow-lg">
                   {product.badge}
                 </div>
               )}
@@ -186,12 +186,7 @@ export const FunnelProducts = ({
                 {(product.ctaUrl || defaultCtaUrl) && (
                   <Button
                     onClick={() => handleProductClick(product)}
-                    className={cn(
-                      'w-full font-bold py-3 rounded-full transition-all duration-300',
-                      product.isBestValue
-                        ? 'bg-gradient-to-r from-accent to-accent/90 hover:from-accent/90 hover:to-accent text-accent-foreground shadow-[0_0_20px_hsl(45_95%_60%/0.4)]'
-                        : 'bg-primary hover:bg-primary/90'
-                    )}
+                    className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-lg py-6 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl"
                   >
                     {product.ctaText || defaultCtaText}
                   </Button>

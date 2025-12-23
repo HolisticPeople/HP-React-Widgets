@@ -233,7 +233,7 @@ export const FunnelUpsell = ({
           size="lg"
           onClick={handleAccept}
           disabled={isProcessing}
-          className="w-full bg-gradient-to-r from-accent to-accent/90 hover:from-accent/90 hover:to-accent text-accent-foreground font-bold text-xl py-8 rounded-full shadow-[0_0_30px_hsl(45_95%_60%/0.5)] hover:shadow-[0_0_50px_hsl(45_95%_60%/0.7)] transition-all duration-300"
+          className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-xl py-8 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
         >
           {isProcessing ? (
             <>
