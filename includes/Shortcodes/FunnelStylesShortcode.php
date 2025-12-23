@@ -136,6 +136,12 @@ class FunnelStylesShortcode
                 box-shadow: 0 0 30px rgba(var(--hp-funnel-accent-rgb), 0.5);
             }
             
+            /* Badge styling - accent fill with card bg text */
+            .hp-funnel-badge-pill {
+                background-color: var(--hp-funnel-accent) !important;
+                color: var(--hp-funnel-card-bg) !important;
+            }
+            
             /* ===========================================
                GLOBAL OVERRIDES FOR ALL FUNNEL SECTIONS
                Targets .hp-funnel-section (all landing page components)

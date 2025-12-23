@@ -426,13 +426,7 @@ export const CheckoutStep = ({
         )}
       >
         {offer.badge && (
-          <div 
-            className="absolute top-0 right-6 -translate-y-1/2 px-4 py-1 rounded-full text-sm font-bold uppercase tracking-wide shadow-lg"
-            style={{ 
-              backgroundColor: 'var(--hp-funnel-accent)',
-              color: 'var(--hp-funnel-card-bg)'
-            }}
-          >
+          <div className="hp-funnel-badge-pill absolute top-0 right-6 -translate-y-1/2 px-4 py-1 rounded-full text-sm font-bold uppercase tracking-wide shadow-lg">
             {offer.badge}
           </div>
         )}
