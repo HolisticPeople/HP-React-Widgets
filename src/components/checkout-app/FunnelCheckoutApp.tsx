@@ -103,15 +103,15 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
   const handleOfferSelect = useCallback((offerId: string) => {
     setSelectedOfferId(offerId);
     
-    // Reset kit selection for the new offer with admin-set quantities
-    const offer = offers?.find(o => o.id === offerId);
-    if (offer?.type === 'customizable_kit' && 'kitProducts' in offer) {
-      const kitProducts = (offer as CustomizableKitOffer).kitProducts || [];
+    // Find the new offer and initialize kit selection if needed
+    const newOffer = offers.find(o => o.id === offerId);
+    if (newOffer?.type === 'customizable_kit' && 'kitProducts' in newOffer) {
+      const kitProducts = (newOffer as CustomizableKitOffer).kitProducts || [];
       const newSelection: KitSelection = {};
       kitProducts.forEach((product: KitProduct) => {
-        // Use admin-set qty as default, but enforce minimum based on role
+        // Use admin-set qty as default, enforce min 1 for 'must' products
         const minQty = product.role === 'must' ? 1 : 0;
-        newSelection[product.sku] = Math.max(minQty, product.qty);
+        newSelection[product.sku] = Math.max(minQty, product.qty || 0);
       });
       setKitSelection(newSelection);
     } else {
@@ -119,29 +119,25 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     }
   }, [offers]);
 
-  // Handle kit product quantity change
+  // Handle kit product quantity change with minimum enforcement
   const handleKitQuantityChange = useCallback((sku: string, qty: number) => {
-    // Get the product to check its role
-    const offer = offers?.find(o => o.id === selectedOfferId);
-    if (offer?.type === 'customizable_kit' && 'kitProducts' in offer) {
-      const kitProducts = (offer as CustomizableKitOffer).kitProducts || [];
-      const product = kitProducts.find((p: KitProduct) => p.sku === sku);
-      
-      // Enforce minimum based on role: 'must' = min 1, 'optional' = min 0
-      const minQty = product?.role === 'must' ? 1 : 0;
-      const validQty = Math.max(minQty, qty);
-      
-      setKitSelection(prev => ({
-        ...prev,
-        [sku]: validQty,
-      }));
-    } else {
-      setKitSelection(prev => ({
-        ...prev,
-        [sku]: Math.max(0, qty),
-      }));
+    // Get the current offer to check product roles
+    if (!selectedOffer || selectedOffer.type !== 'customizable_kit') {
+      // Not a kit offer, just update the quantity
+      setKitSelection(prev => ({ ...prev, [sku]: Math.max(0, qty) }));
+      return;
     }
-  }, [offers, selectedOfferId]);
+    
+    // Find the product in the kit
+    const kitProducts = (selectedOffer as CustomizableKitOffer).kitProducts || [];
+    const product = kitProducts.find((p: KitProduct) => p.sku === sku);
+    
+    // Enforce minimum based on role: 'must' = min 1, 'optional' = min 0
+    const minQty = product?.role === 'must' ? 1 : 0;
+    const validQty = Math.max(minQty, qty);
+    
+    setKitSelection(prev => ({ ...prev, [sku]: validQty }));
+  }, [selectedOffer]);
 
   // Build cart items from selection
   const getCartItems = useCallback((): CartItem[] => {
