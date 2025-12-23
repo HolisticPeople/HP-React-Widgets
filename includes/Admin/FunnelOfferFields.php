@@ -127,10 +127,36 @@ class FunnelOfferFields
             return;
         }
 
+        // Enqueue Tabulator CSS and JS from CDN
+        wp_enqueue_style(
+            'tabulator-css',
+            'https://unpkg.com/tabulator-tables@5.5.0/dist/css/tabulator.min.css',
+            [],
+            '5.5.0'
+        );
+
+        wp_enqueue_script(
+            'tabulator-js',
+            'https://unpkg.com/tabulator-tables@5.5.0/dist/js/tabulator.min.js',
+            [],
+            '5.5.0',
+            true
+        );
+
+        // Enqueue offer tabulator wrapper
+        wp_enqueue_script(
+            'hp-rw-offer-tabulator',
+            HP_RW_URL . 'assets/admin/offer-tabulator.js',
+            ['jquery', 'tabulator-js'],
+            HP_RW_VERSION,
+            true
+        );
+
+        // Enqueue main offer calculator
         wp_enqueue_script(
             'hp-rw-offer-admin',
             HP_RW_URL . 'assets/admin/offer-calculator.js',
-            ['jquery', 'acf-input'],
+            ['jquery', 'acf-input', 'hp-rw-offer-tabulator'],
             HP_RW_VERSION,
             true
         );
@@ -410,6 +436,150 @@ class FunnelOfferFields
                 align-items: center;
                 gap: 8px;
                 flex-wrap: wrap;
+            }
+            
+            /* Tabulator table styling */
+            .hp-products-list .tabulator {
+                border: none;
+                background: transparent;
+            }
+            .hp-products-list .tabulator-header {
+                background: #f5f5f5;
+                border-bottom: 2px solid #ddd;
+            }
+            .hp-products-list .tabulator-header .tabulator-col {
+                background: transparent;
+                border-right: 1px solid #e0e0e0;
+            }
+            .hp-products-list .tabulator-header .tabulator-col-title {
+                font-weight: 600;
+                color: #333;
+            }
+            .hp-products-list .tabulator-row {
+                border-bottom: 1px solid #f0f0f0;
+            }
+            .hp-products-list .tabulator-row:hover {
+                background: #f9f9f9;
+            }
+            .hp-products-list .tabulator-cell {
+                padding: 8px;
+                border-right: 1px solid #f0f0f0;
+            }
+            
+            /* Tabulator cell content styling */
+            .hp-item-thumb img {
+                width: 40px;
+                height: 40px;
+                object-fit: cover;
+                border-radius: 4px;
+            }
+            .hp-item-content {
+                display: flex;
+                flex-direction: column;
+            }
+            .hp-item-name {
+                font-weight: 600;
+                color: #1e1e1e;
+            }
+            .hp-item-meta {
+                font-size: 12px;
+            }
+            .hp-item-sku {
+                color: #0073aa;
+            }
+            .hp-qty-input {
+                width: 60px;
+                text-align: center;
+                padding: 4px;
+            }
+            .hp-price-original {
+                color: #666;
+            }
+            .hp-discount-control {
+                display: flex;
+                align-items: center;
+            }
+            .hp-discount-input {
+                width: 50px;
+                text-align: right;
+                padding: 4px;
+            }
+            .hp-percent-symbol {
+                color: #666;
+                margin-left: 2px;
+            }
+            .hp-sale-price-control {
+                display: flex;
+                align-items: center;
+            }
+            .hp-sale-price-control .hp-currency {
+                color: #00a32a;
+                font-weight: 600;
+            }
+            .hp-sale-price-input {
+                width: 70px;
+                text-align: right;
+                padding: 4px;
+                font-weight: 600;
+                color: #00a32a;
+            }
+            .hp-line-total {
+                font-weight: 600;
+                color: #00a32a;
+            }
+            .hp-remove-btn {
+                color: #d63638;
+                background: transparent;
+                border: none;
+                cursor: pointer;
+                padding: 4px;
+            }
+            .hp-remove-btn:hover {
+                background: #fcf0f1;
+                border-radius: 4px;
+            }
+            
+            /* Tabulator summary */
+            .hp-offer-table-summary {
+                background: #f9f9f9;
+                border-top: 2px solid #ddd;
+                padding: 12px;
+                margin-top: 0;
+            }
+            .hp-offer-table-summary .hp-summary-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 4px 0;
+            }
+            .hp-offer-table-summary .hp-summary-label {
+                color: #666;
+                font-size: 13px;
+            }
+            .hp-offer-table-summary .hp-summary-value {
+                font-weight: 500;
+            }
+            .hp-offer-table-summary .hp-summary-value.strikethrough {
+                text-decoration: line-through;
+                color: #999;
+            }
+            .hp-offer-table-summary .hp-discount-value {
+                color: #d63638;
+                font-weight: 600;
+            }
+            .hp-offer-table-summary .hp-total-row {
+                border-top: 1px solid #ddd;
+                margin-top: 4px;
+                padding-top: 8px;
+            }
+            .hp-offer-table-summary .hp-total-row .hp-summary-label {
+                font-weight: 600;
+                color: #1e1e1e;
+            }
+            .hp-offer-table-summary .hp-total-value {
+                font-size: 16px;
+                font-weight: 700;
+                color: #00a32a;
             }
             
             /* Hide ACF field placeholders */

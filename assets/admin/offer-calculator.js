@@ -75,27 +75,40 @@
             }
         });
 
-        // Product quantity change
-        $(document).on('change', '.hp-product-item .hp-qty-input', function() {
-            const $item = $(this).closest('.hp-product-item');
+        // Product quantity change (Tabulator)
+        $(document).on('change', '.hp-qty-input', function() {
             const $section = $(this).closest('.hp-products-section');
-            const sku = $item.data('sku');
+            const sku = $(this).data('sku');
             const qty = parseInt($(this).val()) || 1;
             
             updateProductQty($section, sku, qty);
-            // Re-render to update calculations
             rerenderProductsList($section);
         });
 
-        // Product sale price change
-        $(document).on('change', '.hp-product-item .hp-sale-price-input', function() {
-            const $item = $(this).closest('.hp-product-item');
+        // Product sale price change (Tabulator)
+        $(document).on('change', '.hp-sale-price-input', function() {
             const $section = $(this).closest('.hp-products-section');
-            const sku = $item.data('sku');
+            const sku = $(this).data('sku');
+            const originalPrice = parseFloat($(this).data('original')) || 0;
             const salePrice = parseFloat($(this).val()) || 0;
             
             updateProductSalePrice($section, sku, salePrice);
-            // Re-render to update calculations
+            rerenderProductsList($section);
+        });
+
+        // Product discount percent change (Tabulator)
+        $(document).on('change', '.hp-discount-input', function() {
+            const $section = $(this).closest('.hp-products-section');
+            const sku = $(this).data('sku');
+            const discountPercent = parseFloat($(this).val()) || 0;
+            
+            // Get original price and calculate sale price from discount
+            const $row = $(this).closest('.tabulator-row');
+            const $salePriceInput = $row.find('.hp-sale-price-input');
+            const originalPrice = parseFloat($salePriceInput.data('original')) || 0;
+            const salePrice = originalPrice * (1 - (discountPercent / 100));
+            
+            updateProductSalePrice($section, sku, salePrice);
             rerenderProductsList($section);
         });
 
@@ -109,12 +122,11 @@
             updateProductRole($section, sku, role);
         });
 
-        // Remove product
-        $(document).on('click', '.hp-product-remove', function(e) {
+        // Remove product (supports both old class and Tabulator)
+        $(document).on('click', '.hp-product-remove, .hp-remove-btn', function(e) {
             e.preventDefault();
-            const $item = $(this).closest('.hp-product-item');
             const $section = $(this).closest('.hp-products-section');
-            const sku = $item.data('sku');
+            const sku = $(this).data('sku');
             
             removeProduct($section, sku);
         });
@@ -175,15 +187,21 @@
             ? 'Search to select a product...' 
             : 'Search to add products...';
             
+        // Generate unique ID for this table
+        const tableId = 'hp-offer-table-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+        
         $container.html(`
             <div style="border: 1px solid #ddd; border-radius: 6px; background: #fff;">
                 <div class="hp-search-wrapper" style="padding: 12px; border-bottom: 1px solid #eee; background: #f9f9f9; position: relative;">
                     <input type="text" class="hp-offer-search-input" placeholder="${placeholder}" 
                            style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
                 </div>
-                <div class="hp-products-list" style="min-height: 60px; padding: 12px;"></div>
+                <div class="hp-products-list" id="${tableId}" style="min-height: 60px;"></div>
             </div>
         `);
+        
+        // Store table ID on container for later reference
+        $container.data('tableId', tableId);
 
         // Load existing products
         loadExistingProducts($row, $container);
@@ -425,96 +443,34 @@
     }
 
     // ========================================
-    // RENDER PRODUCTS LIST
+    // RENDER PRODUCTS LIST (Using Tabulator)
     // ========================================
 
     function renderProductsList($list, products, offerType) {
-        if (!products || products.length === 0) {
-            $list.html('');
+        const tableId = $list.attr('id');
+        
+        if (!tableId) {
+            console.warn('[HP Offer] No table ID found on products list');
             return;
         }
 
-        let html = '';
-        let totalOriginal = 0;
-        let totalSale = 0;
+        if (!products || products.length === 0) {
+            // Destroy existing table if any
+            if (window.HPOfferTable) {
+                window.HPOfferTable.destroy(tableId);
+            }
+            $list.html('<div style="padding: 20px; text-align: center; color: #999; font-style: italic;">No products added. Use search above to add products.</div>');
+            // Remove summary
+            $list.siblings('.hp-offer-table-summary').remove();
+            return;
+        }
 
-        products.forEach(product => {
-            const isKit = offerType === 'customizable_kit';
-            const kitClass = isKit ? 'is-kit' : '';
-            
-            const originalPrice = parseFloat(product.price) || 0;
-            const salePrice = parseFloat(product.salePrice) !== undefined && product.salePrice !== null 
-                ? parseFloat(product.salePrice) 
-                : originalPrice;
-            const qty = parseInt(product.qty) || 1;
-            
-            const lineOriginal = originalPrice * qty;
-            const lineSale = salePrice * qty;
-            const lineDiscount = lineOriginal - lineSale;
-            const discountPercent = originalPrice > 0 ? ((originalPrice - salePrice) / originalPrice * 100) : 0;
-            
-            totalOriginal += lineOriginal;
-            totalSale += lineSale;
-            
-            const hasDiscount = salePrice < originalPrice;
-            const discountClass = hasDiscount ? 'has-discount' : '';
-            
-            html += `
-                <div class="hp-product-item ${kitClass} ${discountClass}" data-sku="${escapeAttr(product.sku)}">
-                    <img src="${product.image || ''}" alt="">
-                    <div class="hp-product-info">
-                        <div class="hp-product-name">${escapeHtml(product.name)}</div>
-                        <div class="hp-product-sku">SKU: ${escapeHtml(product.sku)}</div>
-                    </div>
-                    <div class="hp-product-controls">
-                        ${isKit ? getRoleSelector(product.role || 'optional') : ''}
-                        <div class="hp-qty-control">
-                            <label>Qty:</label>
-                            <input type="number" class="hp-qty-input" value="${qty}" min="1" max="99">
-                        </div>
-                        <div class="hp-price-group">
-                            <div class="hp-original-price ${hasDiscount ? 'strikethrough' : ''}">
-                                $${originalPrice.toFixed(2)}
-                            </div>
-                            <div class="hp-sale-price-control">
-                                <span class="hp-currency">$</span>
-                                <input type="number" class="hp-sale-price-input" 
-                                       value="${salePrice.toFixed(2)}" 
-                                       min="0" step="0.01" 
-                                       data-original="${originalPrice}">
-                            </div>
-                            ${hasDiscount ? `<div class="hp-line-discount">-$${lineDiscount.toFixed(2)} (${discountPercent.toFixed(0)}%)</div>` : ''}
-                        </div>
-                        <button type="button" class="hp-product-remove" title="Remove">×</button>
-                    </div>
-                </div>
-            `;
-        });
-
-        // Add summary section
-        const totalDiscount = totalOriginal - totalSale;
-        const hasAnyDiscount = totalDiscount > 0;
-        
-        html += `
-            <div class="hp-offer-summary">
-                <div class="hp-summary-row">
-                    <span class="hp-summary-label">Subtotal:</span>
-                    <span class="hp-summary-value ${hasAnyDiscount ? 'strikethrough' : ''}">$${totalOriginal.toFixed(2)}</span>
-                </div>
-                ${hasAnyDiscount ? `
-                <div class="hp-summary-row hp-discount-row">
-                    <span class="hp-summary-label">Discount:</span>
-                    <span class="hp-summary-value hp-discount-value">-$${totalDiscount.toFixed(2)}</span>
-                </div>
-                ` : ''}
-                <div class="hp-summary-row hp-total-row">
-                    <span class="hp-summary-label">Offer Total:</span>
-                    <span class="hp-summary-value hp-total-value">$${totalSale.toFixed(2)}</span>
-                </div>
-            </div>
-        `;
-
-        $list.html(html);
+        // Use Tabulator to render
+        if (window.HPOfferTable) {
+            window.HPOfferTable.render(tableId, products, { offerType: offerType });
+        } else {
+            console.warn('[HP Offer] HPOfferTable not loaded');
+        }
     }
 
     function getRoleSelector(currentRole) {
