@@ -40,6 +40,12 @@ function hp_build_funnel_styles($funnel) {
     $bgImage = $styling['background_image'] ?? '';
     $customCss = $styling['custom_css'] ?? '';
     
+    // Text colors
+    $textBasic = $styling['text_color_basic'] ?? '#e5e5e5';
+    $textAccent = $styling['text_color_accent'] ?? '#eab308';
+    $textNote = $styling['text_color_note'] ?? '#a3a3a3';
+    $textDiscount = $styling['text_color_discount'] ?? '#22c55e';
+    
     // Build background
     if (strpos($bgType, 'solid') !== false || $bgType === 'color') {
         $background = $bgColor ?: '#1a1a2e';
@@ -63,6 +69,10 @@ function hp_build_funnel_styles($funnel) {
             --hp-funnel-accent: {$accentColor};
             --hp-funnel-accent-rgb: {$accentRgb};
             --hp-funnel-bg: {$background};
+            --hp-funnel-text-basic: {$textBasic};
+            --hp-funnel-text-accent: {$textAccent};
+            --hp-funnel-text-note: {$textNote};
+            --hp-funnel-text-discount: {$textDiscount};
         }
         
         /* Global funnel page background */
@@ -95,6 +105,38 @@ function hp_build_funnel_styles($funnel) {
         .hp-funnel-accent { color: var(--hp-funnel-accent); }
         .hp-funnel-accent-bg { background-color: var(--hp-funnel-accent); }
         .hp-funnel-accent-glow { box-shadow: 0 0 30px rgba(var(--hp-funnel-accent-rgb), 0.5); }
+        
+        /* Override Tailwind classes in React checkout app */
+        .hp-funnel-checkout-app h1,
+        .hp-funnel-checkout-app h2,
+        .hp-funnel-checkout-app h3 {
+            color: var(--hp-funnel-text-accent) !important;
+        }
+        .hp-funnel-checkout-app .text-foreground,
+        .hp-funnel-checkout-app [class*='text-foreground'] {
+            color: var(--hp-funnel-text-basic) !important;
+        }
+        .hp-funnel-checkout-app .text-muted-foreground,
+        .hp-funnel-checkout-app [class*='text-muted'] {
+            color: var(--hp-funnel-text-note) !important;
+        }
+        .hp-funnel-checkout-app .text-accent,
+        .hp-funnel-checkout-app [class*='text-accent'] {
+            color: var(--hp-funnel-text-accent) !important;
+        }
+        .hp-funnel-checkout-app .text-green-500, 
+        .hp-funnel-checkout-app .text-emerald-500,
+        .hp-funnel-checkout-app [class*='text-green'],
+        .hp-funnel-checkout-app [class*='text-emerald'] {
+            color: var(--hp-funnel-text-discount) !important;
+        }
+        .hp-funnel-checkout-app label,
+        .hp-funnel-checkout-app .text-sm {
+            color: var(--hp-funnel-text-note) !important;
+        }
+        .hp-funnel-checkout-app .line-through {
+            color: var(--hp-funnel-text-note) !important;
+        }
         
         {$customCss}
     </style>
