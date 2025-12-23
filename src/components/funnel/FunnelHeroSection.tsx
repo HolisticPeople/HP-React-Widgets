@@ -30,13 +30,13 @@ export interface FunnelHeroSectionProps {
   className?: string;
 }
 
-// Title size classes mapping
-const titleSizeClasses: Record<string, string> = {
-  'sm': 'text-3xl md:text-4xl',
-  'md': 'text-4xl md:text-5xl',
-  'lg': 'text-5xl md:text-6xl',
-  'xl': 'text-6xl md:text-7xl',
-  '2xl': 'text-7xl md:text-8xl',
+// Title size mapping with CSS values (to override WordPress theme CSS)
+const titleSizes: Record<string, { mobile: string; desktop: string }> = {
+  'sm': { mobile: '1.875rem', desktop: '2.25rem' },    // 30px → 36px
+  'md': { mobile: '2.25rem', desktop: '3rem' },        // 36px → 48px
+  'lg': { mobile: '3rem', desktop: '3.75rem' },        // 48px → 60px
+  'xl': { mobile: '3.75rem', desktop: '4.5rem' },      // 60px → 72px
+  '2xl': { mobile: '4.5rem', desktop: '6rem' },        // 72px → 96px
 };
 
 export const FunnelHeroSection = ({
@@ -147,10 +147,13 @@ export const FunnelHeroSection = ({
               imagePosition === 'left' && 'md:order-2'
             )}
           >
-            <h1 className={cn(
-              titleSizeClasses[titleSize] || titleSizeClasses['xl'],
-              "font-bold text-accent drop-shadow-[0_0_30px_hsl(45_95%_60%/0.5)]"
-            )}>
+            <h1 
+              className="font-bold text-accent drop-shadow-[0_0_30px_hsl(45_95%_60%/0.5)]"
+              style={{ 
+                fontSize: titleSizes[titleSize]?.desktop || titleSizes['xl'].desktop,
+                lineHeight: 1.1,
+              }}
+            >
               {title}
             </h1>
 
