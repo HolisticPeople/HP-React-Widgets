@@ -122,7 +122,7 @@ export const FunnelProducts = ({
             >
               {/* Badge */}
               {product.badge && (
-                <div className="absolute -top-3 right-4 bg-accent text-background px-4 py-1.5 rounded-full font-bold text-sm uppercase tracking-wide shadow-lg">
+                <div className="absolute top-0 right-6 -translate-y-1/2 bg-accent text-background px-4 py-1 rounded-full font-bold text-sm uppercase tracking-wide shadow-lg">
                   {product.badge}
                 </div>
               )}
