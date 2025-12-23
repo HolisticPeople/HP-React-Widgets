@@ -79,7 +79,15 @@
         $(document).on('change', '.hp-qty-input', function() {
             const $section = $(this).closest('.hp-products-section');
             const sku = $(this).data('sku');
-            const qty = parseInt($(this).val()) || 1;
+            const role = $(this).data('role') || 'optional';
+            const minQty = (role === 'must') ? 1 : 0;
+            let qty = parseInt($(this).val());
+            
+            // Enforce minimum based on role
+            if (isNaN(qty) || qty < minQty) {
+                qty = minQty;
+                $(this).val(qty);
+            }
             
             updateProductQty($section, sku, qty);
             rerenderProductsList($section);
@@ -119,6 +127,15 @@
             const role = $(this).val();
             
             updateProductRole($section, sku, role);
+            
+            // If changing to 'must' and qty is 0, set to 1
+            const $row = $section.closest('.acf-row');
+            const products = getProductsData($row);
+            const product = products.find(p => p.sku === sku);
+            if (product && role === 'must' && product.qty < 1) {
+                updateProductQty($section, sku, 1);
+            }
+            
             rerenderProductsList($section);
         });
 

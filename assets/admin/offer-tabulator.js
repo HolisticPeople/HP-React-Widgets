@@ -219,9 +219,12 @@
         },
 
         _renderQty: function(p) {
-            const qty = parseInt(p.qty) || 1;
+            const qty = parseInt(p.qty) || 0;
             const sku = p.sku || '';
-            return `<input type="number" class="hp-qty-input" value="${qty}" min="1" max="99" data-sku="${this._escapeAttr(sku)}">`;
+            const role = p.role || 'optional';
+            // Must Have = min 1, Optional = min 0
+            const minQty = (role === 'must') ? 1 : 0;
+            return `<input type="number" class="hp-qty-input" value="${qty}" min="${minQty}" max="99" data-sku="${this._escapeAttr(sku)}" data-role="${role}">`;
         },
 
         _renderDiscount: function(p, discountPercent) {
