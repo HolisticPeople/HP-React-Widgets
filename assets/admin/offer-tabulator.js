@@ -172,7 +172,7 @@
                 const salePrice = (p.salePrice !== undefined && p.salePrice !== null) 
                     ? parseFloat(p.salePrice) 
                     : originalPrice;
-                const qty = parseInt(p.qty) || 1;
+                const qty = parseInt(p.qty) || 0;  // Allow 0
                 const lineTotal = salePrice * qty;
                 
                 // Calculate discount percent
@@ -284,9 +284,12 @@
                 const salePrice = (p.salePrice !== undefined && p.salePrice !== null) 
                     ? parseFloat(p.salePrice) 
                     : originalPrice;
-                const qty = parseInt(p.qty) || 1;
-                totalOriginal += originalPrice * qty;
-                totalSale += salePrice * qty;
+                const qty = parseInt(p.qty);
+                // Allow qty 0 - only count items with qty > 0
+                if (!isNaN(qty) && qty > 0) {
+                    totalOriginal += originalPrice * qty;
+                    totalSale += salePrice * qty;
+                }
             });
 
             const totalDiscount = totalOriginal - totalSale;
