@@ -121,6 +121,12 @@ if (!function_exists('hp_build_funnel_styles')) {
             .hp-funnel-accent-bg { background-color: var(--hp-funnel-accent); }
             .hp-funnel-accent-glow { box-shadow: 0 0 30px rgba(var(--hp-funnel-accent-rgb), 0.5); }
             
+            /* Badge pill - accent fill with card bg text */
+            .hp-funnel-badge-pill {
+                background-color: var(--hp-funnel-accent) !important;
+                color: var(--hp-funnel-card-bg) !important;
+            }
+            
             /* Override Tailwind classes in React checkout app */
             .hp-funnel-checkout-app h1,
             .hp-funnel-checkout-app h2,
