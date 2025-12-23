@@ -127,19 +127,27 @@ export const FunnelTestimonials = ({
                 className="p-6 bg-card/50 backdrop-blur-sm border-border/50 hover:border-accent/30 transition-all duration-300"
               >
                 <div className="relative">
-                  <span className="absolute -top-2 -left-2">
-                    <QuoteIcon />
-                  </span>
-
-                  {showRatings && renderRating(testimonial.rating)}
+                  {/* Quote icon and stars row */}
+                  <div className="flex items-start justify-between mb-3">
+                    <span className="flex-shrink-0">
+                      <QuoteIcon />
+                    </span>
+                    {showRatings && (
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <StarIcon key={star} filled={star <= (testimonial.rating || 5)} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
                   {testimonial.title && (
-                    <h3 className="text-lg font-bold text-foreground mb-2 relative z-10">
+                    <h3 className="text-lg font-bold text-foreground mb-2">
                       {testimonial.title}
                     </h3>
                   )}
 
-                  <p className="text-foreground/90 italic mb-6 relative z-10">
+                  <p className="text-foreground/90 italic mb-6">
                     "{testimonial.quote}"
                   </p>
 
