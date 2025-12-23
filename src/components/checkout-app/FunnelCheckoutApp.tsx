@@ -65,9 +65,9 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     if (offer?.type === 'customizable_kit') {
       const kitOffer = offer as CustomizableKitOffer;
       kitOffer.kitProducts.forEach((product: KitProduct) => {
-        // Use admin-set qty as default for all products
-        // (must and default roles use their qty, optional can start at 0 if admin set 0)
-        selection[product.sku] = product.qty;
+        // Use admin-set qty as default, but enforce minimum based on role
+        const minQty = product.role === 'must' ? 1 : 0;
+        selection[product.sku] = Math.max(minQty, product.qty);
       });
     }
     return selection;
@@ -106,8 +106,9 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
       const kitOffer = offer as CustomizableKitOffer;
       const newSelection: KitSelection = {};
       kitOffer.kitProducts.forEach((product: KitProduct) => {
-        // Use admin-set qty as default for all products
-        newSelection[product.sku] = product.qty;
+        // Use admin-set qty as default, but enforce minimum based on role
+        const minQty = product.role === 'must' ? 1 : 0;
+        newSelection[product.sku] = Math.max(minQty, product.qty);
       });
       setKitSelection(newSelection);
     } else {
@@ -117,11 +118,27 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
 
   // Handle kit product quantity change
   const handleKitQuantityChange = useCallback((sku: string, qty: number) => {
-    setKitSelection(prev => ({
-      ...prev,
-      [sku]: Math.max(0, qty),
-    }));
-  }, []);
+    // Get the product to check its role
+    const offer = offers.find(o => o.id === selectedOfferId);
+    if (offer?.type === 'customizable_kit') {
+      const kitOffer = offer as CustomizableKitOffer;
+      const product = kitOffer.kitProducts.find((p: KitProduct) => p.sku === sku);
+      
+      // Enforce minimum based on role: 'must' = min 1, 'optional' = min 0
+      const minQty = product?.role === 'must' ? 1 : 0;
+      const validQty = Math.max(minQty, qty);
+      
+      setKitSelection(prev => ({
+        ...prev,
+        [sku]: validQty,
+      }));
+    } else {
+      setKitSelection(prev => ({
+        ...prev,
+        [sku]: Math.max(0, qty),
+      }));
+    }
+  }, [offers, selectedOfferId]);
 
   // Build cart items from selection
   const getCartItems = useCallback((): CartItem[] => {
