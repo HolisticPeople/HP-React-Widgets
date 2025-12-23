@@ -132,10 +132,14 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     
     switch (selectedOffer.type) {
       case 'single': {
+        // Calculate per-unit price from offer's calculated price
+        const perUnitPrice = selectedOffer.calculatedPrice 
+          ? selectedOffer.calculatedPrice / (selectedOffer.quantity || 1)
+          : undefined;
         items.push({ 
           sku: selectedOffer.productSku, 
           qty: selectedOffer.quantity,
-          itemDiscountPercent: selectedOffer.discountType === 'percent' ? selectedOffer.discountValue : undefined,
+          salePrice: perUnitPrice,  // Use calculated offer price
         });
         break;
       }
@@ -145,6 +149,8 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
           items.push({ 
             sku: item.sku, 
             qty: item.qty,
+            // Use the effective price (admin-set sale price) if different from WC price
+            salePrice: item.price,  // This is the effective price from config loader
           });
         });
         break;

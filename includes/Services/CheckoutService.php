@@ -100,7 +100,11 @@ class CheckoutService
                 $item->set_product($product);
                 $item->set_quantity($qty);
 
-                $price = (float) $product->get_price();
+                // Use admin-set sale price if provided, otherwise use WC price
+                $wcPrice = (float) $product->get_price();
+                $salePrice = isset($it['salePrice']) ? (float) $it['salePrice'] : null;
+                $price = ($salePrice !== null) ? $salePrice : $wcPrice;
+                
                 $subtotal = $price * $qty;
                 $total = $subtotal;
 

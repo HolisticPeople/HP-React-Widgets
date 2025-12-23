@@ -867,6 +867,8 @@ class FunnelConfigLoader
         foreach ($products as $item) {
             $sku = $item['sku'] ?? '';
             $qty = (int) ($item['qty'] ?? 1);
+            // Admin-set sale price (from products_data JSON)
+            $adminSalePrice = isset($item['salePrice']) ? (float) $item['salePrice'] : null;
             
             if (empty($sku)) {
                 continue;
@@ -875,19 +877,22 @@ class FunnelConfigLoader
             $wcProduct = Resolver::resolveProductFromItem(['sku' => $sku]);
             $wcData = $wcProduct ? Resolver::getProductDisplayData($wcProduct) : [];
             
-            $price = (float) ($wcData['price'] ?? 0);
-            $regularPrice = (float) ($wcData['regular_price'] ?? $price);
+            $wcPrice = (float) ($wcData['price'] ?? 0);
+            $regularPrice = (float) ($wcData['regular_price'] ?? $wcPrice);
+            // Use admin sale price if set, otherwise use WC price
+            $effectivePrice = $adminSalePrice !== null ? $adminSalePrice : $wcPrice;
             
             $offer['bundleItems'][] = [
                 'sku'          => $sku,
                 'qty'          => $qty,
                 'name'         => $wcData['name'] ?? $sku,
-                'price'        => $price,
-                'regularPrice' => $regularPrice,
+                'price'        => $effectivePrice,  // Final sale price
+                'regularPrice' => $regularPrice,    // For strikethrough display
+                'wcPrice'      => $wcPrice,         // Original WC price
                 'image'        => $wcData['image'] ?? '',
             ];
             
-            $totalPrice += $price * $qty;
+            $totalPrice += $effectivePrice * $qty;
             $totalRegularPrice += $regularPrice * $qty;
             
             // Use first product image if no offer image set

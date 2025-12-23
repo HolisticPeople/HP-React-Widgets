@@ -170,6 +170,7 @@ export interface CartItem {
   qty: number;
   excludeGlobalDiscount?: boolean;
   itemDiscountPercent?: number;
+  salePrice?: number;  // Admin-set price per unit (overrides WC price)
 }
 
 export interface TotalsResponse {
