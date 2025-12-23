@@ -46,8 +46,8 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     apiBase = '/wp-json/hp-rw/v1',
   } = props;
 
-  // Ensure offers is always an array
-  const offers = Array.isArray(rawOffers) ? rawOffers : [];
+  // Ensure offers is always a stable array reference
+  const offers = useMemo(() => Array.isArray(rawOffers) ? rawOffers : [], [rawOffers]);
 
   // Current step in the checkout flow
   const [currentStep, setCurrentStep] = useState<CheckoutStepType>('checkout');
