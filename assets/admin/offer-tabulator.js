@@ -102,7 +102,7 @@
                         { 
                             title: "Disc. %", 
                             field: "discount", 
-                            width: 70, 
+                            width: 90, 
                             widthGrow: 0, 
                             hozAlign: "center", 
                             formatter: "html"
@@ -265,6 +265,9 @@
 
             // Auto-update the Offer Price field with the calculated total
             this._updateOfferPriceField($container, totalSale);
+            
+            // Auto-update the Discount Label field
+            this._updateDiscountLabelField($container, discountPercent, hasDiscount);
         },
 
         /**
@@ -277,11 +280,37 @@
 
             // Find the offer_price field input
             const $priceField = $row.find('.acf-field[data-name="offer_price"] input[type="number"]');
-            if (!$priceField.length) return;
+            if ($priceField.length) {
+                // Always update to match the table total
+                $priceField.val(totalSale.toFixed(2));
+            }
+        },
 
-            // Only update if empty or if we should auto-sync
-            // For now, always update to match the table total
-            $priceField.val(totalSale.toFixed(2));
+        /**
+         * Update the Discount Label ACF field with auto-generated text
+         */
+        _updateDiscountLabelField: function($container, discountPercent, hasDiscount) {
+            // Find the offer row
+            const $row = $container.closest('.acf-row');
+            if (!$row.length) return;
+
+            // Find the discount_label field input
+            const $labelField = $row.find('.acf-field[data-name="offer_discount_label"] input[type="text"]');
+            if (!$labelField.length) return;
+
+            // Generate auto label
+            const autoLabel = hasDiscount ? `Save ${discountPercent.toFixed(0)}%` : '';
+            
+            // Update placeholder to show what auto value would be
+            $labelField.attr('placeholder', autoLabel || 'No discount');
+            
+            // If field is empty or matches a previous auto value, update it
+            const currentVal = $labelField.val();
+            const isAutoValue = !currentVal || /^Save \d+(\.\d+)?%$/.test(currentVal);
+            
+            if (isAutoValue) {
+                $labelField.val(autoLabel);
+            }
         },
 
         /**

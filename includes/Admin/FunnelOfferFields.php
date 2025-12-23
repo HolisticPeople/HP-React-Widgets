@@ -501,9 +501,13 @@ class FunnelOfferFields
                 justify-content: center;
             }
             .hp-discount-input {
-                width: 60px;
+                width: 70px;
                 text-align: right;
                 padding: 4px 6px;
+            }
+            /* Make sure Tabulator column is wide enough */
+            .tabulator .tabulator-col[tabulator-field="discount_percent"] {
+                min-width: 90px !important;
             }
             .hp-percent-symbol {
                 color: #666;
@@ -731,49 +735,22 @@ class FunnelOfferFields
                 'wrapper' => ['width' => '20', 'class' => 'hp-offer-price-field'],
             ],
             
-            // Row 3: Discount
-            [
-                'key' => 'field_offer_discount_type',
-                'label' => 'Discount',
-                'name' => 'offer_discount_type',
-                'type' => 'select',
-                'choices' => [
-                    'none' => 'None',
-                    'percent' => '% Off',
-                    'fixed' => '$ Off',
-                ],
-                'default_value' => 'none',
-                'wrapper' => ['width' => '20'],
-            ],
-            [
-                'key' => 'field_offer_discount_value',
-                'label' => 'Amount',
-                'name' => 'offer_discount_value',
-                'type' => 'number',
-                'default_value' => 0,
-                'min' => 0,
-                'wrapper' => ['width' => '15'],
-                'conditional_logic' => [
-                    [['field' => 'field_offer_discount_type', 'operator' => '!=', 'value' => 'none']],
-                ],
-            ],
+            // Row 3: Discount Label (auto-generated but overridable)
             [
                 'key' => 'field_offer_discount_label',
-                'label' => 'Label',
+                'label' => 'Discount Label',
                 'name' => 'offer_discount_label',
                 'type' => 'text',
-                'placeholder' => 'Save 25%',
-                'wrapper' => ['width' => '20'],
-                'conditional_logic' => [
-                    [['field' => 'field_offer_discount_type', 'operator' => '!=', 'value' => 'none']],
-                ],
+                'placeholder' => 'Auto: Save X%',
+                'instructions' => 'Auto-filled from table discount. Override if needed.',
+                'wrapper' => ['width' => '25', 'class' => 'hp-discount-label-field'],
             ],
             [
                 'key' => 'field_offer_description',
                 'label' => 'Description',
                 'name' => 'offer_description',
                 'type' => 'text',
-                'wrapper' => ['width' => '45'],
+                'wrapper' => ['width' => '35'],
             ],
             
             // Kit max items (only for kit type)
