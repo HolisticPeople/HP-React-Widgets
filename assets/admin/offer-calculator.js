@@ -83,6 +83,20 @@
             const qty = parseInt($(this).val()) || 1;
             
             updateProductQty($section, sku, qty);
+            // Re-render to update calculations
+            rerenderProductsList($section);
+        });
+
+        // Product sale price change
+        $(document).on('change', '.hp-product-item .hp-sale-price-input', function() {
+            const $item = $(this).closest('.hp-product-item');
+            const $section = $(this).closest('.hp-products-section');
+            const sku = $item.data('sku');
+            const salePrice = parseFloat($(this).val()) || 0;
+            
+            updateProductSalePrice($section, sku, salePrice);
+            // Re-render to update calculations
+            rerenderProductsList($section);
         });
 
         // Product role change (for kits)
@@ -283,10 +297,12 @@
             $wrapper.find('.hp-search-dropdown .hp-search-item').on('click', function() {
                 if ($(this).hasClass('is-added')) return;
                 
+                const originalPrice = parseFloat($(this).data('price')) || 0;
                 const productData = {
                     sku: $(this).data('sku'),
                     name: $(this).data('name'),
-                    price: parseFloat($(this).data('price')),
+                    price: originalPrice,
+                    salePrice: originalPrice, // Default sale price = original price
                     image: $(this).data('image'),
                     qty: 1,
                     role: 'optional' // default for kits
@@ -390,6 +406,24 @@
         }
     }
 
+    function updateProductSalePrice($section, sku, salePrice) {
+        const $row = $section.closest('.acf-row');
+        let products = getProductsData($row);
+        
+        const product = products.find(p => p.sku === sku);
+        if (product) {
+            product.salePrice = salePrice;
+            saveProductsData($row, products);
+        }
+    }
+
+    function rerenderProductsList($section) {
+        const $row = $section.closest('.acf-row');
+        const products = getProductsData($row);
+        const offerType = getOfferType($row);
+        renderProductsList($section.find('.hp-products-list'), products, offerType);
+    }
+
     // ========================================
     // RENDER PRODUCTS LIST
     // ========================================
@@ -401,12 +435,32 @@
         }
 
         let html = '';
+        let totalOriginal = 0;
+        let totalSale = 0;
+
         products.forEach(product => {
             const isKit = offerType === 'customizable_kit';
             const kitClass = isKit ? 'is-kit' : '';
             
+            const originalPrice = parseFloat(product.price) || 0;
+            const salePrice = parseFloat(product.salePrice) !== undefined && product.salePrice !== null 
+                ? parseFloat(product.salePrice) 
+                : originalPrice;
+            const qty = parseInt(product.qty) || 1;
+            
+            const lineOriginal = originalPrice * qty;
+            const lineSale = salePrice * qty;
+            const lineDiscount = lineOriginal - lineSale;
+            const discountPercent = originalPrice > 0 ? ((originalPrice - salePrice) / originalPrice * 100) : 0;
+            
+            totalOriginal += lineOriginal;
+            totalSale += lineSale;
+            
+            const hasDiscount = salePrice < originalPrice;
+            const discountClass = hasDiscount ? 'has-discount' : '';
+            
             html += `
-                <div class="hp-product-item ${kitClass}" data-sku="${escapeAttr(product.sku)}">
+                <div class="hp-product-item ${kitClass} ${discountClass}" data-sku="${escapeAttr(product.sku)}">
                     <img src="${product.image || ''}" alt="">
                     <div class="hp-product-info">
                         <div class="hp-product-name">${escapeHtml(product.name)}</div>
@@ -416,14 +470,49 @@
                         ${isKit ? getRoleSelector(product.role || 'optional') : ''}
                         <div class="hp-qty-control">
                             <label>Qty:</label>
-                            <input type="number" class="hp-qty-input" value="${product.qty || 1}" min="1" max="99">
+                            <input type="number" class="hp-qty-input" value="${qty}" min="1" max="99">
                         </div>
-                        <div class="hp-product-price">$${parseFloat(product.price).toFixed(2)}</div>
+                        <div class="hp-price-group">
+                            <div class="hp-original-price ${hasDiscount ? 'strikethrough' : ''}">
+                                $${originalPrice.toFixed(2)}
+                            </div>
+                            <div class="hp-sale-price-control">
+                                <span class="hp-currency">$</span>
+                                <input type="number" class="hp-sale-price-input" 
+                                       value="${salePrice.toFixed(2)}" 
+                                       min="0" step="0.01" 
+                                       data-original="${originalPrice}">
+                            </div>
+                            ${hasDiscount ? `<div class="hp-line-discount">-$${lineDiscount.toFixed(2)} (${discountPercent.toFixed(0)}%)</div>` : ''}
+                        </div>
                         <button type="button" class="hp-product-remove" title="Remove">×</button>
                     </div>
                 </div>
             `;
         });
+
+        // Add summary section
+        const totalDiscount = totalOriginal - totalSale;
+        const hasAnyDiscount = totalDiscount > 0;
+        
+        html += `
+            <div class="hp-offer-summary">
+                <div class="hp-summary-row">
+                    <span class="hp-summary-label">Subtotal:</span>
+                    <span class="hp-summary-value ${hasAnyDiscount ? 'strikethrough' : ''}">$${totalOriginal.toFixed(2)}</span>
+                </div>
+                ${hasAnyDiscount ? `
+                <div class="hp-summary-row hp-discount-row">
+                    <span class="hp-summary-label">Discount:</span>
+                    <span class="hp-summary-value hp-discount-value">-$${totalDiscount.toFixed(2)}</span>
+                </div>
+                ` : ''}
+                <div class="hp-summary-row hp-total-row">
+                    <span class="hp-summary-label">Offer Total:</span>
+                    <span class="hp-summary-value hp-total-value">$${totalSale.toFixed(2)}</span>
+                </div>
+            </div>
+        `;
 
         $list.html(html);
     }

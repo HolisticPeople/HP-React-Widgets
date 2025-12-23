@@ -305,11 +305,48 @@ class FunnelOfferFields
             .hp-product-item .hp-role-control select {
                 padding: 4px 8px;
             }
-            .hp-product-item .hp-product-price {
+            /* Pricing group */
+            .hp-product-item .hp-price-group {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 2px;
+                min-width: 120px;
+            }
+            .hp-product-item .hp-original-price {
+                font-size: 12px;
+                color: #666;
+            }
+            .hp-product-item .hp-original-price.strikethrough {
+                text-decoration: line-through;
+                color: #999;
+            }
+            .hp-product-item .hp-sale-price-control {
+                display: flex;
+                align-items: center;
+                gap: 2px;
+            }
+            .hp-product-item .hp-sale-price-control .hp-currency {
                 font-weight: 600;
                 color: #00a32a;
-                min-width: 70px;
+            }
+            .hp-product-item .hp-sale-price-input {
+                width: 70px;
                 text-align: right;
+                padding: 4px 6px;
+                font-weight: 600;
+                color: #00a32a;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+            }
+            .hp-product-item .hp-sale-price-input:focus {
+                border-color: #2271b1;
+                outline: none;
+            }
+            .hp-product-item .hp-line-discount {
+                font-size: 11px;
+                color: #d63638;
+                font-weight: 500;
             }
             .hp-product-item .hp-product-remove {
                 color: #d63638;
@@ -322,6 +359,49 @@ class FunnelOfferFields
             }
             .hp-product-item .hp-product-remove:hover {
                 background: #fcf0f1;
+            }
+            
+            /* Offer summary */
+            .hp-offer-summary {
+                background: #f9f9f9;
+                border-top: 2px solid #ddd;
+                padding: 12px;
+                margin-top: 8px;
+            }
+            .hp-summary-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 4px 0;
+            }
+            .hp-summary-label {
+                color: #666;
+                font-size: 13px;
+            }
+            .hp-summary-value {
+                font-weight: 500;
+            }
+            .hp-summary-value.strikethrough {
+                text-decoration: line-through;
+                color: #999;
+            }
+            .hp-discount-row .hp-discount-value {
+                color: #d63638;
+                font-weight: 600;
+            }
+            .hp-total-row {
+                border-top: 1px solid #ddd;
+                margin-top: 4px;
+                padding-top: 8px;
+            }
+            .hp-total-row .hp-summary-label {
+                font-weight: 600;
+                color: #1e1e1e;
+            }
+            .hp-total-row .hp-total-value {
+                font-size: 16px;
+                font-weight: 700;
+                color: #00a32a;
             }
             
             /* Kit-specific controls */
