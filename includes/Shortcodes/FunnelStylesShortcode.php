@@ -136,19 +136,38 @@ class FunnelStylesShortcode
                 box-shadow: 0 0 30px rgba(var(--hp-funnel-accent-rgb), 0.5);
             }
             
-            /* Override Tailwind classes in React checkout app */
+            /* ===========================================
+               GLOBAL OVERRIDES FOR ALL FUNNEL SECTIONS
+               Targets .hp-funnel-section (all landing page components)
+               and .hp-funnel-checkout-app (checkout)
+               =========================================== */
+            
+            /* Override Tailwind text colors in all funnel sections */
+            .hp-funnel-section .text-foreground,
+            .hp-funnel-section [class*='text-foreground'],
             .hp-funnel-checkout-app .text-foreground,
             .hp-funnel-checkout-app [class*='text-foreground'] {
                 color: var(--hp-funnel-text-basic) !important;
             }
+            
+            .hp-funnel-section .text-muted-foreground,
+            .hp-funnel-section [class*='text-muted'],
             .hp-funnel-checkout-app .text-muted-foreground,
             .hp-funnel-checkout-app [class*='text-muted'] {
                 color: var(--hp-funnel-text-note) !important;
             }
+            
+            .hp-funnel-section .text-accent,
+            .hp-funnel-section [class*='text-accent'],
             .hp-funnel-checkout-app .text-accent,
             .hp-funnel-checkout-app [class*='text-accent'] {
                 color: var(--hp-funnel-text-accent) !important;
             }
+            
+            .hp-funnel-section .text-green-500, 
+            .hp-funnel-section .text-emerald-500,
+            .hp-funnel-section [class*='text-green'],
+            .hp-funnel-section [class*='text-emerald'],
             .hp-funnel-checkout-app .text-green-500, 
             .hp-funnel-checkout-app .text-emerald-500,
             .hp-funnel-checkout-app [class*='text-green'],
@@ -156,14 +175,20 @@ class FunnelStylesShortcode
                 color: var(--hp-funnel-text-discount) !important;
             }
             
-            /* Heading colors */
+            /* Heading colors - all funnel sections */
+            .hp-funnel-section h1,
+            .hp-funnel-section h2,
+            .hp-funnel-section h3,
             .hp-funnel-checkout-app h1,
             .hp-funnel-checkout-app h2,
             .hp-funnel-checkout-app h3 {
                 color: var(--hp-funnel-text-accent) !important;
             }
             
-            /* Body/paragraph text */
+            /* Body/paragraph text - all funnel sections */
+            .hp-funnel-section p,
+            .hp-funnel-section span:not(.text-accent):not([class*='text-accent']),
+            .hp-funnel-section li,
             .hp-funnel-checkout-app p,
             .hp-funnel-checkout-app span,
             .hp-funnel-checkout-app label,
@@ -171,39 +196,70 @@ class FunnelStylesShortcode
                 color: var(--hp-funnel-text-basic);
             }
             
+            /* Accent-colored spans and icons */
+            .hp-funnel-section .text-accent,
+            .hp-funnel-section span.text-accent,
+            .hp-funnel-section svg.text-accent {
+                color: var(--hp-funnel-text-accent) !important;
+            }
+            
+            /* Muted text like subtitles */
+            .hp-funnel-section .text-muted-foreground,
+            .hp-funnel-section .text-gray-400,
+            .hp-funnel-section .text-gray-500 {
+                color: var(--hp-funnel-text-note) !important;
+            }
+            
             /* Input labels */
+            .hp-funnel-section label,
+            .hp-funnel-section .text-sm,
             .hp-funnel-checkout-app label,
             .hp-funnel-checkout-app .text-sm {
                 color: var(--hp-funnel-text-note) !important;
             }
             
             /* Prices and discounts */
+            .hp-funnel-section .line-through,
             .hp-funnel-checkout-app .line-through {
                 color: var(--hp-funnel-text-note) !important;
             }
             
-            /* UI Element color overrides for React checkout app */
+            /* Set CSS custom properties for Tailwind in all funnel sections */
+            .hp-funnel-section,
             .hp-funnel-checkout-app {
                 --background: var(--hp-funnel-page-bg);
+                --foreground: var(--hp-funnel-text-basic);
                 --card: var(--hp-funnel-card-bg);
+                --card-foreground: var(--hp-funnel-text-basic);
                 --border: var(--hp-funnel-border);
                 --input: var(--hp-funnel-input-bg);
+                --accent: var(--hp-funnel-accent);
+                --accent-foreground: 0 0% 0%;
+                --muted-foreground: var(--hp-funnel-text-note);
             }
             
-            /* Border color overrides */
+            /* Border color overrides - all funnel sections */
+            .hp-funnel-section [class*='border-border'],
+            .hp-funnel-section [class*='border-accent'],
+            .hp-funnel-section .border,
             .hp-funnel-checkout-app [class*='border-border'],
             .hp-funnel-checkout-app [class*='border-accent'],
             .hp-funnel-checkout-app .border {
                 border-color: var(--hp-funnel-border) !important;
             }
             
-            /* Card background overrides */
+            /* Card background overrides - all funnel sections */
+            .hp-funnel-section [class*='bg-card'],
+            .hp-funnel-section [class*='bg-secondary'],
             .hp-funnel-checkout-app [class*='bg-card'],
             .hp-funnel-checkout-app [class*='bg-secondary'] {
                 background-color: var(--hp-funnel-card-bg) !important;
             }
             
             /* Input background overrides */
+            .hp-funnel-section input,
+            .hp-funnel-section select,
+            .hp-funnel-section textarea,
             .hp-funnel-checkout-app [class*='bg-input'],
             .hp-funnel-checkout-app input,
             .hp-funnel-checkout-app select,
@@ -211,9 +267,15 @@ class FunnelStylesShortcode
                 background-color: var(--hp-funnel-input-bg) !important;
             }
             
-            /* Page background for the checkout app container */
+            /* Page background overrides */
+            .hp-funnel-section [class*='bg-background'],
             .hp-funnel-checkout-app [class*='bg-background'] {
                 background-color: var(--hp-funnel-page-bg) !important;
+            }
+            
+            /* Accent SVG icons (checkmarks, etc.) */
+            .hp-funnel-section svg {
+                color: var(--hp-funnel-text-accent);
             }
 
             {$customCss}
