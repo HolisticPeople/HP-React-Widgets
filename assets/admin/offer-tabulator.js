@@ -11,9 +11,13 @@
         
         /**
          * Initialize or update a Tabulator table for an offer
+         * @param {string} containerId - The container ID
+         * @param {array} products - Array of product data
+         * @param {object} options - Options including offerType ('single', 'fixed_bundle', 'customizable_kit')
          */
         render: function(containerId, products, options) {
             options = options || {};
+            const isKit = options.offerType === 'customizable_kit';
             const $container = $('#' + containerId);
             if (!$container.length) {
                 console.warn('[HP Offer Table] Container not found:', containerId);
@@ -23,8 +27,8 @@
             // Map products to table data
             const data = this._mapProducts(products, options);
             
-            // Build columns
-            const columns = this._buildColumns();
+            // Build columns (with Role column for kits)
+            const columns = this._buildColumns(isKit);
             
             // Check if table exists
             if (this.tables[containerId]) {
@@ -56,12 +60,10 @@
 
         /**
          * Build column definitions
+         * @param {boolean} isKit - Whether this is a customizable kit (shows Role column)
          */
-        _buildColumns: function() {
-            const productCount = 0; // Will be dynamic
-            const totalQty = 0;
-
-            return [
+        _buildColumns: function(isKit) {
+            const columns = [
                 { 
                     title: "", 
                     field: "thumb", 
@@ -73,7 +75,7 @@
                 { 
                     title: "Product", 
                     field: "product", 
-                    minWidth: 200, 
+                    minWidth: 180, 
                     widthGrow: 1, 
                     headerSort: false, 
                     formatter: "html"
@@ -86,37 +88,56 @@
                     headerSort: false, 
                     hozAlign: "center", 
                     formatter: "html"
-                },
-                {
-                    title: "Pricing",
-                    resizable: false,
-                    columns: [
-                        { 
-                            title: "Price", 
-                            field: "price", 
-                            width: 80, 
-                            widthGrow: 0, 
-                            hozAlign: "center", 
-                            formatter: "html"
-                        },
-                        { 
-                            title: "Disc. %", 
-                            field: "discount", 
-                            width: 90, 
-                            widthGrow: 0, 
-                            hozAlign: "center", 
-                            formatter: "html"
-                        },
-                        { 
-                            title: "Sale Price", 
-                            field: "sale_price", 
-                            width: 90, 
-                            widthGrow: 0, 
-                            hozAlign: "center", 
-                            formatter: "html"
-                        }
-                    ]
-                },
+                }
+            ];
+
+            // Add Role column for kits only
+            if (isKit) {
+                columns.push({
+                    title: "Role",
+                    field: "role",
+                    width: 110,
+                    widthGrow: 0,
+                    headerSort: false,
+                    hozAlign: "center",
+                    formatter: "html"
+                });
+            }
+
+            // Pricing group
+            columns.push({
+                title: "Pricing",
+                resizable: false,
+                columns: [
+                    { 
+                        title: "Price", 
+                        field: "price", 
+                        width: 80, 
+                        widthGrow: 0, 
+                        hozAlign: "center", 
+                        formatter: "html"
+                    },
+                    { 
+                        title: "Disc. %", 
+                        field: "discount", 
+                        width: 90, 
+                        widthGrow: 0, 
+                        hozAlign: "center", 
+                        formatter: "html"
+                    },
+                    { 
+                        title: "Sale Price", 
+                        field: "sale_price", 
+                        width: 90, 
+                        widthGrow: 0, 
+                        hozAlign: "center", 
+                        formatter: "html"
+                    }
+                ]
+            });
+
+            // Total and actions
+            columns.push(
                 { 
                     title: "Total", 
                     field: "total", 
@@ -135,13 +156,17 @@
                     hozAlign: "center", 
                     formatter: "html"
                 }
-            ];
+            );
+
+            return columns;
         },
 
         /**
          * Map products to table row data
          */
         _mapProducts: function(products, options) {
+            const isKit = options.offerType === 'customizable_kit';
+            
             return (products || []).map((p, index) => {
                 const originalPrice = parseFloat(p.price) || 0;
                 const salePrice = (p.salePrice !== undefined && p.salePrice !== null) 
@@ -157,13 +182,15 @@
                 }
 
                 const sku = p.sku || '';
+                const role = p.role || 'optional';
                 
-                return {
+                const rowData = {
                     id: sku,
                     sku: sku,
                     _originalPrice: originalPrice,
                     _salePrice: salePrice,
                     _qty: qty,
+                    _role: role,
                     thumb: `<div class="hp-item-thumb"><img src="${p.image || ''}" alt=""></div>`,
                     product: this._renderProduct(p),
                     qty: this._renderQty(p),
@@ -173,6 +200,13 @@
                     total: `<span class="hp-line-total">$${lineTotal.toFixed(2)}</span>`,
                     actions: this._renderActions(p)
                 };
+
+                // Add role column for kits
+                if (isKit) {
+                    rowData.role = this._renderRole(p, role);
+                }
+
+                return rowData;
             });
         },
 
@@ -212,6 +246,18 @@
             return `<button type="button" class="button button-link-delete hp-remove-btn" data-sku="${this._escapeAttr(sku)}" title="Remove">
                 <span class="dashicons dashicons-trash"></span>
             </button>`;
+        },
+
+        /**
+         * Render role dropdown for kit products
+         */
+        _renderRole: function(p, role) {
+            const sku = p.sku || '';
+            return `<select class="hp-role-select" data-sku="${this._escapeAttr(sku)}">
+                <option value="must" ${role === 'must' ? 'selected' : ''}>Must Have</option>
+                <option value="default" ${role === 'default' ? 'selected' : ''}>Default</option>
+                <option value="optional" ${role === 'optional' ? 'selected' : ''}>Optional</option>
+            </select>`;
         },
 
         /**

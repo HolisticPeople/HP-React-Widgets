@@ -112,14 +112,14 @@
             rerenderProductsList($section);
         });
 
-        // Product role change (for kits)
-        $(document).on('change', '.hp-product-item .hp-role-select', function() {
-            const $item = $(this).closest('.hp-product-item');
+        // Product role change (for kits - Tabulator)
+        $(document).on('change', '.hp-role-select', function() {
             const $section = $(this).closest('.hp-products-section');
-            const sku = $item.data('sku');
+            const sku = $(this).data('sku');
             const role = $(this).val();
             
             updateProductRole($section, sku, role);
+            rerenderProductsList($section);
         });
 
         // Remove product (supports both old class and Tabulator)

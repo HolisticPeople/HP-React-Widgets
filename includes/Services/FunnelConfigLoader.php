@@ -948,8 +948,13 @@ class FunnelConfigLoader
             $price = (float) ($wcData['price'] ?? 0);
             $regularPrice = (float) ($wcData['regular_price'] ?? $price);
             
-            // Apply per-product discount
-            $discountedPrice = self::applyDiscount($price, $productDiscountType, $productDiscountValue);
+            // Use admin-set salePrice if available, otherwise apply discount
+            $adminSalePrice = isset($item['salePrice']) ? (float) $item['salePrice'] : null;
+            if ($adminSalePrice !== null && $adminSalePrice > 0) {
+                $discountedPrice = $adminSalePrice;
+            } else {
+                $discountedPrice = self::applyDiscount($price, $productDiscountType, $productDiscountValue);
+            }
             
             $kitProduct = [
                 'sku'           => $sku,

@@ -489,8 +489,8 @@ export const CheckoutStep = ({
                       <p className="font-medium text-foreground">{product.name}</p>
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-accent">${product.discountedPrice.toFixed(2)}</span>
-                        {product.discountedPrice < product.price && (
-                          <span className="text-muted-foreground line-through">${product.price.toFixed(2)}</span>
+                        {product.discountedPrice < product.regularPrice && (
+                          <span className="text-muted-foreground line-through">${product.regularPrice.toFixed(2)}</span>
                         )}
                       </div>
                       {product.role === 'must' && (

@@ -59,15 +59,15 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
   
   // Kit selection for customizable kits
   const [kitSelection, setKitSelection] = useState<KitSelection>(() => {
-    // Initialize with default quantities for kit offers
+    // Initialize with admin-set quantities for kit offers
     const selection: KitSelection = {};
     const offer = offers.find(o => o.id === selectedOfferId);
     if (offer?.type === 'customizable_kit') {
       const kitOffer = offer as CustomizableKitOffer;
       kitOffer.kitProducts.forEach((product: KitProduct) => {
-        if (product.role === 'must' || product.role === 'default') {
-          selection[product.sku] = product.qty;
-        }
+        // Use admin-set qty as default for all products
+        // (must and default roles use their qty, optional can start at 0 if admin set 0)
+        selection[product.sku] = product.qty;
       });
     }
     return selection;
@@ -100,15 +100,14 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
   const handleOfferSelect = useCallback((offerId: string) => {
     setSelectedOfferId(offerId);
     
-    // Reset kit selection for the new offer
+    // Reset kit selection for the new offer with admin-set quantities
     const offer = offers.find(o => o.id === offerId);
     if (offer?.type === 'customizable_kit') {
       const kitOffer = offer as CustomizableKitOffer;
       const newSelection: KitSelection = {};
       kitOffer.kitProducts.forEach((product: KitProduct) => {
-        if (product.role === 'must' || product.role === 'default') {
-          newSelection[product.sku] = product.qty;
-        }
+        // Use admin-set qty as default for all products
+        newSelection[product.sku] = product.qty;
       });
       setKitSelection(newSelection);
     } else {

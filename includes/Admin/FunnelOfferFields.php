@@ -331,6 +331,14 @@ class FunnelOfferFields
             .hp-product-item .hp-role-control select {
                 padding: 4px 8px;
             }
+            /* Tabulator role select */
+            .hp-role-select {
+                padding: 4px 8px;
+                border: 1px solid #8c8f94;
+                border-radius: 3px;
+                font-size: 12px;
+                min-width: 90px;
+            }
             /* Pricing group */
             .hp-product-item .hp-price-group {
                 display: flex;
