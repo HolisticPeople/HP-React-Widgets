@@ -387,21 +387,21 @@ class FunnelConfigLoader
                 'upsell'    => self::extractUpsellConfig(self::getFieldValue('upsell_config', $postId, [])),
             ],
             
-            // Styling
+            // Styling - consolidated colors
             'styling' => [
+                // Primary accent color (used for text accent AND UI accents)
                 'accent_color'       => self::getFieldValue('accent_color', $postId, '#eab308'),
+                // Text colors
                 'text_color_basic'   => self::getFieldValue('text_color_basic', $postId, '#e5e5e5'),
-                'text_color_accent'  => self::getFieldValue('text_color_accent', $postId, '#eab308'),
                 'text_color_note'    => self::getFieldValue('text_color_note', $postId, '#a3a3a3'),
                 'text_color_discount'=> self::getFieldValue('text_color_discount', $postId, '#22c55e'),
                 // UI Element colors
-                'border_color'       => self::getFieldValue('border_color', $postId, '#7c3aed'),
-                'card_bg_color'      => self::getFieldValue('card_bg_color', $postId, '#1a1a1a'),
                 'page_bg_color'      => self::getFieldValue('page_bg_color', $postId, '#121212'),
+                'card_bg_color'      => self::getFieldValue('card_bg_color', $postId, '#1a1a1a'),
                 'input_bg_color'     => self::getFieldValue('input_bg_color', $postId, '#333333'),
-                // Background settings
+                'border_color'       => self::getFieldValue('border_color', $postId, '#7c3aed'),
+                // Background type settings (gradient/solid/image)
                 'background_type'    => self::getFieldValue('background_type', $postId, 'gradient'),
-                'background_color'   => self::getFieldValue('background_color', $postId, ''),
                 'background_image'   => self::getFieldValue('background_image', $postId, ''),
                 'custom_css'         => self::getFieldValue('custom_css', $postId, ''),
             ],
@@ -1207,7 +1207,7 @@ class FunnelConfigLoader
             'styling' => [
                 'accent_color'     => $legacy['payment_style']['accent_color'] ?? '#eab308',
                 'background_type'  => 'gradient',
-                'background_color' => $legacy['payment_style']['background_color'] ?? '',
+                'page_bg_color'    => $legacy['payment_style']['background_color'] ?? '#121212',
                 'background_image' => '',
                 'custom_css'       => '',
             ],

@@ -34,27 +34,27 @@ function hp_build_funnel_styles($funnel) {
     $styling = $funnel['styling'] ?? [];
     $slug = esc_attr($funnel['slug'] ?? 'checkout');
     
+    // Primary accent color - used for text accent AND UI accents
     $accentColor = $styling['accent_color'] ?? '#eab308';
     $bgType = strtolower($styling['background_type'] ?? 'gradient');
-    $bgColor = $styling['background_color'] ?? '';
     $bgImage = $styling['background_image'] ?? '';
     $customCss = $styling['custom_css'] ?? '';
     
-    // Text colors
+    // Text colors (accent uses primary accent_color)
     $textBasic = $styling['text_color_basic'] ?? '#e5e5e5';
-    $textAccent = $styling['text_color_accent'] ?? '#eab308';
+    $textAccent = $accentColor; // Consolidated: use accent_color for text accent
     $textNote = $styling['text_color_note'] ?? '#a3a3a3';
     $textDiscount = $styling['text_color_discount'] ?? '#22c55e';
     
     // UI element colors
-    $borderColor = $styling['border_color'] ?? '#7c3aed';
-    $cardBgColor = $styling['card_bg_color'] ?? '#1a1a1a';
     $pageBgColor = $styling['page_bg_color'] ?? '#121212';
+    $cardBgColor = $styling['card_bg_color'] ?? '#1a1a1a';
     $inputBgColor = $styling['input_bg_color'] ?? '#333333';
+    $borderColor = $styling['border_color'] ?? '#7c3aed';
     
-    // Build background
+    // Build background (solid uses page_bg_color)
     if (strpos($bgType, 'solid') !== false || $bgType === 'color') {
-        $background = $bgColor ?: $pageBgColor;
+        $background = $pageBgColor ?: '#121212';
     } elseif (strpos($bgType, 'image') !== false && $bgImage) {
         $background = "url('{$bgImage}') center/cover no-repeat fixed";
     } else {

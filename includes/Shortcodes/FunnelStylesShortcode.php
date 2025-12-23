@@ -39,27 +39,28 @@ class FunnelStylesShortcode
 
         $styling = $config['styling'] ?? [];
         
-        // Build CSS variables - text colors
+        // Primary accent color - used for text accent AND UI accents
         $accentColor = $styling['accent_color'] ?? '#eab308';
+        
+        // Text colors (accent uses primary accent_color)
         $textBasic = $styling['text_color_basic'] ?? '#e5e5e5';
-        $textAccent = $styling['text_color_accent'] ?? '#eab308';
+        $textAccent = $accentColor; // Consolidated: use accent_color for text accent
         $textNote = $styling['text_color_note'] ?? '#a3a3a3';
         $textDiscount = $styling['text_color_discount'] ?? '#22c55e';
         
         // UI element colors
-        $borderColor = $styling['border_color'] ?? '#7c3aed';
-        $cardBgColor = $styling['card_bg_color'] ?? '#1a1a1a';
         $pageBgColor = $styling['page_bg_color'] ?? '#121212';
+        $cardBgColor = $styling['card_bg_color'] ?? '#1a1a1a';
         $inputBgColor = $styling['input_bg_color'] ?? '#333333';
+        $borderColor = $styling['border_color'] ?? '#7c3aed';
         
-        // Background settings
+        // Background settings (page_bg_color is used for solid backgrounds)
         $bgType = $styling['background_type'] ?? 'gradient';
-        $bgColor = $styling['background_color'] ?? '';
         $bgImage = $styling['background_image'] ?? '';
         $customCss = $styling['custom_css'] ?? '';
 
-        // Build background CSS
-        $background = $this->buildBackground($bgType, $bgColor, $bgImage, $pageBgColor);
+        // Build background CSS (solid background uses page_bg_color)
+        $background = $this->buildBackground($bgType, $pageBgColor, $bgImage);
         $slug = esc_attr($config['slug']);
 
         $cssVars = "
@@ -226,15 +227,20 @@ class FunnelStylesShortcode
 
     /**
      * Build background CSS value.
+     * 
+     * @param string $type Background type (gradient, solid, image)
+     * @param string $pageBgColor Page background color (used for solid backgrounds)
+     * @param string $image Background image URL
+     * @return string CSS background value
      */
-    private function buildBackground(string $type, string $color, string $image, string $pageBgColor = '#121212'): string
+    private function buildBackground(string $type, string $pageBgColor, string $image = ''): string
     {
         // Normalize type value (ACF might store "Default Gradient", "Solid Color", etc.)
         $normalizedType = strtolower(trim($type));
         
-        // Check for solid color
+        // Check for solid color - uses page_bg_color
         if (strpos($normalizedType, 'solid') !== false || $normalizedType === 'color') {
-            return $color ?: $pageBgColor;
+            return $pageBgColor ?: '#121212';
         }
         
         // Check for image
@@ -242,7 +248,7 @@ class FunnelStylesShortcode
             if ($image) {
                 return "url('{$image}') center/cover no-repeat fixed";
             }
-            return $pageBgColor;
+            return $pageBgColor ?: '#121212';
         }
         
         // Default: gradient (matches "gradient", "default gradient", etc.)

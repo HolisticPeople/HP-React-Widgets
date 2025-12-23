@@ -6,8 +6,9 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Registers ACF fields for Funnel Styling options.
- * Adds text color customization: basic, accent, note, discount.
+ * Registers ACF fields for Funnel Colors.
+ * Consolidated color options: text colors and UI element colors.
+ * Note: accent_color is in the main Styling tab and used for both text accent and UI accents.
  */
 class FunnelStylingFields
 {
@@ -17,9 +18,8 @@ class FunnelStylingFields
     }
 
     /**
-     * Register text colors field group.
-     * Creates a new field group that appears on hp-funnel post type, 
-     * positioned after the main Funnel Configuration group.
+     * Register Funnel Colors field group.
+     * Creates a consolidated color configuration that appears on hp-funnel post type.
      */
     public static function registerFieldGroup(): void
     {
@@ -28,16 +28,16 @@ class FunnelStylingFields
         }
 
         acf_add_local_field_group([
-            'key' => 'group_funnel_text_colors',
-            'title' => 'Text Colors',
+            'key' => 'group_funnel_colors',
+            'title' => 'Funnel Colors',
             'fields' => [
+                // Text Colors section
                 [
-                    'key' => 'field_text_colors_instructions',
+                    'key' => 'field_text_colors_header',
                     'label' => '',
                     'name' => '',
                     'type' => 'message',
-                    'instructions' => '',
-                    'message' => '<p style="margin:0;color:#666;">Configure text colors used throughout the funnel. These override default colors in the checkout and landing pages.</p>',
+                    'message' => '<p style="margin:0 0 5px;color:#23282d;font-weight:600;">Text Colors</p><p style="margin:0;color:#666;font-size:12px;">Accent text uses the Accent Color from the Styling tab.</p>',
                     'new_lines' => '',
                     'esc_html' => 0,
                 ],
@@ -46,114 +46,87 @@ class FunnelStylingFields
                     'label' => 'Basic Text',
                     'name' => 'text_color_basic',
                     'type' => 'color_picker',
-                    'instructions' => 'Main text color (off-white)',
+                    'instructions' => 'Main text (off-white)',
                     'default_value' => '#e5e5e5',
                     'enable_opacity' => 0,
                     'return_format' => 'string',
-                    'wrapper' => [
-                        'width' => '25',
-                    ],
-                ],
-                [
-                    'key' => 'field_text_color_accent',
-                    'label' => 'Accent Text',
-                    'name' => 'text_color_accent',
-                    'type' => 'color_picker',
-                    'instructions' => 'Headings, CTAs (gold/orange)',
-                    'default_value' => '#eab308',
-                    'enable_opacity' => 0,
-                    'return_format' => 'string',
-                    'wrapper' => [
-                        'width' => '25',
-                    ],
+                    'wrapper' => ['width' => '25'],
                 ],
                 [
                     'key' => 'field_text_color_note',
                     'label' => 'Note Text',
                     'name' => 'text_color_note',
                     'type' => 'color_picker',
-                    'instructions' => 'Secondary text (muted gray)',
+                    'instructions' => 'Secondary (muted)',
                     'default_value' => '#a3a3a3',
                     'enable_opacity' => 0,
                     'return_format' => 'string',
-                    'wrapper' => [
-                        'width' => '25',
-                    ],
+                    'wrapper' => ['width' => '25'],
                 ],
                 [
                     'key' => 'field_text_color_discount',
                     'label' => 'Discount Text',
                     'name' => 'text_color_discount',
                     'type' => 'color_picker',
-                    'instructions' => 'Savings/discounts (green)',
+                    'instructions' => 'Savings (green)',
                     'default_value' => '#22c55e',
                     'enable_opacity' => 0,
                     'return_format' => 'string',
-                    'wrapper' => [
-                        'width' => '25',
-                    ],
+                    'wrapper' => ['width' => '25'],
                 ],
-                // Section break for UI colors
+                // UI Colors section
                 [
-                    'key' => 'field_ui_colors_divider',
+                    'key' => 'field_ui_colors_header',
                     'label' => '',
                     'name' => '',
                     'type' => 'message',
-                    'message' => '<hr style="margin:20px 0 10px;border:0;border-top:1px solid #ccc;"><p style="margin:0;color:#666;font-weight:600;">UI Element Colors</p>',
+                    'message' => '<hr style="margin:20px 0 10px;border:0;border-top:1px solid #ddd;"><p style="margin:0 0 5px;color:#23282d;font-weight:600;">UI Element Colors</p>',
                     'new_lines' => '',
                     'esc_html' => 0,
-                ],
-                [
-                    'key' => 'field_border_color',
-                    'label' => 'Border Color',
-                    'name' => 'border_color',
-                    'type' => 'color_picker',
-                    'instructions' => 'Card borders, dividers (purple)',
-                    'default_value' => '#7c3aed',
-                    'enable_opacity' => 0,
-                    'return_format' => 'string',
-                    'wrapper' => [
-                        'width' => '25',
-                    ],
-                ],
-                [
-                    'key' => 'field_card_bg_color',
-                    'label' => 'Card Background',
-                    'name' => 'card_bg_color',
-                    'type' => 'color_picker',
-                    'instructions' => 'Card/panel backgrounds',
-                    'default_value' => '#1a1a1a',
-                    'enable_opacity' => 0,
-                    'return_format' => 'string',
-                    'wrapper' => [
-                        'width' => '25',
-                    ],
                 ],
                 [
                     'key' => 'field_page_bg_color',
                     'label' => 'Page Background',
                     'name' => 'page_bg_color',
                     'type' => 'color_picker',
-                    'instructions' => 'Overall page background',
+                    'instructions' => 'Main background',
                     'default_value' => '#121212',
                     'enable_opacity' => 0,
                     'return_format' => 'string',
-                    'wrapper' => [
-                        'width' => '25',
-                    ],
+                    'wrapper' => ['width' => '25'],
+                ],
+                [
+                    'key' => 'field_card_bg_color',
+                    'label' => 'Card Background',
+                    'name' => 'card_bg_color',
+                    'type' => 'color_picker',
+                    'instructions' => 'Cards/panels',
+                    'default_value' => '#1a1a1a',
+                    'enable_opacity' => 0,
+                    'return_format' => 'string',
+                    'wrapper' => ['width' => '25'],
                 ],
                 [
                     'key' => 'field_input_bg_color',
                     'label' => 'Input Background',
                     'name' => 'input_bg_color',
                     'type' => 'color_picker',
-                    'instructions' => 'Form input fields background',
+                    'instructions' => 'Form inputs',
                     'default_value' => '#333333',
                     'enable_opacity' => 0,
                     'return_format' => 'string',
-                    'wrapper' => [
-                        'width' => '25',
-                    ],
+                    'wrapper' => ['width' => '25'],
+                ],
+                [
+                    'key' => 'field_border_color',
+                    'label' => 'Border Color',
+                    'name' => 'border_color',
+                    'type' => 'color_picker',
+                    'instructions' => 'Borders/dividers',
+                    'default_value' => '#7c3aed',
+                    'enable_opacity' => 0,
+                    'return_format' => 'string',
+                    'wrapper' => ['width' => '25'],
                 ],
             ],
             'location' => [
@@ -165,7 +138,7 @@ class FunnelStylingFields
                     ],
                 ],
             ],
-            'menu_order' => 15, // After Funnel Configuration and Funnel Offers
+            'menu_order' => 15,
             'position' => 'normal',
             'style' => 'default',
             'label_placement' => 'top',

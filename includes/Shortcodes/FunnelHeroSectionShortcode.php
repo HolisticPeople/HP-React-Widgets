@@ -77,8 +77,8 @@ class FunnelHeroSectionShortcode
     {
         $type = $styling['background_type'] ?? 'gradient';
         
-        if ($type === 'solid' && !empty($styling['background_color'])) {
-            return $styling['background_color'];
+        if ($type === 'solid' && !empty($styling['page_bg_color'])) {
+            return $styling['page_bg_color'];
         }
         
         if ($type === 'image' && !empty($styling['background_image'])) {

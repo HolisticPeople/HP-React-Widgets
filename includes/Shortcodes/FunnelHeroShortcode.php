@@ -90,7 +90,7 @@ class FunnelHeroShortcode
             'benefitsTitle'     => $config['hero']['benefits_title'],
             'accentColor'       => $config['styling']['accent_color'],
             'backgroundType'    => $config['styling']['background_type'],
-            'backgroundColor'   => $config['styling']['background_color'],
+            'backgroundColor'   => $config['styling']['page_bg_color'],
             'backgroundImage'   => $config['styling']['background_image'],
             'footerText'        => $config['footer']['text'],
             'footerDisclaimer'  => $config['footer']['disclaimer'],
