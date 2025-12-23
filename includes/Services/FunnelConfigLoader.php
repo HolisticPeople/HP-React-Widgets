@@ -388,23 +388,7 @@ class FunnelConfigLoader
             ],
             
             // Styling - consolidated colors
-            'styling' => [
-                // Primary accent color (used for text accent AND UI accents)
-                'accent_color'       => self::getFieldValue('accent_color', $postId, '#eab308'),
-                // Text colors
-                'text_color_basic'   => self::getFieldValue('text_color_basic', $postId, '#e5e5e5'),
-                'text_color_note'    => self::getFieldValue('text_color_note', $postId, '#a3a3a3'),
-                'text_color_discount'=> self::getFieldValue('text_color_discount', $postId, '#22c55e'),
-                // UI Element colors
-                'page_bg_color'      => self::getFieldValue('page_bg_color', $postId, '#121212'),
-                'card_bg_color'      => self::getFieldValue('card_bg_color', $postId, '#1a1a1a'),
-                'input_bg_color'     => self::getFieldValue('input_bg_color', $postId, '#333333'),
-                'border_color'       => self::getFieldValue('border_color', $postId, '#7c3aed'),
-                // Background type settings (gradient/solid/image)
-                'background_type'    => self::getFieldValue('background_type', $postId, 'gradient'),
-                'background_image'   => self::getFieldValue('background_image', $postId, ''),
-                'custom_css'         => self::getFieldValue('custom_css', $postId, ''),
-            ],
+            'styling' => self::extractStyling($postId),
             
             // Footer
             'footer' => [
@@ -463,6 +447,43 @@ class FunnelConfigLoader
         ];
 
         return $config;
+    }
+
+    /**
+     * Extract styling configuration with accent override logic.
+     * If text_color_accent_override is checked, use custom text_color_accent,
+     * otherwise use the global accent_color.
+     *
+     * @param int $postId Post ID
+     * @return array Styling configuration
+     */
+    private static function extractStyling(int $postId): array
+    {
+        $accentColor = self::getFieldValue('accent_color', $postId, '#eab308');
+        $accentOverride = (bool) self::getFieldValue('text_color_accent_override', $postId, false);
+        $customTextAccent = self::getFieldValue('text_color_accent', $postId, '');
+        
+        // Use custom text accent if override is checked AND a value is set
+        $textAccent = ($accentOverride && !empty($customTextAccent)) ? $customTextAccent : $accentColor;
+        
+        return [
+            // Primary accent color (used for UI accents, buttons, etc.)
+            'accent_color'        => $accentColor,
+            // Text colors
+            'text_color_basic'    => self::getFieldValue('text_color_basic', $postId, '#e5e5e5'),
+            'text_color_accent'   => $textAccent, // Inherits from accent_color unless overridden
+            'text_color_note'     => self::getFieldValue('text_color_note', $postId, '#a3a3a3'),
+            'text_color_discount' => self::getFieldValue('text_color_discount', $postId, '#22c55e'),
+            // UI Element colors
+            'page_bg_color'       => self::getFieldValue('page_bg_color', $postId, '#121212'),
+            'card_bg_color'       => self::getFieldValue('card_bg_color', $postId, '#1a1a1a'),
+            'input_bg_color'      => self::getFieldValue('input_bg_color', $postId, '#333333'),
+            'border_color'        => self::getFieldValue('border_color', $postId, '#7c3aed'),
+            // Background type settings (gradient/solid/image)
+            'background_type'     => self::getFieldValue('background_type', $postId, 'gradient'),
+            'background_image'    => self::getFieldValue('background_image', $postId, ''),
+            'custom_css'          => self::getFieldValue('custom_css', $postId, ''),
+        ];
     }
 
     /**

@@ -309,10 +309,11 @@ class FunnelSchema
                     'type' => 'object',
                     'description' => 'Visual styling options',
                     'properties' => [
-                        // Primary accent color - used for text accent AND UI accents
-                        'accent_color' => ['type' => 'string', 'description' => 'Primary accent hex color (used for accented text and UI)', 'default' => '#eab308'],
+                        // Primary accent color (for buttons, UI highlights)
+                        'accent_color' => ['type' => 'string', 'description' => 'Primary accent hex color', 'default' => '#eab308'],
                         // Text colors
                         'text_color_basic' => ['type' => 'string', 'description' => 'Main text color (off-white)', 'default' => '#e5e5e5'],
+                        'text_color_accent' => ['type' => 'string', 'description' => 'Accent text (inherits from accent_color unless overridden)', 'default' => '#eab308'],
                         'text_color_note' => ['type' => 'string', 'description' => 'Muted text color (descriptions)', 'default' => '#a3a3a3'],
                         'text_color_discount' => ['type' => 'string', 'description' => 'Discount/savings text color', 'default' => '#22c55e'],
                         // UI element colors

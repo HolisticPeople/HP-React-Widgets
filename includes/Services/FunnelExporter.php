@@ -419,11 +419,18 @@ class FunnelExporter
      */
     private static function exportStyling(int $postId): array
     {
+        $accentColor = get_field('accent_color', $postId) ?: '#eab308';
+        $accentOverride = (bool) get_field('text_color_accent_override', $postId);
+        $customTextAccent = get_field('text_color_accent', $postId) ?: '';
+        
+        // Resolve text accent: use custom if override checked, otherwise use global accent
+        $textAccent = ($accentOverride && !empty($customTextAccent)) ? $customTextAccent : $accentColor;
+        
         return [
-            // Primary accent color - used for text accent AND UI accents
-            'accent_color' => get_field('accent_color', $postId) ?: '#eab308',
+            'accent_color' => $accentColor,
             // Text colors
             'text_color_basic' => get_field('text_color_basic', $postId) ?: '#e5e5e5',
+            'text_color_accent' => $textAccent,
             'text_color_note' => get_field('text_color_note', $postId) ?: '#a3a3a3',
             'text_color_discount' => get_field('text_color_discount', $postId) ?: '#22c55e',
             // UI element colors

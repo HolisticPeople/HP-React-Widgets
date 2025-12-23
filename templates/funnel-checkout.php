@@ -34,15 +34,15 @@ function hp_build_funnel_styles($funnel) {
     $styling = $funnel['styling'] ?? [];
     $slug = esc_attr($funnel['slug'] ?? 'checkout');
     
-    // Primary accent color - used for text accent AND UI accents
+    // Primary accent color (for buttons, UI)
     $accentColor = $styling['accent_color'] ?? '#eab308';
     $bgType = strtolower($styling['background_type'] ?? 'gradient');
     $bgImage = $styling['background_image'] ?? '';
     $customCss = $styling['custom_css'] ?? '';
     
-    // Text colors (accent uses primary accent_color)
+    // Text colors (text_color_accent may be overridden or inherit from accent_color)
     $textBasic = $styling['text_color_basic'] ?? '#e5e5e5';
-    $textAccent = $accentColor; // Consolidated: use accent_color for text accent
+    $textAccent = $styling['text_color_accent'] ?? $accentColor;
     $textNote = $styling['text_color_note'] ?? '#a3a3a3';
     $textDiscount = $styling['text_color_discount'] ?? '#22c55e';
     

@@ -493,10 +493,19 @@ class FunnelImporter
     {
         if (empty($styling)) return;
 
-        // Primary accent color - used for text accent AND UI accents
-        self::setField($postId, 'accent_color', $styling['accent_color'] ?? '#eab308');
+        $accentColor = $styling['accent_color'] ?? '#eab308';
+        $textAccent = $styling['text_color_accent'] ?? $accentColor;
+        
+        // Check if text accent differs from global accent (means override)
+        $hasOverride = ($textAccent !== $accentColor);
+        
+        self::setField($postId, 'accent_color', $accentColor);
         // Text colors
         self::setField($postId, 'text_color_basic', $styling['text_color_basic'] ?? '#e5e5e5');
+        self::setField($postId, 'text_color_accent_override', $hasOverride ? 1 : 0);
+        if ($hasOverride) {
+            self::setField($postId, 'text_color_accent', $textAccent);
+        }
         self::setField($postId, 'text_color_note', $styling['text_color_note'] ?? '#a3a3a3');
         self::setField($postId, 'text_color_discount', $styling['text_color_discount'] ?? '#22c55e');
         // UI element colors

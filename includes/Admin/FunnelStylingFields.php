@@ -8,13 +8,29 @@ if (!defined('ABSPATH')) {
 /**
  * Registers ACF fields for Funnel Colors.
  * Consolidated color options: text colors and UI element colors.
- * Note: accent_color is in the main Styling tab and used for both text accent and UI accents.
+ * Accent text defaults to the global Accent Color but can be overridden.
  */
 class FunnelStylingFields
 {
     public static function init(): void
     {
         add_action('acf/init', [self::class, 'registerFieldGroup'], 20);
+        // Hide the redundant background_color field from the Styling tab
+        add_filter('acf/prepare_field/name=background_color', [self::class, 'hideBackgroundColorField']);
+    }
+
+    /**
+     * Hide the background_color field from the Styling tab.
+     * We now use page_bg_color in Funnel Colors instead.
+     */
+    public static function hideBackgroundColorField($field)
+    {
+        // Only hide on hp-funnel post type
+        global $post;
+        if ($post && $post->post_type === 'hp-funnel') {
+            return false; // Returning false hides the field
+        }
+        return $field;
     }
 
     /**
@@ -37,7 +53,7 @@ class FunnelStylingFields
                     'label' => '',
                     'name' => '',
                     'type' => 'message',
-                    'message' => '<p style="margin:0 0 5px;color:#23282d;font-weight:600;">Text Colors</p><p style="margin:0;color:#666;font-size:12px;">Accent text uses the Accent Color from the Styling tab.</p>',
+                    'message' => '<p style="margin:0 0 5px;color:#23282d;font-weight:600;">Text Colors</p>',
                     'new_lines' => '',
                     'esc_html' => 0,
                 ],
@@ -50,7 +66,40 @@ class FunnelStylingFields
                     'default_value' => '#e5e5e5',
                     'enable_opacity' => 0,
                     'return_format' => 'string',
-                    'wrapper' => ['width' => '25'],
+                    'wrapper' => ['width' => '20'],
+                ],
+                [
+                    'key' => 'field_text_color_accent_override',
+                    'label' => 'Custom Accent',
+                    'name' => 'text_color_accent_override',
+                    'type' => 'true_false',
+                    'instructions' => '',
+                    'message' => 'Use custom color instead of global Accent',
+                    'default_value' => 0,
+                    'ui' => 1,
+                    'ui_on_text' => '',
+                    'ui_off_text' => '',
+                    'wrapper' => ['width' => '20'],
+                ],
+                [
+                    'key' => 'field_text_color_accent',
+                    'label' => 'Accent Text',
+                    'name' => 'text_color_accent',
+                    'type' => 'color_picker',
+                    'instructions' => 'Headings, CTAs',
+                    'default_value' => '#eab308',
+                    'enable_opacity' => 0,
+                    'return_format' => 'string',
+                    'wrapper' => ['width' => '20'],
+                    'conditional_logic' => [
+                        [
+                            [
+                                'field' => 'field_text_color_accent_override',
+                                'operator' => '==',
+                                'value' => '1',
+                            ],
+                        ],
+                    ],
                 ],
                 [
                     'key' => 'field_text_color_note',
@@ -61,7 +110,7 @@ class FunnelStylingFields
                     'default_value' => '#a3a3a3',
                     'enable_opacity' => 0,
                     'return_format' => 'string',
-                    'wrapper' => ['width' => '25'],
+                    'wrapper' => ['width' => '20'],
                 ],
                 [
                     'key' => 'field_text_color_discount',
@@ -72,7 +121,7 @@ class FunnelStylingFields
                     'default_value' => '#22c55e',
                     'enable_opacity' => 0,
                     'return_format' => 'string',
-                    'wrapper' => ['width' => '25'],
+                    'wrapper' => ['width' => '20'],
                 ],
                 // UI Colors section
                 [
