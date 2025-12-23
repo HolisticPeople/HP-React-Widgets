@@ -21,37 +21,54 @@ class FunnelStylingFields
     }
 
     /**
-     * Register the hero title size field.
-     * This field is added to the existing Hero tab in the Funnel Configuration field group.
+     * Register the hero title size field as a separate field group.
+     * This appears below the main Funnel Configuration metabox.
      */
     public static function registerHeroTitleSizeField(): void
     {
-        if (!function_exists('acf_add_local_field')) {
+        if (!function_exists('acf_add_local_field_group')) {
             return;
         }
 
-        // Add hero title size field after hero_title
-        // The parent is the Hero tab in the main Funnel Configuration field group
-        acf_add_local_field([
-            'key' => 'field_hero_title_size',
-            'label' => 'Title Size',
-            'name' => 'hero_title_size',
-            'type' => 'select',
-            'instructions' => 'Controls the size of the hero title',
-            'parent' => 'group_funnel_config', // Main funnel config group
-            'choices' => [
-                'sm' => 'Small',
-                'md' => 'Medium',
-                'lg' => 'Large',
-                'xl' => 'Extra Large (Default)',
-                '2xl' => '2X Large',
+        acf_add_local_field_group([
+            'key' => 'group_hero_title_size',
+            'title' => 'Hero Title Settings',
+            'fields' => [
+                [
+                    'key' => 'field_hero_title_size',
+                    'label' => 'Title Size',
+                    'name' => 'hero_title_size',
+                    'type' => 'select',
+                    'instructions' => 'Controls the display size of the hero title text',
+                    'choices' => [
+                        'sm' => 'Small (3xl → 4xl)',
+                        'md' => 'Medium (4xl → 5xl)',
+                        'lg' => 'Large (5xl → 6xl)',
+                        'xl' => 'Extra Large (6xl → 7xl) - Default',
+                        '2xl' => '2X Large (7xl → 8xl)',
+                    ],
+                    'default_value' => 'xl',
+                    'allow_null' => 0,
+                    'multiple' => 0,
+                    'ui' => 1,
+                    'return_format' => 'value',
+                    'wrapper' => ['width' => '50'],
+                ],
             ],
-            'default_value' => 'xl',
-            'allow_null' => 0,
-            'multiple' => 0,
-            'ui' => 1,
-            'return_format' => 'value',
-            'wrapper' => ['width' => '25'],
+            'location' => [
+                [
+                    [
+                        'param' => 'post_type',
+                        'operator' => '==',
+                        'value' => 'hp-funnel',
+                    ],
+                ],
+            ],
+            'menu_order' => 5, // After main config, before colors
+            'position' => 'normal',
+            'style' => 'default',
+            'label_placement' => 'top',
+            'instruction_placement' => 'label',
         ]);
     }
 
