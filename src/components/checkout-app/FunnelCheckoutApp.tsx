@@ -49,14 +49,17 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     thankYouHeadline = 'Thank You for Your Order!',
     thankYouMessage = 'Your order has been confirmed.',
     accentColor = '#eab308',
-    textColors = DEFAULT_TEXT_COLORS,
+    textColors,
     footerText = '',
     footerDisclaimer = '',
     apiBase = '/wp-json/hp-rw/v1',
   } = props;
   
-  // Merge with defaults in case some colors are missing
-  const colors = { ...DEFAULT_TEXT_COLORS, ...textColors };
+  // Merge with defaults - handle null/undefined textColors safely
+  const colors = useMemo(() => ({
+    ...DEFAULT_TEXT_COLORS,
+    ...(textColors && typeof textColors === 'object' ? textColors : {}),
+  }), [textColors]);
 
   // Ensure offers is always a stable array reference
   const offers = useMemo(() => Array.isArray(rawOffers) ? rawOffers : [], [rawOffers]);
