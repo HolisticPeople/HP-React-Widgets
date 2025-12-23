@@ -113,7 +113,7 @@ interface CheckoutStepProps {
 export const CheckoutStep = ({
   funnelId,
   funnelName,
-  offers,
+  offers: rawOffers,
   selectedOfferId,
   onSelectOffer,
   kitSelection,
@@ -136,6 +136,9 @@ export const CheckoutStep = ({
   getCartItems,
   onComplete,
 }: CheckoutStepProps) => {
+  // Ensure offers is always an array
+  const offers = Array.isArray(rawOffers) ? rawOffers : [];
+
   // Form state
   const [formData, setFormData] = useState({
     firstName: shippingAddress?.firstName || '',
