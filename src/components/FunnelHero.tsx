@@ -30,6 +30,7 @@ export interface FunnelHeroProps {
   
   // Hero content
   title: string;
+  titleSize?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
   subtitle?: string;
   tagline?: string;
   description?: string;
@@ -56,10 +57,20 @@ export interface FunnelHeroProps {
   backgroundGradient?: string;
 }
 
+// Title size classes mapping
+const titleSizeClasses: Record<string, string> = {
+  'sm': 'text-3xl md:text-4xl',
+  'md': 'text-4xl md:text-5xl',
+  'lg': 'text-5xl md:text-6xl',
+  'xl': 'text-6xl md:text-7xl',
+  '2xl': 'text-7xl md:text-8xl',
+};
+
 export const FunnelHero = ({
   funnelId,
   funnelName,
   title,
+  titleSize = 'xl',
   subtitle,
   tagline,
   description,
@@ -140,7 +151,10 @@ export const FunnelHero = ({
           <div className="grid md:grid-cols-2 gap-12 items-center">
             {/* Left: Text Content */}
             <div className="text-left space-y-6">
-              <h1 className="text-5xl md:text-7xl font-bold text-accent drop-shadow-[0_0_30px_hsl(45_95%_60%/0.5)]">
+              <h1 className={cn(
+                titleSizeClasses[titleSize] || titleSizeClasses['xl'],
+                "font-bold text-accent drop-shadow-[0_0_30px_hsl(45_95%_60%/0.5)]"
+              )}>
                 {title}
               </h1>
               {subtitle && (

@@ -77,6 +77,7 @@ class FunnelHeroShortcode
             'funnelId'          => $config['slug'],
             'funnelName'        => $config['name'],
             'title'             => $config['hero']['title'],
+            'titleSize'         => !empty($config['hero']['title_size']) ? $config['hero']['title_size'] : 'xl',
             'subtitle'          => $config['hero']['subtitle'],
             'tagline'           => $config['hero']['tagline'],
             'description'       => $config['hero']['description'],

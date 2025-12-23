@@ -25,9 +25,19 @@ export interface FunnelHeroSectionProps {
   textAlign?: 'left' | 'center' | 'right';
   imagePosition?: 'right' | 'left' | 'background';
   minHeight?: string;
+  titleSize?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'; // Title size modifier
   
   className?: string;
 }
+
+// Title size classes mapping
+const titleSizeClasses: Record<string, string> = {
+  'sm': 'text-3xl md:text-4xl',
+  'md': 'text-4xl md:text-5xl',
+  'lg': 'text-5xl md:text-6xl',
+  'xl': 'text-6xl md:text-7xl',
+  '2xl': 'text-7xl md:text-8xl',
+};
 
 export const FunnelHeroSection = ({
   title,
@@ -48,6 +58,7 @@ export const FunnelHeroSection = ({
   textAlign = 'left',
   imagePosition = 'right',
   minHeight = '600px',
+  titleSize = 'xl', // Default to xl (matches reference funnel)
   className,
 }: FunnelHeroSectionProps) => {
   const customStyles: React.CSSProperties = {
@@ -136,7 +147,10 @@ export const FunnelHeroSection = ({
               imagePosition === 'left' && 'md:order-2'
             )}
           >
-            <h1 className="text-5xl md:text-7xl font-bold text-accent drop-shadow-[0_0_30px_hsl(45_95%_60%/0.5)]">
+            <h1 className={cn(
+              titleSizeClasses[titleSize] || titleSizeClasses['xl'],
+              "font-bold text-accent drop-shadow-[0_0_30px_hsl(45_95%_60%/0.5)]"
+            )}>
               {title}
             </h1>
 

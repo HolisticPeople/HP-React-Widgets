@@ -15,8 +15,44 @@ class FunnelStylingFields
     public static function init(): void
     {
         add_action('acf/init', [self::class, 'registerFieldGroup'], 20);
+        add_action('acf/init', [self::class, 'registerHeroTitleSizeField'], 25);
         // Hide the redundant background_color field from the Styling tab
         add_filter('acf/prepare_field/name=background_color', [self::class, 'hideBackgroundColorField']);
+    }
+
+    /**
+     * Register the hero title size field.
+     * This field is added to the existing Hero tab in the Funnel Configuration field group.
+     */
+    public static function registerHeroTitleSizeField(): void
+    {
+        if (!function_exists('acf_add_local_field')) {
+            return;
+        }
+
+        // Add hero title size field after hero_title
+        // The parent is the Hero tab in the main Funnel Configuration field group
+        acf_add_local_field([
+            'key' => 'field_hero_title_size',
+            'label' => 'Title Size',
+            'name' => 'hero_title_size',
+            'type' => 'select',
+            'instructions' => 'Controls the size of the hero title',
+            'parent' => 'group_funnel_config', // Main funnel config group
+            'choices' => [
+                'sm' => 'Small',
+                'md' => 'Medium',
+                'lg' => 'Large',
+                'xl' => 'Extra Large (Default)',
+                '2xl' => '2X Large',
+            ],
+            'default_value' => 'xl',
+            'allow_null' => 0,
+            'multiple' => 0,
+            'ui' => 1,
+            'return_format' => 'value',
+            'wrapper' => ['width' => '25'],
+        ]);
     }
 
     /**

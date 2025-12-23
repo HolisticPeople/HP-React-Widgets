@@ -347,6 +347,7 @@ class FunnelConfigLoader
             // Hero section
             'hero' => [
                 'title'            => self::getFieldValue('hero_title', $postId, ''),
+                'title_size'       => self::getFieldValue('hero_title_size', $postId, 'xl'), // Default to xl (largest)
                 'subtitle'         => self::getFieldValue('hero_subtitle', $postId, ''),
                 'tagline'          => self::getFieldValue('hero_tagline', $postId, ''),
                 'description'      => self::getFieldValue('hero_description', $postId, ''),

@@ -50,6 +50,7 @@ class FunnelHeroSectionShortcode
         // Build props for React component
         $props = [
             'title'              => $hero['title'],
+            'titleSize'          => !empty($hero['title_size']) ? $hero['title_size'] : 'xl',
             'subtitle'           => $hero['subtitle'],
             'tagline'            => $hero['tagline'],
             'description'        => $hero['description'],
