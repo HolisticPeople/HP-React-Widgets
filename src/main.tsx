@@ -28,7 +28,7 @@ import {
   FunnelScience,
 } from '@/components/funnel'
 
-// Global settings injected by PHP
+// Global settings injected by PHP (v2.14.15)
 declare global {
     interface Window {
         hpReactSettings: {
