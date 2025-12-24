@@ -23,6 +23,8 @@ export interface FunnelCheckoutAppProps extends FunnelCheckoutAppConfig {
 }
 
 export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
+  console.log('[FunnelCheckoutApp] Rendering with props:', props);
+  
   const {
     funnelId,
     funnelName,
@@ -46,8 +48,12 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     apiBase = '/wp-json/hp-rw/v1',
   } = props;
 
+  console.log('[FunnelCheckoutApp] rawOffers:', rawOffers);
+  console.log('[FunnelCheckoutApp] stripePublishableKey:', stripePublishableKey);
+
   // Ensure offers is always a stable array reference - computed BEFORE state hooks
   const offers = Array.isArray(rawOffers) ? rawOffers : [];
+  console.log('[FunnelCheckoutApp] offers array:', offers);
 
   // Current step in the checkout flow
   const [currentStep, setCurrentStep] = useState<CheckoutStepType>('checkout');

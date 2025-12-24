@@ -140,8 +140,15 @@ export const CheckoutStep = ({
   getCartItems,
   onComplete,
 }: CheckoutStepProps) => {
+  console.log('[CheckoutStep] Rendering with props');
+  console.log('[CheckoutStep] rawOffers:', rawOffers);
+  console.log('[CheckoutStep] selectedOfferId:', selectedOfferId);
+  console.log('[CheckoutStep] offerQuantity:', offerQuantity);
+  console.log('[CheckoutStep] stripePublishableKey:', stripePublishableKey);
+  
   // Ensure offers is always an array
   const offers = Array.isArray(rawOffers) ? rawOffers : [];
+  console.log('[CheckoutStep] offers array:', offers);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -211,10 +218,11 @@ export const CheckoutStep = ({
   });
 
   // Get selected offer
-  const selectedOffer = useMemo(
-    () => offers.find(o => o.id === selectedOfferId) as Offer | undefined,
-    [offers, selectedOfferId]
-  );
+  const selectedOffer = useMemo(() => {
+    const found = offers.find(o => o.id === selectedOfferId) as Offer | undefined;
+    console.log('[CheckoutStep] selectedOffer computed:', found);
+    return found;
+  }, [offers, selectedOfferId]);
 
   // Check if free shipping applies
   const isFreeShipping = useMemo(
