@@ -240,8 +240,12 @@ class FunnelStylesShortcode
                 --border: var(--hp-funnel-border);
                 --input: var(--hp-funnel-input-bg);
                 --accent: var(--hp-funnel-accent);
-                --accent-foreground: 0 0% 0%;
+                --accent-foreground: var(--hp-funnel-page-bg);
                 --muted-foreground: var(--hp-funnel-text-note);
+                /* Button and focus ring colors */
+                --primary: var(--hp-funnel-accent);
+                --primary-foreground: var(--hp-funnel-page-bg);
+                --ring: var(--hp-funnel-accent);
             }
             
             /* Border color overrides - all funnel sections */

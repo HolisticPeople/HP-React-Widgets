@@ -167,6 +167,12 @@ if (!function_exists('hp_build_funnel_styles')) {
                 --card: var(--hp-funnel-card-bg);
                 --border: var(--hp-funnel-border);
                 --input: var(--hp-funnel-input-bg);
+                /* Button and focus ring colors - use accent */
+                --accent: var(--hp-funnel-accent);
+                --accent-foreground: var(--hp-funnel-page-bg);
+                --primary: var(--hp-funnel-accent);
+                --primary-foreground: var(--hp-funnel-page-bg);
+                --ring: var(--hp-funnel-accent);
             }
             
             /* Border color overrides */
