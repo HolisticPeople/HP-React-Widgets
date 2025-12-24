@@ -306,10 +306,34 @@ export const CheckoutStep = ({
     }
   }, [formData, getCartItems, selectedRate, isFreeShipping, pointsToRedeem, api, onSelectRate, offerPrice.discounted]);
 
-  // Trigger totals update when selection or offerPrice changes
+  // Debounce timer ref for selection changes
+  const selectionDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounced fetchTotals - prevents rapid API calls (protects against loops and DDOS triggers)
+  const debouncedFetchTotals = useCallback(() => {
+    // Clear any pending call
+    if (selectionDebounceRef.current) {
+      clearTimeout(selectionDebounceRef.current);
+    }
+    // Schedule new call with 500ms debounce
+    selectionDebounceRef.current = setTimeout(() => {
+      fetchTotals();
+    }, 500);
+  }, [fetchTotals]);
+
+  // Cleanup debounce timer on unmount
   useEffect(() => {
-    fetchTotals();
-  }, [selectedOfferId, kitSelection, offerQuantity, offerPrice.discounted]); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => {
+      if (selectionDebounceRef.current) {
+        clearTimeout(selectionDebounceRef.current);
+      }
+    };
+  }, []);
+
+  // Trigger totals update when selection or offerPrice changes (debounced)
+  useEffect(() => {
+    debouncedFetchTotals();
+  }, [selectedOfferId, kitSelection, offerQuantity, offerPrice.discounted, debouncedFetchTotals]);
 
   // Debounced address change
   useEffect(() => {
