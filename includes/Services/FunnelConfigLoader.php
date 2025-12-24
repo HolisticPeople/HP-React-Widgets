@@ -1042,16 +1042,14 @@ class FunnelConfigLoader
         $offer['defaultOriginalPrice'] = $defaultTotalRegularPrice;
         $offer['defaultPriceAfterProductDiscounts'] = $defaultTotalPrice;
         
-        // Use admin-set offer_price if available, otherwise calculate from discount
-        if ($offer['offerPrice'] !== null) {
-            $offer['calculatedPrice'] = $offer['offerPrice'];
-        } else {
-            $offer['calculatedPrice'] = self::applyDiscount(
-                $defaultTotalPrice,
-                $offer['discountType'],
-                $offer['discountValue']
-            );
-        }
+        // For customizable kits, always calculate from kit products (ignore stored offer_price)
+        // The actual price is dynamic based on user selection, so we use defaultTotalPrice
+        // which represents the base kit with admin-set quantities
+        $offer['calculatedPrice'] = self::applyDiscount(
+            $defaultTotalPrice,
+            $offer['discountType'],
+            $offer['discountValue']
+        );
         
         return $offer;
     }
