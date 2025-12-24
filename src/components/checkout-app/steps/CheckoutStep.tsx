@@ -535,8 +535,8 @@ export const CheckoutStep = ({
                         )}
                         
                         {/* Sale price in accent (what customer pays per unit) */}
-                        {hasSubsequentDiscount && (
-                          <span className="text-accent font-semibold">${subsequentPrice.toFixed(2)}</span>
+                        {hasFirstUnitDiscount && (
+                          <span className="text-accent font-semibold">${firstUnitPrice.toFixed(2)}</span>
                         )}
                       </div>
                       
@@ -556,56 +556,80 @@ export const CheckoutStep = ({
                     </div>
                   </div>
                   
-                  <div className="flex flex-col items-center gap-1">
+                  <div className="flex flex-col items-end gap-1">
                     {(() => {
                       // For 'must' products, admin-set qty is the minimum required
                       const minQty = product.role === 'must' ? (product.qty || 1) : 0;
                       const currentQty = kitSelection[product.sku] || 0;
                       const isAtMinimum = currentQty <= minQty;
+                      // Default maxQty to 99 if not set or 0
+                      const effectiveMaxQty = product.maxQty && product.maxQty > 0 ? product.maxQty : 99;
+                      
+                      // Calculate line total for this product
+                      let lineTotal = 0;
+                      if (currentQty > 0) {
+                        if (product.role === 'must' && currentQty > minQty && subsequentPrice !== firstUnitPrice) {
+                          lineTotal = (firstUnitPrice * minQty) + (subsequentPrice * (currentQty - minQty));
+                        } else {
+                          lineTotal = firstUnitPrice * currentQty;
+                        }
+                      }
                       
                       return (
                         <>
                           <div className="flex items-center gap-2">
+                            {/* "-" button with "Required" label underneath when at minimum */}
+                            <div className="flex flex-col items-center">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const newQty = currentQty - 1;
+                                  if (newQty < minQty) return;
+                                  onKitQuantityChange(product.sku, newQty);
+                                }}
+                                disabled={isAtMinimum}
+                                className="h-8 w-8 border-accent/50 hover:bg-accent/20"
+                              >
+                                <MinusIcon />
+                              </Button>
+                              {/* "Required" label under "-" button */}
+                              {product.role === 'must' && isAtMinimum && (
+                                <span className="text-[10px] text-orange-500 flex items-center gap-0.5 mt-0.5">
+                                  <LockIcon className="h-2.5 w-2.5" /> Required
+                                </span>
+                              )}
+                            </div>
+                            
+                            {/* Quantity display with line total underneath */}
+                            <div className="flex flex-col items-center">
+                              <span className="w-8 text-center font-bold text-accent">
+                                {currentQty}
+                              </span>
+                              {/* Line total in orange */}
+                              <span className="text-xs text-accent font-medium">
+                                ${lineTotal.toFixed(2)}
+                              </span>
+                            </div>
+                            
                             <Button
                               type="button"
                               variant="outline"
                               size="icon"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                const newQty = currentQty - 1;
-                                if (newQty < minQty) return;
-                                onKitQuantityChange(product.sku, newQty);
-                              }}
-                              disabled={isAtMinimum}
-                              className="h-8 w-8 border-accent/50 hover:bg-accent/20"
-                            >
-                              <MinusIcon />
-                            </Button>
-                            <span className="w-8 text-center font-bold text-accent">
-                              {currentQty}
-                            </span>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (currentQty < product.maxQty) {
+                                if (currentQty < effectiveMaxQty) {
                                   onKitQuantityChange(product.sku, currentQty + 1);
                                 }
                               }}
-                              disabled={currentQty >= product.maxQty}
+                              disabled={currentQty >= effectiveMaxQty}
                               className="h-8 w-8 border-accent/50 hover:bg-accent/20"
                             >
                               <PlusIcon />
                             </Button>
                           </div>
-                          {/* Show "Required" only when at minimum qty for Must Have products */}
-                          {product.role === 'must' && isAtMinimum && (
-                            <span className="text-xs text-orange-500 flex items-center gap-1 mt-1">
-                              <LockIcon /> Required
-                            </span>
-                          )}
                         </>
                       );
                     })()}
