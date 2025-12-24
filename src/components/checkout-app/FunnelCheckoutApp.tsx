@@ -23,19 +23,10 @@ export interface FunnelCheckoutAppProps extends FunnelCheckoutAppConfig {
 }
 
 export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
-  try {
-    console.log('[FunnelCheckoutApp] START - props type:', typeof props);
-  } catch (e) {
-    // Even console.log can fail in some edge cases
-  }
-  
   // Guard against undefined props (can happen with multiple render attempts)
   if (!props || typeof props !== 'object') {
-    console.error('[FunnelCheckoutApp] Invalid props received:', props);
     return <div className="hp-funnel-error p-4 bg-red-900/50 text-red-200 rounded">Loading checkout...</div>;
   }
-  
-  console.log('[FunnelCheckoutApp] Props valid, destructuring...');
   
   const {
     funnelId,
@@ -60,16 +51,11 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     apiBase = '/wp-json/hp-rw/v1',
   } = props;
 
-  console.log('[FunnelCheckoutApp] rawOffers:', rawOffers);
-  console.log('[FunnelCheckoutApp] stripePublishableKey:', stripePublishableKey);
-
   // Ensure offers is always a stable array reference - computed BEFORE state hooks
   const offers = Array.isArray(rawOffers) ? rawOffers : [];
-  console.log('[FunnelCheckoutApp] offers array:', offers);
   
   // Guard against missing required data
   if (!funnelId || offers.length === 0) {
-    console.warn('[FunnelCheckoutApp] Missing required data - funnelId:', funnelId, 'offers:', offers.length);
     return <div className="hp-funnel-error p-4 bg-yellow-900/50 text-yellow-200 rounded">Initializing checkout...</div>;
   }
 
