@@ -201,20 +201,14 @@
                 // Subsequent pricing for Must Have products
                 const role = p.role || 'optional';
                 const subseqDiscountPercent = parseFloat(p.subsequentDiscountPercent) || 0;
+                // For admin, default subsequent price to full WC price (0% discount)
                 const subseqSalePrice = (p.subsequentSalePrice !== undefined && p.subsequentSalePrice !== null)
                     ? parseFloat(p.subsequentSalePrice)
-                    : salePrice;  // Default to first unit price
+                    : originalPrice;  // Default to full price (0% discount for subsequent)
                 
-                // Calculate line total with tiered pricing for Must Have products
-                let lineTotal = 0;
-                if (isKit && role === 'must' && qty > 0) {
-                    // First unit at salePrice, additional at subsequentSalePrice
-                    const firstQty = 1;
-                    const additionalQty = Math.max(0, qty - 1);
-                    lineTotal = (salePrice * firstQty) + (subseqSalePrice * additionalQty);
-                } else {
-                    lineTotal = salePrice * qty;
-                }
+                // Admin line total = salePrice × qty (simple multiplication)
+                // Tiered pricing is only for checkout when customer adds more than required minimum
+                const lineTotal = salePrice * qty;
                 
                 // Calculate discount percent
                 let discountPercent = 0;
