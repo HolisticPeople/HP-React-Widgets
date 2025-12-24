@@ -652,6 +652,14 @@ export const CheckoutStep = ({
                   )}
                 </div>
               </div>
+              {/* Total discount in green */}
+              {offerPrice.original > offerPrice.discounted && (
+                <div className="flex justify-end mt-1">
+                  <span className="text-green-500 font-semibold text-sm">
+                    You save ${(offerPrice.original - offerPrice.discounted).toFixed(2)}!
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -782,7 +790,7 @@ export const CheckoutStep = ({
                 </div>
               )}
 
-              {totals?.pointsDiscount && totals.pointsDiscount > 0 && (
+              {totals && totals.pointsDiscount > 0 && (
                 <div className="flex justify-between text-green-500">
                   <span>Points Redeemed</span>
                   <span>-${totals.pointsDiscount.toFixed(2)}</span>
