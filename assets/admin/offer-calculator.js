@@ -371,8 +371,9 @@
                     name: $(this).data('name'),
                     price: originalPrice,
                     salePrice: originalPrice, // Default sale price = original price
-                    subsequentDiscountPercent: 0, // Default no subsequent discount
-                    subsequentSalePrice: originalPrice, // Default same as original price
+                    // Subsequent pricing defaults to full price (no discount)
+                    subsequentDiscountPercent: 0,
+                    subsequentSalePrice: originalPrice, // Full price for additional units
                     image: $(this).data('image'),
                     qty: 1,
                     role: 'optional' // default for kits

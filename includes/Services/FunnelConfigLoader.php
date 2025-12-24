@@ -995,10 +995,11 @@ class FunnelConfigLoader
             
             // Subsequent pricing for Must Have products (tiered pricing)
             // Used when customer adds more than the minimum (1) of a Must Have product
+            // Default to full WC price (0% discount) for subsequent units
             $subseqDiscountPercent = (float) ($item['subsequentDiscountPercent'] ?? 0);
             $subseqSalePrice = isset($item['subsequentSalePrice']) && $item['subsequentSalePrice'] !== null
                 ? (float) $item['subsequentSalePrice']
-                : $discountedPrice; // Default to first unit price if not set
+                : $price; // Default to WC price (full price) for additional units
             
             $kitProduct = [
                 'sku'           => $sku,
