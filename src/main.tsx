@@ -142,15 +142,16 @@ document.addEventListener('DOMContentLoaded', () => {
         node.dataset.rendered = '1';
 
         try {
-            ReactDOM.createRoot(node).render(
-                <React.StrictMode>
-                    <ErrorBoundary>
-                        <TooltipProvider>
-                            <Component {...props} />
-                        </TooltipProvider>
-                    </ErrorBoundary>
-                </React.StrictMode>,
+            console.log('[HP-React-Widgets] Creating root and rendering', componentName);
+            const root = ReactDOM.createRoot(node);
+            root.render(
+                <ErrorBoundary>
+                    <TooltipProvider>
+                        <Component {...props} />
+                    </TooltipProvider>
+                </ErrorBoundary>,
             );
+            console.log('[HP-React-Widgets] Render called for', componentName);
         } catch (e) {
             console.error('[HP-React-Widgets] Failed to render', componentName, e);
         }
