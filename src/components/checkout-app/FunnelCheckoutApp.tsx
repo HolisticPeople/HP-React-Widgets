@@ -113,8 +113,13 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     [offers, selectedOfferId]
   );
 
-  // Handle offer selection change - reset kit selection and quantity
+  // Handle offer selection change - reset kit selection and quantity ONLY when changing offers
   const handleOfferSelect = useCallback((offerId: string) => {
+    // Don't reset if selecting the same offer (prevents kit selection reset on internal clicks)
+    if (offerId === selectedOfferId) {
+      return;
+    }
+    
     setSelectedOfferId(offerId);
     setOfferQuantity(1); // Reset quantity when changing offers
     
@@ -132,7 +137,7 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     } else {
       setKitSelection({});
     }
-  }, [offers]);
+  }, [offers, selectedOfferId]);
   
   // Handle offer quantity change (for non-kit offers)
   const handleOfferQuantityChange = useCallback((qty: number) => {

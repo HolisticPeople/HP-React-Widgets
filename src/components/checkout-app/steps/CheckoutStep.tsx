@@ -507,49 +507,52 @@ export const CheckoutStep = ({
                           Additional: ${product.subsequentSalePrice.toFixed(2)} each
                         </p>
                       )}
-                      {product.role === 'must' && (
-                        <span className="text-xs text-orange-500 flex items-center gap-1">
-                          <LockIcon /> Required
-                        </span>
-                      )}
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const newQty = (kitSelection[product.sku] || 0) - 1;
-                        if (product.role === 'must' && newQty < 1) return;
-                        onKitQuantityChange(product.sku, newQty);
-                      }}
-                      disabled={product.role === 'must' && (kitSelection[product.sku] || 0) <= 1}
-                      className="h-8 w-8 border-accent/50 hover:bg-accent/20"
-                    >
-                      <MinusIcon />
-                    </Button>
-                    <span className="w-8 text-center font-bold text-accent">
-                      {kitSelection[product.sku] || 0}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const current = kitSelection[product.sku] || 0;
-                        if (current < product.maxQty) {
-                          onKitQuantityChange(product.sku, current + 1);
-                        }
-                      }}
-                      disabled={(kitSelection[product.sku] || 0) >= product.maxQty}
-                      className="h-8 w-8 border-accent/50 hover:bg-accent/20"
-                    >
-                      <PlusIcon />
-                    </Button>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const newQty = (kitSelection[product.sku] || 0) - 1;
+                          if (product.role === 'must' && newQty < 1) return;
+                          onKitQuantityChange(product.sku, newQty);
+                        }}
+                        disabled={product.role === 'must' && (kitSelection[product.sku] || 0) <= 1}
+                        className="h-8 w-8 border-accent/50 hover:bg-accent/20"
+                      >
+                        <MinusIcon />
+                      </Button>
+                      <span className="w-8 text-center font-bold text-accent">
+                        {kitSelection[product.sku] || 0}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const current = kitSelection[product.sku] || 0;
+                          if (current < product.maxQty) {
+                            onKitQuantityChange(product.sku, current + 1);
+                          }
+                        }}
+                        disabled={(kitSelection[product.sku] || 0) >= product.maxQty}
+                        className="h-8 w-8 border-accent/50 hover:bg-accent/20"
+                      >
+                        <PlusIcon />
+                      </Button>
+                    </div>
+                    {/* Show "Required" only when at minimum qty (1) for Must Have products */}
+                    {product.role === 'must' && (kitSelection[product.sku] || 0) <= 1 && (
+                      <span className="text-xs text-orange-500 flex items-center gap-1 mt-1">
+                        <LockIcon /> Required
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}
