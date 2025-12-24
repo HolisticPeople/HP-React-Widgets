@@ -87,7 +87,10 @@ class ErrorBoundary extends React.Component<
     }
 
     componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-        console.error('[HP-React-Widgets] Component error:', error, errorInfo);
+        console.error('[HP-React-Widgets] *** ERROR BOUNDARY CAUGHT ***');
+        console.error('[HP-React-Widgets] Error:', error.message);
+        console.error('[HP-React-Widgets] Stack:', error.stack);
+        console.error('[HP-React-Widgets] Component stack:', errorInfo.componentStack);
     }
 
     render() {

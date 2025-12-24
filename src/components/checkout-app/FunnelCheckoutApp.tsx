@@ -23,13 +23,19 @@ export interface FunnelCheckoutAppProps extends FunnelCheckoutAppConfig {
 }
 
 export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
-  console.log('[FunnelCheckoutApp] Rendering with props:', props);
+  try {
+    console.log('[FunnelCheckoutApp] START - props type:', typeof props);
+  } catch (e) {
+    // Even console.log can fail in some edge cases
+  }
   
   // Guard against undefined props (can happen with multiple render attempts)
   if (!props || typeof props !== 'object') {
     console.error('[FunnelCheckoutApp] Invalid props received:', props);
     return <div className="hp-funnel-error p-4 bg-red-900/50 text-red-200 rounded">Loading checkout...</div>;
   }
+  
+  console.log('[FunnelCheckoutApp] Props valid, destructuring...');
   
   const {
     funnelId,
