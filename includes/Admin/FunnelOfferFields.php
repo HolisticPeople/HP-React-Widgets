@@ -705,15 +705,6 @@ class FunnelOfferFields
                 'wrapper' => ['width' => '20'],
             ],
             [
-                'key' => 'field_offer_bonus_message',
-                'label' => 'Bonus Message',
-                'name' => 'offer_bonus_message',
-                'type' => 'text',
-                'instructions' => 'Shown in Quantity card. Use {qty} for quantity. E.g. "You\'ll receive {qty} FREE 0.5oz bottle(s)!"',
-                'placeholder' => 'e.g. You\'ll receive {qty} FREE bonus item(s)!',
-                'wrapper' => ['width' => '50'],
-            ],
-            [
                 'key' => 'field_offer_is_featured',
                 'label' => 'Featured',
                 'name' => 'offer_is_featured',
@@ -768,6 +759,17 @@ class FunnelOfferFields
                 'name' => 'offer_description',
                 'type' => 'text',
                 'wrapper' => ['width' => '35'],
+            ],
+            
+            // Bonus message shown in Quantity card
+            [
+                'key' => 'field_offer_bonus_message',
+                'label' => 'Bonus Message (Qty Card)',
+                'name' => 'offer_bonus_message',
+                'type' => 'text',
+                'instructions' => 'Shown when quantity > 1. Use {qty} for quantity.',
+                'placeholder' => 'e.g. You\'ll receive {qty} FREE bonus item(s)!',
+                'wrapper' => ['width' => '100'],
             ],
             
             // Kit max items (only for kit type)

@@ -118,7 +118,7 @@ export const CheckoutStep = ({
   offers: rawOffers,
   selectedOfferId,
   onSelectOffer,
-  offerQuantity,
+  offerQuantity = 1,
   onOfferQuantityChange,
   kitSelection,
   onKitQuantityChange,
@@ -595,7 +595,7 @@ export const CheckoutStep = ({
             <div className="flex items-center gap-4">
               <button
                 type="button"
-                onClick={() => onOfferQuantityChange(Math.max(1, offerQuantity - 1))}
+                onClick={() => onOfferQuantityChange?.(Math.max(1, offerQuantity - 1))}
                 disabled={offerQuantity <= 1}
                 className="w-10 h-10 rounded-lg border border-accent/50 hover:bg-accent/20 flex items-center justify-center text-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
@@ -604,7 +604,7 @@ export const CheckoutStep = ({
               <div className="text-3xl font-bold text-accent w-16 text-center">{offerQuantity}</div>
               <button
                 type="button"
-                onClick={() => onOfferQuantityChange(offerQuantity + 1)}
+                onClick={() => onOfferQuantityChange?.(offerQuantity + 1)}
                 className="w-10 h-10 rounded-lg border border-accent/50 hover:bg-accent/20 flex items-center justify-center text-accent transition-colors"
               >
                 <PlusIcon />
