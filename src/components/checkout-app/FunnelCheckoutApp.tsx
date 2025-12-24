@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { CheckoutStep } from './steps/CheckoutStep';
 import { ProcessingStep } from './steps/ProcessingStep';
 import { UpsellStep } from './steps/UpsellStep';
@@ -62,35 +62,33 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
   // Current step in the checkout flow
   const [currentStep, setCurrentStep] = useState<CheckoutStepType>('checkout');
   
+  // Compute default offer ID once - simple calculation, no function
+  const initialOfferId = defaultOfferId || (offers.length > 0 ? (offers.find(o => o.isFeatured)?.id || offers[0].id) : '');
+  
   // Offer selection - now uses offer ID instead of product ID
-  const [selectedOfferId, setSelectedOfferId] = useState<string>(() => {
-    if (defaultOfferId) return defaultOfferId;
-    // Default to featured offer or first offer
-    const safeOffers = Array.isArray(rawOffers) ? rawOffers : [];
-    const featured = safeOffers.find(o => o.isFeatured);
-    return featured?.id || (safeOffers.length > 0 ? safeOffers[0].id : '');
-  });
+  const [selectedOfferId, setSelectedOfferId] = useState<string>(initialOfferId);
   
   // Offer quantity multiplier (buy multiple of the same offer)
   const [offerQuantity, setOfferQuantity] = useState<number>(1);
   
-  // Kit selection for customizable kits
-  const [kitSelection, setKitSelection] = useState<KitSelection>(() => {
-    // Initialize with admin-set quantities for kit offers
-    const selection: KitSelection = {};
-    const safeOffers = Array.isArray(rawOffers) ? rawOffers : [];
-    const initOfferId = defaultOfferId || (safeOffers.length > 0 ? safeOffers[0].id : '');
-    const offer = safeOffers.find(o => o.id === initOfferId);
+  // Kit selection for customizable kits - start empty, will be set via useEffect or handleOfferSelect
+  const [kitSelection, setKitSelection] = useState<KitSelection>({});
+  
+  // Initialize kit selection on mount if the initial offer is a kit
+  useEffect(() => {
+    const offer = offers.find(o => o.id === selectedOfferId);
     if (offer?.type === 'customizable_kit' && 'kitProducts' in offer) {
       const kitProducts = (offer as CustomizableKitOffer).kitProducts || [];
+      const newSelection: KitSelection = {};
       kitProducts.forEach((product: KitProduct) => {
-        // Use admin-set qty as default, but enforce minimum based on role
         const minQty = product.role === 'must' ? 1 : 0;
-        selection[product.sku] = Math.max(minQty, product.qty);
+        newSelection[product.sku] = Math.max(minQty, product.qty || 0);
       });
+      setKitSelection(newSelection);
     }
-    return selection;
-  });
+  // Only run once on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   // Checkout data that persists across steps
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
