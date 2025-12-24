@@ -198,7 +198,7 @@ function hp_build_funnel_styles($funnel) {
         }
         
         /* UI Element color overrides for React checkout app */
-        /* Tailwind expects HSL values without hsl() wrapper, e.g., "45 95% 53%" */
+        /* Tailwind expects HSL values without hsl() wrapper, e.g., 45 95% 53% */
         .hp-funnel-checkout-app {
             --background: {$pageBgHsl};
             --foreground: 0 0% 90%;

@@ -197,8 +197,8 @@ if (!function_exists('hp_build_funnel_styles')) {
                 color: var(--hp-funnel-text-note) !important;
             }
             
-            /* UI Element color overrides for React checkout app */
-            /* Tailwind expects HSL values without hsl() wrapper, e.g., "45 95% 53%" */
+        /* UI Element color overrides for React checkout app */
+        /* Tailwind expects HSL values without hsl() wrapper, e.g., 45 95% 53% */
             .hp-funnel-checkout-app {
                 --background: {$pageBgHsl};
                 --foreground: 0 0% 90%;
