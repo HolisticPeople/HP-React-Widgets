@@ -89,8 +89,8 @@ interface CheckoutStepProps {
   offers: Offer[];
   selectedOfferId: string;
   onSelectOffer: (id: string) => void;
-  offerQuantity: number;
-  onOfferQuantityChange: (qty: number) => void;
+  offerQuantity?: number;
+  onOfferQuantityChange?: (qty: number) => void;
   kitSelection: KitSelection;
   onKitQuantityChange: (sku: string, qty: number) => void;
   offerPrice: { original: number; discounted: number };

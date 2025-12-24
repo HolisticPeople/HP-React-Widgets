@@ -46,8 +46,8 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     apiBase = '/wp-json/hp-rw/v1',
   } = props;
 
-  // Ensure offers is always a stable array reference
-  const offers = useMemo(() => Array.isArray(rawOffers) ? rawOffers : [], [rawOffers]);
+  // Ensure offers is always a stable array reference - computed BEFORE state hooks
+  const offers = Array.isArray(rawOffers) ? rawOffers : [];
 
   // Current step in the checkout flow
   const [currentStep, setCurrentStep] = useState<CheckoutStepType>('checkout');
@@ -56,8 +56,9 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
   const [selectedOfferId, setSelectedOfferId] = useState<string>(() => {
     if (defaultOfferId) return defaultOfferId;
     // Default to featured offer or first offer
-    const featured = offers.find(o => o.isFeatured);
-    return featured?.id || (offers.length > 0 ? offers[0].id : '');
+    const safeOffers = Array.isArray(rawOffers) ? rawOffers : [];
+    const featured = safeOffers.find(o => o.isFeatured);
+    return featured?.id || (safeOffers.length > 0 ? safeOffers[0].id : '');
   });
   
   // Offer quantity multiplier (buy multiple of the same offer)
@@ -67,7 +68,9 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
   const [kitSelection, setKitSelection] = useState<KitSelection>(() => {
     // Initialize with admin-set quantities for kit offers
     const selection: KitSelection = {};
-    const offer = offers?.find(o => o.id === selectedOfferId);
+    const safeOffers = Array.isArray(rawOffers) ? rawOffers : [];
+    const initOfferId = defaultOfferId || (safeOffers.length > 0 ? safeOffers[0].id : '');
+    const offer = safeOffers.find(o => o.id === initOfferId);
     if (offer?.type === 'customizable_kit' && 'kitProducts' in offer) {
       const kitProducts = (offer as CustomizableKitOffer).kitProducts || [];
       kitProducts.forEach((product: KitProduct) => {
