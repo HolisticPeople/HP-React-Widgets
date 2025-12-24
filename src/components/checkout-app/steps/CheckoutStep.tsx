@@ -309,7 +309,7 @@ export const CheckoutStep = ({
   // Trigger totals update when selection or offerPrice changes
   useEffect(() => {
     fetchTotals();
-  }, [fetchTotals]); // fetchTotals already depends on offerPrice.discounted, getCartItems, etc.
+  }, [selectedOfferId, kitSelection, offerQuantity, offerPrice.discounted]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Debounced address change
   useEffect(() => {
