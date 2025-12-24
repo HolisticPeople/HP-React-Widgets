@@ -9,10 +9,9 @@ import { FunnelCheckout } from '@/components/FunnelCheckout'
 import { FunnelUpsell } from '@/components/FunnelUpsell'
 import { FunnelThankYou } from '@/components/FunnelThankYou'
 
-// TooltipProvider for UI components
+// Checkout SPA (new hybrid approach)
+import { FunnelCheckoutApp } from '@/components/checkout-app'
 import { TooltipProvider } from '@/components/ui/tooltip'
-
-// Note: FunnelCheckoutApp is loaded dynamically below to avoid extension conflicts
 
 // Modular funnel section components
 import {
@@ -29,19 +28,7 @@ import {
   FunnelScience,
 } from '@/components/funnel'
 
-// Lazy-loaded Checkout App wrapper to avoid extension conflicts
-const LazyFunnelCheckoutApp = React.lazy(() => import('@/components/checkout-app').then(mod => ({ default: mod.FunnelCheckoutApp })));
-
-// Wrapper that handles suspense for the lazy component
-const FunnelCheckoutAppWrapper: React.FC<any> = (props) => {
-    return (
-        <React.Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>Loading checkout...</div>}>
-            <LazyFunnelCheckoutApp {...props} />
-        </React.Suspense>
-    );
-};
-
-// Global settings injected by PHP (v2.14.18)
+// Global settings injected by PHP (v2.14.19)
 declare global {
     interface Window {
         hpReactSettings: {
@@ -69,8 +56,8 @@ widgetRegistry.FunnelCheckout = FunnelCheckout;
 widgetRegistry.FunnelUpsell = FunnelUpsell;
 widgetRegistry.FunnelThankYou = FunnelThankYou;
 
-// Checkout SPA (hybrid approach - uses lazy loading to isolate from extension conflicts)
-widgetRegistry.FunnelCheckoutApp = FunnelCheckoutAppWrapper;
+// Checkout SPA (hybrid approach - single component handles checkout->upsell->thankyou)
+widgetRegistry.FunnelCheckoutApp = FunnelCheckoutApp;
 
 // Funnel section components (modular)
 widgetRegistry.FunnelHeader = FunnelHeader;

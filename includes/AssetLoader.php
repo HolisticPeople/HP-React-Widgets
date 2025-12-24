@@ -56,7 +56,7 @@ class AssetLoader
                     $js_file = $manifest['src/main.tsx']['file'];
                     $css_files = isset($manifest['src/main.tsx']['css']) ? $manifest['src/main.tsx']['css'] : [];
 
-                    // REGISTER (not enqueue) JS as ES module
+                    // REGISTER (not enqueue) JS
                     wp_register_script(
                         self::HANDLE,
                         HP_RW_URL . 'assets/dist/' . $js_file,
@@ -64,14 +64,6 @@ class AssetLoader
                         HP_RW_VERSION,
                         true // In footer
                     );
-                    
-                    // Add type="module" for ES module support (required for dynamic imports)
-                    add_filter('script_loader_tag', function($tag, $handle) {
-                        if ($handle === self::HANDLE && strpos($tag, 'type="module"') === false) {
-                            return str_replace(' src=', ' type="module" src=', $tag);
-                        }
-                        return $tag;
-                    }, 10, 2);
 
                     // REGISTER (not enqueue) CSS
                     foreach ($css_files as $index => $css_file) {
