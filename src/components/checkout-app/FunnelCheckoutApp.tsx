@@ -129,9 +129,9 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
       const kitProducts = (newOffer as CustomizableKitOffer).kitProducts || [];
       const newSelection: KitSelection = {};
       kitProducts.forEach((product: KitProduct) => {
-        // Use admin-set qty as default, enforce min 1 for 'must' products
-        const minQty = product.role === 'must' ? 1 : 0;
-        newSelection[product.sku] = Math.max(minQty, product.qty || 0);
+        // Use admin-set qty as default/minimum for 'must' products
+        // For 'must' products, admin qty IS the minimum required
+        newSelection[product.sku] = product.qty || (product.role === 'must' ? 1 : 0);
       });
       setKitSelection(newSelection);
     } else {
@@ -199,33 +199,35 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
       case 'customizable_kit': {
         // Kit offers don't use offerQuantity - they have their own customization
         selectedOffer.kitProducts.forEach((product: KitProduct) => {
-          const qty = kitSelection[product.sku] || 0;
-          if (qty > 0) {
-            // Check if this is a Must Have product with tiered pricing and qty > 1
+          const selectedQty = kitSelection[product.sku] || 0;
+          if (selectedQty > 0) {
+            // For Must Have products, admin-set qty is the minimum required
+            // All units up to minQty are at discountedPrice, beyond that at subsequentSalePrice
+            const minQty = product.role === 'must' ? (product.qty || 1) : 0;
             const hasTieredPricing = product.role === 'must' 
               && product.subsequentSalePrice !== undefined 
               && product.subsequentSalePrice !== product.discountedPrice;
             
-            if (hasTieredPricing && qty > 1) {
-              // Split into two line items: first unit at kit price, rest at subsequent price
-              // First unit at kit included price
+            if (hasTieredPricing && selectedQty > minQty) {
+              // Split into two line items: min qty at kit price, rest at subsequent price
+              // Required units at kit included price
               items.push({
                 sku: product.sku,
-                qty: 1,
+                qty: minQty,
                 salePrice: product.discountedPrice,
                 label: '(Kit Included)',
               });
               // Additional units at subsequent price
               items.push({
                 sku: product.sku,
-                qty: qty - 1,
+                qty: selectedQty - minQty,
                 salePrice: product.subsequentSalePrice,
               });
             } else {
               // Single line item for all units
               items.push({
                 sku: product.sku,
-                qty,
+                qty: selectedQty,
                 salePrice: product.discountedPrice,
                 itemDiscountPercent: product.discountType === 'percent' ? product.discountValue : undefined,
               });
@@ -260,19 +262,22 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
         let originalTotal = 0;
         
         selectedOffer.kitProducts.forEach((product: KitProduct) => {
-          const qty = kitSelection[product.sku] || 0;
-          if (qty > 0) {
-            originalTotal += product.regularPrice * qty;
+          const selectedQty = kitSelection[product.sku] || 0;
+          if (selectedQty > 0) {
+            originalTotal += product.regularPrice * selectedQty;
             
-            // Apply tiered pricing for Must Have products
-            if (product.role === 'must' && qty > 1 && product.subsequentSalePrice !== undefined) {
-              // First unit at discountedPrice, additional at subsequentSalePrice
-              const firstQty = 1;
-              const additionalQty = qty - 1;
-              subtotal += (product.discountedPrice * firstQty) + (product.subsequentSalePrice * additionalQty);
+            // For Must Have products, admin-set qty is the minimum required
+            // All units up to minQty are at discountedPrice, beyond that at subsequentSalePrice
+            const minQty = product.role === 'must' ? (product.qty || 1) : 0;
+            
+            // Apply tiered pricing for Must Have products when qty exceeds minimum
+            if (product.role === 'must' && selectedQty > minQty && product.subsequentSalePrice !== undefined) {
+              // Required qty at discountedPrice, additional at subsequentSalePrice
+              const additionalQty = selectedQty - minQty;
+              subtotal += (product.discountedPrice * minQty) + (product.subsequentSalePrice * additionalQty);
             } else {
               // All units at same price
-              subtotal += product.discountedPrice * qty;
+              subtotal += product.discountedPrice * selectedQty;
             }
           }
         });

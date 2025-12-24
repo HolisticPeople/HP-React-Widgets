@@ -364,23 +364,13 @@
                     ? parseFloat(p.salePrice) 
                     : originalPrice;
                 const qty = parseInt(p.qty);
-                const role = p.role || 'optional';
                 
+                // Admin total: sale_price × qty only
+                // Subsequent pricing is for checkout when customer adds MORE than the required qty
                 // Allow qty 0 - only count items with qty > 0
                 if (!isNaN(qty) && qty > 0) {
                     totalOriginal += originalPrice * qty;
-                    
-                    // Use tiered pricing for Must Have products in kits
-                    if (isKit && role === 'must') {
-                        const subseqSalePrice = (p.subsequentSalePrice !== undefined && p.subsequentSalePrice !== null)
-                            ? parseFloat(p.subsequentSalePrice)
-                            : salePrice;
-                        const firstQty = 1;
-                        const additionalQty = Math.max(0, qty - 1);
-                        totalSale += (salePrice * firstQty) + (subseqSalePrice * additionalQty);
-                    } else {
-                        totalSale += salePrice * qty;
-                    }
+                    totalSale += salePrice * qty;
                 }
             });
 

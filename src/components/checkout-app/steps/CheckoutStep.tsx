@@ -511,48 +511,58 @@ export const CheckoutStep = ({
                   </div>
                   
                   <div className="flex flex-col items-center gap-1">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const newQty = (kitSelection[product.sku] || 0) - 1;
-                          if (product.role === 'must' && newQty < 1) return;
-                          onKitQuantityChange(product.sku, newQty);
-                        }}
-                        disabled={product.role === 'must' && (kitSelection[product.sku] || 0) <= 1}
-                        className="h-8 w-8 border-accent/50 hover:bg-accent/20"
-                      >
-                        <MinusIcon />
-                      </Button>
-                      <span className="w-8 text-center font-bold text-accent">
-                        {kitSelection[product.sku] || 0}
-                      </span>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const current = kitSelection[product.sku] || 0;
-                          if (current < product.maxQty) {
-                            onKitQuantityChange(product.sku, current + 1);
-                          }
-                        }}
-                        disabled={(kitSelection[product.sku] || 0) >= product.maxQty}
-                        className="h-8 w-8 border-accent/50 hover:bg-accent/20"
-                      >
-                        <PlusIcon />
-                      </Button>
-                    </div>
-                    {/* Show "Required" only when at minimum qty (1) for Must Have products */}
-                    {product.role === 'must' && (kitSelection[product.sku] || 0) <= 1 && (
-                      <span className="text-xs text-orange-500 flex items-center gap-1 mt-1">
-                        <LockIcon /> Required
-                      </span>
-                    )}
+                    {(() => {
+                      // For 'must' products, admin-set qty is the minimum required
+                      const minQty = product.role === 'must' ? (product.qty || 1) : 0;
+                      const currentQty = kitSelection[product.sku] || 0;
+                      const isAtMinimum = currentQty <= minQty;
+                      
+                      return (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const newQty = currentQty - 1;
+                                if (newQty < minQty) return;
+                                onKitQuantityChange(product.sku, newQty);
+                              }}
+                              disabled={isAtMinimum}
+                              className="h-8 w-8 border-accent/50 hover:bg-accent/20"
+                            >
+                              <MinusIcon />
+                            </Button>
+                            <span className="w-8 text-center font-bold text-accent">
+                              {currentQty}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (currentQty < product.maxQty) {
+                                  onKitQuantityChange(product.sku, currentQty + 1);
+                                }
+                              }}
+                              disabled={currentQty >= product.maxQty}
+                              className="h-8 w-8 border-accent/50 hover:bg-accent/20"
+                            >
+                              <PlusIcon />
+                            </Button>
+                          </div>
+                          {/* Show "Required" only when at minimum qty for Must Have products */}
+                          {product.role === 'must' && isAtMinimum && (
+                            <span className="text-xs text-orange-500 flex items-center gap-1 mt-1">
+                              <LockIcon /> Required
+                            </span>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               ))}
