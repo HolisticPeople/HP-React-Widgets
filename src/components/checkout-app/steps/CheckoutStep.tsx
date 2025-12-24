@@ -486,7 +486,28 @@ export const CheckoutStep = ({
           <div className="mt-6 pt-4 border-t border-border/50">
             <h4 className="font-semibold text-accent mb-4">Customize Your Selection:</h4>
             <div className="space-y-3">
-              {(offer as CustomizableKitOffer).kitProducts.map((product: KitProduct) => (
+              {(offer as CustomizableKitOffer).kitProducts.map((product: KitProduct) => {
+                // Calculate pricing info for display
+                const minQty = product.role === 'must' ? (product.qty || 1) : 0;
+                const currentQty = kitSelection[product.sku] || 0;
+                const hasDiscount = product.discountedPrice < product.regularPrice;
+                const subsequentPrice = product.subsequentSalePrice ?? product.regularPrice;
+                const hasSubsequentDiscount = subsequentPrice < product.regularPrice;
+                
+                // Calculate total discount for this line
+                // First N units (minQty) at discountedPrice, additional at subsequentPrice
+                const originalTotal = product.regularPrice * currentQty;
+                let actualTotal = 0;
+                if (currentQty > 0) {
+                  if (product.role === 'must' && currentQty > minQty && subsequentPrice !== product.discountedPrice) {
+                    actualTotal = (product.discountedPrice * minQty) + (subsequentPrice * (currentQty - minQty));
+                  } else {
+                    actualTotal = product.discountedPrice * currentQty;
+                  }
+                }
+                const totalDiscount = originalTotal - actualTotal;
+                
+                return (
                 <div key={product.sku} className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
                   <div className="flex items-center gap-3">
                     {product.image && (
@@ -494,17 +515,23 @@ export const CheckoutStep = ({
                     )}
                     <div>
                       <p className="font-medium text-foreground">{product.name}</p>
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="text-accent">${product.discountedPrice.toFixed(2)}</span>
-                        {product.discountedPrice < product.regularPrice && (
+                      
+                      {/* Price display: original (struck) + subsequent price */}
+                      <div className="flex items-center gap-2 text-sm flex-wrap">
+                        {/* Original price - struck through if any discount */}
+                        {(hasDiscount || hasSubsequentDiscount) && (
                           <span className="text-muted-foreground line-through">${product.regularPrice.toFixed(2)}</span>
                         )}
+                        {/* Show subsequent price in accent (what customer pays for additional) */}
+                        {hasSubsequentDiscount && (
+                          <span className="text-accent font-semibold">${subsequentPrice.toFixed(2)}</span>
+                        )}
                       </div>
-                      {/* Show subsequent pricing for Must Have products */}
-                      {product.role === 'must' && product.subsequentSalePrice !== undefined && 
-                       product.subsequentSalePrice !== product.discountedPrice && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Additional: ${product.subsequentSalePrice.toFixed(2)} each
+                      
+                      {/* Total discount for this line in green */}
+                      {totalDiscount > 0 && currentQty > 0 && (
+                        <p className="text-xs text-green-500 font-medium mt-1">
+                          Discount ${totalDiscount.toFixed(2)}
                         </p>
                       )}
                     </div>
@@ -565,7 +592,8 @@ export const CheckoutStep = ({
                     })()}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
             
             {/* Kit total */}
