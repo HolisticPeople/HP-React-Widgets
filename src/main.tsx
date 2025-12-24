@@ -41,7 +41,7 @@ const FunnelCheckoutAppWrapper: React.FC<any> = (props) => {
     );
 };
 
-// Global settings injected by PHP (v2.14.17)
+// Global settings injected by PHP (v2.14.18)
 declare global {
     interface Window {
         hpReactSettings: {
