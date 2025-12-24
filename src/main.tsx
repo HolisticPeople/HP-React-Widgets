@@ -146,18 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             console.log('[HP-React-Widgets] Creating root and rendering', componentName);
-            console.log('[HP-React-Widgets] Component type:', typeof Component);
-            console.log('[HP-React-Widgets] Component name:', Component?.name || 'unknown');
-            console.log('[HP-React-Widgets] Component:', Component);
-            
-            // Test if component can be called directly
-            try {
-                console.log('[HP-React-Widgets] Testing direct component call...');
-                const testResult = Component(props);
-                console.log('[HP-React-Widgets] Direct call result:', testResult);
-            } catch (directErr: any) {
-                console.error('[HP-React-Widgets] Direct call failed:', directErr?.message, directErr);
-            }
             
             const root = ReactDOM.createRoot(node);
             root.render(
@@ -167,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </TooltipProvider>
                 </ErrorBoundary>,
             );
-            console.log('[HP-React-Widgets] Render called for', componentName);
+            console.log('[HP-React-Widgets] Render initiated for', componentName);
         } catch (e: any) {
             console.error('[HP-React-Widgets] Failed to render', componentName, e?.message, e);
         }
