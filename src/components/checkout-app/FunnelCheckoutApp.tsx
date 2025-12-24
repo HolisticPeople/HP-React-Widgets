@@ -68,9 +68,6 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
   // Offer selection - now uses offer ID instead of product ID
   const [selectedOfferId, setSelectedOfferId] = useState<string>(initialOfferId);
   
-  // Offer quantity multiplier (buy multiple of the same offer)
-  const [offerQuantity, setOfferQuantity] = useState<number>(1);
-  
   // Kit selection for customizable kits - start empty, will be set via useEffect or handleOfferSelect
   const [kitSelection, setKitSelection] = useState<KitSelection>({});
   
@@ -113,10 +110,9 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     [offers, selectedOfferId]
   );
 
-  // Handle offer selection change - reset kit selection and quantity
+  // Handle offer selection change - reset kit selection
   const handleOfferSelect = useCallback((offerId: string) => {
     setSelectedOfferId(offerId);
-    setOfferQuantity(1); // Reset quantity when changing offers
     
     // Find the new offer and initialize kit selection if needed
     const newOffer = offers.find(o => o.id === offerId);
@@ -202,12 +198,8 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
       }
     }
     
-    // Multiply all quantities by offerQuantity
-    return items.map(item => ({
-      ...item,
-      qty: item.qty * offerQuantity,
-    }));
-  }, [selectedOffer, kitSelection, offerQuantity]);
+    return items;
+  }, [selectedOffer, kitSelection]);
 
   // Calculate current price for display (multiplied by offerQuantity)
   const calculateOfferPrice = useMemo(() => {
@@ -249,12 +241,8 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
       }
     }
     
-    // Multiply by offer quantity
-    return { 
-      original: Math.round(original * offerQuantity * 100) / 100, 
-      discounted: Math.round(discounted * offerQuantity * 100) / 100,
-    };
-  }, [selectedOffer, kitSelection, offerQuantity]);
+    return { original, discounted };
+  }, [selectedOffer, kitSelection]);
 
   // Handle customer lookup success
   const handleCustomerLookup = useCallback((data: CustomerData) => {
@@ -393,8 +381,6 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
             offers={offers}
             selectedOfferId={selectedOfferId}
             onSelectOffer={handleOfferSelect}
-            offerQuantity={offerQuantity}
-            onOfferQuantityChange={setOfferQuantity}
             kitSelection={kitSelection}
             onKitQuantityChange={handleKitQuantityChange}
             offerPrice={calculateOfferPrice}
