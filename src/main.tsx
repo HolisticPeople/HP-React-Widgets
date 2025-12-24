@@ -72,11 +72,47 @@ widgetRegistry.FunnelCta = FunnelCta;
 widgetRegistry.FunnelFooter = FunnelFooter;
 widgetRegistry.FunnelScience = FunnelScience;
 
+// Error Boundary Component
+class ErrorBoundary extends React.Component<
+    { children: React.ReactNode; fallback?: React.ReactNode },
+    { hasError: boolean; error?: Error }
+> {
+    constructor(props: { children: React.ReactNode; fallback?: React.ReactNode }) {
+        super(props);
+        this.state = { hasError: false };
+    }
+
+    static getDerivedStateFromError(error: Error) {
+        return { hasError: true, error };
+    }
+
+    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+        console.error('[HP-React-Widgets] Component error:', error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return this.props.fallback || (
+                <div style={{ padding: '20px', background: '#331', color: '#fc0', borderRadius: '8px' }}>
+                    <p>Something went wrong loading this component.</p>
+                    <button onClick={() => window.location.reload()} style={{ marginTop: '10px', padding: '8px 16px', cursor: 'pointer' }}>
+                        Reload Page
+                    </button>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const nodes = document.querySelectorAll<HTMLElement>('[data-hp-widget=\"1\"]');
+    console.log('[HP-React-Widgets] Found', nodes.length, 'widget nodes');
 
-    nodes.forEach((node) => {
+    nodes.forEach((node, index) => {
         const componentName = node.dataset.component;
+        console.log('[HP-React-Widgets] Processing node', index, '- component:', componentName);
+        
         if (!componentName) {
             console.warn('[HP-React-Widgets] data-component is missing on widget node', node);
             return;
@@ -92,16 +128,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const rawProps = node.dataset.props || '{}';
         try {
             props = JSON.parse(rawProps);
+            console.log('[HP-React-Widgets] Parsed props for', componentName, ':', Object.keys(props));
         } catch (e) {
             console.error('[HP-React-Widgets] Failed to parse data-props JSON for', componentName, e);
+            return; // Don't render if props failed to parse
         }
 
-        ReactDOM.createRoot(node).render(
-            <React.StrictMode>
-                <TooltipProvider>
-                    <Component {...props} />
-                </TooltipProvider>
-            </React.StrictMode>,
-        );
+        // Skip if already rendered
+        if (node.dataset.rendered === '1') {
+            console.log('[HP-React-Widgets] Node already rendered, skipping');
+            return;
+        }
+        node.dataset.rendered = '1';
+
+        try {
+            ReactDOM.createRoot(node).render(
+                <React.StrictMode>
+                    <ErrorBoundary>
+                        <TooltipProvider>
+                            <Component {...props} />
+                        </TooltipProvider>
+                    </ErrorBoundary>
+                </React.StrictMode>,
+            );
+        } catch (e) {
+            console.error('[HP-React-Widgets] Failed to render', componentName, e);
+        }
     });
 });
