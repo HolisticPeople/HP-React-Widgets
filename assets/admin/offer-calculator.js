@@ -139,6 +139,39 @@
             rerenderProductsList($section);
         });
 
+        // Subsequent discount percent change (for Must Have kit products)
+        $(document).on('change', '.hp-subseq-discount-input', function() {
+            const $section = $(this).closest('.hp-products-section');
+            const sku = $(this).data('sku');
+            const subseqDiscountPercent = parseFloat($(this).val()) || 0;
+            
+            // Get original price and calculate subsequent sale price from discount
+            const $row = $(this).closest('.tabulator-row');
+            const $subseqPriceInput = $row.find('.hp-subseq-price-input');
+            const originalPrice = parseFloat($subseqPriceInput.data('original')) || 0;
+            const subseqSalePrice = originalPrice * (1 - (subseqDiscountPercent / 100));
+            
+            updateProductSubsequentPricing($section, sku, subseqDiscountPercent, subseqSalePrice);
+            rerenderProductsList($section);
+        });
+
+        // Subsequent sale price change (for Must Have kit products)
+        $(document).on('change', '.hp-subseq-price-input', function() {
+            const $section = $(this).closest('.hp-products-section');
+            const sku = $(this).data('sku');
+            const originalPrice = parseFloat($(this).data('original')) || 0;
+            const subseqSalePrice = parseFloat($(this).val()) || 0;
+            
+            // Calculate discount percent from price
+            let subseqDiscountPercent = 0;
+            if (originalPrice > 0 && subseqSalePrice < originalPrice) {
+                subseqDiscountPercent = ((originalPrice - subseqSalePrice) / originalPrice) * 100;
+            }
+            
+            updateProductSubsequentPricing($section, sku, subseqDiscountPercent, subseqSalePrice);
+            rerenderProductsList($section);
+        });
+
         // Remove product (supports both old class and Tabulator)
         $(document).on('click', '.hp-product-remove, .hp-remove-btn', function(e) {
             e.preventDefault();
@@ -338,6 +371,8 @@
                     name: $(this).data('name'),
                     price: originalPrice,
                     salePrice: originalPrice, // Default sale price = original price
+                    subsequentDiscountPercent: 0, // Default no subsequent discount
+                    subsequentSalePrice: originalPrice, // Default same as original price
                     image: $(this).data('image'),
                     qty: 1,
                     role: 'optional' // default for kits
@@ -448,6 +483,18 @@
         const product = products.find(p => p.sku === sku);
         if (product) {
             product.salePrice = salePrice;
+            saveProductsData($row, products);
+        }
+    }
+
+    function updateProductSubsequentPricing($section, sku, discountPercent, salePrice) {
+        const $row = $section.closest('.acf-row');
+        let products = getProductsData($row);
+        
+        const product = products.find(p => p.sku === sku);
+        if (product) {
+            product.subsequentDiscountPercent = discountPercent;
+            product.subsequentSalePrice = salePrice;
             saveProductsData($row, products);
         }
     }

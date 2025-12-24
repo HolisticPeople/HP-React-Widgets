@@ -1,7 +1,7 @@
 /**
  * HP Offer Products Table (Tabulator-based)
  * Simplified version inspired by EAO products table
- * @version 1.0.0
+ * @version 1.1.0 - Added tiered pricing for Must Have kit products
  */
 (function($) {
     'use strict';
@@ -54,13 +54,13 @@
                 });
             }
 
-            // Update summary
-            this._updateSummary($container, products);
+            // Update summary (pass isKit for tiered pricing calculation)
+            this._updateSummary($container, products, isKit);
         },
 
         /**
          * Build column definitions
-         * @param {boolean} isKit - Whether this is a customizable kit (shows Role column)
+         * @param {boolean} isKit - Whether this is a customizable kit (shows Role column and subsequent pricing)
          */
         _buildColumns: function(isKit) {
             const columns = [
@@ -104,36 +104,60 @@
                 });
             }
 
-            // Pricing group
-            columns.push({
-                title: "Pricing",
-                resizable: false,
-                columns: [
+            // Pricing group - base pricing columns
+            const pricingColumns = [
+                { 
+                    title: "Price", 
+                    field: "price", 
+                    width: 80, 
+                    widthGrow: 0, 
+                    hozAlign: "center", 
+                    formatter: "html"
+                },
+                { 
+                    title: "Disc. %", 
+                    field: "discount", 
+                    width: 90, 
+                    widthGrow: 0, 
+                    hozAlign: "center", 
+                    formatter: "html"
+                },
+                { 
+                    title: "Sale Price", 
+                    field: "sale_price", 
+                    width: 90, 
+                    widthGrow: 0, 
+                    hozAlign: "center", 
+                    formatter: "html"
+                }
+            ];
+
+            // Add subsequent pricing columns for kits (only visible for Must Have products)
+            if (isKit) {
+                pricingColumns.push(
                     { 
-                        title: "Price", 
-                        field: "price", 
-                        width: 80, 
-                        widthGrow: 0, 
-                        hozAlign: "center", 
-                        formatter: "html"
-                    },
-                    { 
-                        title: "Disc. %", 
-                        field: "discount", 
+                        title: "Subseq. %", 
+                        field: "subseq_discount", 
                         width: 90, 
                         widthGrow: 0, 
                         hozAlign: "center", 
                         formatter: "html"
                     },
                     { 
-                        title: "Sale Price", 
-                        field: "sale_price", 
-                        width: 90, 
+                        title: "Subseq. Price", 
+                        field: "subseq_price", 
+                        width: 100, 
                         widthGrow: 0, 
                         hozAlign: "center", 
                         formatter: "html"
                     }
-                ]
+                );
+            }
+
+            columns.push({
+                title: isKit ? "First Unit / Subsequent" : "Pricing",
+                resizable: false,
+                columns: pricingColumns
             });
 
             // Total and actions
@@ -173,7 +197,24 @@
                     ? parseFloat(p.salePrice) 
                     : originalPrice;
                 const qty = parseInt(p.qty) || 0;  // Allow 0
-                const lineTotal = salePrice * qty;
+                
+                // Subsequent pricing for Must Have products
+                const role = p.role || 'optional';
+                const subseqDiscountPercent = parseFloat(p.subsequentDiscountPercent) || 0;
+                const subseqSalePrice = (p.subsequentSalePrice !== undefined && p.subsequentSalePrice !== null)
+                    ? parseFloat(p.subsequentSalePrice)
+                    : salePrice;  // Default to first unit price
+                
+                // Calculate line total with tiered pricing for Must Have products
+                let lineTotal = 0;
+                if (isKit && role === 'must' && qty > 0) {
+                    // First unit at salePrice, additional at subsequentSalePrice
+                    const firstQty = 1;
+                    const additionalQty = Math.max(0, qty - 1);
+                    lineTotal = (salePrice * firstQty) + (subseqSalePrice * additionalQty);
+                } else {
+                    lineTotal = salePrice * qty;
+                }
                 
                 // Calculate discount percent
                 let discountPercent = 0;
@@ -182,13 +223,14 @@
                 }
 
                 const sku = p.sku || '';
-                const role = p.role || 'optional';
                 
                 const rowData = {
                     id: sku,
                     sku: sku,
                     _originalPrice: originalPrice,
                     _salePrice: salePrice,
+                    _subseqSalePrice: subseqSalePrice,
+                    _subseqDiscountPercent: subseqDiscountPercent,
                     _qty: qty,
                     _role: role,
                     thumb: `<div class="hp-item-thumb"><img src="${p.image || ''}" alt=""></div>`,
@@ -201,9 +243,11 @@
                     actions: this._renderActions(p)
                 };
 
-                // Add role column for kits
+                // Add role column and subsequent pricing for kits
                 if (isKit) {
                     rowData.role = this._renderRole(p, role);
+                    rowData.subseq_discount = this._renderSubseqDiscount(p, subseqDiscountPercent, role);
+                    rowData.subseq_price = this._renderSubseqPrice(p, subseqSalePrice, role);
                 }
 
                 return rowData;
@@ -267,9 +311,44 @@
         },
 
         /**
-         * Update the summary section below the table
+         * Render subsequent discount percent input (for Must Have products only)
          */
-        _updateSummary: function($container, products) {
+        _renderSubseqDiscount: function(p, discountPercent, role) {
+            const sku = p.sku || '';
+            // Only show for Must Have products
+            if (role !== 'must') {
+                return '<span class="hp-na-field" title="Only for Must Have products">—</span>';
+            }
+            const val = discountPercent.toFixed(1);
+            return `<div class="hp-discount-control">
+                <input type="number" class="hp-subseq-discount-input" value="${val}" min="0" max="100" step="0.1" data-sku="${this._escapeAttr(sku)}">
+                <span class="hp-percent-symbol">%</span>
+            </div>`;
+        },
+
+        /**
+         * Render subsequent sale price input (for Must Have products only)
+         */
+        _renderSubseqPrice: function(p, subseqPrice, role) {
+            const sku = p.sku || '';
+            const originalPrice = parseFloat(p.price) || 0;
+            // Only show for Must Have products
+            if (role !== 'must') {
+                return '<span class="hp-na-field" title="Only for Must Have products">—</span>';
+            }
+            return `<div class="hp-sale-price-control">
+                <span class="hp-currency">$</span>
+                <input type="number" class="hp-subseq-price-input" value="${subseqPrice.toFixed(2)}" min="0" step="0.01" data-sku="${this._escapeAttr(sku)}" data-original="${originalPrice}">
+            </div>`;
+        },
+
+        /**
+         * Update the summary section below the table
+         * @param {jQuery} $container - Table container element
+         * @param {array} products - Products array
+         * @param {boolean} isKit - Whether this is a kit offer (for tiered pricing)
+         */
+        _updateSummary: function($container, products, isKit) {
             let $summary = $container.siblings('.hp-offer-table-summary');
             if (!$summary.length) {
                 $summary = $('<div class="hp-offer-table-summary"></div>');
@@ -285,10 +364,23 @@
                     ? parseFloat(p.salePrice) 
                     : originalPrice;
                 const qty = parseInt(p.qty);
+                const role = p.role || 'optional';
+                
                 // Allow qty 0 - only count items with qty > 0
                 if (!isNaN(qty) && qty > 0) {
                     totalOriginal += originalPrice * qty;
-                    totalSale += salePrice * qty;
+                    
+                    // Use tiered pricing for Must Have products in kits
+                    if (isKit && role === 'must') {
+                        const subseqSalePrice = (p.subsequentSalePrice !== undefined && p.subsequentSalePrice !== null)
+                            ? parseFloat(p.subsequentSalePrice)
+                            : salePrice;
+                        const firstQty = 1;
+                        const additionalQty = Math.max(0, qty - 1);
+                        totalSale += (salePrice * firstQty) + (subseqSalePrice * additionalQty);
+                    } else {
+                        totalSale += salePrice * qty;
+                    }
                 }
             });
 

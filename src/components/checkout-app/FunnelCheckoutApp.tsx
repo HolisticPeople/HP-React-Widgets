@@ -196,11 +196,35 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
         selectedOffer.kitProducts.forEach((product: KitProduct) => {
           const qty = kitSelection[product.sku] || 0;
           if (qty > 0) {
-            items.push({
-              sku: product.sku,
-              qty,
-              itemDiscountPercent: product.discountType === 'percent' ? product.discountValue : undefined,
-            });
+            // Check if this is a Must Have product with tiered pricing and qty > 1
+            const hasTieredPricing = product.role === 'must' 
+              && product.subsequentSalePrice !== undefined 
+              && product.subsequentSalePrice !== product.discountedPrice;
+            
+            if (hasTieredPricing && qty > 1) {
+              // Split into two line items: first unit at kit price, rest at subsequent price
+              // First unit at kit included price
+              items.push({
+                sku: product.sku,
+                qty: 1,
+                salePrice: product.discountedPrice,
+                label: '(Kit Included)',
+              });
+              // Additional units at subsequent price
+              items.push({
+                sku: product.sku,
+                qty: qty - 1,
+                salePrice: product.subsequentSalePrice,
+              });
+            } else {
+              // Single line item for all units
+              items.push({
+                sku: product.sku,
+                qty,
+                salePrice: product.discountedPrice,
+                itemDiscountPercent: product.discountType === 'percent' ? product.discountValue : undefined,
+              });
+            }
           }
         });
         break;
@@ -234,7 +258,17 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
           const qty = kitSelection[product.sku] || 0;
           if (qty > 0) {
             originalTotal += product.regularPrice * qty;
-            subtotal += product.discountedPrice * qty;
+            
+            // Apply tiered pricing for Must Have products
+            if (product.role === 'must' && qty > 1 && product.subsequentSalePrice !== undefined) {
+              // First unit at discountedPrice, additional at subsequentSalePrice
+              const firstQty = 1;
+              const additionalQty = qty - 1;
+              subtotal += (product.discountedPrice * firstQty) + (product.subsequentSalePrice * additionalQty);
+            } else {
+              // All units at same price
+              subtotal += product.discountedPrice * qty;
+            }
           }
         });
         

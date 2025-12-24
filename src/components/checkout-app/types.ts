@@ -80,6 +80,9 @@ export interface KitProduct {
   discountType: DiscountType;
   discountValue: number;
   discountedPrice: number;
+  // Tiered pricing for Must Have products (subsequent units after minimum)
+  subsequentDiscountPercent?: number;
+  subsequentSalePrice?: number;
   image?: string;
 }
 
@@ -172,6 +175,7 @@ export interface CartItem {
   excludeGlobalDiscount?: boolean;
   itemDiscountPercent?: number;
   salePrice?: number;  // Admin-set price per unit (overrides WC price)
+  label?: string;      // Suffix appended to product name in order (e.g., "(Kit Included)")
 }
 
 export interface CartData {

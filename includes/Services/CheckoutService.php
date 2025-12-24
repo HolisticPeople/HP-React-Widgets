@@ -89,44 +89,50 @@ class CheckoutService
             $order = wc_create_order(['status' => 'auto-draft']);
             $order_id = $order->get_id();
 
-            // Add items
-            foreach ($items as $it) {
-                $qty = max(1, (int) ($it['qty'] ?? 1));
-                $product = Resolver::resolveProductFromItem((array) $it);
-                if (!$product) {
-                    continue;
-                }
-
-                $item = new WC_Order_Item_Product();
-                $item->set_product($product);
-                $item->set_quantity($qty);
-
-                // Use admin-set sale price if provided, otherwise use WC price
-                $wcPrice = (float) $product->get_price();
-                $salePrice = isset($it['salePrice']) ? (float) $it['salePrice'] : null;
-                $price = ($salePrice !== null) ? $salePrice : $wcPrice;
-                
-                $subtotal = $price * $qty;
-                $total = $subtotal;
-
-                // Check for per-item discount overrides
-                $excludeGd = !empty($it['exclude_global_discount']);
-                $itemPct = isset($it['item_discount_percent']) ? (float) $it['item_discount_percent'] : null;
-
-                if ($itemPct !== null && $itemPct >= 0) {
-                    $discounted = $price * (1 - ($itemPct / 100.0));
-                    $total = max(0.0, $discounted * $qty);
-                    $item->add_meta_data('_hp_rw_item_discount_percent', $itemPct, true);
-                }
-                
-                if ($excludeGd) {
-                    $item->add_meta_data('_hp_rw_exclude_global_discount', '1', true);
-                }
-
-                $item->set_subtotal($subtotal);
-                $item->set_total($total);
-                $order->add_item($item);
+        // Add items
+        foreach ($items as $it) {
+            $qty = max(1, (int) ($it['qty'] ?? 1));
+            $product = Resolver::resolveProductFromItem((array) $it);
+            if (!$product) {
+                continue;
             }
+
+            $item = new WC_Order_Item_Product();
+            $item->set_product($product);
+            $item->set_quantity($qty);
+            
+            // Apply label suffix if provided (e.g., "(Kit Included)")
+            if (!empty($it['label'])) {
+                $productName = $product->get_name() . ' ' . $it['label'];
+                $item->set_name($productName);
+            }
+
+            // Use admin-set sale price if provided, otherwise use WC price
+            $wcPrice = (float) $product->get_price();
+            $salePrice = isset($it['salePrice']) ? (float) $it['salePrice'] : null;
+            $price = ($salePrice !== null) ? $salePrice : $wcPrice;
+            
+            $subtotal = $price * $qty;
+            $total = $subtotal;
+
+            // Check for per-item discount overrides
+            $excludeGd = !empty($it['exclude_global_discount']);
+            $itemPct = isset($it['item_discount_percent']) ? (float) $it['item_discount_percent'] : null;
+
+            if ($itemPct !== null && $itemPct >= 0) {
+                $discounted = $price * (1 - ($itemPct / 100.0));
+                $total = max(0.0, $discounted * $qty);
+                $item->add_meta_data('_hp_rw_item_discount_percent', $itemPct, true);
+            }
+            
+            if ($excludeGd) {
+                $item->add_meta_data('_hp_rw_exclude_global_discount', '1', true);
+            }
+
+            $item->set_subtotal($subtotal);
+            $item->set_total($total);
+            $order->add_item($item);
+        }
 
             // Set addresses
             $this->applyAddress($order, 'billing', $address);
@@ -278,8 +284,18 @@ class CheckoutService
             $item = new WC_Order_Item_Product();
             $item->set_product($product);
             $item->set_quantity($qty);
+            
+            // Apply label suffix if provided (e.g., "(Kit Included)")
+            if (!empty($it['label'])) {
+                $productName = $product->get_name() . ' ' . $it['label'];
+                $item->set_name($productName);
+            }
 
-            $price = (float) $product->get_price();
+            // Use admin-set sale price if provided, otherwise use WC price
+            $wcPrice = (float) $product->get_price();
+            $salePrice = isset($it['salePrice']) ? (float) $it['salePrice'] : null;
+            $price = ($salePrice !== null) ? $salePrice : $wcPrice;
+            
             $subtotal = $price * $qty;
             $total = $subtotal;
 

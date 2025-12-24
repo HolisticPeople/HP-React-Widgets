@@ -500,6 +500,13 @@ export const CheckoutStep = ({
                           <span className="text-muted-foreground line-through">${product.regularPrice.toFixed(2)}</span>
                         )}
                       </div>
+                      {/* Show subsequent pricing for Must Have products */}
+                      {product.role === 'must' && product.subsequentSalePrice !== undefined && 
+                       product.subsequentSalePrice !== product.discountedPrice && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Additional: ${product.subsequentSalePrice.toFixed(2)} each
+                        </p>
+                      )}
                       {product.role === 'must' && (
                         <span className="text-xs text-orange-500 flex items-center gap-1">
                           <LockIcon /> Required
