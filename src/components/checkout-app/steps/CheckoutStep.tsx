@@ -469,23 +469,27 @@ export const CheckoutStep = ({
               <p className="text-muted-foreground text-sm mb-2">{offer.description}</p>
             )}
             
-            {/* Price display */}
-            <div className="flex items-baseline gap-2">
-              {offer.discountLabel && (
-                <span className="text-green-500 text-sm font-semibold">{offer.discountLabel}</span>
-              )}
-              <span className="text-2xl font-bold text-accent">
-                ${(offer.calculatedPrice || 0).toFixed(2)}
-              </span>
-              {offer.originalPrice && offer.originalPrice > (offer.calculatedPrice || 0) && (
-                <span className="text-muted-foreground line-through text-sm">
-                  ${offer.originalPrice.toFixed(2)}
-                </span>
-              )}
-            </div>
-            
-            {isFreeShipping && (
-              <p className="text-sm text-muted-foreground">+ FREE Shipping</p>
+            {/* Price display - hide for customizable kits when selected (details shown in kit area) */}
+            {!(isSelected && offer.type === 'customizable_kit') && (
+              <>
+                <div className="flex items-baseline gap-2">
+                  {offer.discountLabel && (
+                    <span className="text-green-500 text-sm font-semibold">{offer.discountLabel}</span>
+                  )}
+                  <span className="text-2xl font-bold text-accent">
+                    ${(offer.calculatedPrice || 0).toFixed(2)}
+                  </span>
+                  {offer.originalPrice && offer.originalPrice > (offer.calculatedPrice || 0) && (
+                    <span className="text-muted-foreground line-through text-sm">
+                      ${offer.originalPrice.toFixed(2)}
+                    </span>
+                  )}
+                </div>
+                
+                {isFreeShipping && (
+                  <p className="text-sm text-muted-foreground">+ FREE Shipping</p>
+                )}
+              </>
             )}
             
             {/* Offer type indicator */}
