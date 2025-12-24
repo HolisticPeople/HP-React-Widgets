@@ -25,6 +25,12 @@ export interface FunnelCheckoutAppProps extends FunnelCheckoutAppConfig {
 export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
   console.log('[FunnelCheckoutApp] Rendering with props:', props);
   
+  // Guard against undefined props (can happen with multiple render attempts)
+  if (!props || typeof props !== 'object') {
+    console.error('[FunnelCheckoutApp] Invalid props received:', props);
+    return <div className="hp-funnel-error p-4 bg-red-900/50 text-red-200 rounded">Loading checkout...</div>;
+  }
+  
   const {
     funnelId,
     funnelName,
@@ -54,6 +60,12 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
   // Ensure offers is always a stable array reference - computed BEFORE state hooks
   const offers = Array.isArray(rawOffers) ? rawOffers : [];
   console.log('[FunnelCheckoutApp] offers array:', offers);
+  
+  // Guard against missing required data
+  if (!funnelId || offers.length === 0) {
+    console.warn('[FunnelCheckoutApp] Missing required data - funnelId:', funnelId, 'offers:', offers.length);
+    return <div className="hp-funnel-error p-4 bg-yellow-900/50 text-yellow-200 rounded">Initializing checkout...</div>;
+  }
 
   // Current step in the checkout flow
   const [currentStep, setCurrentStep] = useState<CheckoutStepType>('checkout');
