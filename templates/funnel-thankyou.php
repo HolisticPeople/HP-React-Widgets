@@ -70,8 +70,44 @@ if (!function_exists('hp_build_funnel_styles')) {
             }
             return hexdec(substr($hex, 0, 2)) . ', ' . hexdec(substr($hex, 2, 2)) . ', ' . hexdec(substr($hex, 4, 2));
         };
+        
+        // Convert hex to HSL values (for Tailwind CSS variables which expect "H S% L%" format)
+        $hexToHsl = function($hex) {
+            $hex = ltrim($hex, '#');
+            if (strlen($hex) === 3) {
+                $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+            }
+            $r = hexdec(substr($hex, 0, 2)) / 255;
+            $g = hexdec(substr($hex, 2, 2)) / 255;
+            $b = hexdec(substr($hex, 4, 2)) / 255;
+            
+            $max = max($r, $g, $b);
+            $min = min($r, $g, $b);
+            $l = ($max + $min) / 2;
+            
+            if ($max === $min) {
+                $h = $s = 0;
+            } else {
+                $d = $max - $min;
+                $s = $l > 0.5 ? $d / (2 - $max - $min) : $d / ($max + $min);
+                
+                switch ($max) {
+                    case $r: $h = (($g - $b) / $d + ($g < $b ? 6 : 0)) / 6; break;
+                    case $g: $h = (($b - $r) / $d + 2) / 6; break;
+                    case $b: $h = (($r - $g) / $d + 4) / 6; break;
+                }
+            }
+            
+            return round($h * 360) . ' ' . round($s * 100) . '% ' . round($l * 100) . '%';
+        };
+        
         $accentRgb = $hexToRgb($accentColor);
         $borderRgb = $hexToRgb($borderColor);
+        $accentHsl = $hexToHsl($accentColor);
+        $pageBgHsl = $hexToHsl($pageBgColor);
+        $cardBgHsl = $hexToHsl($cardBgColor);
+        $inputBgHsl = $hexToHsl($inputBgColor);
+        $borderHsl = $hexToHsl($borderColor);
         
         return "
         <style id=\"hp-funnel-styles-{$slug}\">
@@ -162,17 +198,31 @@ if (!function_exists('hp_build_funnel_styles')) {
             }
             
             /* UI Element color overrides for React checkout app */
+            /* Tailwind expects HSL values without hsl() wrapper, e.g., "45 95% 53%" */
             .hp-funnel-checkout-app {
-                --background: var(--hp-funnel-page-bg);
-                --card: var(--hp-funnel-card-bg);
-                --border: var(--hp-funnel-border);
-                --input: var(--hp-funnel-input-bg);
-                /* Button and focus ring colors - use accent */
-                --accent: var(--hp-funnel-accent);
-                --accent-foreground: var(--hp-funnel-page-bg);
-                --primary: var(--hp-funnel-accent);
-                --primary-foreground: var(--hp-funnel-page-bg);
-                --ring: var(--hp-funnel-accent);
+                --background: {$pageBgHsl};
+                --foreground: 0 0% 90%;
+                --card: {$cardBgHsl};
+                --card-foreground: 0 0% 90%;
+                --border: {$borderHsl};
+                --input: {$inputBgHsl};
+                /* Button and focus ring colors - use accent HSL values */
+                --accent: {$accentHsl};
+                --accent-foreground: 0 0% 0%;
+                --primary: {$accentHsl};
+                --primary-foreground: 0 0% 0%;
+                --ring: {$accentHsl};
+                --muted-foreground: 0 0% 65%;
+            }
+            
+            /* Override WordPress theme header colors to match funnel palette */
+            body.hp-funnel-{$slug} header a,
+            body.hp-funnel-{$slug} header .site-title a,
+            body.hp-funnel-{$slug} header .logo-text,
+            body.hp-funnel-{$slug} .header-logo-text,
+            body.hp-funnel-{$slug} [class*='DrCousens'],
+            body.hp-funnel-{$slug} [class*='drcousens'] {
+                color: var(--hp-funnel-accent) !important;
             }
             
             /* Border color overrides */
