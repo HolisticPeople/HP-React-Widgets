@@ -108,56 +108,72 @@ class ErrorBoundary extends React.Component<
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const nodes = document.querySelectorAll<HTMLElement>('[data-hp-widget=\"1\"]');
-    console.log('[HP-React-Widgets] Found', nodes.length, 'widget nodes');
+// Render a single widget node
+function renderWidget(node: HTMLElement, index: number) {
+    const componentName = node.dataset.component;
+    
+    if (!componentName) {
+        console.warn('[HP-React-Widgets] data-component is missing on widget node', node);
+        return;
+    }
 
+    const Component = window.hpReactWidgets?.[componentName];
+    if (!Component) {
+        console.warn('[HP-React-Widgets] No component registered for', componentName);
+        return;
+    }
+
+    let props: any = {};
+    const rawProps = node.dataset.props || '{}';
+    try {
+        props = JSON.parse(rawProps);
+    } catch (e) {
+        console.error('[HP-React-Widgets] Failed to parse data-props JSON for', componentName, e);
+        return;
+    }
+
+    // Skip if already rendered
+    if (node.dataset.rendered === '1') {
+        return;
+    }
+    node.dataset.rendered = '1';
+
+    try {
+        const root = ReactDOM.createRoot(node);
+        root.render(
+            <ErrorBoundary>
+                <TooltipProvider>
+                    <Component {...props} />
+                </TooltipProvider>
+            </ErrorBoundary>,
+        );
+    } catch (e: any) {
+        console.error('[HP-React-Widgets] Failed to render', componentName, e?.message, e);
+    }
+}
+
+// Initialize widgets with deferred rendering to avoid extension conflicts
+function initWidgets() {
+    const nodes = document.querySelectorAll<HTMLElement>('[data-hp-widget="1"]');
+    
     nodes.forEach((node, index) => {
-        const componentName = node.dataset.component;
-        console.log('[HP-React-Widgets] Processing node', index, '- component:', componentName);
-        
-        if (!componentName) {
-            console.warn('[HP-React-Widgets] data-component is missing on widget node', node);
-            return;
-        }
-
-        const Component = window.hpReactWidgets?.[componentName];
-        if (!Component) {
-            console.warn('[HP-React-Widgets] No component registered for', componentName);
-            return;
-        }
-
-        let props: any = {};
-        const rawProps = node.dataset.props || '{}';
-        try {
-            props = JSON.parse(rawProps);
-            console.log('[HP-React-Widgets] Parsed props for', componentName, ':', Object.keys(props));
-        } catch (e) {
-            console.error('[HP-React-Widgets] Failed to parse data-props JSON for', componentName, e);
-            return; // Don't render if props failed to parse
-        }
-
-        // Skip if already rendered
-        if (node.dataset.rendered === '1') {
-            console.log('[HP-React-Widgets] Node already rendered, skipping');
-            return;
-        }
-        node.dataset.rendered = '1';
-
-        try {
-            console.log('[HP-React-Widgets] Creating root and rendering', componentName);
-            
-            const root = ReactDOM.createRoot(node);
-            root.render(
-                <ErrorBoundary>
-                    <TooltipProvider>
-                        <Component {...props} />
-                    </TooltipProvider>
-                </ErrorBoundary>,
-            );
-            console.log('[HP-React-Widgets] Render initiated for', componentName);
-        } catch (e: any) {
-            console.error('[HP-React-Widgets] Failed to render', componentName, e?.message, e);
-        }
+        // Use requestAnimationFrame to defer each render, giving extensions time to settle
+        requestAnimationFrame(() => {
+            // Double-defer for extra safety against extension interference
+            setTimeout(() => {
+                renderWidget(node, index);
+            }, 0);
+        });
     });
-});
+}
+
+// Wait for DOM to be ready, then defer initialization
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        // Additional delay to let extensions finish their setup
+        setTimeout(initWidgets, 50);
+    });
+} else {
+    // DOM already ready, still defer slightly
+    setTimeout(initWidgets, 50);
+}
