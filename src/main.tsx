@@ -1,5 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { flushSync } from 'react-dom'
 import './index.css'
 import { MultiAddress } from './components/MultiAddress'
 import { MyAccountHeader } from '@/components/MyAccountHeader'
@@ -28,7 +29,7 @@ import {
   FunnelScience,
 } from '@/components/funnel'
 
-// Global settings injected by PHP (v2.14.15)
+// Global settings injected by PHP (v2.14.16)
 declare global {
     interface Window {
         hpReactSettings: {
@@ -140,40 +141,41 @@ function renderWidget(node: HTMLElement, index: number) {
 
     try {
         const root = ReactDOM.createRoot(node);
-        root.render(
-            <ErrorBoundary>
-                <TooltipProvider>
-                    <Component {...props} />
-                </TooltipProvider>
-            </ErrorBoundary>,
-        );
+        // Use flushSync to force synchronous rendering, bypassing React's async scheduler
+        // This avoids conflicts with browser extensions that hook into MessagePort/MessageChannel
+        flushSync(() => {
+            root.render(
+                <ErrorBoundary>
+                    <TooltipProvider>
+                        <Component {...props} />
+                    </TooltipProvider>
+                </ErrorBoundary>,
+            );
+        });
     } catch (e: any) {
         console.error('[HP-React-Widgets] Failed to render', componentName, e?.message, e);
+        // Show error in the widget container
+        node.innerHTML = `<div style="padding:20px;background:#400;color:#faa;border-radius:8px;">
+            <p>Widget failed to load: ${e?.message || 'Unknown error'}</p>
+            <button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;cursor:pointer;">Reload</button>
+        </div>`;
     }
 }
 
-// Initialize widgets with deferred rendering to avoid extension conflicts
+// Initialize widgets - render immediately and synchronously
 function initWidgets() {
     const nodes = document.querySelectorAll<HTMLElement>('[data-hp-widget="1"]');
     
     nodes.forEach((node, index) => {
-        // Use requestAnimationFrame to defer each render, giving extensions time to settle
-        requestAnimationFrame(() => {
-            // Double-defer for extra safety against extension interference
-            setTimeout(() => {
-                renderWidget(node, index);
-            }, 0);
-        });
+        // Render each widget directly - flushSync inside renderWidget handles sync rendering
+        renderWidget(node, index);
     });
 }
 
-// Wait for DOM to be ready, then defer initialization
+// Wait for DOM to be ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        // Additional delay to let extensions finish their setup
-        setTimeout(initWidgets, 50);
-    });
+    document.addEventListener('DOMContentLoaded', initWidgets);
 } else {
-    // DOM already ready, still defer slightly
-    setTimeout(initWidgets, 50);
+    // DOM already ready, render immediately
+    initWidgets();
 }
