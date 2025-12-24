@@ -985,21 +985,26 @@ class FunnelConfigLoader
             $price = (float) ($wcData['price'] ?? 0);
             $regularPrice = (float) ($wcData['regular_price'] ?? $price);
             
-            // Use admin-set salePrice if available, otherwise apply discount
-            $adminSalePrice = isset($item['salePrice']) ? (float) $item['salePrice'] : null;
-            if ($adminSalePrice !== null && $adminSalePrice > 0) {
+            // Use admin-set salePrice if explicitly set (including 0 for FREE items), otherwise apply discount
+            // Check if salePrice is set and is a valid number (not empty string or null)
+            $adminSalePrice = null;
+            if (isset($item['salePrice']) && $item['salePrice'] !== '' && $item['salePrice'] !== null) {
+                $adminSalePrice = (float) $item['salePrice'];
+            }
+            if ($adminSalePrice !== null) {
                 $discountedPrice = $adminSalePrice;
             } else {
                 $discountedPrice = self::applyDiscount($price, $productDiscountType, $productDiscountValue);
             }
             
             // Subsequent pricing for Must Have products (tiered pricing)
-            // Used when customer adds more than the minimum (1) of a Must Have product
+            // Used when customer adds more than the required minimum of a Must Have product
             // Default to full WC price (0% discount) for subsequent units
             $subseqDiscountPercent = (float) ($item['subsequentDiscountPercent'] ?? 0);
-            $subseqSalePrice = isset($item['subsequentSalePrice']) && $item['subsequentSalePrice'] !== null
-                ? (float) $item['subsequentSalePrice']
-                : $price; // Default to WC price (full price) for additional units
+            $subseqSalePrice = $price; // Default to WC price (full price) for additional units
+            if (isset($item['subsequentSalePrice']) && $item['subsequentSalePrice'] !== '' && $item['subsequentSalePrice'] !== null) {
+                $subseqSalePrice = (float) $item['subsequentSalePrice'];
+            }
             
             $kitProduct = [
                 'sku'           => $sku,
