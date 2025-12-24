@@ -742,6 +742,7 @@ class FunnelConfigLoader
                 'description'   => $row['offer_description'] ?? '',
                 'type'          => $offerType,
                 'badge'         => $row['offer_badge'] ?? '',
+                'bonusMessage'  => $row['offer_bonus_message'] ?? '',
                 'isFeatured'    => !empty($row['offer_is_featured']),
                 'image'         => self::resolveImageUrl($row['offer_image'] ?? null),
                 'discountLabel' => $row['offer_discount_label'] ?? '',

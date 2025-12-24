@@ -705,6 +705,15 @@ class FunnelOfferFields
                 'wrapper' => ['width' => '20'],
             ],
             [
+                'key' => 'field_offer_bonus_message',
+                'label' => 'Bonus Message',
+                'name' => 'offer_bonus_message',
+                'type' => 'text',
+                'instructions' => 'Shown in Quantity card. Use {qty} for quantity. E.g. "You\'ll receive {qty} FREE 0.5oz bottle(s)!"',
+                'placeholder' => 'e.g. You\'ll receive {qty} FREE bonus item(s)!',
+                'wrapper' => ['width' => '50'],
+            ],
+            [
                 'key' => 'field_offer_is_featured',
                 'label' => 'Featured',
                 'name' => 'offer_is_featured',

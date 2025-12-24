@@ -15,6 +15,7 @@ export interface BaseOffer {
   description?: string;
   type: OfferType;
   badge?: string;
+  bonusMessage?: string;
   isFeatured?: boolean;
   image?: string;
   discountLabel?: string;

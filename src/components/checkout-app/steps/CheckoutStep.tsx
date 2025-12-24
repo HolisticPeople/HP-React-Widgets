@@ -89,6 +89,8 @@ interface CheckoutStepProps {
   offers: Offer[];
   selectedOfferId: string;
   onSelectOffer: (id: string) => void;
+  offerQuantity: number;
+  onOfferQuantityChange: (qty: number) => void;
   kitSelection: KitSelection;
   onKitQuantityChange: (sku: string, qty: number) => void;
   offerPrice: { original: number; discounted: number };
@@ -116,6 +118,8 @@ export const CheckoutStep = ({
   offers: rawOffers,
   selectedOfferId,
   onSelectOffer,
+  offerQuantity,
+  onOfferQuantityChange,
   kitSelection,
   onKitQuantityChange,
   offerPrice,
@@ -583,6 +587,39 @@ export const CheckoutStep = ({
             <h2 className="text-2xl font-bold mb-6 text-accent">Select Your Package</h2>
             
             {offers.map(renderOfferCard)}
+          </Card>
+
+          {/* Quantity Selector */}
+          <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
+            <h3 className="text-xl font-bold mb-4 text-accent">Quantity</h3>
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={() => onOfferQuantityChange(Math.max(1, offerQuantity - 1))}
+                disabled={offerQuantity <= 1}
+                className="w-10 h-10 rounded-lg border border-accent/50 hover:bg-accent/20 flex items-center justify-center text-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <MinusIcon />
+              </button>
+              <div className="text-3xl font-bold text-accent w-16 text-center">{offerQuantity}</div>
+              <button
+                type="button"
+                onClick={() => onOfferQuantityChange(offerQuantity + 1)}
+                className="w-10 h-10 rounded-lg border border-accent/50 hover:bg-accent/20 flex items-center justify-center text-accent transition-colors"
+              >
+                <PlusIcon />
+              </button>
+            </div>
+            
+            {/* Bonus Message */}
+            {selectedOffer?.bonusMessage && (
+              <div className="mt-4 p-4 bg-accent/10 rounded-lg border border-accent/30">
+                <p className="text-accent font-semibold flex items-center gap-2">
+                  <PackageIcon />
+                  {selectedOffer.bonusMessage.replace(/\{qty\}/g, String(offerQuantity))}
+                </p>
+              </div>
+            )}
           </Card>
 
           {/* Trust Badges */}

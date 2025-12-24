@@ -60,6 +60,9 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     return featured?.id || (offers.length > 0 ? offers[0].id : '');
   });
   
+  // Offer quantity multiplier (buy multiple of the same offer)
+  const [offerQuantity, setOfferQuantity] = useState<number>(1);
+  
   // Kit selection for customizable kits
   const [kitSelection, setKitSelection] = useState<KitSelection>(() => {
     // Initialize with admin-set quantities for kit offers
@@ -99,9 +102,10 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     [offers, selectedOfferId]
   );
 
-  // Handle offer selection change - reset kit selection if needed
+  // Handle offer selection change - reset kit selection and quantity
   const handleOfferSelect = useCallback((offerId: string) => {
     setSelectedOfferId(offerId);
+    setOfferQuantity(1); // Reset quantity when changing offers
     
     // Find the new offer and initialize kit selection if needed
     const newOffer = offers.find(o => o.id === offerId);
@@ -187,20 +191,26 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
       }
     }
     
-    return items;
-  }, [selectedOffer, kitSelection]);
+    // Multiply all quantities by offerQuantity
+    return items.map(item => ({
+      ...item,
+      qty: item.qty * offerQuantity,
+    }));
+  }, [selectedOffer, kitSelection, offerQuantity]);
 
-  // Calculate current price for display
+  // Calculate current price for display (multiplied by offerQuantity)
   const calculateOfferPrice = useMemo(() => {
     if (!selectedOffer) return { original: 0, discounted: 0 };
+    
+    let original = 0;
+    let discounted = 0;
     
     switch (selectedOffer.type) {
       case 'single':
       case 'fixed_bundle':
-        return {
-          original: selectedOffer.originalPrice || 0,
-          discounted: selectedOffer.calculatedPrice || 0,
-        };
+        original = selectedOffer.originalPrice || 0;
+        discounted = selectedOffer.calculatedPrice || 0;
+        break;
         
       case 'customizable_kit': {
         let subtotal = 0;
@@ -222,15 +232,18 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
           finalPrice = Math.max(0, subtotal - selectedOffer.discountValue);
         }
         
-        return {
-          original: originalTotal,
-          discounted: Math.round(finalPrice * 100) / 100,
-        };
+        original = originalTotal;
+        discounted = Math.round(finalPrice * 100) / 100;
+        break;
       }
     }
     
-    return { original: 0, discounted: 0 };
-  }, [selectedOffer, kitSelection]);
+    // Multiply by offer quantity
+    return { 
+      original: Math.round(original * offerQuantity * 100) / 100, 
+      discounted: Math.round(discounted * offerQuantity * 100) / 100,
+    };
+  }, [selectedOffer, kitSelection, offerQuantity]);
 
   // Handle customer lookup success
   const handleCustomerLookup = useCallback((data: CustomerData) => {
@@ -369,6 +382,8 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
             offers={offers}
             selectedOfferId={selectedOfferId}
             onSelectOffer={handleOfferSelect}
+            offerQuantity={offerQuantity}
+            onOfferQuantityChange={setOfferQuantity}
             kitSelection={kitSelection}
             onKitQuantityChange={handleKitQuantityChange}
             offerPrice={calculateOfferPrice}
