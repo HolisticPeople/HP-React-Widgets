@@ -1,6 +1,5 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { flushSync } from 'react-dom'
 import './index.css'
 import { MultiAddress } from './components/MultiAddress'
 import { MyAccountHeader } from '@/components/MyAccountHeader'
@@ -10,9 +9,10 @@ import { FunnelCheckout } from '@/components/FunnelCheckout'
 import { FunnelUpsell } from '@/components/FunnelUpsell'
 import { FunnelThankYou } from '@/components/FunnelThankYou'
 
-// Checkout SPA (new hybrid approach)
-import { FunnelCheckoutApp } from '@/components/checkout-app'
+// TooltipProvider for UI components
 import { TooltipProvider } from '@/components/ui/tooltip'
+
+// Note: FunnelCheckoutApp is loaded dynamically below to avoid extension conflicts
 
 // Modular funnel section components
 import {
@@ -29,7 +29,19 @@ import {
   FunnelScience,
 } from '@/components/funnel'
 
-// Global settings injected by PHP (v2.14.16)
+// Lazy-loaded Checkout App wrapper to avoid extension conflicts
+const LazyFunnelCheckoutApp = React.lazy(() => import('@/components/checkout-app').then(mod => ({ default: mod.FunnelCheckoutApp })));
+
+// Wrapper that handles suspense for the lazy component
+const FunnelCheckoutAppWrapper: React.FC<any> = (props) => {
+    return (
+        <React.Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>Loading checkout...</div>}>
+            <LazyFunnelCheckoutApp {...props} />
+        </React.Suspense>
+    );
+};
+
+// Global settings injected by PHP (v2.14.17)
 declare global {
     interface Window {
         hpReactSettings: {
@@ -57,8 +69,8 @@ widgetRegistry.FunnelCheckout = FunnelCheckout;
 widgetRegistry.FunnelUpsell = FunnelUpsell;
 widgetRegistry.FunnelThankYou = FunnelThankYou;
 
-// Checkout SPA (hybrid approach - single component handles checkout->upsell->thankyou)
-widgetRegistry.FunnelCheckoutApp = FunnelCheckoutApp;
+// Checkout SPA (hybrid approach - uses lazy loading to isolate from extension conflicts)
+widgetRegistry.FunnelCheckoutApp = FunnelCheckoutAppWrapper;
 
 // Funnel section components (modular)
 widgetRegistry.FunnelHeader = FunnelHeader;
@@ -141,17 +153,13 @@ function renderWidget(node: HTMLElement, index: number) {
 
     try {
         const root = ReactDOM.createRoot(node);
-        // Use flushSync to force synchronous rendering, bypassing React's async scheduler
-        // This avoids conflicts with browser extensions that hook into MessagePort/MessageChannel
-        flushSync(() => {
-            root.render(
-                <ErrorBoundary>
-                    <TooltipProvider>
-                        <Component {...props} />
-                    </TooltipProvider>
-                </ErrorBoundary>,
-            );
-        });
+        root.render(
+            <ErrorBoundary>
+                <TooltipProvider>
+                    <Component {...props} />
+                </TooltipProvider>
+            </ErrorBoundary>,
+        );
     } catch (e: any) {
         console.error('[HP-React-Widgets] Failed to render', componentName, e?.message, e);
         // Show error in the widget container
