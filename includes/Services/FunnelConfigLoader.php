@@ -971,7 +971,8 @@ class FunnelConfigLoader
                 $role = 'optional';
             }
             $qty = (int) ($item['qty'] ?? 1);
-            $maxQty = (int) ($item['max_qty'] ?? 3);
+            // Default to 99 (no limit) if max_qty not set
+            $maxQty = (int) ($item['max_qty'] ?? 99);
             $productDiscountType = $item['discount_type'] ?? 'none';
             $productDiscountValue = (float) ($item['discount_value'] ?? 0);
             
