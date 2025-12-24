@@ -490,19 +490,28 @@ export const CheckoutStep = ({
                 // Calculate pricing info for display
                 const minQty = product.role === 'must' ? (product.qty || 1) : 0;
                 const currentQty = kitSelection[product.sku] || 0;
-                const hasDiscount = product.discountedPrice < product.regularPrice;
-                const subsequentPrice = product.subsequentSalePrice ?? product.regularPrice;
-                const hasSubsequentDiscount = subsequentPrice < product.regularPrice;
+                
+                // Prices
+                const regularPrice = product.regularPrice;
+                const firstUnitPrice = product.discountedPrice; // Admin-set sale price for first N units
+                const subsequentPrice = product.subsequentSalePrice ?? regularPrice;
+                
+                // Discount flags
+                const hasFirstUnitDiscount = firstUnitPrice < regularPrice;
+                const hasSubsequentDiscount = subsequentPrice < regularPrice;
+                const showSubsequentPrice = product.role === 'must' && subsequentPrice !== firstUnitPrice;
                 
                 // Calculate total discount for this line
-                // First N units (minQty) at discountedPrice, additional at subsequentPrice
-                const originalTotal = product.regularPrice * currentQty;
+                // First N units (minQty) at firstUnitPrice, additional at subsequentPrice
+                const originalTotal = regularPrice * currentQty;
                 let actualTotal = 0;
                 if (currentQty > 0) {
-                  if (product.role === 'must' && currentQty > minQty && subsequentPrice !== product.discountedPrice) {
-                    actualTotal = (product.discountedPrice * minQty) + (subsequentPrice * (currentQty - minQty));
+                  if (product.role === 'must' && currentQty > minQty && subsequentPrice !== firstUnitPrice) {
+                    // Tiered pricing: first minQty at firstUnitPrice, rest at subsequentPrice
+                    actualTotal = (firstUnitPrice * minQty) + (subsequentPrice * (currentQty - minQty));
                   } else {
-                    actualTotal = product.discountedPrice * currentQty;
+                    // All units at firstUnitPrice
+                    actualTotal = firstUnitPrice * currentQty;
                   }
                 }
                 const totalDiscount = originalTotal - actualTotal;
@@ -516,17 +525,27 @@ export const CheckoutStep = ({
                     <div>
                       <p className="font-medium text-foreground">{product.name}</p>
                       
-                      {/* Price display: original (struck) + subsequent price */}
+                      {/* Price display */}
                       <div className="flex items-center gap-2 text-sm flex-wrap">
-                        {/* Original price - struck through if any discount */}
-                        {(hasDiscount || hasSubsequentDiscount) && (
-                          <span className="text-muted-foreground line-through">${product.regularPrice.toFixed(2)}</span>
+                        {/* Original price - struck through if discounted */}
+                        {(hasFirstUnitDiscount || hasSubsequentDiscount) ? (
+                          <span className="text-muted-foreground line-through">${regularPrice.toFixed(2)}</span>
+                        ) : (
+                          <span className="text-accent">${regularPrice.toFixed(2)}</span>
                         )}
-                        {/* Show subsequent price in accent (what customer pays for additional) */}
+                        
+                        {/* Sale price in accent (what customer pays per unit) */}
                         {hasSubsequentDiscount && (
                           <span className="text-accent font-semibold">${subsequentPrice.toFixed(2)}</span>
                         )}
                       </div>
+                      
+                      {/* Show subsequent pricing note for Must Have products */}
+                      {showSubsequentPrice && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          First {minQty}: ${firstUnitPrice.toFixed(2)} ea | Add'l: ${subsequentPrice.toFixed(2)} ea
+                        </p>
+                      )}
                       
                       {/* Total discount for this line in green */}
                       {totalDiscount > 0 && currentQty > 0 && (
