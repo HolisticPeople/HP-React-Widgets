@@ -91,6 +91,8 @@ interface CheckoutStepProps {
   onSelectOffer: (id: string) => void;
   kitSelection: KitSelection;
   onKitQuantityChange: (sku: string, qty: number) => void;
+  offerQuantity: number;
+  onOfferQuantityChange: (qty: number) => void;
   offerPrice: { original: number; discounted: number };
   customerData: CustomerData | null;
   onCustomerLookup: (data: CustomerData) => void;
@@ -118,6 +120,8 @@ export const CheckoutStep = ({
   onSelectOffer,
   kitSelection,
   onKitQuantityChange,
+  offerQuantity,
+  onOfferQuantityChange,
   offerPrice,
   customerData,
   onCustomerLookup,
@@ -305,7 +309,7 @@ export const CheckoutStep = ({
   // Trigger totals update when selection changes
   useEffect(() => {
     fetchTotals();
-  }, [selectedOfferId, kitSelection]); // eslint-disable-line
+  }, [selectedOfferId, kitSelection, offerQuantity]); // eslint-disable-line
 
   // Debounced address change
   useEffect(() => {
@@ -585,7 +589,62 @@ export const CheckoutStep = ({
             {offers.map(renderOfferCard)}
           </Card>
 
-          {/* Quantity Selector - TEMPORARILY DISABLED FOR DEBUGGING */}
+          {/* Quantity Selector - Only for non-kit offers */}
+          {selectedOffer && selectedOffer.type !== 'customizable_kit' && (
+            <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
+              <h2 className="text-xl font-bold mb-4 text-accent">How Many Would You Like?</h2>
+              
+              <div className="flex items-center justify-center gap-6 mb-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  onClick={() => onOfferQuantityChange(offerQuantity - 1)}
+                  disabled={offerQuantity <= 1}
+                  className="h-14 w-14 border-accent/50 hover:bg-accent/20 text-2xl"
+                >
+                  <MinusIcon />
+                </Button>
+                
+                <div className="text-center">
+                  <span className="text-5xl font-bold text-accent">{offerQuantity}</span>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {offerQuantity === 1 ? 'package' : 'packages'}
+                  </p>
+                </div>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  onClick={() => onOfferQuantityChange(offerQuantity + 1)}
+                  disabled={offerQuantity >= 10}
+                  className="h-14 w-14 border-accent/50 hover:bg-accent/20 text-2xl"
+                >
+                  <PlusIcon />
+                </Button>
+              </div>
+              
+              {/* Bonus Message */}
+              {selectedOffer.bonusMessage && offerQuantity > 1 && (
+                <div className="mt-4 p-4 bg-accent/10 rounded-lg text-center">
+                  <p className="text-accent font-semibold">
+                    {selectedOffer.bonusMessage.replace('{qty}', String(offerQuantity))}
+                  </p>
+                </div>
+              )}
+              
+              {/* Price summary when qty > 1 */}
+              {offerQuantity > 1 && (
+                <div className="mt-4 pt-4 border-t border-border/30 text-center">
+                  <p className="text-muted-foreground text-sm">
+                    {offerQuantity} × ${((selectedOffer.calculatedPrice || 0)).toFixed(2)} = 
+                    <span className="text-accent font-bold ml-2">${offerPrice.discounted.toFixed(2)}</span>
+                  </p>
+                </div>
+              )}
+            </Card>
+          )}
 
           {/* Trust Badges */}
           <div className="grid grid-cols-3 gap-4">
