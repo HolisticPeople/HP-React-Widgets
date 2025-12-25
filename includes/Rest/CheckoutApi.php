@@ -171,6 +171,7 @@ class CheckoutApi
         }
 
         // Try to get additional addresses from HP-Multi-Address
+        error_log('[HP-RW CheckoutApi] Checking for HP-Multi-Address. Class exists: ' . (class_exists('\\HP_MA\\AddressManager') ? 'yes' : 'no'));
         if (class_exists('\\HP_MA\\AddressManager')) {
             $additionalBilling = \HP_MA\AddressManager::get_addresses($user->ID, 'billing');
             $additionalShipping = \HP_MA\AddressManager::get_addresses($user->ID, 'shipping');

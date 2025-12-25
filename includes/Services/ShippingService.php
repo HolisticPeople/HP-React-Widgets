@@ -29,12 +29,15 @@ class ShippingService
         if (!function_exists('eao_build_shipstation_rates_request') || !function_exists('eao_get_shipstation_carrier_rates')) {
             $this->tryLoadEaoShipStation();
             if (!function_exists('eao_build_shipstation_rates_request') || !function_exists('eao_get_shipstation_carrier_rates')) {
+                error_log('[HP-RW ShippingService] EAO ShipStation utilities not available after tryLoadEaoShipStation');
                 return [
                     'success' => false,
                     'error'   => 'EAO ShipStation utilities not available',
                 ];
             }
         }
+        
+        error_log('[HP-RW ShippingService] getRates called with address: ' . print_r($address, true));
 
         if (empty($items)) {
             return [
