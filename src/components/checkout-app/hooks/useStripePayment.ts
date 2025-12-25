@@ -33,27 +33,17 @@ interface UseStripePaymentOptions {
   onPaymentError?: (error: string) => void;
 }
 
-// Debug flag - set to true to enable logging
-const STRIPE_DEBUG = true;
-const debugLog = (...args: any[]) => {
-  if (STRIPE_DEBUG) {
-    console.log('[HP-Stripe]', new Date().toISOString().split('T')[1], ...args);
-  }
-};
-
 // Global Stripe singleton loader - ensures only ONE Stripe instance exists
 function loadStripeSingleton(publishableKey: string): Promise<Stripe | null> {
   return new Promise((resolve) => {
     // If already have an instance, return it
     if (window.__hpStripeInstance) {
-      debugLog('Using existing Stripe instance');
       resolve(window.__hpStripeInstance);
       return;
     }
 
     // If currently loading, queue up the callback
     if (window.__hpStripeLoading) {
-      debugLog('Stripe loading in progress, queueing callback');
       window.__hpStripeCallbacks = window.__hpStripeCallbacks || [];
       window.__hpStripeCallbacks.push(resolve);
       return;
@@ -61,14 +51,12 @@ function loadStripeSingleton(publishableKey: string): Promise<Stripe | null> {
 
     // Check if Stripe is already loaded (by another script)
     if (window.Stripe) {
-      debugLog('Stripe already on window, creating instance');
       window.__hpStripeInstance = window.Stripe(publishableKey);
       resolve(window.__hpStripeInstance);
       return;
     }
 
     // Start loading
-    debugLog('Starting Stripe script load');
     window.__hpStripeLoading = true;
     window.__hpStripeCallbacks = [resolve];
 
@@ -77,22 +65,18 @@ function loadStripeSingleton(publishableKey: string): Promise<Stripe | null> {
     script.async = true;
 
     script.onload = () => {
-      debugLog('Stripe script loaded');
       if (window.Stripe) {
         window.__hpStripeInstance = window.Stripe(publishableKey);
-        debugLog('Stripe instance created');
       }
       window.__hpStripeLoading = false;
       
       // Notify all waiting callbacks
       const callbacks = window.__hpStripeCallbacks || [];
       window.__hpStripeCallbacks = [];
-      debugLog(`Notifying ${callbacks.length} waiting callbacks`);
       callbacks.forEach(cb => cb(window.__hpStripeInstance || null));
     };
 
     script.onerror = () => {
-      debugLog('Stripe script load FAILED');
       window.__hpStripeLoading = false;
       const callbacks = window.__hpStripeCallbacks || [];
       window.__hpStripeCallbacks = [];
@@ -148,30 +132,22 @@ export function useStripePayment(options: UseStripePaymentOptions) {
 
   // Track if already mounted to prevent duplicate mounts
   const isMountedRef = useRef(false);
-  const mountCountRef = useRef(0);
 
   // Mount card element
   const mountCardElement = useCallback((container: HTMLElement | string) => {
-    mountCountRef.current++;
-    debugLog(`mountCardElement called (attempt #${mountCountRef.current}), isMounted=${isMountedRef.current}`);
-    
     // Prevent duplicate mounts
     if (isMountedRef.current) {
-      debugLog('Already mounted, skipping');
       return;
     }
 
     if (!stripeRef.current) {
-      debugLog('ERROR: Stripe not loaded');
       return;
     }
 
     isMountedRef.current = true;
-    debugLog('Creating Elements instance...');
 
     // Create Elements instance with deferred PaymentIntent mode
     // 'mode: payment' allows us to collect payment details before creating a PaymentIntent
-    // Using loader: 'always' to preload Stripe UI and reduce polling
     elementsRef.current = stripeRef.current.elements({
       mode: 'payment',
       amount: 1000, // Placeholder - will be updated when we have final amount
@@ -190,23 +166,16 @@ export function useStripePayment(options: UseStripePaymentOptions) {
       },
     });
 
-    debugLog('Elements instance created, creating payment element...');
-
     // Create card element
     cardElementRef.current = elementsRef.current.create('payment', {
       layout: 'tabs',
     });
 
-    debugLog('Payment element created, mounting...');
-
     // Mount to container
     cardElementRef.current.mount(container);
 
-    debugLog('Payment element mounted successfully');
-
     // Listen for changes
     cardElementRef.current.on('change', (event: any) => {
-      debugLog('Payment element change event:', { complete: event.complete, error: event.error?.message });
       setIsCardComplete(event.complete);
       if (event.error) {
         setError(event.error.message);

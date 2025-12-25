@@ -63,13 +63,6 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     return <div className="hp-funnel-error p-4 bg-yellow-900/50 text-yellow-200 rounded">Initializing checkout...</div>;
   }
 
-  // Debug: Track renders
-  const renderCountRef = useRef(0);
-  renderCountRef.current++;
-  if (renderCountRef.current <= 5 || renderCountRef.current % 10 === 0) {
-    console.log('[FunnelCheckoutApp] Render #' + renderCountRef.current);
-  }
-
   // Current step in the checkout flow
   const [currentStep, setCurrentStep] = useState<CheckoutStepType>('checkout');
   
