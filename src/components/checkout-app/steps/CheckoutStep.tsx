@@ -612,22 +612,23 @@ export const CheckoutStep = ({
     }
   };
 
-  // Helper function to extract shipping cost from a rate object (inline, no memoization)
-  const getShippingCostFromRate = useCallback((rate: ShippingRate | null): number => {
+  // Helper function to extract shipping cost from a rate object
+  // NOT wrapped in useCallback to avoid stale closure issues
+  const extractShippingCost = (rate: ShippingRate | null): number => {
     if (!rate || isFreeShipping) return 0;
     const rateAny = rate as Record<string, unknown>;
     // ShipStation returns shipping_amount_raw, check all possible field names
     const rawCost = rateAny.shipping_amount_raw ?? rateAny.base_amount_raw ?? rate.shipmentCost ?? rateAny.shipment_cost ?? 0;
     return typeof rawCost === 'number' ? rawCost : parseFloat(String(rawCost)) || 0;
-  }, [isFreeShipping]);
+  };
   
   // Handler for selecting a shipping rate - updates both parent state and local cost
-  const handleSelectRate = useCallback((rate: ShippingRate) => {
-    // Extract cost from the local rate object which has shipping_amount_raw
-    const cost = getShippingCostFromRate(rate);
+  // NOT wrapped in useCallback to ensure fresh closures every render
+  const handleSelectRate = (rate: ShippingRate) => {
+    const cost = extractShippingCost(rate);
     setLocalShippingCost(cost);
     onSelectRate(rate);
-  }, [getShippingCostFromRate, onSelectRate]);
+  };
   
   // Sync local shipping cost only on initial load when we first get a selectedRate but no localShippingCost
   // This ensures initial rate from API sets the cost, but user selection takes precedence
@@ -635,7 +636,7 @@ export const CheckoutStep = ({
     // Only sync if we have a selected rate but no local cost set yet
     // This handles initial load case where selectedRate comes from API/parent
     if (selectedRate && localShippingCost === 0) {
-      const cost = getShippingCostFromRate(selectedRate);
+      const cost = extractShippingCost(selectedRate);
       if (cost > 0) {
         setLocalShippingCost(cost);
       }
