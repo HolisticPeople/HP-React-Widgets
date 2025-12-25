@@ -239,12 +239,26 @@ export const CheckoutStep = ({
   const stripePaymentRef = useRef(stripePayment);
   stripePaymentRef.current = stripePayment;
 
+  // Debug: Track component renders
+  const renderCountRef = useRef(0);
+  renderCountRef.current++;
+  if (renderCountRef.current <= 5 || renderCountRef.current % 10 === 0) {
+    console.log('[CheckoutStep] Render #' + renderCountRef.current);
+  }
+
   // Mount Stripe Elements when ready - use empty deps to run only once
   // and check isReady inside the effect
   useEffect(() => {
+    console.log('[CheckoutStep] Stripe mount effect running');
+    
     // Poll for Stripe readiness to avoid dependency on stripePayment
     const checkAndMount = () => {
-      if (stripePaymentRef.current.isReady && stripeContainerRef.current && !stripeMountedRef.current) {
+      const isReady = stripePaymentRef.current.isReady;
+      const hasContainer = !!stripeContainerRef.current;
+      const alreadyMounted = stripeMountedRef.current;
+      
+      if (isReady && hasContainer && !alreadyMounted) {
+        console.log('[CheckoutStep] Mounting Stripe element');
         stripePaymentRef.current.mountCardElement(stripeContainerRef.current);
         stripeMountedRef.current = true;
         return true;
@@ -253,20 +267,29 @@ export const CheckoutStep = ({
     };
 
     // Try immediately
-    if (checkAndMount()) return;
+    if (checkAndMount()) {
+      console.log('[CheckoutStep] Mounted immediately');
+      return;
+    }
 
     // Poll every 100ms until ready (max 5 seconds)
     let attempts = 0;
     const interval = setInterval(() => {
       attempts++;
-      if (checkAndMount() || attempts > 50) {
+      if (checkAndMount()) {
+        console.log(`[CheckoutStep] Mounted after ${attempts} poll attempts`);
+        clearInterval(interval);
+      } else if (attempts > 50) {
+        console.log('[CheckoutStep] Gave up polling after 50 attempts');
         clearInterval(interval);
       }
     }, 100);
 
     return () => {
+      console.log('[CheckoutStep] Cleanup: clearing interval, stripeMounted=' + stripeMountedRef.current);
       clearInterval(interval);
       if (stripeMountedRef.current) {
+        console.log('[CheckoutStep] Unmounting Stripe element');
         stripePaymentRef.current.unmountCardElement();
         stripeMountedRef.current = false;
       }

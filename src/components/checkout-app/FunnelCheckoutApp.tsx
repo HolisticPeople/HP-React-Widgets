@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { CheckoutStep } from './steps/CheckoutStep';
 import { ProcessingStep } from './steps/ProcessingStep';
 import { UpsellStep } from './steps/UpsellStep';
@@ -61,6 +61,13 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
   // Guard against missing required data
   if (!funnelId || offers.length === 0) {
     return <div className="hp-funnel-error p-4 bg-yellow-900/50 text-yellow-200 rounded">Initializing checkout...</div>;
+  }
+
+  // Debug: Track renders
+  const renderCountRef = useRef(0);
+  renderCountRef.current++;
+  if (renderCountRef.current <= 5 || renderCountRef.current % 10 === 0) {
+    console.log('[FunnelCheckoutApp] Render #' + renderCountRef.current);
   }
 
   // Current step in the checkout flow
