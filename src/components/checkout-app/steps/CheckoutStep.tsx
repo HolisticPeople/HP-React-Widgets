@@ -415,8 +415,14 @@ export const CheckoutStep = ({
       const rates = await api.getShippingRates(address, items);
       if (rates.length > 0) {
         setShippingRates(rates);
-        // Select the first rate by default
-        onSelectRateRef.current(rates[0]);
+        // Select the first rate by default and set local cost
+        const firstRate = rates[0];
+        onSelectRateRef.current(firstRate);
+        // Also set local shipping cost from the rate
+        const rateAny = firstRate as Record<string, unknown>;
+        const rawCost = rateAny.shipping_amount_raw ?? rateAny.base_amount_raw ?? firstRate.shipmentCost ?? rateAny.shipment_cost ?? 0;
+        const cost = typeof rawCost === 'number' ? rawCost : parseFloat(String(rawCost)) || 0;
+        setLocalShippingCost(cost);
       }
     } catch (e) {
       console.warn('[CheckoutStep] Shipping fetch failed', e);
@@ -617,25 +623,25 @@ export const CheckoutStep = ({
   
   // Handler for selecting a shipping rate - updates both parent state and local cost
   const handleSelectRate = useCallback((rate: ShippingRate) => {
+    // Extract cost from the local rate object which has shipping_amount_raw
     const cost = getShippingCostFromRate(rate);
-    console.log('[DEBUG handleSelectRate] rate:', rate.serviceCode, 'cost:', cost, 'isFreeShipping:', isFreeShipping);
-    console.log('[DEBUG handleSelectRate] Full rate:', JSON.stringify(rate));
     setLocalShippingCost(cost);
     onSelectRate(rate);
-  }, [getShippingCostFromRate, onSelectRate, isFreeShipping]);
+  }, [getShippingCostFromRate, onSelectRate]);
   
-  // Sync local shipping cost whenever selectedRate changes (from parent or initial load)
+  // Sync local shipping cost only on initial load when we first get a selectedRate but no localShippingCost
+  // This ensures initial rate from API sets the cost, but user selection takes precedence
   useEffect(() => {
-    if (selectedRate) {
+    // Only sync if we have a selected rate but no local cost set yet
+    // This handles initial load case where selectedRate comes from API/parent
+    if (selectedRate && localShippingCost === 0) {
       const cost = getShippingCostFromRate(selectedRate);
-      console.log('[DEBUG useEffect] selectedRate:', selectedRate.serviceCode, 'cost:', cost, 'isFreeShipping:', isFreeShipping);
-      console.log('[DEBUG useEffect] Full rate:', JSON.stringify(selectedRate));
-      setLocalShippingCost(cost);
-    } else {
-      console.log('[DEBUG useEffect] No selectedRate');
-      setLocalShippingCost(0);
+      if (cost > 0) {
+        setLocalShippingCost(cost);
+      }
     }
-  }, [selectedRate, getShippingCostFromRate, isFreeShipping]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRate?.serviceCode]); // Only react to serviceCode change, not full object
   
   // Use local shipping cost for display (updated immediately on selection)
   const shippingCost = isFreeShipping ? 0 : localShippingCost;
