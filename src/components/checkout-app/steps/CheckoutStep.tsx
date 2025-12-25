@@ -231,7 +231,9 @@ export const CheckoutStep = ({
   const maxRedeemablePoints = useMemo(() => {
     if (!customerData || !totals) return 0;
     const maxByBalance = customerData.pointsBalance;
-    const maxByTotal = Math.floor((totals.grandTotal - totals.pointsDiscount) * 10);
+    // Max points based on product subtotal only (no shipping) - user can't redeem more than product cost
+    const productSubtotal = totals.subtotal - totals.discountTotal - totals.globalDiscount;
+    const maxByTotal = Math.floor(Math.max(0, productSubtotal) * 10);
     return Math.min(maxByBalance, maxByTotal);
   }, [customerData, totals]);
 
@@ -924,6 +926,7 @@ export const CheckoutStep = ({
                 <Slider
                   value={[pointsToRedeem]}
                   onValueChange={(value) => onPointsRedeemChange(value[0])}
+                  min={0}
                   max={maxRedeemablePoints}
                   step={10}
                   className="w-full"

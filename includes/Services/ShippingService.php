@@ -173,19 +173,31 @@ class ShippingService
 
     /**
      * Attempt to include EAO ShipStation helper files.
+     * Tries multiple possible plugin folder names.
      */
     private function tryLoadEaoShipStation(): void
     {
-        $base = trailingslashit(WP_PLUGIN_DIR) . 'enhanced-admin-order-plugin/';
-        $utils = $base . 'eao-shipstation-utils.php';
-        $core = $base . 'eao-shipstation-core.php';
+        // Try multiple possible plugin folder names
+        $possible_folders = [
+            'enhanced-admin-order-plugin',
+            'HP-enhanced-admin-order',
+            'enhanced-admin-order',
+        ];
         
-        if (file_exists($utils)) {
-            require_once $utils;
+        foreach ($possible_folders as $folder) {
+            $base = trailingslashit(WP_PLUGIN_DIR) . $folder . '/';
+            $utils = $base . 'eao-shipstation-utils.php';
+            $core = $base . 'eao-shipstation-core.php';
+            
+            if (file_exists($utils) && file_exists($core)) {
+                require_once $utils;
+                require_once $core;
+                return; // Found and loaded
+            }
         }
-        if (file_exists($core)) {
-            require_once $core;
-        }
+        
+        // Log if not found for debugging
+        error_log('[HP-RW ShippingService] Could not find EAO ShipStation files in any expected location');
     }
 
     /**
