@@ -613,9 +613,15 @@ export const CheckoutStep = ({
     return typeof rawCost === 'number' ? rawCost : parseFloat(String(rawCost)) || 0;
   };
   
+  // Find the actual rate from local shippingRates by matching serviceCode
+  // This ensures we always use the rate object with full data (including shipping_amount_raw)
+  const currentShippingRate = selectedRate 
+    ? shippingRates.find(r => r.serviceCode === selectedRate.serviceCode) || selectedRate
+    : null;
+  
   // Calculate display total including shipping - computed every render to ensure updates
   const productTotal = totals?.grandTotal ?? offerPrice.discounted;
-  const shippingCost = getShippingCostFromRate(selectedRate);
+  const shippingCost = getShippingCostFromRate(currentShippingRate);
   const displayTotal = productTotal + shippingCost;
 
   // Render offer card based on type
@@ -1012,7 +1018,7 @@ export const CheckoutStep = ({
                     <LoaderIcon className="w-3 h-3" />
                   ) : isFreeShipping ? (
                     'FREE'
-                  ) : shippingCost > 0 ? (
+                  ) : currentShippingRate ? (
                     `$${shippingCost.toFixed(2)}`
                   ) : totals?.shippingTotal ? (
                     `$${totals.shippingTotal.toFixed(2)}`
