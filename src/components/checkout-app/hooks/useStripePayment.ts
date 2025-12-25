@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 
 // Stripe types (basic definitions - full types from @stripe/stripe-js if needed)
 interface Stripe {
@@ -208,7 +208,10 @@ export function useStripePayment(options: UseStripePaymentOptions) {
     }
   }, [onPaymentSuccess, onPaymentError]);
 
-  return {
+  const isReady = !isLoading && !!stripeRef.current;
+
+  // Memoize return object to prevent unnecessary re-renders in consumers
+  return useMemo(() => ({
     isLoading,
     isProcessing,
     isCardComplete,
@@ -216,7 +219,7 @@ export function useStripePayment(options: UseStripePaymentOptions) {
     mountCardElement,
     unmountCardElement,
     confirmPayment,
-    isReady: !isLoading && !!stripeRef.current,
-  };
+    isReady,
+  }), [isLoading, isProcessing, isCardComplete, error, mountCardElement, unmountCardElement, confirmPayment, isReady]);
 }
 

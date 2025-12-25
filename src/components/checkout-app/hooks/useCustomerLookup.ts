@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import type { CustomerData, Address } from '../types';
 
 interface UseCustomerLookupOptions {
@@ -114,14 +114,15 @@ export function useCustomerLookup(options: UseCustomerLookupOptions = {}) {
     setError(null);
   }, []);
 
-  return {
+  // Memoize return object to prevent unnecessary re-renders in consumers
+  return useMemo(() => ({
     customerData,
     isLoading,
     error,
     hasLookedUp,
     lookup,
     reset,
-  };
+  }), [customerData, isLoading, error, hasLookedUp, lookup, reset]);
 }
 
 
