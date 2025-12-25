@@ -21,6 +21,9 @@ interface StripeElement {
 declare global {
   interface Window {
     Stripe?: (key: string) => Stripe;
+    __hpStripeInstance?: Stripe;
+    __hpStripeLoading?: boolean;
+    __hpStripeCallbacks?: ((stripe: Stripe | null) => void)[];
   }
 }
 
@@ -28,6 +31,60 @@ interface UseStripePaymentOptions {
   publishableKey: string;
   onPaymentSuccess?: (paymentIntentId: string) => void;
   onPaymentError?: (error: string) => void;
+}
+
+// Global Stripe singleton loader - ensures only ONE Stripe instance exists
+function loadStripeSingleton(publishableKey: string): Promise<Stripe | null> {
+  return new Promise((resolve) => {
+    // If already have an instance, return it
+    if (window.__hpStripeInstance) {
+      resolve(window.__hpStripeInstance);
+      return;
+    }
+
+    // If currently loading, queue up the callback
+    if (window.__hpStripeLoading) {
+      window.__hpStripeCallbacks = window.__hpStripeCallbacks || [];
+      window.__hpStripeCallbacks.push(resolve);
+      return;
+    }
+
+    // Check if Stripe is already loaded (by another script)
+    if (window.Stripe) {
+      window.__hpStripeInstance = window.Stripe(publishableKey);
+      resolve(window.__hpStripeInstance);
+      return;
+    }
+
+    // Start loading
+    window.__hpStripeLoading = true;
+    window.__hpStripeCallbacks = [resolve];
+
+    const script = document.createElement('script');
+    script.src = 'https://js.stripe.com/v3/';
+    script.async = true;
+
+    script.onload = () => {
+      if (window.Stripe) {
+        window.__hpStripeInstance = window.Stripe(publishableKey);
+      }
+      window.__hpStripeLoading = false;
+      
+      // Notify all waiting callbacks
+      const callbacks = window.__hpStripeCallbacks || [];
+      window.__hpStripeCallbacks = [];
+      callbacks.forEach(cb => cb(window.__hpStripeInstance || null));
+    };
+
+    script.onerror = () => {
+      window.__hpStripeLoading = false;
+      const callbacks = window.__hpStripeCallbacks || [];
+      window.__hpStripeCallbacks = [];
+      callbacks.forEach(cb => cb(null));
+    };
+
+    document.head.appendChild(script);
+  });
 }
 
 export function useStripePayment(options: UseStripePaymentOptions) {
@@ -48,42 +105,29 @@ export function useStripePayment(options: UseStripePaymentOptions) {
   onPaymentSuccessRef.current = onPaymentSuccess;
   onPaymentErrorRef.current = onPaymentError;
 
-  // Load Stripe.js
+  // Load Stripe.js using singleton pattern
   useEffect(() => {
     if (!publishableKey) {
       setIsLoading(false);
       return;
     }
 
-    const loadStripe = async () => {
-      // Check if Stripe is already loaded
-      if (window.Stripe) {
-        stripeRef.current = window.Stripe(publishableKey);
-        setIsLoading(false);
-        return;
-      }
+    let cancelled = false;
 
-      // Load Stripe.js script
-      const script = document.createElement('script');
-      script.src = 'https://js.stripe.com/v3/';
-      script.async = true;
+    loadStripeSingleton(publishableKey).then((stripe) => {
+      if (cancelled) return;
       
-      script.onload = () => {
-        if (window.Stripe) {
-          stripeRef.current = window.Stripe(publishableKey);
-        }
-        setIsLoading(false);
-      };
-
-      script.onerror = () => {
+      if (stripe) {
+        stripeRef.current = stripe;
+      } else {
         setError('Failed to load payment system');
-        setIsLoading(false);
-      };
+      }
+      setIsLoading(false);
+    });
 
-      document.head.appendChild(script);
+    return () => {
+      cancelled = true;
     };
-
-    loadStripe();
   }, [publishableKey]);
 
   // Track if already mounted to prevent duplicate mounts
