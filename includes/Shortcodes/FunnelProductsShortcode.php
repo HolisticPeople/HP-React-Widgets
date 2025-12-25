@@ -56,11 +56,14 @@ class FunnelProductsShortcode
             return '';
         }
 
+        // Transform offers into the products format expected by FunnelProducts component
+        $products = $this->transformOffersToProducts($offers);
+
         // Build props for React component
         $props = [
             'title'              => !empty($atts['title']) ? $atts['title'] : 'Choose Your Package',
             'subtitle'           => $atts['subtitle'],
-            'offers'             => $offers, // Using new offers system
+            'products'           => $products,
             'defaultCtaText'     => $atts['cta_text'],
             'defaultCtaUrl'      => $config['checkout']['url'],
             'showPrices'         => filter_var($atts['show_prices'], FILTER_VALIDATE_BOOLEAN),
@@ -74,7 +77,60 @@ class FunnelProductsShortcode
     }
 
     /**
-     * Format products for React component.
+     * Transform offers into the products format expected by FunnelProducts component.
+     *
+     * @param array $offers Offers from funnel config
+     * @return array Products formatted for React
+     */
+    private function transformOffersToProducts(array $offers): array
+    {
+        $result = [];
+        
+        foreach ($offers as $offer) {
+            // Use offer ID or generate from index
+            $id = $offer['id'] ?? ('offer-' . count($result));
+            
+            // Get SKU from offer or first product
+            $sku = $offer['productSku'] ?? '';
+            if (empty($sku) && !empty($offer['product']['sku'])) {
+                $sku = $offer['product']['sku'];
+            }
+            
+            // Build features from offer description or bundle items
+            $features = [];
+            if (!empty($offer['features']) && is_array($offer['features'])) {
+                $features = $offer['features'];
+            } elseif (!empty($offer['bundleItems'])) {
+                foreach ($offer['bundleItems'] as $item) {
+                    $features[] = ($item['qty'] ?? 1) . 'x ' . ($item['name'] ?? $item['sku']);
+                }
+            } elseif (!empty($offer['kitProducts'])) {
+                foreach ($offer['kitProducts'] as $item) {
+                    if (($item['role'] ?? '') === 'must') {
+                        $features[] = ($item['qty'] ?? 1) . 'x ' . ($item['name'] ?? $item['sku']);
+                    }
+                }
+            }
+            
+            $result[] = [
+                'id'           => $id,
+                'sku'          => $sku,
+                'name'         => $offer['title'] ?? $offer['name'] ?? 'Offer',
+                'description'  => $offer['subtitle'] ?? $offer['description'] ?? '',
+                'price'        => (float) ($offer['calculatedPrice'] ?? $offer['price'] ?? 0),
+                'regularPrice' => isset($offer['originalPrice']) ? (float) $offer['originalPrice'] : null,
+                'image'        => $offer['image'] ?? '',
+                'badge'        => $offer['badge'] ?? '',
+                'features'     => $features,
+                'isBestValue'  => $offer['isBestValue'] ?? $offer['featured'] ?? false,
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Format products for React component (legacy - kept for compatibility).
      *
      * @param array $products Products from config
      * @return array Formatted for React
