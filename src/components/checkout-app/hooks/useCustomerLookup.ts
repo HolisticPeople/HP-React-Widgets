@@ -6,39 +6,37 @@ interface UseCustomerLookupOptions {
   onSuccess?: (data: CustomerData) => void;
 }
 
+interface ApiAddress {
+  id?: string;
+  first_name: string;
+  last_name: string;
+  company?: string;
+  address_1: string;
+  address_2?: string;
+  city: string;
+  state: string;
+  postcode: string;
+  country: string;
+  phone?: string;
+  email?: string;
+  is_default?: boolean;
+}
+
 interface CustomerLookupResponse {
   user_id: number;
   points_balance: number;
-  billing: {
-    first_name: string;
-    last_name: string;
-    company?: string;
-    address_1: string;
-    address_2?: string;
-    city: string;
-    state: string;
-    postcode: string;
-    country: string;
-    phone?: string;
-    email?: string;
-  } | null;
-  shipping: {
-    first_name: string;
-    last_name: string;
-    company?: string;
-    address_1: string;
-    address_2?: string;
-    city: string;
-    state: string;
-    postcode: string;
-    country: string;
-    phone?: string;
-  } | null;
+  billing: ApiAddress | null;
+  shipping: Omit<ApiAddress, 'email'> | null;
+  all_addresses?: {
+    billing: ApiAddress[];
+    shipping: Omit<ApiAddress, 'email'>[];
+  };
 }
 
-function mapAddress(addr: CustomerLookupResponse['billing'] | CustomerLookupResponse['shipping']): Address | null {
+function mapAddress(addr: ApiAddress | Omit<ApiAddress, 'email'> | null): Address | null {
   if (!addr || !addr.address_1) return null;
   return {
+    id: addr.id || '',
     firstName: addr.first_name || '',
     lastName: addr.last_name || '',
     company: addr.company || '',
@@ -50,7 +48,12 @@ function mapAddress(addr: CustomerLookupResponse['billing'] | CustomerLookupResp
     country: addr.country || '',
     phone: addr.phone || '',
     email: 'email' in addr ? addr.email || '' : '',
+    isDefault: addr.is_default || false,
   };
+}
+
+function mapAddressArray(addresses: (ApiAddress | Omit<ApiAddress, 'email'>)[]): Address[] {
+  return addresses.map(addr => mapAddress(addr)).filter((a): a is Address => a !== null);
 }
 
 export function useCustomerLookup(options: UseCustomerLookupOptions = {}) {
@@ -92,6 +95,10 @@ export function useCustomerLookup(options: UseCustomerLookupOptions = {}) {
         pointsBalance: data.points_balance || 0,
         billing: mapAddress(data.billing),
         shipping: mapAddress(data.shipping),
+        allAddresses: data.all_addresses ? {
+          billing: mapAddressArray(data.all_addresses.billing || []),
+          shipping: mapAddressArray(data.all_addresses.shipping || []),
+        } : undefined,
       };
 
       setCustomerData(customer);

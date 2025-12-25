@@ -146,9 +146,14 @@ export interface CustomerData {
   pointsBalance: number;
   billing: Address | null;
   shipping: Address | null;
+  allAddresses?: {
+    billing: Address[];
+    shipping: Address[];
+  };
 }
 
 export interface Address {
+  id?: string;
   firstName: string;
   lastName: string;
   company?: string;
@@ -160,6 +165,7 @@ export interface Address {
   country: string;
   phone?: string;
   email?: string;
+  isDefault?: boolean;
 }
 
 export interface ShippingRate {

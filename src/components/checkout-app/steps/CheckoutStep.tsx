@@ -974,6 +974,54 @@ export const CheckoutStep = ({
                 )}
               </div>
 
+              {/* Address Picker for returning customers with multiple addresses */}
+              {customerData && customerData.allAddresses && customerData.allAddresses.shipping.length > 1 && (
+                <div className="mb-4">
+                  <Label className="text-foreground mb-2 block">Select Shipping Address</Label>
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {customerData.allAddresses.shipping.map((addr) => (
+                      <button
+                        key={addr.id}
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            firstName: addr.firstName || prev.firstName,
+                            lastName: addr.lastName || prev.lastName,
+                            phone: addr.phone || prev.phone,
+                            address: addr.address1 || '',
+                            city: addr.city || '',
+                            state: addr.state || '',
+                            zipCode: addr.postcode || '',
+                            country: addr.country || 'US',
+                          }));
+                        }}
+                        className={cn(
+                          "flex-shrink-0 p-3 rounded-lg border text-left transition-all min-w-[180px]",
+                          formData.address === addr.address1 && formData.zipCode === addr.postcode
+                            ? "border-accent bg-accent/10"
+                            : "border-border/50 bg-card/50 hover:border-accent/50"
+                        )}
+                      >
+                        <p className="font-medium text-foreground text-sm truncate">
+                          {addr.firstName} {addr.lastName}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">{addr.address1}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {addr.city}, {addr.state} {addr.postcode}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{addr.country}</p>
+                        {addr.isDefault && (
+                          <span className="inline-flex items-center gap-1 text-xs text-accent mt-1">
+                            <StarIcon /> Default
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="firstName" className="text-foreground">First Name</Label>

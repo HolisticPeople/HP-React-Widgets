@@ -107,7 +107,7 @@ class CheckoutApi
 
     /**
      * Look up a customer by email.
-     * Returns user info, addresses, and points balance if the user exists.
+     * Returns user info, addresses (including all from HP-Multi-Address), and points balance if the user exists.
      */
     public function handle_customer_lookup(WP_REST_Request $request): WP_REST_Response
     {
@@ -116,44 +116,113 @@ class CheckoutApi
 
         if (!$user) {
             return new WP_REST_Response([
-                'user_id'        => 0,
-                'points_balance' => 0,
-                'billing'        => null,
-                'shipping'       => null,
+                'user_id'         => 0,
+                'points_balance'  => 0,
+                'billing'         => null,
+                'shipping'        => null,
+                'all_addresses'   => ['billing' => [], 'shipping' => []],
             ]);
         }
 
         $pointsService = new PointsService();
         $customer = new \WC_Customer($user->ID);
 
+        // Get primary addresses
+        $primaryBilling = [
+            'id'         => 'billing_primary',
+            'first_name' => $customer->get_billing_first_name(),
+            'last_name'  => $customer->get_billing_last_name(),
+            'company'    => $customer->get_billing_company(),
+            'address_1'  => $customer->get_billing_address_1(),
+            'address_2'  => $customer->get_billing_address_2(),
+            'city'       => $customer->get_billing_city(),
+            'state'      => $customer->get_billing_state(),
+            'postcode'   => $customer->get_billing_postcode(),
+            'country'    => $customer->get_billing_country(),
+            'phone'      => $customer->get_billing_phone(),
+            'email'      => $customer->get_billing_email(),
+            'is_default' => true,
+        ];
+
+        $primaryShipping = [
+            'id'         => 'shipping_primary',
+            'first_name' => $customer->get_shipping_first_name(),
+            'last_name'  => $customer->get_shipping_last_name(),
+            'company'    => $customer->get_shipping_company(),
+            'address_1'  => $customer->get_shipping_address_1(),
+            'address_2'  => $customer->get_shipping_address_2(),
+            'city'       => $customer->get_shipping_city(),
+            'state'      => $customer->get_shipping_state(),
+            'postcode'   => $customer->get_shipping_postcode(),
+            'country'    => $customer->get_shipping_country(),
+            'phone'      => $customer->get_shipping_phone(),
+            'is_default' => true,
+        ];
+
+        // Get all addresses from HP-Multi-Address if available
+        $allAddresses = ['billing' => [], 'shipping' => []];
+        
+        // Add primary addresses first
+        if (!empty($primaryBilling['address_1'])) {
+            $allAddresses['billing'][] = $primaryBilling;
+        }
+        if (!empty($primaryShipping['address_1'])) {
+            $allAddresses['shipping'][] = $primaryShipping;
+        }
+
+        // Try to get additional addresses from HP-Multi-Address
+        if (class_exists('\\HP_MA\\AddressManager')) {
+            $additionalBilling = \HP_MA\AddressManager::get_addresses($user->ID, 'billing');
+            $additionalShipping = \HP_MA\AddressManager::get_addresses($user->ID, 'shipping');
+
+            if (is_array($additionalBilling)) {
+                foreach ($additionalBilling as $key => $addr) {
+                    if (!is_array($addr)) continue;
+                    $allAddresses['billing'][] = [
+                        'id'         => 'billing_' . $key,
+                        'first_name' => $addr['first_name'] ?? '',
+                        'last_name'  => $addr['last_name'] ?? '',
+                        'company'    => $addr['company'] ?? '',
+                        'address_1'  => $addr['address_1'] ?? '',
+                        'address_2'  => $addr['address_2'] ?? '',
+                        'city'       => $addr['city'] ?? '',
+                        'state'      => $addr['state'] ?? '',
+                        'postcode'   => $addr['postcode'] ?? '',
+                        'country'    => $addr['country'] ?? '',
+                        'phone'      => $addr['phone'] ?? '',
+                        'email'      => $addr['email'] ?? '',
+                        'is_default' => false,
+                    ];
+                }
+            }
+
+            if (is_array($additionalShipping)) {
+                foreach ($additionalShipping as $key => $addr) {
+                    if (!is_array($addr)) continue;
+                    $allAddresses['shipping'][] = [
+                        'id'         => 'shipping_' . $key,
+                        'first_name' => $addr['first_name'] ?? '',
+                        'last_name'  => $addr['last_name'] ?? '',
+                        'company'    => $addr['company'] ?? '',
+                        'address_1'  => $addr['address_1'] ?? '',
+                        'address_2'  => $addr['address_2'] ?? '',
+                        'city'       => $addr['city'] ?? '',
+                        'state'      => $addr['state'] ?? '',
+                        'postcode'   => $addr['postcode'] ?? '',
+                        'country'    => $addr['country'] ?? '',
+                        'phone'      => $addr['phone'] ?? '',
+                        'is_default' => false,
+                    ];
+                }
+            }
+        }
+
         return new WP_REST_Response([
             'user_id'        => $user->ID,
             'points_balance' => $pointsService->getCustomerPoints($user->ID),
-            'billing'        => [
-                'first_name' => $customer->get_billing_first_name(),
-                'last_name'  => $customer->get_billing_last_name(),
-                'company'    => $customer->get_billing_company(),
-                'address_1'  => $customer->get_billing_address_1(),
-                'address_2'  => $customer->get_billing_address_2(),
-                'city'       => $customer->get_billing_city(),
-                'state'      => $customer->get_billing_state(),
-                'postcode'   => $customer->get_billing_postcode(),
-                'country'    => $customer->get_billing_country(),
-                'phone'      => $customer->get_billing_phone(),
-                'email'      => $customer->get_billing_email(),
-            ],
-            'shipping'       => [
-                'first_name' => $customer->get_shipping_first_name(),
-                'last_name'  => $customer->get_shipping_last_name(),
-                'company'    => $customer->get_shipping_company(),
-                'address_1'  => $customer->get_shipping_address_1(),
-                'address_2'  => $customer->get_shipping_address_2(),
-                'city'       => $customer->get_shipping_city(),
-                'state'      => $customer->get_shipping_state(),
-                'postcode'   => $customer->get_shipping_postcode(),
-                'country'    => $customer->get_shipping_country(),
-                'phone'      => $customer->get_shipping_phone(),
-            ],
+            'billing'        => $primaryBilling,
+            'shipping'       => $primaryShipping,
+            'all_addresses'  => $allAddresses,
         ]);
     }
 
