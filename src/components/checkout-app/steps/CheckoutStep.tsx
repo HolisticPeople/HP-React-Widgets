@@ -240,7 +240,6 @@ export const CheckoutStep = ({
 
   const [totals, setTotals] = useState<TotalsResponse | null>(null);
   const [shippingRates, setShippingRates] = useState<ShippingRate[]>([]);
-  const [localShippingCost, setLocalShippingCost] = useState<number>(0);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -626,49 +625,36 @@ export const CheckoutStep = ({
     return shipmentCost + otherCost;
   };
   
-  // Handler for selecting a shipping rate - updates both parent state and local cost
-  // NOT wrapped in useCallback to ensure fresh closures every render
+  // Handler for selecting a shipping rate - just updates parent state
   const handleSelectRate = (rate: ShippingRate) => {
-    const cost = extractShippingCost(rate);
-    console.log('[handleSelectRate] Rate:', rate.serviceCode, 'Extracted cost:', cost, 'Rate object:', rate);
-    setLocalShippingCost(cost);
+    console.log('[handleSelectRate] Clicked rate:', rate.serviceCode, 'Full rate object:', JSON.stringify(rate));
     onSelectRate(rate);
   };
   
-  // Sync local shipping cost when selectedRate changes (either from API or user selection)
+  // SIMPLIFIED: Compute shipping cost directly from selectedRate on every render
+  // No complex state syncing - just derive from the source of truth
+  const shippingCost = useMemo(() => {
+    if (isFreeShipping) {
+      console.log('[shippingCost] Free shipping country');
+      return 0;
+    }
+    if (!selectedRate) {
+      console.log('[shippingCost] No rate selected');
+      return 0;
+    }
+    
+    // Extract cost directly from selectedRate
+    const cost = extractShippingCost(selectedRate);
+    console.log('[shippingCost] selectedRate:', selectedRate.serviceCode, 'Extracted cost:', cost);
+    return cost;
+  }, [isFreeShipping, selectedRate]);
+  
+  // Log the selected rate details for debugging
   useEffect(() => {
     if (selectedRate) {
-      const cost = extractShippingCost(selectedRate);
-      console.log('[useEffect selectedRate] Setting localShippingCost to:', cost, 'from rate:', selectedRate.serviceCode);
-      if (cost > 0) {
-        setLocalShippingCost(cost);
-      }
+      console.log('[selectedRate changed] New rate:', selectedRate.serviceCode, 'Full object:', JSON.stringify(selectedRate));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRate?.serviceCode]); // Only react to serviceCode change, not full object
-  
-  // Compute shipping cost by looking up selected rate in shippingRates array
-  // This ensures the cost is always derived from the actual rate data (including other costs)
-  const computedShippingCost = useMemo(() => {
-    if (isFreeShipping) return 0;
-    if (!selectedRate || shippingRates.length === 0) return 0;
-    
-    // Find the matching rate in shippingRates by serviceCode
-    const matchingRate = shippingRates.find(r => r.serviceCode === selectedRate.serviceCode);
-    if (!matchingRate) return 0;
-    
-    // Use the same extraction logic as extractShippingCost (includes other costs)
-    const cost = extractShippingCost(matchingRate);
-    console.log('[computedShippingCost] Rate:', matchingRate.serviceCode, 'Cost:', cost);
-    return cost;
-  }, [isFreeShipping, selectedRate, shippingRates]);
-  
-  // Use local cost (set by user selection) first, fall back to computed cost (from API/props)
-  // localShippingCost takes precedence because it's updated immediately on user click,
-  // while computedShippingCost depends on prop updates which happen in the next render cycle
-  const shippingCost = isFreeShipping ? 0 : (localShippingCost > 0 ? localShippingCost : computedShippingCost);
-  
-  console.log('[shippingCost calc] isFreeShipping:', isFreeShipping, 'localShippingCost:', localShippingCost, 'computedShippingCost:', computedShippingCost, 'FINAL shippingCost:', shippingCost);
+  }, [selectedRate]);
   
   // For display logic - check if we have a rate selected
   const hasShippingRate = selectedRate !== null && shippingCost > 0;
