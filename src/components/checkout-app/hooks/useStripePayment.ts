@@ -86,12 +86,23 @@ export function useStripePayment(options: UseStripePaymentOptions) {
     loadStripe();
   }, [publishableKey]);
 
+  // Track if already mounted to prevent duplicate mounts
+  const isMountedRef = useRef(false);
+
   // Mount card element
   const mountCardElement = useCallback((container: HTMLElement | string) => {
+    // Prevent duplicate mounts
+    if (isMountedRef.current) {
+      console.log('[useStripePayment] Already mounted, skipping');
+      return;
+    }
+
     if (!stripeRef.current) {
       console.error('[useStripePayment] Stripe not loaded');
       return;
     }
+
+    isMountedRef.current = true;
 
     // Create Elements instance with deferred PaymentIntent mode
     // 'mode: payment' allows us to collect payment details before creating a PaymentIntent
@@ -138,6 +149,7 @@ export function useStripePayment(options: UseStripePaymentOptions) {
       cardElementRef.current = null;
     }
     elementsRef.current = null;
+    isMountedRef.current = false;
   }, []);
 
   // Confirm payment
