@@ -137,20 +137,20 @@ const AddressPicker = ({
                   setIsExpanded(false);
                 }}
                 className={cn(
-                  "p-2 rounded-md border text-left transition-colors text-xs",
+                  "p-2 rounded-md border text-left transition-colors text-xs overflow-hidden",
                   selectedAddress === addr.address1 && selectedZip === addr.postcode
-                    ? "border-accent/60 bg-accent/5"
-                    : "border-border/30 bg-card/30 hover:border-border/60 hover:bg-card/50"
+                    ? "border-border bg-card/60"
+                    : "border-border/30 bg-card/30 hover:border-border/50 hover:bg-card/40"
                 )}
               >
                 <p className="font-medium text-foreground truncate">
                   {addr.firstName} {addr.lastName}
                 </p>
                 <p className="text-muted-foreground truncate">{addr.address1}</p>
-                <p className="text-muted-foreground">
+                <p className="text-muted-foreground truncate">
                   {addr.city}, {addr.state} {addr.postcode}
                 </p>
-                <p className="text-muted-foreground">{addr.country}</p>
+                <p className="text-muted-foreground truncate">{addr.country}</p>
                 {addr.isDefault && (
                   <span className="inline-flex items-center gap-1 text-accent mt-1">
                     <StarIcon /> Default

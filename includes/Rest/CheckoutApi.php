@@ -267,6 +267,7 @@ class CheckoutApi
             }
 
             error_log('[HP-RW CheckoutApi] Shipping rates success: ' . count($result['rates']) . ' rates');
+            error_log('[HP-RW CheckoutApi] First rate sample: ' . print_r($result['rates'][0] ?? [], true));
             return new WP_REST_Response(['rates' => $result['rates']]);
         } catch (\Throwable $e) {
             error_log('[HP-RW CheckoutApi] Shipping rates exception: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
