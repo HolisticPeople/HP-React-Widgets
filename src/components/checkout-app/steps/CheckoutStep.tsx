@@ -644,8 +644,25 @@ export const CheckoutStep = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRate?.serviceCode]); // Only react to serviceCode change, not full object
   
-  // Use local shipping cost for display (updated immediately on selection)
-  const shippingCost = isFreeShipping ? 0 : localShippingCost;
+  // Compute shipping cost by looking up selected rate in shippingRates array
+  // This ensures the cost is always derived from the actual rate data
+  const computedShippingCost = useMemo(() => {
+    if (isFreeShipping) return 0;
+    if (!selectedRate || shippingRates.length === 0) return 0;
+    
+    // Find the matching rate in shippingRates by serviceCode
+    const matchingRate = shippingRates.find(r => r.serviceCode === selectedRate.serviceCode);
+    if (!matchingRate) return 0;
+    
+    // Extract cost from the matching rate
+    const rateAny = matchingRate as Record<string, unknown>;
+    const rawCost = rateAny.shipping_amount_raw ?? rateAny.base_amount_raw ?? matchingRate.shipmentCost ?? rateAny.shipment_cost ?? 0;
+    return typeof rawCost === 'number' ? rawCost : parseFloat(String(rawCost)) || 0;
+  }, [isFreeShipping, selectedRate, shippingRates]);
+  
+  // Use computed cost OR local cost (whichever is non-zero)
+  // This handles both the initial load case and the selection case
+  const shippingCost = isFreeShipping ? 0 : (computedShippingCost > 0 ? computedShippingCost : localShippingCost);
   
   // For display logic - check if we have a rate selected
   const hasShippingRate = selectedRate !== null && shippingCost > 0;
