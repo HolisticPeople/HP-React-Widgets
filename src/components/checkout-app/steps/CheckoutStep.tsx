@@ -1148,6 +1148,39 @@ export const CheckoutStep = ({
                 </div>
               </div>
 
+              {/* Shipping Rate Selection */}
+              {shippingRates.length > 1 && (
+                <div>
+                  <Label className="text-foreground mb-2 block">Shipping Method</Label>
+                  <div className="space-y-2">
+                    {shippingRates.map((rate) => (
+                      <label
+                        key={rate.serviceCode}
+                        className={`flex items-center justify-between p-3 rounded-md border cursor-pointer transition-colors ${
+                          selectedRate?.serviceCode === rate.serviceCode
+                            ? 'bg-accent/10 border-accent'
+                            : 'bg-input border-border/50 hover:border-accent/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            name="shippingRate"
+                            checked={selectedRate?.serviceCode === rate.serviceCode}
+                            onChange={() => onSelectRate(rate)}
+                            className="accent-accent"
+                          />
+                          <span className="text-foreground">{rate.serviceName}</span>
+                        </div>
+                        <span className="text-accent font-semibold">
+                          {rate.shipmentCost === 0 ? 'FREE' : `$${(rate.shipmentCost + (rate.otherCost || 0)).toFixed(2)}`}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Stripe Card Element */}
               <div>
                 <Label className="text-foreground mb-2 block">Payment</Label>

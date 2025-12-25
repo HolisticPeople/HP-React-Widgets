@@ -187,42 +187,49 @@ class CheckoutApi
             $additionalBilling = \HP_MA\AddressManager::get_addresses($user->ID, 'billing');
             $additionalShipping = \HP_MA\AddressManager::get_addresses($user->ID, 'shipping');
 
+            // Helper to extract address field with or without prefix
+            $getField = function($addr, $type, $field) {
+                $prefixed = $type . '_' . $field;
+                return $addr[$prefixed] ?? $addr[$field] ?? '';
+            };
+
             if (is_array($additionalBilling)) {
                 foreach ($additionalBilling as $key => $addr) {
                     if (!is_array($addr)) continue;
                     $allAddresses['billing'][] = [
                         'id'         => 'billing_' . $key,
-                        'first_name' => $addr['first_name'] ?? '',
-                        'last_name'  => $addr['last_name'] ?? '',
-                        'company'    => $addr['company'] ?? '',
-                        'address_1'  => $addr['address_1'] ?? '',
-                        'address_2'  => $addr['address_2'] ?? '',
-                        'city'       => $addr['city'] ?? '',
-                        'state'      => $addr['state'] ?? '',
-                        'postcode'   => $addr['postcode'] ?? '',
-                        'country'    => $normalizeCountry($addr['country'] ?? ''),
-                        'phone'      => $addr['phone'] ?? '',
-                        'email'      => $addr['email'] ?? '',
+                        'first_name' => $getField($addr, 'billing', 'first_name'),
+                        'last_name'  => $getField($addr, 'billing', 'last_name'),
+                        'company'    => $getField($addr, 'billing', 'company'),
+                        'address_1'  => $getField($addr, 'billing', 'address_1'),
+                        'address_2'  => $getField($addr, 'billing', 'address_2'),
+                        'city'       => $getField($addr, 'billing', 'city'),
+                        'state'      => $getField($addr, 'billing', 'state'),
+                        'postcode'   => $getField($addr, 'billing', 'postcode'),
+                        'country'    => $normalizeCountry($getField($addr, 'billing', 'country')),
+                        'phone'      => $getField($addr, 'billing', 'phone'),
+                        'email'      => $getField($addr, 'billing', 'email'),
                         'is_default' => false,
                     ];
                 }
             }
 
             if (is_array($additionalShipping)) {
+                error_log('[HP-RW CheckoutApi] Processing ' . count($additionalShipping) . ' additional shipping addresses');
                 foreach ($additionalShipping as $key => $addr) {
                     if (!is_array($addr)) continue;
                     $allAddresses['shipping'][] = [
                         'id'         => 'shipping_' . $key,
-                        'first_name' => $addr['first_name'] ?? '',
-                        'last_name'  => $addr['last_name'] ?? '',
-                        'company'    => $addr['company'] ?? '',
-                        'address_1'  => $addr['address_1'] ?? '',
-                        'address_2'  => $addr['address_2'] ?? '',
-                        'city'       => $addr['city'] ?? '',
-                        'state'      => $addr['state'] ?? '',
-                        'postcode'   => $addr['postcode'] ?? '',
-                        'country'    => $normalizeCountry($addr['country'] ?? ''),
-                        'phone'      => $addr['phone'] ?? '',
+                        'first_name' => $getField($addr, 'shipping', 'first_name'),
+                        'last_name'  => $getField($addr, 'shipping', 'last_name'),
+                        'company'    => $getField($addr, 'shipping', 'company'),
+                        'address_1'  => $getField($addr, 'shipping', 'address_1'),
+                        'address_2'  => $getField($addr, 'shipping', 'address_2'),
+                        'city'       => $getField($addr, 'shipping', 'city'),
+                        'state'      => $getField($addr, 'shipping', 'state'),
+                        'postcode'   => $getField($addr, 'shipping', 'postcode'),
+                        'country'    => $normalizeCountry($getField($addr, 'shipping', 'country')),
+                        'phone'      => $getField($addr, 'shipping', 'phone'),
                         'is_default' => false,
                     ];
                 }
