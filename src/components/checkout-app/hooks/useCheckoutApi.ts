@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { CartItem, ShippingRate, TotalsResponse, Address, OrderSummary } from '../types';
 
 interface UseCheckoutApiOptions {
@@ -250,13 +250,14 @@ export function useCheckoutApi(options: UseCheckoutApiOptions) {
     };
   }, [apiBase]);
 
-  return {
+  // Memoize the return object to prevent infinite loops in consumers
+  return useMemo(() => ({
     getShippingRates,
     calculateTotals,
     createPaymentIntent,
     getOrderSummary,
     chargeUpsell,
-  };
+  }), [getShippingRates, calculateTotals, createPaymentIntent, getOrderSummary, chargeUpsell]);
 }
 
 
