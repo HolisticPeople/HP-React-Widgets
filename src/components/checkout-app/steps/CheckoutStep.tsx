@@ -612,14 +612,18 @@ export const CheckoutStep = ({
     }
   };
 
-  // Helper function to extract shipping cost from a rate object
+  // Helper function to extract TOTAL shipping cost from a rate object (shipping + other fees)
   // NOT wrapped in useCallback to avoid stale closure issues
   const extractShippingCost = (rate: ShippingRate | null): number => {
     if (!rate || isFreeShipping) return 0;
     const rateAny = rate as Record<string, unknown>;
     // ShipStation returns shipping_amount_raw, check all possible field names
-    const rawCost = rateAny.shipping_amount_raw ?? rateAny.base_amount_raw ?? rate.shipmentCost ?? rateAny.shipment_cost ?? 0;
-    return typeof rawCost === 'number' ? rawCost : parseFloat(String(rawCost)) || 0;
+    const rawShipping = rateAny.shipping_amount_raw ?? rateAny.base_amount_raw ?? rate.shipmentCost ?? rateAny.shipment_cost ?? 0;
+    const shipmentCost = typeof rawShipping === 'number' ? rawShipping : parseFloat(String(rawShipping)) || 0;
+    // Also include other costs (insurance, fuel surcharge, etc.)
+    const rawOther = rateAny.other_cost_raw ?? (rate as ShippingRate & { otherCost?: number }).otherCost ?? rateAny.other_cost ?? 0;
+    const otherCost = typeof rawOther === 'number' ? rawOther : parseFloat(String(rawOther)) || 0;
+    return shipmentCost + otherCost;
   };
   
   // Handler for selecting a shipping rate - updates both parent state and local cost
