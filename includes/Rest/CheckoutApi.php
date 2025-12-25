@@ -127,6 +127,17 @@ class CheckoutApi
         $pointsService = new PointsService();
         $customer = new \WC_Customer($user->ID);
 
+        // Helper to normalize country to 2-letter code
+        $normalizeCountry = function($country) {
+            if (empty($country)) return '';
+            // If already a 2-letter code, return as-is
+            if (strlen($country) === 2) return strtoupper($country);
+            // Try to convert full name to code using WooCommerce
+            $countries = WC()->countries->get_countries();
+            $code = array_search($country, $countries);
+            return $code !== false ? $code : $country;
+        };
+
         // Get primary addresses
         $primaryBilling = [
             'id'         => 'billing_primary',
@@ -138,7 +149,7 @@ class CheckoutApi
             'city'       => $customer->get_billing_city(),
             'state'      => $customer->get_billing_state(),
             'postcode'   => $customer->get_billing_postcode(),
-            'country'    => $customer->get_billing_country(),
+            'country'    => $normalizeCountry($customer->get_billing_country()),
             'phone'      => $customer->get_billing_phone(),
             'email'      => $customer->get_billing_email(),
             'is_default' => true,
@@ -154,7 +165,7 @@ class CheckoutApi
             'city'       => $customer->get_shipping_city(),
             'state'      => $customer->get_shipping_state(),
             'postcode'   => $customer->get_shipping_postcode(),
-            'country'    => $customer->get_shipping_country(),
+            'country'    => $normalizeCountry($customer->get_shipping_country()),
             'phone'      => $customer->get_shipping_phone(),
             'is_default' => true,
         ];
@@ -189,7 +200,7 @@ class CheckoutApi
                         'city'       => $addr['city'] ?? '',
                         'state'      => $addr['state'] ?? '',
                         'postcode'   => $addr['postcode'] ?? '',
-                        'country'    => $addr['country'] ?? '',
+                        'country'    => $normalizeCountry($addr['country'] ?? ''),
                         'phone'      => $addr['phone'] ?? '',
                         'email'      => $addr['email'] ?? '',
                         'is_default' => false,
@@ -210,7 +221,7 @@ class CheckoutApi
                         'city'       => $addr['city'] ?? '',
                         'state'      => $addr['state'] ?? '',
                         'postcode'   => $addr['postcode'] ?? '',
-                        'country'    => $addr['country'] ?? '',
+                        'country'    => $normalizeCountry($addr['country'] ?? ''),
                         'phone'      => $addr['phone'] ?? '',
                         'is_default' => false,
                     ];
@@ -232,21 +243,28 @@ class CheckoutApi
      */
     public function handle_shipping_rates(WP_REST_Request $request): WP_REST_Response|WP_Error
     {
-        $address = (array) $request->get_param('address');
-        $items = (array) $request->get_param('items');
+        try {
+            $address = (array) $request->get_param('address');
+            $items = (array) $request->get_param('items');
 
-        if (empty($items)) {
-            return new WP_Error('bad_request', 'Items required', ['status' => 400]);
+            if (empty($items)) {
+                return new WP_Error('bad_request', 'Items required', ['status' => 400]);
+            }
+
+            $shippingService = new ShippingService();
+            $result = $shippingService->getRates($address, $items);
+
+            if (!$result['success']) {
+                error_log('[HP-RW CheckoutApi] Shipping rates failed: ' . ($result['error'] ?? 'Unknown error'));
+                return new WP_Error('shipping_error', $result['error'] ?? 'Failed to get rates', ['status' => 502]);
+            }
+
+            error_log('[HP-RW CheckoutApi] Shipping rates success: ' . count($result['rates']) . ' rates');
+            return new WP_REST_Response(['rates' => $result['rates']]);
+        } catch (\Throwable $e) {
+            error_log('[HP-RW CheckoutApi] Shipping rates exception: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+            return new WP_Error('shipping_error', 'Shipping calculation failed: ' . $e->getMessage(), ['status' => 502]);
         }
-
-        $shippingService = new ShippingService();
-        $result = $shippingService->getRates($address, $items);
-
-        if (!$result['success']) {
-            return new WP_Error('shipping_error', $result['error'] ?? 'Failed to get rates', ['status' => 502]);
-        }
-
-        return new WP_REST_Response(['rates' => $result['rates']]);
     }
 
     /**
