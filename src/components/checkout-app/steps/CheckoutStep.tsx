@@ -235,20 +235,43 @@ export const CheckoutStep = ({
     return Math.min(maxByBalance, maxByTotal);
   }, [customerData, totals]);
 
-  // Mount Stripe Elements when ready
+  // Refs to hold Stripe functions without triggering re-renders
+  const stripePaymentRef = useRef(stripePayment);
+  stripePaymentRef.current = stripePayment;
+
+  // Mount Stripe Elements when ready - use empty deps to run only once
+  // and check isReady inside the effect
   useEffect(() => {
-    if (stripePayment.isReady && stripeContainerRef.current && !stripeMountedRef.current) {
-      stripePayment.mountCardElement(stripeContainerRef.current);
-      stripeMountedRef.current = true;
-    }
+    // Poll for Stripe readiness to avoid dependency on stripePayment
+    const checkAndMount = () => {
+      if (stripePaymentRef.current.isReady && stripeContainerRef.current && !stripeMountedRef.current) {
+        stripePaymentRef.current.mountCardElement(stripeContainerRef.current);
+        stripeMountedRef.current = true;
+        return true;
+      }
+      return false;
+    };
+
+    // Try immediately
+    if (checkAndMount()) return;
+
+    // Poll every 100ms until ready (max 5 seconds)
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts++;
+      if (checkAndMount() || attempts > 50) {
+        clearInterval(interval);
+      }
+    }, 100);
 
     return () => {
+      clearInterval(interval);
       if (stripeMountedRef.current) {
-        stripePayment.unmountCardElement();
+        stripePaymentRef.current.unmountCardElement();
         stripeMountedRef.current = false;
       }
     };
-  }, [stripePayment.isReady]);
+  }, []); // Empty deps - runs only on mount/unmount
 
   // Refs to avoid dependency loops - these hold current values without triggering re-renders
   const selectedRateRef = useRef(selectedRate);
