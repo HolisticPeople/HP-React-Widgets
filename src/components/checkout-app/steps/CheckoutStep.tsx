@@ -240,6 +240,7 @@ export const CheckoutStep = ({
 
   const [totals, setTotals] = useState<TotalsResponse | null>(null);
   const [shippingRates, setShippingRates] = useState<ShippingRate[]>([]);
+  const [localShippingCost, setLocalShippingCost] = useState<number>(0);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -606,36 +607,33 @@ export const CheckoutStep = ({
   };
 
   // Helper function to extract shipping cost from a rate object (inline, no memoization)
-  const getShippingCostFromRate = (rate: ShippingRate | null): number => {
+  const getShippingCostFromRate = useCallback((rate: ShippingRate | null): number => {
     if (!rate || isFreeShipping) return 0;
     const rateAny = rate as Record<string, unknown>;
     // ShipStation returns shipping_amount_raw, check all possible field names
     const rawCost = rateAny.shipping_amount_raw ?? rateAny.base_amount_raw ?? rate.shipmentCost ?? rateAny.shipment_cost ?? 0;
     return typeof rawCost === 'number' ? rawCost : parseFloat(String(rawCost)) || 0;
-  };
+  }, [isFreeShipping]);
   
-  // Calculate shipping cost - try multiple sources to ensure we get the correct value
-  // Priority: 1) selectedRate directly, 2) lookup from shippingRates by serviceCode
-  const shippingCost = (() => {
-    if (isFreeShipping) return 0;
-    if (!selectedRate) return 0;
-    
-    // DEBUG: Log the selectedRate object
-    console.log('[DEBUG] selectedRate:', JSON.stringify(selectedRate));
-    console.log('[DEBUG] shippingRates:', JSON.stringify(shippingRates));
-    
-    // First, try to get cost directly from selectedRate (it should have shipping_amount_raw)
-    const directCost = getShippingCostFromRate(selectedRate);
-    console.log('[DEBUG] directCost:', directCost);
-    if (directCost > 0) return directCost;
-    
-    // Fallback: lookup from shippingRates by serviceCode
-    const foundRate = shippingRates.find(r => r.serviceCode === selectedRate.serviceCode);
-    console.log('[DEBUG] foundRate:', JSON.stringify(foundRate));
-    if (foundRate) return getShippingCostFromRate(foundRate);
-    
-    return 0;
-  })();
+  // Handler for selecting a shipping rate - updates both parent state and local cost
+  const handleSelectRate = useCallback((rate: ShippingRate) => {
+    const cost = getShippingCostFromRate(rate);
+    setLocalShippingCost(cost);
+    onSelectRate(rate);
+  }, [getShippingCostFromRate, onSelectRate]);
+  
+  // Sync local shipping cost whenever selectedRate changes (from parent or initial load)
+  useEffect(() => {
+    if (selectedRate) {
+      const cost = getShippingCostFromRate(selectedRate);
+      setLocalShippingCost(cost);
+    } else {
+      setLocalShippingCost(0);
+    }
+  }, [selectedRate, getShippingCostFromRate]);
+  
+  // Use local shipping cost for display (updated immediately on selection)
+  const shippingCost = isFreeShipping ? 0 : localShippingCost;
   
   // For display logic - check if we have a rate selected
   const hasShippingRate = selectedRate !== null && shippingCost > 0;
@@ -1300,7 +1298,7 @@ export const CheckoutStep = ({
                               type="radio"
                               name="shippingRate"
                               checked={selectedRate?.serviceCode === rate.serviceCode}
-                              onChange={() => onSelectRate(rate)}
+                              onChange={() => handleSelectRate(rate)}
                               className="accent-accent"
                             />
                             <span className="text-foreground">{serviceName}</span>
