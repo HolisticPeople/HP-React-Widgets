@@ -171,10 +171,12 @@ export function useStripePayment(options: UseStripePaymentOptions) {
 
     // Create Elements instance with deferred PaymentIntent mode
     // 'mode: payment' allows us to collect payment details before creating a PaymentIntent
+    // Using loader: 'always' to preload Stripe UI and reduce polling
     elementsRef.current = stripeRef.current.elements({
       mode: 'payment',
       amount: 1000, // Placeholder - will be updated when we have final amount
       currency: 'usd',
+      loader: 'always', // Preload to reduce telemetry polling
       appearance: {
         theme: 'night',
         variables: {
