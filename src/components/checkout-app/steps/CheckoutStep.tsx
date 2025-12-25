@@ -978,17 +978,10 @@ export const CheckoutStep = ({
                     'FREE'
                   ) : selectedRate ? (
                     (() => {
-                      // Get the shipping cost from selectedRate (handle various field names)
+                      // Get the shipping cost from selectedRate (ShipStation uses shipping_amount_raw)
                       const rateAny = selectedRate as Record<string, unknown>;
-                      const cost = typeof selectedRate.shipmentCost === 'number' 
-                        ? selectedRate.shipmentCost 
-                        : parseFloat(String(
-                            rateAny.shipping_amount_raw ?? 
-                            rateAny.base_amount_raw ?? 
-                            rateAny.shipment_cost ?? 
-                            rateAny.shipmentCost ?? 
-                            0
-                          )) || 0;
+                      const rawCost = rateAny.shipping_amount_raw ?? rateAny.base_amount_raw ?? selectedRate.shipmentCost ?? rateAny.shipment_cost ?? 0;
+                      const cost = typeof rawCost === 'number' ? rawCost : parseFloat(String(rawCost)) || 0;
                       return cost === 0 ? 'FREE' : `$${cost.toFixed(2)}`;
                     })()
                   ) : totals?.shippingTotal ? (
@@ -1229,18 +1222,11 @@ export const CheckoutStep = ({
                       const rateAny = rate as Record<string, unknown>;
                       const serviceName = rate.serviceName || (rateAny.service_name as string) || 'Shipping';
                       // Check multiple possible field names for the cost
-                      const shipmentCost = typeof rate.shipmentCost === 'number' 
-                        ? rate.shipmentCost 
-                        : parseFloat(String(
-                            rateAny.shipping_amount_raw ?? 
-                            rateAny.base_amount_raw ?? 
-                            rateAny.shipment_cost ?? 
-                            rateAny.shipmentCost ?? 
-                            0
-                          )) || 0;
-                      const otherCost = typeof rate.otherCost === 'number'
-                        ? rate.otherCost
-                        : parseFloat(String(rateAny.other_cost_raw ?? rateAny.other_cost ?? rateAny.otherCost ?? 0)) || 0;
+                      // Note: ShipStation returns shipping_amount_raw as a number
+                      const rawCost = rateAny.shipping_amount_raw ?? rateAny.base_amount_raw ?? rate.shipmentCost ?? rateAny.shipment_cost ?? 0;
+                      const shipmentCost = typeof rawCost === 'number' ? rawCost : parseFloat(String(rawCost)) || 0;
+                      const rawOther = rateAny.other_cost_raw ?? rate.otherCost ?? rateAny.other_cost ?? 0;
+                      const otherCost = typeof rawOther === 'number' ? rawOther : parseFloat(String(rawOther)) || 0;
                       const totalCost = shipmentCost + otherCost;
                       
                       return (
