@@ -976,6 +976,21 @@ export const CheckoutStep = ({
                     <LoaderIcon className="w-3 h-3" />
                   ) : isFreeShipping ? (
                     'FREE'
+                  ) : selectedRate ? (
+                    (() => {
+                      // Get the shipping cost from selectedRate (handle various field names)
+                      const rateAny = selectedRate as Record<string, unknown>;
+                      const cost = typeof selectedRate.shipmentCost === 'number' 
+                        ? selectedRate.shipmentCost 
+                        : parseFloat(String(
+                            rateAny.shipping_amount_raw ?? 
+                            rateAny.base_amount_raw ?? 
+                            rateAny.shipment_cost ?? 
+                            rateAny.shipmentCost ?? 
+                            0
+                          )) || 0;
+                      return cost === 0 ? 'FREE' : `$${cost.toFixed(2)}`;
+                    })()
                   ) : totals?.shippingTotal ? (
                     `$${totals.shippingTotal.toFixed(2)}`
                   ) : (
@@ -1210,15 +1225,22 @@ export const CheckoutStep = ({
                   <Label className="text-foreground mb-2 block">Shipping Method</Label>
                   <div className="space-y-2">
                     {shippingRates.map((rate) => {
-                      // Handle both camelCase and snake_case from API
+                      // Handle various field name formats from API (ShipStation returns shipping_amount_raw)
                       const rateAny = rate as Record<string, unknown>;
                       const serviceName = rate.serviceName || (rateAny.service_name as string) || 'Shipping';
+                      // Check multiple possible field names for the cost
                       const shipmentCost = typeof rate.shipmentCost === 'number' 
                         ? rate.shipmentCost 
-                        : parseFloat(String(rateAny.shipment_cost ?? rateAny.shipmentCost ?? 0)) || 0;
+                        : parseFloat(String(
+                            rateAny.shipping_amount_raw ?? 
+                            rateAny.base_amount_raw ?? 
+                            rateAny.shipment_cost ?? 
+                            rateAny.shipmentCost ?? 
+                            0
+                          )) || 0;
                       const otherCost = typeof rate.otherCost === 'number'
                         ? rate.otherCost
-                        : parseFloat(String(rateAny.other_cost ?? rateAny.otherCost ?? 0)) || 0;
+                        : parseFloat(String(rateAny.other_cost_raw ?? rateAny.other_cost ?? rateAny.otherCost ?? 0)) || 0;
                       const totalCost = shipmentCost + otherCost;
                       
                       return (
