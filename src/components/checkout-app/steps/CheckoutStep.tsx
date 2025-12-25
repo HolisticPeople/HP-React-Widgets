@@ -605,19 +605,18 @@ export const CheckoutStep = ({
     }
   };
 
-  // Helper function to extract shipping cost from a rate object
-  const getShippingCost = useCallback((rate: ShippingRate | null): number => {
+  // Helper function to extract shipping cost from a rate object (inline, no memoization)
+  const getShippingCostFromRate = (rate: ShippingRate | null): number => {
     if (!rate || isFreeShipping) return 0;
     const rateAny = rate as Record<string, unknown>;
     const rawCost = rateAny.shipping_amount_raw ?? rateAny.base_amount_raw ?? rate.shipmentCost ?? rateAny.shipment_cost ?? 0;
     return typeof rawCost === 'number' ? rawCost : parseFloat(String(rawCost)) || 0;
-  }, [isFreeShipping]);
+  };
   
-  // Calculate display total including shipping from selected rate
-  // Using useMemo to ensure it updates when selectedRate changes
+  // Calculate display total including shipping - computed every render to ensure updates
   const productTotal = totals?.grandTotal ?? offerPrice.discounted;
-  const shippingCost = useMemo(() => getShippingCost(selectedRate), [getShippingCost, selectedRate]);
-  const displayTotal = useMemo(() => productTotal + shippingCost, [productTotal, shippingCost]);
+  const shippingCost = getShippingCostFromRate(selectedRate);
+  const displayTotal = productTotal + shippingCost;
 
   // Render offer card based on type
   const renderOfferCard = (offer: Offer) => {
