@@ -18,6 +18,10 @@ import type {
   CustomizableKitOffer,
 } from './types';
 
+// Default values as constants to prevent recreation on each render
+const DEFAULT_FREE_SHIPPING_COUNTRIES: string[] = ['US'];
+const DEFAULT_UPSELL_OFFERS: any[] = [];
+
 export interface FunnelCheckoutAppProps extends FunnelCheckoutAppConfig {
   apiBase?: string;
 }
@@ -37,11 +41,11 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     logoUrl,
     logoLink = '/',
     landingUrl,
-    freeShippingCountries = ['US'],
+    freeShippingCountries = DEFAULT_FREE_SHIPPING_COUNTRIES,
     enablePoints = true,
     enableCustomerLookup = true,
     stripePublishableKey,
-    upsellOffers = [],
+    upsellOffers = DEFAULT_UPSELL_OFFERS,
     showUpsell = true,
     thankYouHeadline = 'Thank You for Your Order!',
     thankYouMessage = 'Your order has been confirmed.',

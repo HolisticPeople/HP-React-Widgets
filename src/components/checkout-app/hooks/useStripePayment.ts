@@ -41,6 +41,12 @@ export function useStripePayment(options: UseStripePaymentOptions) {
   const stripeRef = useRef<Stripe | null>(null);
   const elementsRef = useRef<StripeElements | null>(null);
   const cardElementRef = useRef<StripeElement | null>(null);
+  
+  // Use refs for callbacks to avoid recreating confirmPayment on every render
+  const onPaymentSuccessRef = useRef(onPaymentSuccess);
+  const onPaymentErrorRef = useRef(onPaymentError);
+  onPaymentSuccessRef.current = onPaymentSuccess;
+  onPaymentErrorRef.current = onPaymentError;
 
   // Load Stripe.js
   useEffect(() => {
@@ -174,15 +180,15 @@ export function useStripePayment(options: UseStripePaymentOptions) {
 
       if (confirmError) {
         setError(confirmError.message || 'Payment failed');
-        if (onPaymentError) {
-          onPaymentError(confirmError.message || 'Payment failed');
+        if (onPaymentErrorRef.current) {
+          onPaymentErrorRef.current(confirmError.message || 'Payment failed');
         }
         return false;
       }
 
       if (paymentIntent?.status === 'succeeded') {
-        if (onPaymentSuccess) {
-          onPaymentSuccess(paymentIntent.id);
+        if (onPaymentSuccessRef.current) {
+          onPaymentSuccessRef.current(paymentIntent.id);
         }
         return true;
       }
@@ -199,14 +205,14 @@ export function useStripePayment(options: UseStripePaymentOptions) {
     } catch (err: any) {
       const message = err.message || 'An unexpected error occurred';
       setError(message);
-      if (onPaymentError) {
-        onPaymentError(message);
+      if (onPaymentErrorRef.current) {
+        onPaymentErrorRef.current(message);
       }
       return false;
     } finally {
       setIsProcessing(false);
     }
-  }, [onPaymentSuccess, onPaymentError]);
+  }, []); // Removed callbacks - using refs instead
 
   const isReady = !isLoading && !!stripeRef.current;
 

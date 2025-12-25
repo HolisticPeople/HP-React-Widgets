@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import type { CustomerData, Address } from '../types';
 
 interface UseCustomerLookupOptions {
@@ -61,6 +61,10 @@ export function useCustomerLookup(options: UseCustomerLookupOptions = {}) {
   const [error, setError] = useState<string | null>(null);
   const [hasLookedUp, setHasLookedUp] = useState(false);
 
+  // Use ref for callback to avoid recreating lookup on every render
+  const onSuccessRef = useRef(onSuccess);
+  onSuccessRef.current = onSuccess;
+
   const lookup = useCallback(async (email: string): Promise<CustomerData | null> => {
     if (!email || !email.includes('@')) {
       return null;
@@ -93,8 +97,8 @@ export function useCustomerLookup(options: UseCustomerLookupOptions = {}) {
       setCustomerData(customer);
       setHasLookedUp(true);
       
-      if (onSuccess) {
-        onSuccess(customer);
+      if (onSuccessRef.current) {
+        onSuccessRef.current(customer);
       }
 
       return customer;
@@ -106,7 +110,7 @@ export function useCustomerLookup(options: UseCustomerLookupOptions = {}) {
     } finally {
       setIsLoading(false);
     }
-  }, [apiBase, onSuccess]);
+  }, [apiBase]); // Removed onSuccess - using ref instead
 
   const reset = useCallback(() => {
     setCustomerData(null);
