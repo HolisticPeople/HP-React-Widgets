@@ -620,12 +620,18 @@ export const CheckoutStep = ({
     if (isFreeShipping) return 0;
     if (!selectedRate) return 0;
     
+    // DEBUG: Log the selectedRate object
+    console.log('[DEBUG] selectedRate:', JSON.stringify(selectedRate));
+    console.log('[DEBUG] shippingRates:', JSON.stringify(shippingRates));
+    
     // First, try to get cost directly from selectedRate (it should have shipping_amount_raw)
     const directCost = getShippingCostFromRate(selectedRate);
+    console.log('[DEBUG] directCost:', directCost);
     if (directCost > 0) return directCost;
     
     // Fallback: lookup from shippingRates by serviceCode
     const foundRate = shippingRates.find(r => r.serviceCode === selectedRate.serviceCode);
+    console.log('[DEBUG] foundRate:', JSON.stringify(foundRate));
     if (foundRate) return getShippingCostFromRate(foundRate);
     
     return 0;
