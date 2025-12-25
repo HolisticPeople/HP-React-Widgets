@@ -605,21 +605,19 @@ export const CheckoutStep = ({
     }
   };
 
+  // Helper function to extract shipping cost from a rate object
+  const getShippingCost = (rate: ShippingRate | null): number => {
+    if (!rate || isFreeShipping) return 0;
+    const rateAny = rate as Record<string, unknown>;
+    const rawCost = rateAny.shipping_amount_raw ?? rateAny.base_amount_raw ?? rate.shipmentCost ?? rateAny.shipment_cost ?? 0;
+    return typeof rawCost === 'number' ? rawCost : parseFloat(String(rawCost)) || 0;
+  };
+  
   // Calculate display total including shipping from selected rate
-  const displayTotal = useMemo(() => {
-    // Base product total (uses API totals if available, otherwise offer price)
-    const productTotal = totals?.grandTotal ?? offerPrice.discounted;
-    
-    // Get shipping cost from selected rate (if any)
-    let shippingCost = 0;
-    if (selectedRate && !isFreeShipping) {
-      const rateAny = selectedRate as Record<string, unknown>;
-      const rawCost = rateAny.shipping_amount_raw ?? rateAny.base_amount_raw ?? selectedRate.shipmentCost ?? rateAny.shipment_cost ?? 0;
-      shippingCost = typeof rawCost === 'number' ? rawCost : parseFloat(String(rawCost)) || 0;
-    }
-    
-    return productTotal + shippingCost;
-  }, [totals?.grandTotal, offerPrice.discounted, selectedRate, isFreeShipping]);
+  // Using direct calculation (not useMemo) to ensure it updates when selectedRate changes
+  const productTotal = totals?.grandTotal ?? offerPrice.discounted;
+  const shippingCost = getShippingCost(selectedRate);
+  const displayTotal = productTotal + shippingCost;
 
   // Render offer card based on type
   const renderOfferCard = (offer: Offer) => {
@@ -1015,14 +1013,8 @@ export const CheckoutStep = ({
                     <LoaderIcon className="w-3 h-3" />
                   ) : isFreeShipping ? (
                     'FREE'
-                  ) : selectedRate ? (
-                    (() => {
-                      // Get the shipping cost from selectedRate (ShipStation uses shipping_amount_raw)
-                      const rateAny = selectedRate as Record<string, unknown>;
-                      const rawCost = rateAny.shipping_amount_raw ?? rateAny.base_amount_raw ?? selectedRate.shipmentCost ?? rateAny.shipment_cost ?? 0;
-                      const cost = typeof rawCost === 'number' ? rawCost : parseFloat(String(rawCost)) || 0;
-                      return cost === 0 ? 'FREE' : `$${cost.toFixed(2)}`;
-                    })()
+                  ) : shippingCost > 0 ? (
+                    `$${shippingCost.toFixed(2)}`
                   ) : totals?.shippingTotal ? (
                     `$${totals.shippingTotal.toFixed(2)}`
                   ) : (
