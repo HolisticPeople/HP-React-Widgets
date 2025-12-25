@@ -83,6 +83,88 @@ const LockIcon = () => (
   </svg>
 );
 
+const ChevronDownIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
+// Collapsible Address Picker component
+const AddressPicker = ({
+  addresses,
+  selectedAddress,
+  selectedZip,
+  onSelect,
+}: {
+  addresses: Address[];
+  selectedAddress: string;
+  selectedZip: string;
+  onSelect: (addr: Address) => void;
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Find currently selected address for display
+  const currentAddress = addresses.find(a => a.address1 === selectedAddress && a.postcode === selectedZip) || addresses[0];
+  
+  return (
+    <div className="mb-4">
+      <button
+        type="button"
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-between p-3 rounded-lg border border-border/50 bg-input/50 hover:bg-input/80 transition-colors"
+      >
+        <div className="text-left">
+          <p className="text-xs text-muted-foreground mb-1">Shipping to:</p>
+          <p className="text-sm text-foreground">
+            {currentAddress?.address1}, {currentAddress?.city}, {currentAddress?.state} {currentAddress?.postcode}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <span className="text-xs">{addresses.length} addresses</span>
+          <ChevronDownIcon className={cn("w-4 h-4 transition-transform", isExpanded && "rotate-180")} />
+        </div>
+      </button>
+      
+      {isExpanded && (
+        <div className="mt-2 p-2 rounded-lg border border-border/30 bg-background/50">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[200px] overflow-y-auto scrollbar-thin">
+            {addresses.map((addr) => (
+              <button
+                key={addr.id}
+                type="button"
+                onClick={() => {
+                  onSelect(addr);
+                  setIsExpanded(false);
+                }}
+                className={cn(
+                  "p-2 rounded-md border text-left transition-colors text-xs",
+                  selectedAddress === addr.address1 && selectedZip === addr.postcode
+                    ? "border-accent/60 bg-accent/5"
+                    : "border-border/30 bg-card/30 hover:border-border/60 hover:bg-card/50"
+                )}
+              >
+                <p className="font-medium text-foreground truncate">
+                  {addr.firstName} {addr.lastName}
+                </p>
+                <p className="text-muted-foreground truncate">{addr.address1}</p>
+                <p className="text-muted-foreground">
+                  {addr.city}, {addr.state} {addr.postcode}
+                </p>
+                <p className="text-muted-foreground">{addr.country}</p>
+                {addr.isDefault && (
+                  <span className="inline-flex items-center gap-1 text-accent mt-1">
+                    <StarIcon /> Default
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 interface CheckoutStepProps {
   funnelId: string;
   funnelName: string;
@@ -976,50 +1058,24 @@ export const CheckoutStep = ({
 
               {/* Address Picker for returning customers with multiple addresses */}
               {customerData && customerData.allAddresses && customerData.allAddresses.shipping.length > 1 && (
-                <div className="mb-4">
-                  <Label className="text-foreground mb-2 block">Select Shipping Address</Label>
-                  <div className="flex gap-2 overflow-x-auto pb-2">
-                    {customerData.allAddresses.shipping.map((addr) => (
-                      <button
-                        key={addr.id}
-                        type="button"
-                        onClick={() => {
-                          setFormData(prev => ({
-                            ...prev,
-                            firstName: addr.firstName || prev.firstName,
-                            lastName: addr.lastName || prev.lastName,
-                            phone: addr.phone || prev.phone,
-                            address: addr.address1 || '',
-                            city: addr.city || '',
-                            state: addr.state || '',
-                            zipCode: addr.postcode || '',
-                            country: addr.country || 'US',
-                          }));
-                        }}
-                        className={cn(
-                          "flex-shrink-0 p-3 rounded-lg border text-left transition-all min-w-[180px]",
-                          formData.address === addr.address1 && formData.zipCode === addr.postcode
-                            ? "border-accent bg-accent/10"
-                            : "border-border/50 bg-card/50 hover:border-accent/50"
-                        )}
-                      >
-                        <p className="font-medium text-foreground text-sm truncate">
-                          {addr.firstName} {addr.lastName}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">{addr.address1}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {addr.city}, {addr.state} {addr.postcode}
-                        </p>
-                        <p className="text-xs text-muted-foreground">{addr.country}</p>
-                        {addr.isDefault && (
-                          <span className="inline-flex items-center gap-1 text-xs text-accent mt-1">
-                            <StarIcon /> Default
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <AddressPicker
+                  addresses={customerData.allAddresses.shipping}
+                  selectedAddress={formData.address}
+                  selectedZip={formData.zipCode}
+                  onSelect={(addr) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      firstName: addr.firstName || prev.firstName,
+                      lastName: addr.lastName || prev.lastName,
+                      phone: addr.phone || prev.phone,
+                      address: addr.address1 || '',
+                      city: addr.city || '',
+                      state: addr.state || '',
+                      zipCode: addr.postcode || '',
+                      country: addr.country || 'US',
+                    }));
+                  }}
+                />
               )}
 
               <div className="grid grid-cols-2 gap-4">
@@ -1153,30 +1209,44 @@ export const CheckoutStep = ({
                 <div>
                   <Label className="text-foreground mb-2 block">Shipping Method</Label>
                   <div className="space-y-2">
-                    {shippingRates.map((rate) => (
-                      <label
-                        key={rate.serviceCode}
-                        className={`flex items-center justify-between p-3 rounded-md border cursor-pointer transition-colors ${
-                          selectedRate?.serviceCode === rate.serviceCode
-                            ? 'bg-accent/10 border-accent'
-                            : 'bg-input border-border/50 hover:border-accent/50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="radio"
-                            name="shippingRate"
-                            checked={selectedRate?.serviceCode === rate.serviceCode}
-                            onChange={() => onSelectRate(rate)}
-                            className="accent-accent"
-                          />
-                          <span className="text-foreground">{rate.serviceName}</span>
-                        </div>
-                        <span className="text-accent font-semibold">
-                          {rate.shipmentCost === 0 ? 'FREE' : `$${(rate.shipmentCost + (rate.otherCost || 0)).toFixed(2)}`}
-                        </span>
-                      </label>
-                    ))}
+                    {shippingRates.map((rate) => {
+                      // Handle both camelCase and snake_case from API
+                      const rateAny = rate as Record<string, unknown>;
+                      const serviceName = rate.serviceName || (rateAny.service_name as string) || 'Shipping';
+                      const shipmentCost = typeof rate.shipmentCost === 'number' 
+                        ? rate.shipmentCost 
+                        : parseFloat(String(rateAny.shipment_cost ?? rateAny.shipmentCost ?? 0)) || 0;
+                      const otherCost = typeof rate.otherCost === 'number'
+                        ? rate.otherCost
+                        : parseFloat(String(rateAny.other_cost ?? rateAny.otherCost ?? 0)) || 0;
+                      const totalCost = shipmentCost + otherCost;
+                      
+                      return (
+                        <label
+                          key={rate.serviceCode}
+                          className={cn(
+                            "flex items-center justify-between p-3 rounded-md border cursor-pointer transition-colors",
+                            selectedRate?.serviceCode === rate.serviceCode
+                              ? 'bg-accent/5 border-accent/50'
+                              : 'bg-input border-border/50 hover:border-border'
+                          )}
+                        >
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="radio"
+                              name="shippingRate"
+                              checked={selectedRate?.serviceCode === rate.serviceCode}
+                              onChange={() => onSelectRate(rate)}
+                              className="accent-accent"
+                            />
+                            <span className="text-foreground">{serviceName}</span>
+                          </div>
+                          <span className="text-accent font-semibold">
+                            {totalCost === 0 ? 'FREE' : `$${totalCost.toFixed(2)}`}
+                          </span>
+                        </label>
+                      );
+                    })}
                   </div>
                 </div>
               )}

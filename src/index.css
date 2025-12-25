@@ -279,9 +279,34 @@
         background-color: hsl(var(--primary));
     }
 
+    /* Dark scrollbar utilities */
+    .scrollbar-thin {
+        scrollbar-width: thin;
+        scrollbar-color: hsl(var(--muted)) hsl(var(--background));
+    }
+
+    .scrollbar-thin::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background-color: hsl(var(--background));
+        border-radius: 9999px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        background-color: hsl(var(--muted));
+        border-radius: 9999px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        background-color: hsl(var(--muted-foreground));
+    }
+
     /* Horizontal slider scrollbar - make track dark and thumb subtle */
     .address-slider {
-        scrollbar-color: hsl(var(--muted-foreground)) hsl(var(--background));
+        scrollbar-color: hsl(var(--muted)) hsl(var(--background));
     }
 
     .address-slider::-webkit-scrollbar {
@@ -293,7 +318,7 @@
     }
 
     .address-slider::-webkit-scrollbar-thumb {
-        background-color: hsl(var(--muted-foreground));
+        background-color: hsl(var(--muted));
         border-radius: 9999px;
     }
 
