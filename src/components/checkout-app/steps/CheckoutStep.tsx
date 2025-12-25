@@ -618,19 +618,24 @@ export const CheckoutStep = ({
   // Handler for selecting a shipping rate - updates both parent state and local cost
   const handleSelectRate = useCallback((rate: ShippingRate) => {
     const cost = getShippingCostFromRate(rate);
+    console.log('[DEBUG handleSelectRate] rate:', rate.serviceCode, 'cost:', cost, 'isFreeShipping:', isFreeShipping);
+    console.log('[DEBUG handleSelectRate] Full rate:', JSON.stringify(rate));
     setLocalShippingCost(cost);
     onSelectRate(rate);
-  }, [getShippingCostFromRate, onSelectRate]);
+  }, [getShippingCostFromRate, onSelectRate, isFreeShipping]);
   
   // Sync local shipping cost whenever selectedRate changes (from parent or initial load)
   useEffect(() => {
     if (selectedRate) {
       const cost = getShippingCostFromRate(selectedRate);
+      console.log('[DEBUG useEffect] selectedRate:', selectedRate.serviceCode, 'cost:', cost, 'isFreeShipping:', isFreeShipping);
+      console.log('[DEBUG useEffect] Full rate:', JSON.stringify(selectedRate));
       setLocalShippingCost(cost);
     } else {
+      console.log('[DEBUG useEffect] No selectedRate');
       setLocalShippingCost(0);
     }
-  }, [selectedRate, getShippingCostFromRate]);
+  }, [selectedRate, getShippingCostFromRate, isFreeShipping]);
   
   // Use local shipping cost for display (updated immediately on selection)
   const shippingCost = isFreeShipping ? 0 : localShippingCost;
