@@ -614,19 +614,28 @@ export const CheckoutStep = ({
     return typeof rawCost === 'number' ? rawCost : parseFloat(String(rawCost)) || 0;
   };
   
-  // Find the matching rate in shippingRates by serviceCode
-  // IMPORTANT: We must use the rate from shippingRates because it has shipping_amount_raw
-  // The selectedRate prop may only have basic fields (serviceCode, serviceName, etc.)
-  const currentRate = useMemo(() => {
-    if (isFreeShipping) return null;
-    if (!selectedRate) return null;
-    // Find the full rate object from local shippingRates array
-    return shippingRates.find(r => r.serviceCode === selectedRate.serviceCode) || null;
-  }, [selectedRate, shippingRates, isFreeShipping]);
+  // Calculate shipping cost - try multiple sources to ensure we get the correct value
+  // Priority: 1) selectedRate directly, 2) lookup from shippingRates by serviceCode
+  const shippingCost = (() => {
+    if (isFreeShipping) return 0;
+    if (!selectedRate) return 0;
+    
+    // First, try to get cost directly from selectedRate (it should have shipping_amount_raw)
+    const directCost = getShippingCostFromRate(selectedRate);
+    if (directCost > 0) return directCost;
+    
+    // Fallback: lookup from shippingRates by serviceCode
+    const foundRate = shippingRates.find(r => r.serviceCode === selectedRate.serviceCode);
+    if (foundRate) return getShippingCostFromRate(foundRate);
+    
+    return 0;
+  })();
   
-  // Calculate display total including shipping - use currentRate from memoized lookup
+  // For display logic - check if we have a rate selected
+  const hasShippingRate = selectedRate !== null && shippingCost > 0;
+  
+  // Calculate display total including shipping
   const productTotal = totals?.grandTotal ?? offerPrice.discounted;
-  const shippingCost = getShippingCostFromRate(currentRate);
   const displayTotal = productTotal + shippingCost;
 
   // Render offer card based on type
@@ -1023,7 +1032,7 @@ export const CheckoutStep = ({
                     <LoaderIcon className="w-3 h-3" />
                   ) : isFreeShipping ? (
                     'FREE'
-                  ) : currentRate || shippingCost > 0 ? (
+                  ) : hasShippingRate ? (
                     `$${shippingCost.toFixed(2)}`
                   ) : totals?.shippingTotal ? (
                     `$${totals.shippingTotal.toFixed(2)}`
