@@ -76,6 +76,21 @@
         color: hsl(var(--foreground));
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
+
+    /* Fix browser autofill background - maintain dark theme */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    input:-webkit-autofill:active,
+    select:-webkit-autofill,
+    select:-webkit-autofill:hover,
+    select:-webkit-autofill:focus,
+    select:-webkit-autofill:active {
+        -webkit-box-shadow: 0 0 0 30px hsl(var(--input)) inset !important;
+        -webkit-text-fill-color: hsl(var(--foreground)) !important;
+        caret-color: hsl(var(--foreground)) !important;
+        transition: background-color 5000s ease-in-out 0s;
+    }
 }
 
 @layer components {

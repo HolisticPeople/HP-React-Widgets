@@ -285,6 +285,9 @@ export const CheckoutStep = ({
   const selectedRateRef = useRef(selectedRate);
   const onSelectRateRef = useRef(onSelectRate);
   
+  // Track previous address fields that affect shipping
+  const prevShippingKeyRef = useRef<string>('');
+  
   // Keep refs in sync
   useEffect(() => {
     selectedRateRef.current = selectedRate;
@@ -313,8 +316,19 @@ export const CheckoutStep = ({
         email: formData.email,
       };
 
+      // Create a shipping key from country + zip + item SKUs to detect when we need new rates
+      const itemsKey = items.map(i => `${i.sku}:${i.quantity}`).join(',');
+      const shippingKey = `${formData.country}|${formData.zipCode}|${itemsKey}`;
+      const shippingKeyChanged = shippingKey !== prevShippingKeyRef.current;
+      
       // Use ref to avoid dependency loop
       let currentRate = selectedRateRef.current;
+      
+      // If shipping key changed, we need to refetch rates
+      if (shippingKeyChanged && formData.zipCode && formData.country) {
+        prevShippingKeyRef.current = shippingKey;
+        currentRate = null; // Force rate refetch
+      }
 
       if (isFreeShipping) {
         const freeRate: ShippingRate = {
@@ -329,6 +343,7 @@ export const CheckoutStep = ({
           setShippingRates([freeRate]);
         }
       } else if (!currentRate && formData.zipCode && formData.country && formData.address) {
+        // Fetch shipping rates when we have address and no current rate
         try {
           const rates = await api.getShippingRates(address, items);
           if (rates.length > 0) {
