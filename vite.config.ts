@@ -19,6 +19,13 @@ export default defineConfig({
                 main: path.resolve(__dirname, 'src/main.tsx'),
             },
         },
+        // Avoid minified variable names that conflict with Elementor globals
+        minify: 'terser',
+        terserOptions: {
+            mangle: {
+                reserved: ['$e', 'elementorFrontend', 'elementor', 'jQuery', '$'],
+            },
+        },
     },
     server: {
         // Required for HMR in WordPress
