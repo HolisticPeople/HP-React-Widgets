@@ -630,17 +630,16 @@ export const CheckoutStep = ({
   // NOT wrapped in useCallback to ensure fresh closures every render
   const handleSelectRate = (rate: ShippingRate) => {
     const cost = extractShippingCost(rate);
+    console.log('[handleSelectRate] Rate:', rate.serviceCode, 'Extracted cost:', cost, 'Rate object:', rate);
     setLocalShippingCost(cost);
     onSelectRate(rate);
   };
   
-  // Sync local shipping cost only on initial load when we first get a selectedRate but no localShippingCost
-  // This ensures initial rate from API sets the cost, but user selection takes precedence
+  // Sync local shipping cost when selectedRate changes (either from API or user selection)
   useEffect(() => {
-    // Only sync if we have a selected rate but no local cost set yet
-    // This handles initial load case where selectedRate comes from API/parent
-    if (selectedRate && localShippingCost === 0) {
+    if (selectedRate) {
       const cost = extractShippingCost(selectedRate);
+      console.log('[useEffect selectedRate] Setting localShippingCost to:', cost, 'from rate:', selectedRate.serviceCode);
       if (cost > 0) {
         setLocalShippingCost(cost);
       }
@@ -649,7 +648,7 @@ export const CheckoutStep = ({
   }, [selectedRate?.serviceCode]); // Only react to serviceCode change, not full object
   
   // Compute shipping cost by looking up selected rate in shippingRates array
-  // This ensures the cost is always derived from the actual rate data
+  // This ensures the cost is always derived from the actual rate data (including other costs)
   const computedShippingCost = useMemo(() => {
     if (isFreeShipping) return 0;
     if (!selectedRate || shippingRates.length === 0) return 0;
@@ -658,10 +657,10 @@ export const CheckoutStep = ({
     const matchingRate = shippingRates.find(r => r.serviceCode === selectedRate.serviceCode);
     if (!matchingRate) return 0;
     
-    // Extract cost from the matching rate
-    const rateAny = matchingRate as Record<string, unknown>;
-    const rawCost = rateAny.shipping_amount_raw ?? rateAny.base_amount_raw ?? matchingRate.shipmentCost ?? rateAny.shipment_cost ?? 0;
-    return typeof rawCost === 'number' ? rawCost : parseFloat(String(rawCost)) || 0;
+    // Use the same extraction logic as extractShippingCost (includes other costs)
+    const cost = extractShippingCost(matchingRate);
+    console.log('[computedShippingCost] Rate:', matchingRate.serviceCode, 'Cost:', cost);
+    return cost;
   }, [isFreeShipping, selectedRate, shippingRates]);
   
   // Use local cost (set by user selection) first, fall back to computed cost (from API/props)
@@ -669,12 +668,16 @@ export const CheckoutStep = ({
   // while computedShippingCost depends on prop updates which happen in the next render cycle
   const shippingCost = isFreeShipping ? 0 : (localShippingCost > 0 ? localShippingCost : computedShippingCost);
   
+  console.log('[shippingCost calc] isFreeShipping:', isFreeShipping, 'localShippingCost:', localShippingCost, 'computedShippingCost:', computedShippingCost, 'FINAL shippingCost:', shippingCost);
+  
   // For display logic - check if we have a rate selected
   const hasShippingRate = selectedRate !== null && shippingCost > 0;
   
   // Calculate display total including shipping
   const productTotal = totals?.grandTotal ?? offerPrice.discounted;
   const displayTotal = productTotal + shippingCost;
+  
+  console.log('[displayTotal calc] productTotal:', productTotal, 'shippingCost:', shippingCost, 'displayTotal:', displayTotal);
 
   // Render offer card based on type
   const renderOfferCard = (offer: Offer) => {
