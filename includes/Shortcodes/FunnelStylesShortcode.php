@@ -231,7 +231,7 @@ class FunnelStylesShortcode
             }
             
             /* Set CSS custom properties for Tailwind in all funnel sections */
-            /* Tailwind expects HSL values without hsl() wrapper, e.g., "45 95% 53%" */
+            /* Tailwind expects HSL values without hsl() wrapper, e.g., 45 95% 53% */
             .hp-funnel-section,
             .hp-funnel-checkout-app {
                 --background: " . $this->hexToHsl($pageBgColor) . ";
