@@ -250,7 +250,20 @@ export const CheckoutStep = ({
     };
   }, [stripePayment.isReady]);
 
-  // Calculate totals
+  // Refs to avoid dependency loops - these hold current values without triggering re-renders
+  const selectedRateRef = useRef(selectedRate);
+  const onSelectRateRef = useRef(onSelectRate);
+  
+  // Keep refs in sync
+  useEffect(() => {
+    selectedRateRef.current = selectedRate;
+  }, [selectedRate]);
+  
+  useEffect(() => {
+    onSelectRateRef.current = onSelectRate;
+  }, [onSelectRate]);
+
+  // Calculate totals - uses refs for selectedRate to avoid dependency loops
   const fetchTotals = useCallback(async () => {
     const items = getCartItems();
     if (items.length === 0) return;
@@ -269,7 +282,8 @@ export const CheckoutStep = ({
         email: formData.email,
       };
 
-      let currentRate = selectedRate;
+      // Use ref to avoid dependency loop
+      let currentRate = selectedRateRef.current;
 
       if (isFreeShipping) {
         const freeRate: ShippingRate = {
@@ -280,7 +294,7 @@ export const CheckoutStep = ({
         };
         if (!currentRate || currentRate.serviceCode !== 'free_shipping') {
           currentRate = freeRate;
-          onSelectRate(freeRate);
+          onSelectRateRef.current(freeRate);
           setShippingRates([freeRate]);
         }
       } else if (!currentRate && formData.zipCode && formData.country && formData.address) {
@@ -289,7 +303,7 @@ export const CheckoutStep = ({
           if (rates.length > 0) {
             setShippingRates(rates);
             currentRate = rates[0];
-            onSelectRate(rates[0]);
+            onSelectRateRef.current(rates[0]);
           }
         } catch (e) {
           console.warn('[CheckoutStep] Shipping fetch failed', e);
@@ -304,7 +318,7 @@ export const CheckoutStep = ({
     } finally {
       setIsCalculating(false);
     }
-  }, [formData, getCartItems, selectedRate, isFreeShipping, pointsToRedeem, api, onSelectRate, offerPrice.discounted]);
+  }, [formData, getCartItems, isFreeShipping, pointsToRedeem, api, offerPrice.discounted]); // Removed selectedRate and onSelectRate - using refs instead
 
   // Debounce timer ref for selection changes
   const selectionDebounceRef = useRef<NodeJS.Timeout | null>(null);
