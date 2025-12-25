@@ -660,9 +660,10 @@ export const CheckoutStep = ({
     return typeof rawCost === 'number' ? rawCost : parseFloat(String(rawCost)) || 0;
   }, [isFreeShipping, selectedRate, shippingRates]);
   
-  // Use computed cost OR local cost (whichever is non-zero)
-  // This handles both the initial load case and the selection case
-  const shippingCost = isFreeShipping ? 0 : (computedShippingCost > 0 ? computedShippingCost : localShippingCost);
+  // Use local cost (set by user selection) first, fall back to computed cost (from API/props)
+  // localShippingCost takes precedence because it's updated immediately on user click,
+  // while computedShippingCost depends on prop updates which happen in the next render cycle
+  const shippingCost = isFreeShipping ? 0 : (localShippingCost > 0 ? localShippingCost : computedShippingCost);
   
   // For display logic - check if we have a rate selected
   const hasShippingRate = selectedRate !== null && shippingCost > 0;
