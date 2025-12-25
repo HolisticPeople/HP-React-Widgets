@@ -37,7 +37,6 @@ class ShippingService
             }
         }
         
-        error_log('[HP-RW ShippingService] getRates called with address: ' . print_r($address, true));
 
         if (empty($items)) {
             return [

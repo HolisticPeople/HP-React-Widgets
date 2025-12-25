@@ -182,7 +182,6 @@ class CheckoutApi
         }
 
         // Try to get additional addresses from HP-Multi-Address
-        error_log('[HP-RW CheckoutApi] Checking for HP-Multi-Address. Class exists: ' . (class_exists('\\HP_MA\\AddressManager') ? 'yes' : 'no'));
         if (class_exists('\\HP_MA\\AddressManager')) {
             $additionalBilling = \HP_MA\AddressManager::get_addresses($user->ID, 'billing');
             $additionalShipping = \HP_MA\AddressManager::get_addresses($user->ID, 'shipping');
@@ -215,7 +214,6 @@ class CheckoutApi
             }
 
             if (is_array($additionalShipping)) {
-                error_log('[HP-RW CheckoutApi] Processing ' . count($additionalShipping) . ' additional shipping addresses');
                 foreach ($additionalShipping as $key => $addr) {
                     if (!is_array($addr)) continue;
                     $allAddresses['shipping'][] = [
@@ -266,8 +264,6 @@ class CheckoutApi
                 return new WP_Error('shipping_error', $result['error'] ?? 'Failed to get rates', ['status' => 502]);
             }
 
-            error_log('[HP-RW CheckoutApi] Shipping rates success: ' . count($result['rates']) . ' rates');
-            error_log('[HP-RW CheckoutApi] First rate sample: ' . print_r($result['rates'][0] ?? [], true));
             return new WP_REST_Response(['rates' => $result['rates']]);
         } catch (\Throwable $e) {
             error_log('[HP-RW CheckoutApi] Shipping rates exception: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
