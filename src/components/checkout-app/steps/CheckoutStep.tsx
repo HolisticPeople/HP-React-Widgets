@@ -369,9 +369,6 @@ export const CheckoutStep = ({
   const selectedRateRef = useRef(selectedRate);
   const onSelectRateRef = useRef(onSelectRate);
   
-  // Track previous address fields that affect shipping
-  const prevShippingKeyRef = useRef<string>('');
-  
   // Keep refs in sync
   useEffect(() => {
     selectedRateRef.current = selectedRate;
@@ -381,7 +378,51 @@ export const CheckoutStep = ({
     onSelectRateRef.current = onSelectRate;
   }, [onSelectRate]);
 
-  // Calculate totals - uses refs for selectedRate to avoid dependency loops
+  // Separate function to fetch shipping rates - ONLY when address/country/zip/items change
+  const fetchShippingRates = useCallback(async () => {
+    const items = getCartItems();
+    if (items.length === 0) return;
+    
+    if (!formData.zipCode || !formData.country || !formData.address) return;
+    
+    // For free shipping countries, set free rate
+    if (isFreeShipping) {
+      const freeRate: ShippingRate = {
+        serviceCode: 'free_shipping',
+        serviceName: 'Free Shipping',
+        shipmentCost: 0,
+        otherCost: 0,
+      };
+      setShippingRates([freeRate]);
+      onSelectRateRef.current(freeRate);
+      return;
+    }
+    
+    const address: Address = {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      address1: formData.address,
+      city: formData.city,
+      state: formData.state,
+      postcode: formData.zipCode,
+      country: formData.country,
+      phone: formData.phone,
+      email: formData.email,
+    };
+    
+    try {
+      const rates = await api.getShippingRates(address, items);
+      if (rates.length > 0) {
+        setShippingRates(rates);
+        // Select the first rate by default
+        onSelectRateRef.current(rates[0]);
+      }
+    } catch (e) {
+      console.warn('[CheckoutStep] Shipping fetch failed', e);
+    }
+  }, [formData.firstName, formData.lastName, formData.address, formData.city, formData.state, formData.zipCode, formData.country, formData.phone, formData.email, getCartItems, isFreeShipping, api]);
+  
+  // Calculate totals - does NOT fetch shipping rates (that's separate)
   const fetchTotals = useCallback(async () => {
     const items = getCartItems();
     if (items.length === 0) return;
@@ -400,45 +441,8 @@ export const CheckoutStep = ({
         email: formData.email,
       };
 
-      // Create a shipping key from country + zip + item SKUs to detect when we need new rates
-      const itemsKey = items.map(i => `${i.sku}:${i.quantity}`).join(',');
-      const shippingKey = `${formData.country}|${formData.zipCode}|${itemsKey}`;
-      const shippingKeyChanged = shippingKey !== prevShippingKeyRef.current;
-      
-      // Use ref to avoid dependency loop
-      let currentRate = selectedRateRef.current;
-      
-      // If shipping key changed, we need to refetch rates
-      if (shippingKeyChanged && formData.zipCode && formData.country) {
-        prevShippingKeyRef.current = shippingKey;
-        currentRate = null; // Force rate refetch
-      }
-
-      if (isFreeShipping) {
-        const freeRate: ShippingRate = {
-          serviceCode: 'free_shipping',
-          serviceName: 'Free Shipping',
-          shipmentCost: 0,
-          otherCost: 0,
-        };
-        if (!currentRate || currentRate.serviceCode !== 'free_shipping') {
-          currentRate = freeRate;
-          onSelectRateRef.current(freeRate);
-          setShippingRates([freeRate]);
-        }
-      } else if (!currentRate && formData.zipCode && formData.country && formData.address) {
-        // Fetch shipping rates when we have address and no current rate
-        try {
-          const rates = await api.getShippingRates(address, items);
-          if (rates.length > 0) {
-            setShippingRates(rates);
-            currentRate = rates[0];
-            onSelectRateRef.current(rates[0]);
-          }
-        } catch (e) {
-          console.warn('[CheckoutStep] Shipping fetch failed', e);
-        }
-      }
+      // Use ref to get current rate without triggering re-renders
+      const currentRate = selectedRateRef.current;
 
       // Pass the admin-set offer total to override calculated sum
       const result = await api.calculateTotals(address, items, currentRate, pointsToRedeem, offerPrice.discounted);
@@ -448,7 +452,7 @@ export const CheckoutStep = ({
     } finally {
       setIsCalculating(false);
     }
-  }, [formData, getCartItems, isFreeShipping, pointsToRedeem, api, offerPrice.discounted]); // Removed selectedRate and onSelectRate - using refs instead
+  }, [formData, getCartItems, pointsToRedeem, api, offerPrice.discounted]);
 
   // Debounce timer ref for selection changes
   const selectionDebounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -474,12 +478,33 @@ export const CheckoutStep = ({
     };
   }, []);
 
-  // Trigger totals update when selection or offerPrice changes (debounced)
+  // Trigger totals update when selection, offerPrice, or points change (debounced)
+  // This does NOT fetch shipping rates - just recalculates totals
   useEffect(() => {
     debouncedFetchTotals();
-  }, [selectedOfferId, kitSelection, offerQuantity, offerPrice.discounted, debouncedFetchTotals]);
+  }, [selectedOfferId, kitSelection, offerQuantity, offerPrice.discounted, pointsToRedeem, debouncedFetchTotals]);
 
-  // Debounced address change
+  // Create a shipping key to track when we need to refetch rates
+  const shippingKeyRef = useRef<string>('');
+  
+  // Fetch shipping rates ONLY when address/zip/country/items actually change
+  useEffect(() => {
+    const hasCore = formData.address && formData.city && formData.zipCode && formData.country.length >= 2;
+    if (!hasCore) return;
+    
+    const items = getCartItems();
+    const itemsKey = items.map(i => `${i.sku}:${i.quantity}`).join(',');
+    const newShippingKey = `${formData.country}|${formData.zipCode}|${itemsKey}`;
+    
+    // Only fetch if shipping key actually changed
+    if (newShippingKey === shippingKeyRef.current) return;
+    shippingKeyRef.current = newShippingKey;
+    
+    const timer = setTimeout(() => fetchShippingRates(), 500);
+    return () => clearTimeout(timer);
+  }, [formData.address, formData.city, formData.zipCode, formData.country, getCartItems, fetchShippingRates]);
+  
+  // Fetch totals when address changes (separate from shipping rates)
   useEffect(() => {
     const hasCore = formData.address && formData.city && formData.zipCode && formData.country.length >= 2;
     if (hasCore) {
@@ -580,7 +605,21 @@ export const CheckoutStep = ({
     }
   };
 
-  const displayTotal = totals?.grandTotal ?? offerPrice.discounted;
+  // Calculate display total including shipping from selected rate
+  const displayTotal = useMemo(() => {
+    // Base product total (uses API totals if available, otherwise offer price)
+    const productTotal = totals?.grandTotal ?? offerPrice.discounted;
+    
+    // Get shipping cost from selected rate (if any)
+    let shippingCost = 0;
+    if (selectedRate && !isFreeShipping) {
+      const rateAny = selectedRate as Record<string, unknown>;
+      const rawCost = rateAny.shipping_amount_raw ?? rateAny.base_amount_raw ?? selectedRate.shipmentCost ?? rateAny.shipment_cost ?? 0;
+      shippingCost = typeof rawCost === 'number' ? rawCost : parseFloat(String(rawCost)) || 0;
+    }
+    
+    return productTotal + shippingCost;
+  }, [totals?.grandTotal, offerPrice.discounted, selectedRate, isFreeShipping]);
 
   // Render offer card based on type
   const renderOfferCard = (offer: Offer) => {
