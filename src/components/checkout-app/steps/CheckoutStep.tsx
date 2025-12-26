@@ -1358,8 +1358,9 @@ export const CheckoutStep = ({
               <Button
                 type="submit"
                 size="lg"
+                variant="ghost"
                 disabled={isSubmitting || isCalculating || stripePayment.isProcessing || !stripePayment.isReady}
-                className="w-full rounded-full py-6 font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl bg-transparent border border-warning text-warning hover:bg-warning/10 focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="w-full rounded-full py-6 font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl !bg-card/30 !border !border-border/30 !text-warning hover:!bg-card/40 hover:!border-border/50 hover:!text-warning focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:!ring-warning focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 {isSubmitting || stripePayment.isProcessing ? (
                   <>
