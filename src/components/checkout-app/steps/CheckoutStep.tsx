@@ -378,49 +378,54 @@ export const CheckoutStep = ({
     onSelectRateRef.current = onSelectRate;
   }, [onSelectRate]);
 
-  // Separate function to fetch shipping rates - ONLY when address/country/zip/items change
-  const fetchShippingRates = useCallback(async () => {
-    const items = getCartItems();
-    if (items.length === 0) return;
-    
-    if (!formData.zipCode || !formData.country || !formData.address) return;
-    
-    // For free shipping countries, set free rate
-    if (isFreeShipping) {
-      const freeRate: ShippingRate = {
-        serviceCode: 'free_shipping',
-        serviceName: 'Free Shipping',
-        shipmentCost: 0,
-        otherCost: 0,
-      };
-      setShippingRates([freeRate]);
-      onSelectRateRef.current(freeRate);
-      return;
-    }
-    
-    const address: Address = {
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      address1: formData.address,
-      city: formData.city,
-      state: formData.state,
-      postcode: formData.zipCode,
-      country: formData.country,
-      phone: formData.phone,
-      email: formData.email,
-    };
-    
-    try {
-      const rates = await api.getShippingRates(address, items);
-      if (rates.length > 0) {
-        setShippingRates(rates);
-        // Select the first rate by default - cost will be calculated by shippingCost useMemo
-        onSelectRateRef.current(rates[0]);
+  // Ref to hold fetch shipping function without causing dependency changes
+  const fetchShippingRatesRef = useRef<() => Promise<void>>(async () => {});
+  
+  // Update the ref whenever dependencies change
+  useEffect(() => {
+    fetchShippingRatesRef.current = async () => {
+      const items = getCartItems();
+      if (items.length === 0) return;
+      
+      if (!formData.zipCode || !formData.country || !formData.address) return;
+      
+      // For free shipping countries, set free rate
+      if (isFreeShipping) {
+        const freeRate: ShippingRate = {
+          serviceCode: 'free_shipping',
+          serviceName: 'Free Shipping',
+          shipmentCost: 0,
+          otherCost: 0,
+        };
+        setShippingRates([freeRate]);
+        onSelectRateRef.current(freeRate);
+        return;
       }
-    } catch (e) {
-      console.warn('[CheckoutStep] Shipping fetch failed', e);
-    }
-  }, [formData.firstName, formData.lastName, formData.address, formData.city, formData.state, formData.zipCode, formData.country, formData.phone, formData.email, getCartItems, isFreeShipping, api]);
+      
+      const address: Address = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        address1: formData.address,
+        city: formData.city,
+        state: formData.state,
+        postcode: formData.zipCode,
+        country: formData.country,
+        phone: formData.phone,
+        email: formData.email,
+      };
+      
+      try {
+        const rates = await api.getShippingRates(address, items);
+        if (rates.length > 0) {
+          setShippingRates(rates);
+          // Select the first rate by default - cost will be calculated by shippingCost useMemo
+          onSelectRateRef.current(rates[0]);
+        }
+      } catch (e) {
+        console.warn('[CheckoutStep] Shipping fetch failed', e);
+      }
+    };
+  }, [formData, getCartItems, isFreeShipping, api]);
   
   // Calculate totals - does NOT fetch shipping rates (that's separate)
   const fetchTotals = useCallback(async () => {
@@ -488,21 +493,22 @@ export const CheckoutStep = ({
   const shippingKeyRef = useRef<string>('');
   
   // Fetch shipping rates ONLY when address/zip/country/items actually change
+  // Uses ref to avoid dependency on the fetch function itself
   useEffect(() => {
     const hasCore = formData.address && formData.city && formData.zipCode && formData.country.length >= 2;
     if (!hasCore) return;
     
     const items = getCartItems();
-    const itemsKey = items.map(i => `${i.sku}:${i.quantity}`).join(',');
+    const itemsKey = items.map(i => `${i.sku}:${i.qty}`).join(',');
     const newShippingKey = `${formData.country}|${formData.zipCode}|${itemsKey}`;
     
     // Only fetch if shipping key actually changed
     if (newShippingKey === shippingKeyRef.current) return;
     shippingKeyRef.current = newShippingKey;
     
-    const timer = setTimeout(() => fetchShippingRates(), 500);
+    const timer = setTimeout(() => fetchShippingRatesRef.current(), 500);
     return () => clearTimeout(timer);
-  }, [formData.address, formData.city, formData.zipCode, formData.country, getCartItems, fetchShippingRates]);
+  }, [formData.address, formData.city, formData.zipCode, formData.country, getCartItems]);
   
   // Fetch totals when address changes (separate from shipping rates)
   useEffect(() => {
@@ -630,38 +636,18 @@ export const CheckoutStep = ({
   
   // Handler for selecting a shipping rate - just updates parent state
   const handleSelectRate = (rate: ShippingRate) => {
-    console.log('[handleSelectRate] Clicked rate:', getServiceCode(rate), 'Full rate object:', JSON.stringify(rate));
     onSelectRate(rate);
   };
   
   // SIMPLIFIED: Compute shipping cost directly from selectedRate on every render
   // No complex state syncing - just derive from the source of truth
   const shippingCost = useMemo(() => {
-    if (!selectedRate) {
-      console.log('[shippingCost] No rate selected');
-      return 0;
-    }
-    
+    if (!selectedRate) return 0;
     const serviceCode = getServiceCode(selectedRate);
-    
-    // If selected rate is free shipping, return 0
-    if (serviceCode === 'free_shipping') {
-      console.log('[shippingCost] Free shipping rate selected');
-      return 0;
-    }
-    
-    // Extract cost directly from selectedRate
-    const cost = extractShippingCost(selectedRate);
-    console.log('[shippingCost] serviceCode:', serviceCode, 'TOTAL cost:', cost);
-    return cost;
+    if (serviceCode === 'free_shipping') return 0;
+    return extractShippingCost(selectedRate);
   }, [selectedRate]);
   
-  // Log the selected rate details for debugging
-  useEffect(() => {
-    if (selectedRate) {
-      console.log('[selectedRate changed] New rate:', getServiceCode(selectedRate), 'Full object:', JSON.stringify(selectedRate));
-    }
-  }, [selectedRate]);
   
   // For display logic - check if we have a rate selected
   const hasShippingRate = selectedRate !== null && shippingCost > 0;
@@ -669,8 +655,6 @@ export const CheckoutStep = ({
   // Calculate display total including shipping
   const productTotal = totals?.grandTotal ?? offerPrice.discounted;
   const displayTotal = productTotal + shippingCost;
-  
-  console.log('[displayTotal calc] productTotal:', productTotal, 'shippingCost:', shippingCost, 'displayTotal:', displayTotal);
 
   // Render offer card based on type
   const renderOfferCard = (offer: Offer) => {
