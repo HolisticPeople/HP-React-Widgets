@@ -399,6 +399,74 @@
             
             // Auto-update the Discount Label field
             this._updateDiscountLabelField($container, discountPercent, hasDiscount);
+
+            // Update the collapsed row meta (type, image, default price)
+            this._updateCollapsedOfferMeta($container, products, totalSale);
+        },
+
+        /**
+         * Update collapsed offer meta shown in the repeater row handle:
+         * - Type
+         * - Default price (offer_price)
+         * - Image used (override vs product image)
+         */
+        _updateCollapsedOfferMeta: function($container, products, totalSale) {
+            const $row = $container.closest('.acf-row');
+            if (!$row.length) return;
+
+            // The left handle where ACF shows the collapsed title
+            const $handle = $row.children('.acf-row-handle.order').length
+                ? $row.children('.acf-row-handle.order')
+                : $row.find('> .acf-row-handle.order');
+            if (!$handle.length) return;
+
+            // Ensure container exists
+            let $meta = $handle.find('.hp-offer-collapsed-meta');
+            if (!$meta.length) {
+                $meta = $('<span class="hp-offer-collapsed-meta hp-offer-collapsed-summary"></span>');
+                $handle.append($meta);
+            }
+
+            // Offer type label
+            const $typeSelect = $row.find('.acf-field[data-name="offer_type"] select');
+            const typeLabel = $typeSelect.find('option:selected').text() || ($typeSelect.val() || '');
+
+            // Price (prefer the offer_price input, fallback to computed)
+            const $priceField = $row.find('.acf-field[data-name="offer_price"] input[type="number"]');
+            const priceVal = $priceField.length ? parseFloat($priceField.val()) : NaN;
+            const price = !isNaN(priceVal) ? priceVal : (parseFloat(totalSale) || 0);
+
+            // Image override (ACF image return_format=url so hidden input holds URL)
+            let overrideUrl = '';
+            const $imgField = $row.find('.acf-field[data-name="offer_image"] input');
+            if ($imgField.length) {
+                overrideUrl = String($imgField.first().val() || '').trim();
+            }
+            const hasOverride = !!overrideUrl && overrideUrl !== '0';
+
+            // Product image fallback: first product's image, if present
+            const productImg = (products && products.length && products[0] && products[0].image) ? products[0].image : '';
+            const imgUrl = hasOverride ? overrideUrl : productImg;
+            const imgSource = hasOverride ? 'Override' : 'Product';
+
+            const safeType = this._escapeHtml(typeLabel);
+            const safeSource = this._escapeHtml(imgSource);
+            const safeImg = this._escapeAttr(imgUrl || '');
+
+            const thumbHtml = imgUrl
+                ? `<img class="hp-offer-collapsed-thumb" src="${safeImg}" alt="" />`
+                : `<span class="hp-offer-collapsed-thumb hp-offer-collapsed-thumb--empty"></span>`;
+
+            $meta.html(`
+                ${thumbHtml}
+                <span class="hp-offer-collapsed-text">
+                    <span class="hp-offer-collapsed-type">${safeType}</span>
+                    <span class="hp-offer-collapsed-dot">·</span>
+                    <span class="hp-offer-collapsed-price">$${price.toFixed(2)}</span>
+                    <span class="hp-offer-collapsed-dot">·</span>
+                    <span class="hp-offer-collapsed-image">${safeSource}</span>
+                </span>
+            `);
         },
 
         /**

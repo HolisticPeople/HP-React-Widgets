@@ -527,6 +527,14 @@
             $list.html('<div style="padding: 20px; text-align: center; color: #999; font-style: italic;">No products added. Use search above to add products.</div>');
             // Remove summary
             $list.siblings('.hp-offer-table-summary').remove();
+            // Still update collapsed meta (type / price / image) even when there are no products yet
+            try {
+                const $row = $list.closest('.acf-row');
+                const $container = $row.find('[data-offer-products]').first();
+                if (window.HPOfferTable && $container.length && window.HPOfferTable._updateCollapsedOfferMeta) {
+                    window.HPOfferTable._updateCollapsedOfferMeta($container, [], 0);
+                }
+            } catch (e) {}
             return;
         }
 

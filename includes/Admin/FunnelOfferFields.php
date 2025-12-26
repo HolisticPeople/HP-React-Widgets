@@ -616,6 +616,8 @@ class FunnelOfferFields
                 align-items: center;
                 gap: 8px;
                 margin-left: 12px;
+                font-size: 12px;
+                color: #666;
             }
             .hp-offer-collapsed-summary .hp-summary-count {
                 background: #0073aa;
@@ -627,6 +629,40 @@ class FunnelOfferFields
             .hp-offer-collapsed-summary .hp-summary-price {
                 color: #00a32a;
                 font-weight: 600;
+            }
+
+            .hp-offer-collapsed-thumb {
+                width: 26px;
+                height: 26px;
+                border-radius: 4px;
+                object-fit: cover;
+                border: 1px solid #e0e0e0;
+                background: #f5f5f5;
+                flex-shrink: 0;
+            }
+            .hp-offer-collapsed-thumb--empty {
+                display: inline-block;
+            }
+            .hp-offer-collapsed-text {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                line-height: 1.2;
+                white-space: nowrap;
+            }
+            .hp-offer-collapsed-type {
+                font-weight: 600;
+                color: #1e1e1e;
+            }
+            .hp-offer-collapsed-price {
+                color: #00a32a;
+                font-weight: 700;
+            }
+            .hp-offer-collapsed-image {
+                color: #666;
+            }
+            .hp-offer-collapsed-dot {
+                color: #999;
             }
         ';
     }
