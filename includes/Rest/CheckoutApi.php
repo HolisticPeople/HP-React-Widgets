@@ -5,6 +5,7 @@ use HP_RW\Services\StripeService;
 use HP_RW\Services\ShippingService;
 use HP_RW\Services\CheckoutService;
 use HP_RW\Services\PointsService;
+use HP_RW\Services\FunnelConfigLoader;
 use HP_RW\Util\Resolver;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -328,7 +329,7 @@ class CheckoutApi
             return new WP_Error('bad_request', 'Valid customer email required', ['status' => 400]);
         }
 
-        // Check funnel status
+        // Check funnel status (legacy gate)
         $funnelMode = $this->getFunnelMode($funnelId);
         if ($funnelMode === 'off') {
             return new WP_Error('funnel_off', 'Funnel is currently disabled', [
@@ -337,8 +338,8 @@ class CheckoutApi
             ]);
         }
 
-        // Initialize Stripe with funnel mode
-        $stripeMode = ($funnelMode === 'live') ? 'live' : 'test';
+        // Initialize Stripe with funnel stripe_mode (from funnel config), fallback to legacy mode
+        $stripeMode = $this->getStripeModeForFunnel($funnelId);
         $stripe = new StripeService($stripeMode);
 
         if (!$stripe->isConfigured()) {
@@ -380,6 +381,7 @@ class CheckoutApi
         $draftData = [
             'funnel_id'               => $funnelId,
             'funnel_name'             => $funnelName,
+            'stripe_mode'             => $stripeMode,
             'customer'                => ['email' => $email, 'name' => $name, 'user_id' => $user ? (int) $user->ID : 0],
             'shipping_address'        => $address,
             'items'                   => $items,
@@ -442,9 +444,8 @@ class CheckoutApi
         }
 
         // Verify payment with Stripe
-        $funnelId = $draftData['funnel_id'] ?? 'default';
-        $funnelMode = $this->getFunnelMode($funnelId);
-        $stripeMode = ($funnelMode === 'live') ? 'live' : 'test';
+        $funnelId = (string) ($draftData['funnel_id'] ?? 'default');
+        $stripeMode = (string) ($draftData['stripe_mode'] ?? $this->getStripeModeForFunnel($funnelId));
         $stripe = new StripeService($stripeMode);
 
         $pi = $stripe->retrievePaymentIntent($piId);
@@ -645,6 +646,29 @@ class CheckoutApi
 
         // Default based on environment
         return $env === 'production' ? 'live' : 'test';
+    }
+
+    /**
+     * Resolve Stripe mode for a funnel using the funnel CPT config (`stripe_mode`),
+     * falling back to the legacy env-driven funnel mode.
+     *
+     * @return string 'test' | 'live'
+     */
+    private function getStripeModeForFunnel(string $funnelId): string
+    {
+        $postId = absint($funnelId);
+        if ($postId > 0) {
+            $config = FunnelConfigLoader::getById($postId);
+            if (is_array($config)) {
+                $mode = strtolower(trim((string) ($config['stripe_mode'] ?? 'auto')));
+                if ($mode === 'test' || $mode === 'live') {
+                    return $mode;
+                }
+            }
+        }
+
+        $legacy = $this->getFunnelMode($funnelId);
+        return ($legacy === 'live') ? 'live' : 'test';
     }
 
     /**

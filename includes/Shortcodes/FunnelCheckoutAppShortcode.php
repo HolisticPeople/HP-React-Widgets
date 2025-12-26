@@ -105,8 +105,9 @@ class FunnelCheckoutAppShortcode
             }
         }
 
-        // Get Stripe publishable key
-        $stripeKey = $this->getStripePublishableKey();
+        // Get Stripe mode + publishable key (mode can be forced per funnel)
+        $stripeMode = (string) ($config['stripe_mode'] ?? 'auto');
+        $stripeKey = $this->getStripePublishableKey($stripeMode);
 
         // Build props for React component
         $props = [
@@ -122,6 +123,7 @@ class FunnelCheckoutAppShortcode
             'enablePoints'        => (bool) ($config['checkout']['enable_points'] ?? true),
             'enableCustomerLookup' => (bool) ($config['checkout']['enable_customer_lookup'] ?? true),
             'stripePublishableKey' => $stripeKey,
+            'stripeMode'          => $stripeMode,
             'upsellOffers'        => $this->buildUpsellOffers($config['thankyou']['upsell'] ?? null),
             'showUpsell'          => (bool) ($config['thankyou']['show_upsell'] ?? false),
             'thankYouHeadline'    => $config['thankyou']['headline'] ?? 'Thank You for Your Order!',
@@ -222,16 +224,21 @@ class FunnelCheckoutAppShortcode
     /**
      * Get Stripe publishable key from WooCommerce Stripe Gateway settings.
      */
-    private function getStripePublishableKey(): string
+    private function getStripePublishableKey(string $stripeMode = 'auto'): string
     {
         // First check for WooCommerce Stripe Gateway
         $stripeSettings = get_option('woocommerce_stripe_settings', []);
-        
-        if (!empty($stripeSettings['testmode']) && $stripeSettings['testmode'] === 'yes') {
-            return $stripeSettings['test_publishable_key'] ?? '';
+
+        $mode = strtolower(trim($stripeMode));
+        if ($mode !== 'test' && $mode !== 'live') {
+            // Backward-compatible "auto": follow Woo Stripe's own testmode toggle
+            $mode = (!empty($stripeSettings['testmode']) && $stripeSettings['testmode'] === 'yes') ? 'test' : 'live';
         }
-        
-        return $stripeSettings['publishable_key'] ?? '';
+
+        if ($mode === 'test') {
+            return (string) ($stripeSettings['test_publishable_key'] ?? '');
+        }
+        return (string) ($stripeSettings['publishable_key'] ?? '');
     }
 }
 

@@ -2,6 +2,7 @@
 namespace HP_RW\Services;
 
 use HP_RW\Util\Resolver;
+use HP_RW\Services\StripeService;
 use WC_Order;
 use WC_Order_Item_Product;
 use WC_Order_Item_Shipping;
@@ -378,8 +379,9 @@ class CheckoutService
         // Calculate totals
         $order->calculate_totals(false);
 
-        // Set payment method
-        $stripeService = new StripeService();
+        // Set payment method (reflect the funnel's stripe mode if available)
+        $draftStripeMode = isset($draftData['stripe_mode']) ? (string) $draftData['stripe_mode'] : null;
+        $stripeService = new StripeService($draftStripeMode);
         $paymentMethodTitle = 'HP React Widgets (Stripe - ' . ucfirst($stripeService->mode) . ')';
         $order->set_payment_method('hp_rw_stripe');
         $order->set_payment_method_title($paymentMethodTitle);

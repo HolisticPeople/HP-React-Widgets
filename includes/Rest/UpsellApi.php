@@ -3,6 +3,7 @@ namespace HP_RW\Rest;
 
 use HP_RW\Services\StripeService;
 use HP_RW\Services\CheckoutService;
+use HP_RW\Services\FunnelConfigLoader;
 use HP_RW\Util\Resolver;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -281,6 +282,18 @@ class UpsellApi
      */
     private function getFunnelStripeMode(string $funnelId): string
     {
+        // Prefer funnel CPT configuration if funnelId is a post ID
+        $postId = absint($funnelId);
+        if ($postId > 0) {
+            $config = FunnelConfigLoader::getById($postId);
+            if (is_array($config)) {
+                $mode = strtolower(trim((string) ($config['stripe_mode'] ?? 'auto')));
+                if ($mode === 'live' || $mode === 'test') {
+                    return $mode;
+                }
+            }
+        }
+
         $opts = get_option('hp_rw_settings', []);
         $env = isset($opts['env']) && $opts['env'] === 'production' ? 'production' : 'staging';
 

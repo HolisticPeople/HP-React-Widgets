@@ -240,6 +240,7 @@ export interface FunnelCheckoutAppConfig {
   enablePoints: boolean;
   enableCustomerLookup: boolean;
   stripePublishableKey: string;
+  stripeMode?: string;
   upsellOffers: UpsellOffer[];
   showUpsell: boolean;
   thankYouHeadline: string;
