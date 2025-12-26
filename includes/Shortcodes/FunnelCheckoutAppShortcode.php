@@ -28,6 +28,36 @@ if (!defined('ABSPATH')) {
 class FunnelCheckoutAppShortcode
 {
     /**
+     * Elementor occasionally loads its frontend bundle without the localized
+     * `elementorFrontendConfig` global present, which throws a ReferenceError and
+     * can break other scripts. This shim ensures the global exists.
+     *
+     * Only runs on pages where this shortcode is rendered.
+     */
+    private function maybeAddElementorFrontendConfigShim(): void
+    {
+        // Avoid outputting the shim more than once per request.
+        static $added = false;
+        if ($added) {
+            return;
+        }
+
+        // Only relevant if Elementor is present / its script handle exists.
+        if (!wp_script_is('elementor-frontend', 'registered') && !wp_script_is('elementor-frontend', 'enqueued')) {
+            return;
+        }
+
+        $shim = <<<'JS'
+window.elementorFrontendConfig = window.elementorFrontendConfig || {};
+// Also define the var in global scope for scripts referencing it directly.
+var elementorFrontendConfig = window.elementorFrontendConfig;
+JS;
+
+        wp_add_inline_script('elementor-frontend', $shim, 'before');
+        $added = true;
+    }
+
+    /**
      * Render the shortcode.
      *
      * @param array $atts Shortcode attributes
@@ -35,6 +65,7 @@ class FunnelCheckoutAppShortcode
      */
     public function render(array $atts = []): string
     {
+        $this->maybeAddElementorFrontendConfigShim();
         AssetLoader::enqueue_bundle();
 
         $atts = shortcode_atts([
