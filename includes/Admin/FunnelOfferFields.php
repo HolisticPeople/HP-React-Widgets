@@ -192,27 +192,30 @@ class FunnelOfferFields
              * - When EXPANDED: hide the left handle column so fields use full width
              * - When COLLAPSED: make the collapsed summary take full width (minus the remove handle)
              */
-            .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.order {
-                /* keep in DOM so ACF can still toggle collapse; visually hidden */
-                width: 0 !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                overflow: hidden !important;
+            .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.order,
+            .acf-field[data-name="funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.order {
+                /* We provide our own collapse control, so we can fully hide the left handle column */
+                display: none !important;
             }
-            .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-fields {
+            .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-fields,
+            .acf-field[data-name="funnel_offers"] .acf-row:not(.-collapsed) > .acf-fields {
                 margin-left: 0 !important;
             }
-            .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove {
+            .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove,
+            .acf-field[data-name="funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove {
                 position: relative !important;
                 top: auto !important;
                 right: auto !important;
                 height: auto !important;
             }
 
-            .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed {
+            .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed,
+            .acf-field[data-name="funnel_offers"] .acf-row.-collapsed {
                 /* keep ACF default layout; we only adjust widths */
             }
-            .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed > .acf-row-handle.order {
+            .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed > .acf-row-handle.order,
+            .acf-field[data-name="funnel_offers"] .acf-row.-collapsed > .acf-row-handle.order {
+                display: block !important;
                 width: calc(100% - 48px) !important;
                 text-align: left !important;
                 padding-left: 12px !important;
@@ -220,17 +223,28 @@ class FunnelOfferFields
                 align-items: center;
                 justify-content: flex-start;
             }
-            .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed > .acf-row-handle.remove {
+            .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed > .acf-row-handle.remove,
+            .acf-field[data-name="funnel_offers"] .acf-row.-collapsed > .acf-row-handle.remove {
                 width: 48px !important;
                 height: auto !important;
             }
-            .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed > .acf-fields {
+            .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed > .acf-fields,
+            .acf-field[data-name="funnel_offers"] .acf-row.-collapsed > .acf-fields {
                 display: none !important;
             }
 
             /* Ensure collapsed handle content aligns left and is larger */
-            .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed > .acf-row-handle.order .acf-row-number {
+            .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed > .acf-row-handle.order .acf-row-number,
+            .acf-field[data-name="funnel_offers"] .acf-row.-collapsed > .acf-row-handle.order .acf-row-number {
                 margin-right: 10px;
+            }
+
+            /* Hide the small inline "+" add-row icons (we already have the big "Add Offer" button) */
+            .acf-field[data-key="field_funnel_offers"] .acf-row-handle.remove .acf-icon.-plus,
+            .acf-field[data-name="funnel_offers"] .acf-row-handle.remove .acf-icon.-plus,
+            .acf-field[data-key="field_funnel_offers"] .acf-row-handle.remove [data-event="add-row"],
+            .acf-field[data-name="funnel_offers"] .acf-row-handle.remove [data-event="add-row"] {
+                display: none !important;
             }
             
             /* Products section */
