@@ -139,7 +139,23 @@ class FunnelStylesShortcode
             /* Badge styling - accent fill with card bg text */
             .hp-funnel-badge-pill {
                 background-color: var(--hp-funnel-accent) !important;
-                color: var(--hp-funnel-card-bg) !important;
+                color: var(--hp-funnel-page-bg) !important;
+            }
+
+            /* CTA button (used across multiple shortcode components) */
+            .hp-funnel-cta-btn {
+                background-color: var(--hp-funnel-accent) !important;
+                color: var(--hp-funnel-page-bg) !important;
+                border-radius: 9999px !important;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+                transition: box-shadow 0.2s ease, transform 0.2s ease, filter 0.2s ease;
+            }
+            .hp-funnel-cta-btn:hover {
+                filter: brightness(0.97);
+                transform: translateY(-1px);
+                box-shadow:
+                    0 14px 40px rgba(0,0,0,0.30),
+                    0 0 46px rgba(var(--hp-funnel-accent-rgb), 0.55);
             }
             
             /* ===========================================
