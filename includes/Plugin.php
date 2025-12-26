@@ -268,9 +268,9 @@ class Plugin
         }
         $printed = true;
 
-        // Keep this tiny, but include the nested breakpoint objects Elementor reads with Object.entries().
+        // Keep this tiny, but include the nested objects Elementor reads early during boot.
         // We only set defaults if missing, so it won't interfere when Elementor later localizes real data.
-        echo "<script>(function(){var c=window.elementorFrontendConfig=window.elementorFrontendConfig||{};c.environmentMode=c.environmentMode||{};c.isDebug=!!c.isDebug;c.isElementorDebug=!!c.isElementorDebug;c.urls=c.urls||{};c.i18n=c.i18n||{};c.responsive=c.responsive||{};c.responsive.breakpoints=c.responsive.breakpoints||{};c.responsive.activeBreakpoints=c.responsive.activeBreakpoints||{};c.breakpoints=c.breakpoints||c.responsive.breakpoints||{};c.kit=c.kit||{};c.kit.active_breakpoints=c.kit.active_breakpoints||c.responsive.activeBreakpoints||{};var elementorFrontendConfig=c;})();</script>";
+        echo "<script>(function(){var c=window.elementorFrontendConfig=window.elementorFrontendConfig||{};c.environmentMode=c.environmentMode||{};c.isDebug=!!c.isDebug;c.isElementorDebug=!!c.isElementorDebug;c.urls=c.urls||{};c.i18n=c.i18n||{};c.responsive=c.responsive||{};c.responsive.breakpoints=c.responsive.breakpoints||{};c.responsive.activeBreakpoints=c.responsive.activeBreakpoints||{};c.breakpoints=c.breakpoints||c.responsive.breakpoints||{};c.kit=c.kit||{};c.kit.active_breakpoints=c.kit.active_breakpoints||c.responsive.activeBreakpoints||{};c.experimentalFeatures=c.experimentalFeatures||{};c.features=c.features||{};if(typeof c.experimentalFeatures['nested-elements']==='undefined')c.experimentalFeatures['nested-elements']=false;if(typeof c.features['nested-elements']==='undefined')c.features['nested-elements']=false;var elementorFrontendConfig=c;})();</script>";
     }
 
     /**
