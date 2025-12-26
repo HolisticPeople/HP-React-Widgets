@@ -195,6 +195,11 @@ class Plugin
     {
         // Schedule upgrade check for later (after WP is fully initialized)
         add_action('init', [self::class, 'checkForUpgrade'], 99);
+
+        // Elementor sometimes runs its frontend bundle before localizing `elementorFrontendConfig`,
+        // which throws a ReferenceError and can cascade into other plugin errors.
+        // This shim is safe and tiny; it just guarantees the global exists early.
+        add_action('wp_head', [self::class, 'outputElementorFrontendConfigShim'], 0);
         
         // Set up funnel CPT customizations (CPT registered via ACF Pro)
         self::setupFunnelCptHooks();
@@ -244,6 +249,26 @@ class Plugin
         // Register the admin settings page for managing shortcodes.
         $settingsPage = new SettingsPage();
         $settingsPage->init();
+    }
+
+    /**
+     * Ensure Elementor's expected global exists to prevent:
+     * "Uncaught ReferenceError: elementorFrontendConfig is not defined"
+     */
+    public static function outputElementorFrontendConfigShim(): void
+    {
+        if (is_admin()) {
+            return;
+        }
+
+        // Avoid emitting more than once.
+        static $printed = false;
+        if ($printed) {
+            return;
+        }
+        $printed = true;
+
+        echo "<script>(function(){window.elementorFrontendConfig=window.elementorFrontendConfig||{};window.elementorFrontendConfig.environmentMode=window.elementorFrontendConfig.environmentMode||{};window.elementorFrontendConfig.isDebug=window.elementorFrontendConfig.isDebug||false;window.elementorFrontendConfig.isElementorDebug=window.elementorFrontendConfig.isElementorDebug||false;window.elementorFrontendConfig.urls=window.elementorFrontendConfig.urls||{};window.elementorFrontendConfig.i18n=window.elementorFrontendConfig.i18n||{};window.elementorFrontendConfig.responsive=window.elementorFrontendConfig.responsive||{};window.elementorFrontendConfig.breakpoints=window.elementorFrontendConfig.breakpoints||{};window.elementorFrontendConfig.kit=window.elementorFrontendConfig.kit||{};var elementorFrontendConfig=window.elementorFrontendConfig;})();</script>";
     }
 
     /**
