@@ -168,7 +168,7 @@ export const FunnelScience = ({
             <Button
               size="lg"
               onClick={() => window.location.href = ctaUrl}
-              className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-xl px-12 py-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+              className="hp-funnel-cta-btn font-bold text-xl px-12 py-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
             >
               {ctaText}
             </Button>

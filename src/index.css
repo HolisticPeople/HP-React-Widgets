@@ -209,6 +209,22 @@
         pointer-events: none;
     }
 
+    /* Funnel CTA + badge styling (match reference funnel):
+       - CTA background uses the funnel accent (orange)
+       - CTA/BADGE text uses the funnel background (dark) */
+    .hp-funnel-cta-btn {
+        background-color: var(--funnel-accent, hsl(var(--warning))) !important;
+        color: hsl(var(--background)) !important;
+    }
+    .hp-funnel-cta-btn:hover {
+        filter: brightness(0.95);
+    }
+
+    .hp-funnel-badge-pill {
+        background-color: var(--funnel-accent, hsl(var(--warning))) !important;
+        color: hsl(var(--background)) !important;
+    }
+
     .action-btn svg,
     .slider-nav-btn svg {
         /* Baseline reset for any SVG in our buttons */

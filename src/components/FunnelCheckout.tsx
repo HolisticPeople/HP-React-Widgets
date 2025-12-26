@@ -678,7 +678,7 @@ export const FunnelCheckout = ({
                   type="submit"
                   size="lg"
                   disabled={isSubmitting || isCalculating}
-                  className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-lg py-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="hp-funnel-cta-btn w-full font-bold text-lg py-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   {isSubmitting ? (
                     <>

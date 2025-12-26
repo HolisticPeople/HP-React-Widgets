@@ -173,7 +173,7 @@ export const UpsellStep = ({
             size="lg"
             onClick={handleAccept}
             disabled={isProcessing}
-            className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-xl py-8 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+            className="hp-funnel-cta-btn w-full font-bold text-xl py-8 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
           >
             {isProcessing ? (
               <>

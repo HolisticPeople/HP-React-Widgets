@@ -177,10 +177,8 @@ export const FunnelHero = ({
               )}
               <Button 
                 size="lg" 
-                variant="ghost"
                 onClick={handleCTAClick}
-                style={accentColor ? { backgroundColor: accentColor } : undefined}
-                className="font-bold text-xl px-12 py-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 mt-8 text-background hover:brightness-95 !bg-[var(--funnel-accent)]"
+                className="hp-funnel-cta-btn font-bold text-xl px-12 py-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 mt-8"
               >
                 {ctaText}
               </Button>
@@ -301,7 +299,7 @@ export const FunnelHero = ({
             <Button 
               size="lg" 
               onClick={handleCTAClick}
-              className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-xl px-12 py-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+              className="hp-funnel-cta-btn font-bold text-xl px-12 py-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
             >
               {ctaText}
             </Button>

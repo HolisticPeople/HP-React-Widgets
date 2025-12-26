@@ -186,7 +186,7 @@ export const FunnelProducts = ({
                 {(product.ctaUrl || defaultCtaUrl) && (
                   <Button
                     onClick={() => handleProductClick(product)}
-                    className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-lg py-6 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl"
+                    className="hp-funnel-cta-btn w-full font-bold text-lg py-6 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl"
                   >
                     {product.ctaText || defaultCtaText}
                   </Button>
