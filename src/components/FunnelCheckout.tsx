@@ -146,6 +146,19 @@ export const FunnelCheckout = ({
     [products, selectedProductId]
   );
 
+  // Allow other on-page sections (e.g., FunnelProducts) to select an offer without navigation
+  useEffect(() => {
+    const onSelect = (e: Event) => {
+      const ce = e as CustomEvent<{ offerId?: string }>;
+      const offerId = ce?.detail?.offerId;
+      if (!offerId) return;
+      setSelectedProductId(offerId);
+      // scroll safety: also ensure we are in view if embedded
+    };
+    window.addEventListener('hp_funnel_offer_select', onSelect as EventListener);
+    return () => window.removeEventListener('hp_funnel_offer_select', onSelect as EventListener);
+  }, []);
+
   const isFreeShipping = useMemo(
     () => freeShippingCountries.includes(formData.country.toUpperCase()),
     [formData.country, freeShippingCountries]

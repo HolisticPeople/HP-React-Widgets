@@ -142,6 +142,19 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
       setKitSelection({});
     }
   }, [offers, selectedOfferId]);
+
+  // Allow other on-page sections (e.g., FunnelProducts) to select an offer without navigation
+  useEffect(() => {
+    const onSelect = (e: Event) => {
+      const ce = e as CustomEvent<{ offerId?: string }>;
+      const offerId = ce?.detail?.offerId;
+      if (!offerId) return;
+      handleOfferSelect(offerId);
+      setCurrentStep('checkout');
+    };
+    window.addEventListener('hp_funnel_offer_select', onSelect as EventListener);
+    return () => window.removeEventListener('hp_funnel_offer_select', onSelect as EventListener);
+  }, [handleOfferSelect]);
   
   // Handle offer quantity change (for non-kit offers)
   const handleOfferQuantityChange = useCallback((qty: number) => {

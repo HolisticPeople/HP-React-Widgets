@@ -52,10 +52,35 @@ export const FunnelProducts = ({
 }: FunnelProductsProps) => {
   const handleProductClick = (product: FunnelProduct) => {
     const url = product.ctaUrl || defaultCtaUrl;
+
+    // If checkout is embedded on the same page, select the offer in-place and scroll to it.
+    const checkoutNode =
+      document.querySelector<HTMLElement>('[data-component="FunnelCheckoutApp"]') ||
+      document.querySelector<HTMLElement>('[data-component="FunnelCheckout"]') ||
+      document.querySelector<HTMLElement>('[data-component="CheckoutStep"]');
+
+    if (checkoutNode) {
+      // Persist selection in URL (so refresh keeps it, where supported)
+      try {
+        const current = new URL(window.location.href);
+        current.searchParams.set('offer', product.id);
+        window.history.replaceState({}, '', current.toString());
+      } catch {}
+
+      // Notify any checkout component to select this offer
+      window.dispatchEvent(
+        new CustomEvent('hp_funnel_offer_select', { detail: { offerId: product.id, sku: product.sku } })
+      );
+
+      checkoutNode.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+
+    // Fallback: navigate to checkout URL
     if (url) {
       const targetUrl = new URL(url, window.location.origin);
-      targetUrl.searchParams.set('product', product.id);
-      targetUrl.searchParams.set('sku', product.sku);
+      // offerId is the canonical identifier in the new offers system
+      targetUrl.searchParams.set('offer', product.id);
       window.location.href = targetUrl.toString();
     }
   };
@@ -113,11 +138,11 @@ export const FunnelProducts = ({
             <Card
               key={product.id}
               className={cn(
-                'relative p-8 transition-all duration-300',
+                'relative p-8 transition-all duration-300 flex flex-col h-full',
                 product.isBestValue
                   ? 'bg-gradient-to-br from-accent/10 to-card/70 backdrop-blur-sm border-accent shadow-[0_0_40px_hsl(45_95%_60%/0.3)] scale-105'
                   : 'bg-card/70 backdrop-blur-sm border-border/50 hover:border-accent/30',
-                layout === 'horizontal' && 'md:flex md:items-center md:gap-8'
+                layout === 'horizontal' && 'md:flex-row md:items-center md:gap-8'
               )}
             >
               {/* Badge */}
@@ -144,7 +169,7 @@ export const FunnelProducts = ({
               )}
 
               {/* Product Info */}
-              <div className={cn(layout === 'horizontal' && 'md:flex-1')}>
+              <div className={cn('flex flex-col flex-1', layout === 'horizontal' && 'md:flex-1')}>
                 {/* Price */}
                 {showPrices && (
                   <div className="mb-4">
@@ -184,12 +209,14 @@ export const FunnelProducts = ({
 
                 {/* CTA Button */}
                 {(product.ctaUrl || defaultCtaUrl) && (
-                  <Button
-                    onClick={() => handleProductClick(product)}
-                    className="hp-funnel-cta-btn w-full font-bold text-lg py-6 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl"
-                  >
-                    {product.ctaText || defaultCtaText}
-                  </Button>
+                  <div className="mt-auto pt-4">
+                    <Button
+                      onClick={() => handleProductClick(product)}
+                      className="hp-funnel-cta-btn w-full font-bold text-lg py-6 rounded-full transition-all duration-300"
+                    >
+                      {product.ctaText || defaultCtaText}
+                    </Button>
+                  </div>
                 )}
               </div>
             </Card>
