@@ -22,6 +22,7 @@ declare global {
   interface Window {
     Stripe?: (key: string) => Stripe;
     __hpStripeInstance?: Stripe;
+    __hpStripeKey?: string;
     __hpStripeLoading?: boolean;
     __hpStripeCallbacks?: ((stripe: Stripe | null) => void)[];
   }
@@ -37,7 +38,15 @@ interface UseStripePaymentOptions {
 function loadStripeSingleton(publishableKey: string): Promise<Stripe | null> {
   return new Promise((resolve) => {
     // If already have an instance, return it
-    if (window.__hpStripeInstance) {
+    if (window.__hpStripeInstance && window.__hpStripeKey === publishableKey) {
+      resolve(window.__hpStripeInstance);
+      return;
+    }
+
+    // If we have an instance but key changed, recreate with the new key (mode switch)
+    if (window.__hpStripeInstance && window.__hpStripeKey && window.__hpStripeKey !== publishableKey && window.Stripe) {
+      window.__hpStripeInstance = window.Stripe(publishableKey);
+      window.__hpStripeKey = publishableKey;
       resolve(window.__hpStripeInstance);
       return;
     }
@@ -52,6 +61,7 @@ function loadStripeSingleton(publishableKey: string): Promise<Stripe | null> {
     // Check if Stripe is already loaded (by another script)
     if (window.Stripe) {
       window.__hpStripeInstance = window.Stripe(publishableKey);
+      window.__hpStripeKey = publishableKey;
       resolve(window.__hpStripeInstance);
       return;
     }
@@ -67,6 +77,7 @@ function loadStripeSingleton(publishableKey: string): Promise<Stripe | null> {
     script.onload = () => {
       if (window.Stripe) {
         window.__hpStripeInstance = window.Stripe(publishableKey);
+        window.__hpStripeKey = publishableKey;
       }
       window.__hpStripeLoading = false;
       
@@ -108,6 +119,7 @@ export function useStripePayment(options: UseStripePaymentOptions) {
   // Load Stripe.js using singleton pattern
   useEffect(() => {
     if (!publishableKey) {
+      setError('Payment is not configured (missing Stripe publishable key).');
       setIsLoading(false);
       return;
     }
