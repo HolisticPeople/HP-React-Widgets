@@ -733,6 +733,29 @@ class FunnelOfferFields
             .hp-offer-collapse-toggle {
                 margin-left: 8px;
             }
+
+            /* Right-side handle layout: stack collapse + remove vertically and prevent overlap */
+            .acf-field[data-key="field_funnel_offers"] .acf-row-handle.remove,
+            .acf-field[data-name="funnel_offers"] .acf-row-handle.remove {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: flex-start !important;
+                gap: 6px !important;
+                padding-top: 6px !important;
+            }
+
+            /* Show collapse button only when expanded */
+            .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed .hp-offer-collapse-toggle,
+            .acf-field[data-name="funnel_offers"] .acf-row.-collapsed .hp-offer-collapse-toggle {
+                display: none !important;
+            }
+
+            /* Make the collapse button look like a small icon (no extra padding) */
+            .hp-offer-collapse-toggle {
+                padding: 0 !important;
+                line-height: 1 !important;
+            }
         ';
     }
 

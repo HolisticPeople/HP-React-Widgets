@@ -207,6 +207,27 @@
                 $row.toggleClass('-collapsed');
             }
         });
+
+        // Expand by clicking anywhere on a collapsed row (no need for an expand button)
+        $(document).on('click', '.acf-field[data-name="funnel_offers"] .acf-row.-collapsed, .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed', function(e) {
+            // Ignore clicks on the remove handle area
+            if ($(e.target).closest('.acf-row-handle.remove').length) return;
+            // Ignore clicks on links/buttons just in case
+            if ($(e.target).closest('a,button').length) return;
+
+            const $row = $(this);
+            const $orderHandle = $row.children('.acf-row-handle.order');
+            if ($orderHandle.length) {
+                const $icon = $orderHandle.find('.acf-icon').first();
+                if ($icon.length) {
+                    $icon.trigger('click');
+                } else {
+                    $orderHandle.trigger('click');
+                }
+            } else {
+                $row.removeClass('-collapsed');
+            }
+        });
     }
 
     function initializeAllOffers() {
@@ -292,13 +313,8 @@
             </button>
         `);
 
-        // Insert before existing ACF icons so it doesn't overlap them
-        const $firstIcon = $removeHandle.find('.acf-icon, .acf-button, a').first();
-        if ($firstIcon.length) {
-            $firstIcon.before($btn);
-        } else {
-            $removeHandle.prepend($btn);
-        }
+        // Place at top of the remove handle column (CSS will stack items)
+        $removeHandle.prepend($btn);
     }
 
     // ========================================
