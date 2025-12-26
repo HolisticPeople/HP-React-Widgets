@@ -268,9 +268,27 @@ class Plugin
         }
         $printed = true;
 
+        // If Elementor isn't active, don't emit anything.
+        if (!defined('ELEMENTOR_VERSION') && !class_exists('\\Elementor\\Plugin')) {
+            return;
+        }
+
+        // Determine Elementor assets base URL so its dynamic chunk loader doesn't build `undefinedjs/...` URLs.
+        $elementorAssetsUrl = '';
+        if (defined('ELEMENTOR_ASSETS_URL')) {
+            $elementorAssetsUrl = (string) ELEMENTOR_ASSETS_URL;
+        } elseif (defined('ELEMENTOR_URL')) {
+            $elementorAssetsUrl = rtrim((string) ELEMENTOR_URL, '/') . '/assets/';
+        } else {
+            // Fallback: common plugin path.
+            $elementorAssetsUrl = plugins_url('elementor/assets/');
+        }
+        $elementorAssetsUrl = esc_url_raw(trailingslashit($elementorAssetsUrl));
+        $ajaxUrl = esc_url_raw(admin_url('admin-ajax.php'));
+
         // Keep this tiny, but include the nested objects Elementor reads early during boot.
         // We only set defaults if missing, so it won't interfere when Elementor later localizes real data.
-        echo "<script>(function(){var c=window.elementorFrontendConfig=window.elementorFrontendConfig||{};c.environmentMode=c.environmentMode||{};c.isDebug=!!c.isDebug;c.isElementorDebug=!!c.isElementorDebug;c.urls=c.urls||{};c.i18n=c.i18n||{};c.responsive=c.responsive||{};c.responsive.breakpoints=c.responsive.breakpoints||{};c.responsive.activeBreakpoints=c.responsive.activeBreakpoints||{};c.breakpoints=c.breakpoints||c.responsive.breakpoints||{};c.kit=c.kit||{};c.kit.active_breakpoints=c.kit.active_breakpoints||c.responsive.activeBreakpoints||{};c.experimentalFeatures=c.experimentalFeatures||{};c.features=c.features||{};if(typeof c.experimentalFeatures['nested-elements']==='undefined')c.experimentalFeatures['nested-elements']=false;if(typeof c.features['nested-elements']==='undefined')c.features['nested-elements']=false;var elementorFrontendConfig=c;})();</script>";
+        echo "<script>(function(){var c=window.elementorFrontendConfig=window.elementorFrontendConfig||{};c.environmentMode=c.environmentMode||{};c.isDebug=!!c.isDebug;c.isElementorDebug=!!c.isElementorDebug;c.urls=c.urls||{};c.urls.assets=c.urls.assets||" . wp_json_encode($elementorAssetsUrl) . ";c.urls.ajaxurl=c.urls.ajaxurl||" . wp_json_encode($ajaxUrl) . ";c.i18n=c.i18n||{};c.responsive=c.responsive||{};c.responsive.breakpoints=c.responsive.breakpoints||{};c.responsive.activeBreakpoints=c.responsive.activeBreakpoints||{};c.breakpoints=c.breakpoints||c.responsive.breakpoints||{};c.kit=c.kit||{};c.kit.active_breakpoints=c.kit.active_breakpoints||c.responsive.activeBreakpoints||{};c.experimentalFeatures=c.experimentalFeatures||{};c.features=c.features||{};if(typeof c.experimentalFeatures['nested-elements']==='undefined')c.experimentalFeatures['nested-elements']=false;if(typeof c.features['nested-elements']==='undefined')c.features['nested-elements']=false;var elementorFrontendConfig=c;})();</script>";
     }
 
     /**
