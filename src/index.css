@@ -212,6 +212,9 @@
     /* Funnel CTA + badge styling (match reference funnel):
        - CTA background uses the funnel accent (orange)
        - CTA/BADGE text uses the funnel background (dark) */
+    /* Increase specificity so this beats Tailwind utilities (shadow-lg, text-*, etc.) */
+    .hp-funnel-section .hp-funnel-cta-btn,
+    .hp-funnel-checkout-app .hp-funnel-cta-btn,
     .hp-funnel-cta-btn {
         /* Primary source of truth comes from FunnelStylesShortcode */
         background-color: var(--hp-funnel-accent, hsl(var(--accent))) !important;
@@ -219,19 +222,25 @@
         color: var(--hp-funnel-page-bg, hsl(var(--background))) !important;
         border-radius: 9999px !important;
         transition: box-shadow 0.2s ease, transform 0.2s ease, filter 0.2s ease;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+        /* Force override of Tailwind shadow utilities */
+        box-shadow: 0 10px 30px rgba(0,0,0,0.25) !important;
     }
+    .hp-funnel-section .hp-funnel-cta-btn:hover,
+    .hp-funnel-checkout-app .hp-funnel-cta-btn:hover,
     .hp-funnel-cta-btn:hover {
         filter: brightness(0.97);
         transform: translateY(-1px);
         /* Expand glow on hover */
         box-shadow:
             0 14px 40px rgba(0,0,0,0.30),
-            0 0 46px rgba(var(--hp-funnel-accent-rgb, 234,179,8), 0.55);
+            0 0 60px rgba(var(--hp-funnel-accent-rgb, 234,179,8), 0.65) !important;
     }
 
+    .hp-funnel-section .hp-funnel-badge-pill,
+    .hp-funnel-checkout-app .hp-funnel-badge-pill,
     .hp-funnel-badge-pill {
         background-color: var(--hp-funnel-accent, hsl(var(--accent))) !important;
+        /* Ensure badge text is the funnel background (dark), not the accent */
         color: var(--hp-funnel-page-bg, hsl(var(--background))) !important;
         border-radius: 9999px !important;
     }

@@ -147,7 +147,7 @@ class FunnelStylesShortcode
                 background-color: var(--hp-funnel-accent) !important;
                 color: var(--hp-funnel-page-bg) !important;
                 border-radius: 9999px !important;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+                box-shadow: 0 10px 30px rgba(0,0,0,0.25) !important;
                 transition: box-shadow 0.2s ease, transform 0.2s ease, filter 0.2s ease;
             }
             .hp-funnel-cta-btn:hover {
@@ -155,7 +155,7 @@ class FunnelStylesShortcode
                 transform: translateY(-1px);
                 box-shadow:
                     0 14px 40px rgba(0,0,0,0.30),
-                    0 0 46px rgba(var(--hp-funnel-accent-rgb), 0.55);
+                    0 0 60px rgba(var(--hp-funnel-accent-rgb), 0.65) !important;
             }
             
             /* ===========================================
