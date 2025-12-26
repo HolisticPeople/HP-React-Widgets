@@ -85,14 +85,17 @@ export const FunnelFaq = ({
             return (
               <div
                 key={index}
-                className="rounded-lg border border-border/50 bg-card/30 backdrop-blur-sm overflow-hidden transition-all duration-200 hover:border-accent/30"
+                className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm overflow-hidden transition-all duration-200 hover:border-accent/40"
               >
                 <button
                   onClick={() => toggleItem(index)}
-                  className="w-full flex items-center justify-between p-6 text-left"
+                  className={cn(
+                    "w-full flex items-center justify-between p-6 text-left transition-colors",
+                    "bg-card/40 hover:bg-card/55"
+                  )}
                   aria-expanded={isOpen}
                 >
-                  <span className="font-bold text-lg text-foreground pr-4">
+                  <span className="font-medium text-lg text-foreground/95 pr-4">
                     {faq.question}
                   </span>
                   <span className="text-accent flex-shrink-0">
