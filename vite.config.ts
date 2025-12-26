@@ -19,11 +19,16 @@ export default defineConfig({
                 main: path.resolve(__dirname, 'src/main.tsx'),
             },
         },
-        // Avoid minified variable names that conflict with Elementor globals
+        // Avoid minified variable names that conflict with WordPress/Elementor globals
         minify: 'terser',
         terserOptions: {
             mangle: {
-                reserved: ['$e', 'elementorFrontend', 'elementor', 'jQuery', '$'],
+                // Reserve WordPress and Elementor globals to prevent conflicts
+                reserved: ['$e', 'elementorFrontend', 'elementor', 'jQuery', '$', 'wp', 'window'],
+            },
+            compress: {
+                // Don't rename globals
+                keep_fnames: true,
             },
         },
     },
