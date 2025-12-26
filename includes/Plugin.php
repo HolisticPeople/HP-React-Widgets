@@ -268,7 +268,9 @@ class Plugin
         }
         $printed = true;
 
-        echo "<script>(function(){window.elementorFrontendConfig=window.elementorFrontendConfig||{};window.elementorFrontendConfig.environmentMode=window.elementorFrontendConfig.environmentMode||{};window.elementorFrontendConfig.isDebug=window.elementorFrontendConfig.isDebug||false;window.elementorFrontendConfig.isElementorDebug=window.elementorFrontendConfig.isElementorDebug||false;window.elementorFrontendConfig.urls=window.elementorFrontendConfig.urls||{};window.elementorFrontendConfig.i18n=window.elementorFrontendConfig.i18n||{};window.elementorFrontendConfig.responsive=window.elementorFrontendConfig.responsive||{};window.elementorFrontendConfig.breakpoints=window.elementorFrontendConfig.breakpoints||{};window.elementorFrontendConfig.kit=window.elementorFrontendConfig.kit||{};var elementorFrontendConfig=window.elementorFrontendConfig;})();</script>";
+        // Keep this tiny, but include the nested breakpoint objects Elementor reads with Object.entries().
+        // We only set defaults if missing, so it won't interfere when Elementor later localizes real data.
+        echo "<script>(function(){var c=window.elementorFrontendConfig=window.elementorFrontendConfig||{};c.environmentMode=c.environmentMode||{};c.isDebug=!!c.isDebug;c.isElementorDebug=!!c.isElementorDebug;c.urls=c.urls||{};c.i18n=c.i18n||{};c.responsive=c.responsive||{};c.responsive.breakpoints=c.responsive.breakpoints||{};c.responsive.activeBreakpoints=c.responsive.activeBreakpoints||{};c.breakpoints=c.breakpoints||c.responsive.breakpoints||{};c.kit=c.kit||{};c.kit.active_breakpoints=c.kit.active_breakpoints||c.responsive.activeBreakpoints||{};var elementorFrontendConfig=c;})();</script>";
     }
 
     /**
