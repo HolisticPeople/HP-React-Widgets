@@ -178,12 +178,50 @@ class FunnelOfferFields
                 border: 1px solid #e0e0e0;
                 border-radius: 8px;
                 margin-bottom: 12px;
+                position: relative;
             }
             .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed {
                 background: #fff;
             }
             .acf-field[data-key="field_funnel_offers"] .acf-row-handle .acf-icon.-minus {
                 display: block !important;
+            }
+
+            /*
+             * Repeater layout tweaks:
+             * - When EXPANDED: hide the left handle column so fields use full width
+             * - When COLLAPSED: make the collapsed summary take full width (minus the remove handle)
+             */
+            .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.order {
+                display: none !important;
+            }
+            .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-fields {
+                margin-left: 0 !important;
+            }
+            .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove {
+                position: absolute !important;
+                top: 10px;
+                right: 10px;
+                height: auto !important;
+            }
+
+            .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed {
+                display: flex !important;
+                align-items: center;
+            }
+            .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed > .acf-row-handle.order {
+                flex: 1 1 auto !important;
+                width: auto !important;
+                float: none !important;
+            }
+            .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed > .acf-row-handle.remove {
+                flex: 0 0 auto !important;
+                width: auto !important;
+                float: none !important;
+                height: auto !important;
+            }
+            .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed > .acf-fields {
+                display: none !important;
             }
             
             /* Products section */
