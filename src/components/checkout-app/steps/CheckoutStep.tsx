@@ -506,6 +506,10 @@ export const CheckoutStep = ({
     if (newShippingKey === shippingKeyRef.current) return;
     shippingKeyRef.current = newShippingKey;
     
+    // Clear stale rates while fetching new ones
+    setShippingRates([]);
+    onSelectRateRef.current(null as unknown as ShippingRate);
+    
     const timer = setTimeout(() => fetchShippingRatesRef.current(), 500);
     return () => clearTimeout(timer);
   }, [formData.address, formData.city, formData.zipCode, formData.country, getCartItems]);
@@ -1054,8 +1058,10 @@ export const CheckoutStep = ({
                     `$${shippingCost.toFixed(2)}`
                   ) : totals?.shippingTotal ? (
                     `$${totals.shippingTotal.toFixed(2)}`
+                  ) : formData.address && formData.zipCode ? (
+                    <LoaderIcon className="w-3 h-3" />
                   ) : (
-                    'Calculated at checkout'
+                    <span className="text-muted-foreground text-sm">Enter address</span>
                   )}
                 </span>
               </div>
