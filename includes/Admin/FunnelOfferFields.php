@@ -758,18 +758,51 @@ class FunnelOfferFields
                 line-height: 1 !important;
             }
 
-            /* Expanded view: collapse stays at top, remove icon vertically centered */
+            /* Expanded view: collapse pinned to top, remove icon vertically centered */
+            .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove,
+            .acf-field[data-name="funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove {
+                display: block !important;
+                position: relative !important;
+                padding-top: 6px !important;
+                height: 100% !important;
+            }
+            .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove .hp-offer-collapse-toggle,
+            .acf-field[data-name="funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove .hp-offer-collapse-toggle {
+                position: absolute !important;
+                top: 6px !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                margin: 0 !important;
+            }
             .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove .acf-icon.-minus,
             .acf-field[data-name="funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove .acf-icon.-minus {
-                margin-top: auto !important;
-                margin-bottom: auto !important;
+                position: absolute !important;
+                top: 50% !important;
+                left: 50% !important;
+                transform: translate(-50%, -50%) !important;
+                margin: 0 !important;
             }
 
             /* Collapsed view: remove icon centered vertically at far right */
+            .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed,
+            .acf-field[data-name="funnel_offers"] .acf-row.-collapsed {
+                position: relative !important;
+            }
             .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed > .acf-row-handle.remove,
             .acf-field[data-name="funnel_offers"] .acf-row.-collapsed > .acf-row-handle.remove {
+                position: absolute !important;
+                right: 0 !important;
+                top: 0 !important;
+                bottom: 0 !important;
+                width: 48px !important;
+                display: flex !important;
+                align-items: center !important;
                 justify-content: center !important;
                 padding-top: 0 !important;
+            }
+            .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed > .acf-row-handle.order,
+            .acf-field[data-name="funnel_offers"] .acf-row.-collapsed > .acf-row-handle.order {
+                padding-right: 48px !important;
             }
         ';
     }
