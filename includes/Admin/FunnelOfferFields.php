@@ -760,6 +760,22 @@ class FunnelOfferFields
                 cursor: pointer !important;
             }
 
+            /* Full-height clickable hit area inside the right handle (for tooltip + reliable clicks) */
+            .hp-offer-collapse-zone {
+                position: relative !important;
+            }
+            .hp-offer-collapse-hit {
+                position: absolute;
+                inset: 0;
+                cursor: pointer;
+                /* keep it behind the remove icon so minus still works */
+                z-index: 0;
+            }
+            .acf-row-handle.remove .acf-icon.-minus {
+                position: relative;
+                z-index: 1;
+            }
+
             /* Collapsed view: remove icon centered vertically at far right */
             .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed,
             .acf-field[data-name="funnel_offers"] .acf-row.-collapsed {

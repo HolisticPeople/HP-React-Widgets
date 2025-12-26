@@ -189,9 +189,8 @@
             }, 50);
         });
 
-        // Expanded view: clicking anywhere in the right handle column collapses the offer.
-        // (Except clicking the remove-row icon itself.)
-        $(document).on('click', '.acf-field[data-name="funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove, .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove', function(e) {
+        // Expanded view: clicking the full-height hit area collapses the offer.
+        $(document).on('click', '.hp-offer-collapse-hit', function(e) {
             // If user clicked the actual remove icon, let ACF handle removal.
             if ($(e.target).closest('.acf-icon.-minus').length) return;
 
@@ -257,6 +256,7 @@
         $offerRows.each(function(index) {
             console.log('[HP Offer] Processing row', index);
             initializeOfferRow($(this));
+            decorateCollapseZone($(this));
         });
     }
 
@@ -266,6 +266,9 @@
             console.log('[HP Offer] No products container in row');
             return;
         }
+
+        // Always ensure collapse zone exists (even if table already initialized)
+        decorateCollapseZone($row);
 
         // Check if already initialized
         if ($container.data('initialized')) {
@@ -299,12 +302,18 @@
 
         // Load existing products
         loadExistingProducts($row, $container);
+    }
 
-        // Mark right handle as collapse zone + tooltip
+    function decorateCollapseZone($row) {
         const $removeHandle = $row.children('.acf-row-handle.remove');
-        if ($removeHandle.length) {
-            $removeHandle.addClass('hp-offer-collapse-zone');
-            $removeHandle.attr('title', 'Click here to collapse this offer');
+        if (!$removeHandle.length) return;
+
+        $removeHandle.addClass('hp-offer-collapse-zone');
+
+        // Add a full-height hit area so the whole column behaves like a button (tooltip included)
+        if (!$removeHandle.find('.hp-offer-collapse-hit').length) {
+            const $hit = $('<div class="hp-offer-collapse-hit" title="Click here to collapse this offer" aria-label="Click here to collapse this offer"></div>');
+            $removeHandle.prepend($hit);
         }
     }
 
