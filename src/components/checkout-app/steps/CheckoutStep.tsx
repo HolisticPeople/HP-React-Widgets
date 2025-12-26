@@ -614,7 +614,8 @@ export const CheckoutStep = ({
   // Helper function to extract TOTAL shipping cost from a rate object (shipping + other fees)
   // NOT wrapped in useCallback to avoid stale closure issues
   const extractShippingCost = (rate: ShippingRate | null): number => {
-    if (!rate || isFreeShipping) return 0;
+    if (!rate) return 0;
+    if (rate.serviceCode === 'free_shipping') return 0;
     const rateAny = rate as Record<string, unknown>;
     // ShipStation returns shipping_amount_raw, check all possible field names
     const rawShipping = rateAny.shipping_amount_raw ?? rateAny.base_amount_raw ?? rate.shipmentCost ?? rateAny.shipment_cost ?? 0;
@@ -634,20 +635,29 @@ export const CheckoutStep = ({
   // SIMPLIFIED: Compute shipping cost directly from selectedRate on every render
   // No complex state syncing - just derive from the source of truth
   const shippingCost = useMemo(() => {
-    if (isFreeShipping) {
-      console.log('[shippingCost] Free shipping country');
-      return 0;
-    }
     if (!selectedRate) {
       console.log('[shippingCost] No rate selected');
       return 0;
     }
     
-    // Extract cost directly from selectedRate
-    const cost = extractShippingCost(selectedRate);
-    console.log('[shippingCost] selectedRate:', selectedRate.serviceCode, 'Extracted cost:', cost);
-    return cost;
-  }, [isFreeShipping, selectedRate]);
+    // If selected rate is free shipping, return 0
+    if (selectedRate.serviceCode === 'free_shipping') {
+      console.log('[shippingCost] Free shipping rate selected');
+      return 0;
+    }
+    
+    // Extract cost directly from selectedRate (don't use isFreeShipping flag here - 
+    // it may be out of sync with actual loaded address from address book)
+    const rateAny = selectedRate as Record<string, unknown>;
+    const rawShipping = rateAny.shipping_amount_raw ?? rateAny.base_amount_raw ?? selectedRate.shipmentCost ?? rateAny.shipment_cost ?? 0;
+    const shipmentCost = typeof rawShipping === 'number' ? rawShipping : parseFloat(String(rawShipping)) || 0;
+    const rawOther = rateAny.other_cost_raw ?? (selectedRate as ShippingRate & { otherCost?: number }).otherCost ?? rateAny.other_cost ?? 0;
+    const otherCost = typeof rawOther === 'number' ? rawOther : parseFloat(String(rawOther)) || 0;
+    const totalCost = shipmentCost + otherCost;
+    
+    console.log('[shippingCost] selectedRate:', selectedRate.serviceCode, 'shipmentCost:', shipmentCost, 'otherCost:', otherCost, 'TOTAL:', totalCost);
+    return totalCost;
+  }, [selectedRate]);
   
   // Log the selected rate details for debugging
   useEffect(() => {
