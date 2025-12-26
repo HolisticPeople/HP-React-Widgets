@@ -189,13 +189,18 @@
             }, 50);
         });
 
-        // Collapse/expand toggle (works even when left handle is visually hidden)
-        $(document).on('click', '.hp-offer-collapse-toggle', function(e) {
+        // Expanded view: clicking anywhere in the right handle column collapses the offer.
+        // (Except clicking the remove-row icon itself.)
+        $(document).on('click', '.acf-field[data-name="funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove, .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove', function(e) {
+            // If user clicked the actual remove icon, let ACF handle removal.
+            if ($(e.target).closest('.acf-icon.-minus').length) return;
+
             e.preventDefault();
+            e.stopPropagation();
+
             const $row = $(this).closest('.acf-row');
             const $orderHandle = $row.children('.acf-row-handle.order');
             if ($orderHandle.length) {
-                // Try clicking the built-in ACF toggle first
                 const $icon = $orderHandle.find('.acf-icon').first();
                 if ($icon.length) {
                     $icon.trigger('click');
@@ -203,8 +208,7 @@
                     $orderHandle.trigger('click');
                 }
             } else {
-                // Last-resort fallback
-                $row.toggleClass('-collapsed');
+                $row.addClass('-collapsed');
             }
         });
 
@@ -296,25 +300,12 @@
         // Load existing products
         loadExistingProducts($row, $container);
 
-        // Ensure we have a visible collapse control even when the left handle is visually hidden
-        ensureCollapseToggle($row);
-    }
-
-    function ensureCollapseToggle($row) {
+        // Mark right handle as collapse zone + tooltip
         const $removeHandle = $row.children('.acf-row-handle.remove');
-        if (!$removeHandle.length) return;
-
-        // Avoid duplicates
-        if ($removeHandle.find('.hp-offer-collapse-toggle').length) return;
-
-        const $btn = $(`
-            <button type="button" class="button-link hp-offer-collapse-toggle" title="Collapse/Expand offer" aria-label="Collapse/Expand offer">
-                <span class="dashicons dashicons-arrow-up-alt2"></span>
-            </button>
-        `);
-
-        // Place at top of the remove handle column (CSS will stack items)
-        $removeHandle.prepend($btn);
+        if ($removeHandle.length) {
+            $removeHandle.addClass('hp-offer-collapse-zone');
+            $removeHandle.attr('title', 'Click here to collapse this offer');
+        }
     }
 
     // ========================================

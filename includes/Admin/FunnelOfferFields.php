@@ -746,41 +746,18 @@ class FunnelOfferFields
                 height: 100% !important;
             }
 
-            /* Show collapse button only when expanded */
-            .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed .hp-offer-collapse-toggle,
-            .acf-field[data-name="funnel_offers"] .acf-row.-collapsed .hp-offer-collapse-toggle {
-                display: none !important;
+            /* Expanded view: right column acts as a collapse zone (minus icon still removes) */
+            .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove.hp-offer-collapse-zone,
+            .acf-field[data-name="funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove.hp-offer-collapse-zone {
+                cursor: pointer !important;
             }
-
-            /* Make the collapse button look like a small icon (no extra padding) */
-            .hp-offer-collapse-toggle {
-                padding: 0 !important;
-                line-height: 1 !important;
+            .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove.hp-offer-collapse-zone:hover,
+            .acf-field[data-name="funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove.hp-offer-collapse-zone:hover {
+                background: rgba(0,0,0,0.03) !important;
             }
-
-            /* Expanded view: collapse pinned to top, remove icon vertically centered */
-            .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove,
-            .acf-field[data-name="funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove {
-                display: block !important;
-                position: relative !important;
-                padding-top: 6px !important;
-                height: 100% !important;
-            }
-            .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove .hp-offer-collapse-toggle,
-            .acf-field[data-name="funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove .hp-offer-collapse-toggle {
-                position: absolute !important;
-                top: 6px !important;
-                left: 50% !important;
-                transform: translateX(-50%) !important;
-                margin: 0 !important;
-            }
-            .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove .acf-icon.-minus,
-            .acf-field[data-name="funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove .acf-icon.-minus {
-                position: absolute !important;
-                top: 50% !important;
-                left: 50% !important;
-                transform: translate(-50%, -50%) !important;
-                margin: 0 !important;
+            .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove.hp-offer-collapse-zone .acf-icon.-minus,
+            .acf-field[data-name="funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove.hp-offer-collapse-zone .acf-icon.-minus {
+                cursor: pointer !important;
             }
 
             /* Collapsed view: remove icon centered vertically at far right */
