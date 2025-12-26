@@ -246,6 +246,13 @@ class FunnelOfferFields
             .acf-field[data-name="funnel_offers"] .acf-row-handle.remove [data-event="add-row"] {
                 display: none !important;
             }
+            /* Also hide duplicate-row icon (keeps the right column clean as a collapse zone) */
+            .acf-field[data-key="field_funnel_offers"] .acf-row-handle.remove .acf-icon.-duplicate,
+            .acf-field[data-name="funnel_offers"] .acf-row-handle.remove .acf-icon.-duplicate,
+            .acf-field[data-key="field_funnel_offers"] .acf-row-handle.remove [data-event="duplicate-row"],
+            .acf-field[data-name="funnel_offers"] .acf-row-handle.remove [data-event="duplicate-row"] {
+                display: none !important;
+            }
             
             /* Products section */
             .hp-products-section {
@@ -774,6 +781,27 @@ class FunnelOfferFields
             .acf-row-handle.remove .acf-icon.-minus {
                 position: relative;
                 z-index: 1;
+            }
+
+            /* Make the right handle truly full-height on expanded rows */
+            .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed),
+            .acf-field[data-name="funnel_offers"] .acf-row:not(.-collapsed) {
+                position: relative !important;
+            }
+            .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove.hp-offer-collapse-zone,
+            .acf-field[data-name="funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove.hp-offer-collapse-zone {
+                position: absolute !important;
+                top: 0 !important;
+                bottom: 0 !important;
+                right: 0 !important;
+                width: 48px !important;
+                height: auto !important;
+                padding-top: 0 !important;
+            }
+            .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-fields,
+            .acf-field[data-name="funnel_offers"] .acf-row:not(.-collapsed) > .acf-fields {
+                /* avoid the content sitting under the absolute right handle */
+                padding-right: 48px !important;
             }
 
             /* Collapsed view: remove icon centered vertically at far right */
