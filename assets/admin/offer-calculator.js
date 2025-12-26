@@ -188,6 +188,25 @@
                 refreshOfferUI($offerRow);
             }, 50);
         });
+
+        // Collapse/expand toggle (works even when left handle is visually hidden)
+        $(document).on('click', '.hp-offer-collapse-toggle', function(e) {
+            e.preventDefault();
+            const $row = $(this).closest('.acf-row');
+            const $orderHandle = $row.children('.acf-row-handle.order');
+            if ($orderHandle.length) {
+                // Try clicking the built-in ACF toggle first
+                const $icon = $orderHandle.find('.acf-icon').first();
+                if ($icon.length) {
+                    $icon.trigger('click');
+                } else {
+                    $orderHandle.trigger('click');
+                }
+            } else {
+                // Last-resort fallback
+                $row.toggleClass('-collapsed');
+            }
+        });
     }
 
     function initializeAllOffers() {
@@ -255,6 +274,31 @@
 
         // Load existing products
         loadExistingProducts($row, $container);
+
+        // Ensure we have a visible collapse control even when the left handle is visually hidden
+        ensureCollapseToggle($row);
+    }
+
+    function ensureCollapseToggle($row) {
+        const $removeHandle = $row.children('.acf-row-handle.remove');
+        if (!$removeHandle.length) return;
+
+        // Avoid duplicates
+        if ($removeHandle.find('.hp-offer-collapse-toggle').length) return;
+
+        const $btn = $(`
+            <button type="button" class="button-link hp-offer-collapse-toggle" title="Collapse/Expand offer" aria-label="Collapse/Expand offer">
+                <span class="dashicons dashicons-arrow-up-alt2"></span>
+            </button>
+        `);
+
+        // Insert before existing ACF icons so it doesn't overlap them
+        const $firstIcon = $removeHandle.find('.acf-icon, .acf-button, a').first();
+        if ($firstIcon.length) {
+            $firstIcon.before($btn);
+        } else {
+            $removeHandle.prepend($btn);
+        }
     }
 
     // ========================================

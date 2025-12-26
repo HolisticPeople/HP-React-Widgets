@@ -193,35 +193,44 @@ class FunnelOfferFields
              * - When COLLAPSED: make the collapsed summary take full width (minus the remove handle)
              */
             .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.order {
-                display: none !important;
+                /* keep in DOM so ACF can still toggle collapse; visually hidden */
+                width: 0 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow: hidden !important;
             }
             .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-fields {
                 margin-left: 0 !important;
             }
             .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove {
-                position: absolute !important;
-                top: 10px;
-                right: 10px;
+                position: relative !important;
+                top: auto !important;
+                right: auto !important;
                 height: auto !important;
             }
 
             .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed {
-                display: flex !important;
-                align-items: center;
+                /* keep ACF default layout; we only adjust widths */
             }
             .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed > .acf-row-handle.order {
-                flex: 1 1 auto !important;
-                width: auto !important;
-                float: none !important;
+                width: calc(100% - 48px) !important;
+                text-align: left !important;
+                padding-left: 12px !important;
+                display: flex !important;
+                align-items: center;
+                justify-content: flex-start;
             }
             .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed > .acf-row-handle.remove {
-                flex: 0 0 auto !important;
-                width: auto !important;
-                float: none !important;
+                width: 48px !important;
                 height: auto !important;
             }
             .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed > .acf-fields {
                 display: none !important;
+            }
+
+            /* Ensure collapsed handle content aligns left and is larger */
+            .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed > .acf-row-handle.order .acf-row-number {
+                margin-right: 10px;
             }
             
             /* Products section */
@@ -653,9 +662,10 @@ class FunnelOfferFields
                 display: inline-flex;
                 align-items: center;
                 gap: 8px;
-                margin-left: 12px;
-                font-size: 12px;
-                color: #666;
+                margin-left: 0;
+                font-size: 14px;
+                color: #1e1e1e;
+                justify-content: flex-start;
             }
             .hp-offer-collapsed-summary .hp-summary-count {
                 background: #0073aa;
@@ -688,6 +698,11 @@ class FunnelOfferFields
                 line-height: 1.2;
                 white-space: nowrap;
             }
+            .hp-offer-collapsed-name {
+                font-weight: 700;
+                color: #1e1e1e;
+                font-size: 15px;
+            }
             .hp-offer-collapsed-type {
                 font-weight: 600;
                 color: #1e1e1e;
@@ -696,11 +711,13 @@ class FunnelOfferFields
                 color: #00a32a;
                 font-weight: 700;
             }
-            .hp-offer-collapsed-image {
-                color: #666;
-            }
             .hp-offer-collapsed-dot {
                 color: #999;
+            }
+
+            /* Collapse button shown on expanded rows (right side) */
+            .hp-offer-collapse-toggle {
+                margin-left: 8px;
             }
         ';
     }

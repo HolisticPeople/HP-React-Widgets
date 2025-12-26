@@ -427,6 +427,10 @@
                 $handle.append($meta);
             }
 
+            // Offer name (always show even if ACF collapsed label glitches)
+            const $nameInput = $row.find('.acf-field[data-name="offer_name"] input[type="text"]');
+            const offerName = ($nameInput.val() || '').toString().trim();
+
             // Offer type label
             const $typeSelect = $row.find('.acf-field[data-name="offer_type"] select');
             const typeLabel = $typeSelect.find('option:selected').text() || ($typeSelect.val() || '');
@@ -436,21 +440,30 @@
             const priceVal = $priceField.length ? parseFloat($priceField.val()) : NaN;
             const price = !isNaN(priceVal) ? priceVal : (parseFloat(totalSale) || 0);
 
-            // Image override (ACF image return_format=url so hidden input holds URL)
+            // Image override (prefer the preview <img> src; fall back to any input that looks like a URL)
             let overrideUrl = '';
-            const $imgField = $row.find('.acf-field[data-name="offer_image"] input');
-            if ($imgField.length) {
-                overrideUrl = String($imgField.first().val() || '').trim();
+            const $imgFieldWrap = $row.find('.acf-field[data-name="offer_image"]');
+            const $previewImg = $imgFieldWrap.find('img').first();
+            if ($previewImg.length) {
+                overrideUrl = String($previewImg.attr('src') || '').trim();
             }
-            const hasOverride = !!overrideUrl && overrideUrl !== '0';
+            if (!overrideUrl) {
+                $imgFieldWrap.find('input').each(function() {
+                    const v = ($(this).val() || '').toString().trim();
+                    if (/^https?:\/\//i.test(v)) {
+                        overrideUrl = v;
+                        return false;
+                    }
+                });
+            }
+            const hasOverride = !!overrideUrl;
 
             // Product image fallback: first product's image, if present
             const productImg = (products && products.length && products[0] && products[0].image) ? products[0].image : '';
             const imgUrl = hasOverride ? overrideUrl : productImg;
-            const imgSource = hasOverride ? 'Override' : 'Product';
-
+            // We no longer show "Product/Override" text per UX request.
             const safeType = this._escapeHtml(typeLabel);
-            const safeSource = this._escapeHtml(imgSource);
+            const safeName = this._escapeHtml(offerName || 'Offer');
             const safeImg = this._escapeAttr(imgUrl || '');
 
             const thumbHtml = imgUrl
@@ -460,11 +473,10 @@
             $meta.html(`
                 ${thumbHtml}
                 <span class="hp-offer-collapsed-text">
+                    <span class="hp-offer-collapsed-name">${safeName}</span>
                     <span class="hp-offer-collapsed-type">${safeType}</span>
                     <span class="hp-offer-collapsed-dot">·</span>
                     <span class="hp-offer-collapsed-price">$${price.toFixed(2)}</span>
-                    <span class="hp-offer-collapsed-dot">·</span>
-                    <span class="hp-offer-collapsed-image">${safeSource}</span>
                 </span>
             `);
         },
