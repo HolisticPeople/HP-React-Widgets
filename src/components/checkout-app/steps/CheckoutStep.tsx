@@ -414,14 +414,8 @@ export const CheckoutStep = ({
       const rates = await api.getShippingRates(address, items);
       if (rates.length > 0) {
         setShippingRates(rates);
-        // Select the first rate by default and set local cost
-        const firstRate = rates[0];
-        onSelectRateRef.current(firstRate);
-        // Also set local shipping cost from the rate
-        const rateAny = firstRate as Record<string, unknown>;
-        const rawCost = rateAny.shipping_amount_raw ?? rateAny.base_amount_raw ?? firstRate.shipmentCost ?? rateAny.shipment_cost ?? 0;
-        const cost = typeof rawCost === 'number' ? rawCost : parseFloat(String(rawCost)) || 0;
-        setLocalShippingCost(cost);
+        // Select the first rate by default - cost will be calculated by shippingCost useMemo
+        onSelectRateRef.current(rates[0]);
       }
     } catch (e) {
       console.warn('[CheckoutStep] Shipping fetch failed', e);
@@ -611,11 +605,19 @@ export const CheckoutStep = ({
     }
   };
 
+  // Helper to get service code from rate (handles both camelCase and snake_case)
+  const getServiceCode = (rate: ShippingRate | null): string => {
+    if (!rate) return '';
+    const rateAny = rate as Record<string, unknown>;
+    return (rate.serviceCode || rateAny.service_code || '') as string;
+  };
+
   // Helper function to extract TOTAL shipping cost from a rate object (shipping + other fees)
   // NOT wrapped in useCallback to avoid stale closure issues
   const extractShippingCost = (rate: ShippingRate | null): number => {
     if (!rate) return 0;
-    if (rate.serviceCode === 'free_shipping') return 0;
+    const serviceCode = getServiceCode(rate);
+    if (serviceCode === 'free_shipping') return 0;
     const rateAny = rate as Record<string, unknown>;
     // ShipStation returns shipping_amount_raw, check all possible field names
     const rawShipping = rateAny.shipping_amount_raw ?? rateAny.base_amount_raw ?? rate.shipmentCost ?? rateAny.shipment_cost ?? 0;
@@ -628,7 +630,7 @@ export const CheckoutStep = ({
   
   // Handler for selecting a shipping rate - just updates parent state
   const handleSelectRate = (rate: ShippingRate) => {
-    console.log('[handleSelectRate] Clicked rate:', rate.serviceCode, 'Full rate object:', JSON.stringify(rate));
+    console.log('[handleSelectRate] Clicked rate:', getServiceCode(rate), 'Full rate object:', JSON.stringify(rate));
     onSelectRate(rate);
   };
   
@@ -640,29 +642,24 @@ export const CheckoutStep = ({
       return 0;
     }
     
+    const serviceCode = getServiceCode(selectedRate);
+    
     // If selected rate is free shipping, return 0
-    if (selectedRate.serviceCode === 'free_shipping') {
+    if (serviceCode === 'free_shipping') {
       console.log('[shippingCost] Free shipping rate selected');
       return 0;
     }
     
-    // Extract cost directly from selectedRate (don't use isFreeShipping flag here - 
-    // it may be out of sync with actual loaded address from address book)
-    const rateAny = selectedRate as Record<string, unknown>;
-    const rawShipping = rateAny.shipping_amount_raw ?? rateAny.base_amount_raw ?? selectedRate.shipmentCost ?? rateAny.shipment_cost ?? 0;
-    const shipmentCost = typeof rawShipping === 'number' ? rawShipping : parseFloat(String(rawShipping)) || 0;
-    const rawOther = rateAny.other_cost_raw ?? (selectedRate as ShippingRate & { otherCost?: number }).otherCost ?? rateAny.other_cost ?? 0;
-    const otherCost = typeof rawOther === 'number' ? rawOther : parseFloat(String(rawOther)) || 0;
-    const totalCost = shipmentCost + otherCost;
-    
-    console.log('[shippingCost] selectedRate:', selectedRate.serviceCode, 'shipmentCost:', shipmentCost, 'otherCost:', otherCost, 'TOTAL:', totalCost);
-    return totalCost;
+    // Extract cost directly from selectedRate
+    const cost = extractShippingCost(selectedRate);
+    console.log('[shippingCost] serviceCode:', serviceCode, 'TOTAL cost:', cost);
+    return cost;
   }, [selectedRate]);
   
   // Log the selected rate details for debugging
   useEffect(() => {
     if (selectedRate) {
-      console.log('[selectedRate changed] New rate:', selectedRate.serviceCode, 'Full object:', JSON.stringify(selectedRate));
+      console.log('[selectedRate changed] New rate:', getServiceCode(selectedRate), 'Full object:', JSON.stringify(selectedRate));
     }
   }, [selectedRate]);
   
@@ -1316,12 +1313,16 @@ export const CheckoutStep = ({
                       const otherCost = typeof rawOther === 'number' ? rawOther : parseFloat(String(rawOther)) || 0;
                       const totalCost = shipmentCost + otherCost;
                       
+                      const rateServiceCode = getServiceCode(rate);
+                      const selectedServiceCode = getServiceCode(selectedRate);
+                      const isSelected = rateServiceCode === selectedServiceCode;
+                      
                       return (
                         <label
-                          key={rate.serviceCode}
+                          key={rateServiceCode || `rate-${idx}`}
                           className={cn(
                             "flex items-center justify-between p-3 rounded-md border cursor-pointer transition-colors",
-                            selectedRate?.serviceCode === rate.serviceCode
+                            isSelected
                               ? 'bg-accent/5 border-accent/50'
                               : 'bg-input border-border/50 hover:border-border'
                           )}
@@ -1330,7 +1331,7 @@ export const CheckoutStep = ({
                             <input
                               type="radio"
                               name="shippingRate"
-                              checked={selectedRate?.serviceCode === rate.serviceCode}
+                              checked={isSelected}
                               onChange={() => handleSelectRate(rate)}
                               className="accent-accent"
                             />
