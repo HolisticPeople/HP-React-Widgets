@@ -743,6 +743,7 @@ class FunnelOfferFields
                 justify-content: flex-start !important;
                 gap: 6px !important;
                 padding-top: 6px !important;
+                height: 100% !important;
             }
 
             /* Show collapse button only when expanded */
@@ -755,6 +756,20 @@ class FunnelOfferFields
             .hp-offer-collapse-toggle {
                 padding: 0 !important;
                 line-height: 1 !important;
+            }
+
+            /* Expanded view: collapse stays at top, remove icon vertically centered */
+            .acf-field[data-key="field_funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove .acf-icon.-minus,
+            .acf-field[data-name="funnel_offers"] .acf-row:not(.-collapsed) > .acf-row-handle.remove .acf-icon.-minus {
+                margin-top: auto !important;
+                margin-bottom: auto !important;
+            }
+
+            /* Collapsed view: remove icon centered vertically at far right */
+            .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed > .acf-row-handle.remove,
+            .acf-field[data-name="funnel_offers"] .acf-row.-collapsed > .acf-row-handle.remove {
+                justify-content: center !important;
+                padding-top: 0 !important;
             }
         ';
     }
