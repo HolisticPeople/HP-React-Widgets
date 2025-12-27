@@ -119,11 +119,13 @@ export function useStripePayment(options: UseStripePaymentOptions) {
   // Load Stripe.js using singleton pattern
   useEffect(() => {
     if (!publishableKey) {
+      console.warn('[useStripePayment] Missing publishableKey!');
       setError('Payment is not configured (missing Stripe publishable key).');
       setIsLoading(false);
       return;
     }
 
+    console.log('[useStripePayment] Initializing with key:', publishableKey.substring(0, 10) + '...');
     let cancelled = false;
 
     loadStripeSingleton(publishableKey).then((stripe) => {

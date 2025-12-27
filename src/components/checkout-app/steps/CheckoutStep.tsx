@@ -1358,6 +1358,11 @@ export const CheckoutStep = ({
                       <LoaderIcon className="w-6 h-6" />
                     </div>
                   )}
+                  {!stripePublishableKey && !stripePayment.isLoading && (
+                    <div className="flex items-center justify-center h-12 text-destructive text-sm text-center">
+                      Payment config error: Missing key for {stripeMode} mode.
+                    </div>
+                  )}
                 </div>
                 {stripePayment.error && (
                   <p className="text-xs text-destructive mt-1">{stripePayment.error}</p>
