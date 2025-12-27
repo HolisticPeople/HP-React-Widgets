@@ -106,8 +106,9 @@ class FunnelCheckoutAppShortcode
         }
 
         // Get Stripe mode + publishable key (mode can be forced per funnel)
+        $resolvedMode = 'auto';
         $stripeMode = (string) ($config['stripe_mode'] ?? 'auto');
-        $stripeKey = $this->getStripePublishableKey($stripeMode);
+        $stripeKey = $this->getStripePublishableKey($stripeMode, $resolvedMode);
 
         // Build props for React component
         $props = [
@@ -123,7 +124,7 @@ class FunnelCheckoutAppShortcode
             'enablePoints'        => (bool) ($config['checkout']['enable_points'] ?? true),
             'enableCustomerLookup' => (bool) ($config['checkout']['enable_customer_lookup'] ?? true),
             'stripePublishableKey' => $stripeKey,
-            'stripeMode'          => $stripeMode,
+            'stripeMode'          => $resolvedMode, // Use the resolved 'test' or 'live'
             'upsellOffers'        => $this->buildUpsellOffers($config['thankyou']['upsell'] ?? null),
             'showUpsell'          => (bool) ($config['thankyou']['show_upsell'] ?? false),
             'thankYouHeadline'    => $config['thankyou']['headline'] ?? 'Thank You for Your Order!',
@@ -224,10 +225,11 @@ class FunnelCheckoutAppShortcode
     /**
      * Get Stripe publishable key from WooCommerce Stripe Gateway settings.
      */
-    private function getStripePublishableKey(string $stripeMode = 'auto'): string
+    private function getStripePublishableKey(string $stripeMode = 'auto', string &$outMode = 'auto'): string
     {
         // First check for WooCommerce Stripe Gateway
         $stripeSettings = get_option('woocommerce_stripe_settings', []);
+        $stripeApiSettings = get_option('woocommerce_stripe_api_settings', []);
 
         $mode = strtolower(trim($stripeMode));
         if ($mode !== 'test' && $mode !== 'live') {
@@ -235,10 +237,12 @@ class FunnelCheckoutAppShortcode
             $mode = (!empty($stripeSettings['testmode']) && $stripeSettings['testmode'] === 'yes') ? 'test' : 'live';
         }
 
+        $outMode = $mode;
+
         if ($mode === 'test') {
-            return (string) ($stripeSettings['test_publishable_key'] ?? '');
+            return (string) ($stripeSettings['test_publishable_key'] ?: ($stripeApiSettings['publishable_key_test'] ?? ''));
         }
-        return (string) ($stripeSettings['publishable_key'] ?? '');
+        return (string) ($stripeSettings['publishable_key'] ?: ($stripeApiSettings['publishable_key_live'] ?? ''));
     }
 }
 

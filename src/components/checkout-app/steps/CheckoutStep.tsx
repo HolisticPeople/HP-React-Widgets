@@ -188,6 +188,7 @@ interface CheckoutStepProps {
   enablePoints: boolean;
   enableCustomerLookup: boolean;
   stripePublishableKey: string;
+  stripeMode: string;
   landingUrl: string;
   apiBase: string;
   getCartItems: () => CartItem[];
@@ -217,6 +218,7 @@ export const CheckoutStep = ({
   enablePoints,
   enableCustomerLookup,
   stripePublishableKey,
+  stripeMode,
   landingUrl,
   apiBase,
   getCartItems,
@@ -1339,7 +1341,14 @@ export const CheckoutStep = ({
 
               {/* Stripe Card Element */}
               <div>
-                <Label className="text-foreground mb-2 block">Payment</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-foreground block">Payment</Label>
+                  {stripeMode === 'test' && (
+                    <span className="px-2 py-0.5 bg-orange-500/20 text-orange-500 text-[10px] font-bold rounded uppercase tracking-wider border border-orange-500/30 animate-pulse">
+                      Test Mode
+                    </span>
+                  )}
+                </div>
                 <div 
                   ref={stripeContainerRef}
                   className="p-4 bg-input border border-border/50 rounded-md min-h-[80px]"

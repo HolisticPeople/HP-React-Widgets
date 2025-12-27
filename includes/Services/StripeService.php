@@ -25,12 +25,14 @@ class StripeService
 
         // Prefer WooCommerce Stripe Gateway settings (most common)
         $stripeSettings = get_option('woocommerce_stripe_settings', []);
+        $stripeApiSettings = get_option('woocommerce_stripe_api_settings', []);
+
         if ($this->mode === 'test') {
-            $this->publishable = (string) ($stripeSettings['test_publishable_key'] ?? '');
-            $this->secret = (string) ($stripeSettings['test_secret_key'] ?? '');
+            $this->publishable = (string) ($stripeSettings['test_publishable_key'] ?: ($stripeApiSettings['publishable_key_test'] ?? ''));
+            $this->secret = (string) ($stripeSettings['test_secret_key'] ?: ($stripeApiSettings['secret_key_test'] ?? ''));
         } else {
-            $this->publishable = (string) ($stripeSettings['publishable_key'] ?? '');
-            $this->secret = (string) ($stripeSettings['secret_key'] ?? '');
+            $this->publishable = (string) ($stripeSettings['publishable_key'] ?: ($stripeApiSettings['publishable_key_live'] ?? ''));
+            $this->secret = (string) ($stripeSettings['secret_key'] ?: ($stripeApiSettings['secret_key_live'] ?? ''));
         }
     }
 
@@ -206,5 +208,7 @@ class StripeService
         return $data;
     }
 }
+
+
 
 

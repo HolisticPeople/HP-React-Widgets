@@ -45,6 +45,7 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     enablePoints = true,
     enableCustomerLookup = true,
     stripePublishableKey,
+    stripeMode = 'live',
     upsellOffers = DEFAULT_UPSELL_OFFERS,
     showUpsell = true,
     thankYouHeadline = 'Thank You for Your Order!',
@@ -473,6 +474,7 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
             enablePoints={enablePoints}
             enableCustomerLookup={enableCustomerLookup}
             stripePublishableKey={stripePublishableKey}
+            stripeMode={stripeMode}
             landingUrl={landingUrl}
             apiBase={apiBase}
             getCartItems={getCartItems}
