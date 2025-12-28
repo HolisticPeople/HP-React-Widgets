@@ -329,12 +329,20 @@ class CheckoutService
             $excludeGd = !empty($it['exclude_global_discount']);
             $itemPct = isset($it['item_discount_percent']) ? (float) $it['item_discount_percent'] : null;
 
-            if ($itemPct !== null && $itemPct >= 0) {
+            // If price is different from regular price, calculate implied discount percent for EAO compatibility
+            if ($itemPct === null && $regularPrice > 0 && abs($price - $regularPrice) > 0.01) {
+                $itemPct = round((1 - ($price / $regularPrice)) * 100, 2);
+            }
+
+            if ($itemPct !== null && $itemPct > 0) {
                 $total = max(0.0, $price * (1 - ($itemPct / 100.0)) * $qty);
+                // Use EAO's meta key for visibility in admin
+                $item->add_meta_data('_eao_item_discount_percent', $itemPct, true);
                 $item->add_meta_data('_hp_rw_item_discount_percent', $itemPct, true);
             }
 
             if ($excludeGd) {
+                $item->add_meta_data('_eao_exclude_global_discount', '1', true);
                 $item->add_meta_data('_hp_rw_exclude_global_discount', '1', true);
             }
 
@@ -386,21 +394,9 @@ class CheckoutService
             }
         }
 
-        // Points redemption
+        // Points redemption - Use EAO/YITH style coupon for robustness
         if ($pointsToRedeem > 0) {
-            $pointsService = new PointsService();
-            $pointsDiscount = $pointsService->pointsToMoney($pointsToRedeem);
-            if ($pointsDiscount > 0) {
-                $fee = new WC_Order_Item_Fee();
-                $fee->set_name('Points redemption');
-                $fee->set_amount(-1 * $pointsDiscount);
-                $fee->set_total(-1 * $pointsDiscount);
-                $order->add_item($fee);
-                
-                // Add YITH-specific meta so it shows up in "Points Discount" field
-                $order->update_meta_data('_ywpar_coupon_points', $pointsToRedeem);
-                $order->update_meta_data('_ywpar_coupon_amount', $pointsDiscount);
-            }
+            $this->applyPointsRedemption($order, $pointsToRedeem);
         }
 
         // Link to existing user if found
@@ -421,6 +417,7 @@ class CheckoutService
 
         // --- CUSTOM TOTALS ADJUSTMENT ---
         // Calculate the current subtotal of products and fees added so far
+        // Note: applyPointsRedemption already called calculate_totals()
         $order->calculate_totals(false);
         $currentItemsTotal = 0.0;
         foreach ($order->get_items() as $item) {
@@ -435,12 +432,12 @@ class CheckoutService
             $diff = $offerTotal - $currentItemsTotal;
             // Allow a small margin for rounding
             if (abs($diff) > 0.01) {
-                $savingsFee = new WC_Order_Item_Fee();
+                $savingsFee = new \WC_Order_Item_Fee();
                 $savingsFee->set_name($diff < 0 ? 'Offer Savings' : 'Package Adjustment');
                 $savingsFee->set_amount($diff);
                 $savingsFee->set_total($diff);
                 $order->add_item($savingsFee);
-                error_log('[HP-RW] Added adjustment fee to match offer total: ' . $diff);
+                error_log('[HP-RW] Added adjustment fee to match offer total: ' . $diff . ' (Offer: ' . $offerTotal . ', Items: ' . $currentItemsTotal . ')');
             }
         }
 
@@ -477,13 +474,56 @@ class CheckoutService
         // Set status to processing
         $order->set_status('processing');
         
-        // Final total calculation before save
-        $order->calculate_totals(true);
+        // Final total calculation before save - use FALSE to avoid resetting our manual overrides
+        $order->calculate_totals(false);
         $order->save();
 
         error_log('[HP-RW] Order created successfully: ' . $order->get_id() . ' for PI: ' . $stripePaymentIntentId . ' with Total: ' . $order->get_total());
 
         return $order;
+    }
+
+    /**
+     * Apply points redemption using a YITH-compatible coupon.
+     */
+    private function applyPointsRedemption(WC_Order $order, int $points): void
+    {
+        $pointsService = new PointsService();
+        $discountAmount = $pointsService->pointsToMoney($points);
+
+        if ($discountAmount <= 0) {
+            return;
+        }
+
+        // Ensure we don't exceed order total
+        $order->calculate_totals(false);
+        $maxDiscount = (float) $order->get_total();
+        if ($discountAmount > $maxDiscount) {
+            $discountAmount = $maxDiscount;
+            $points = (int) ($discountAmount * 10); // Assuming 10 points = $1
+        }
+
+        // Create a unique coupon code following YITH's pattern
+        $couponCode = 'ywpar_discount_' . time() . '_' . rand(100, 999);
+
+        // Create a transient coupon
+        $coupon = new \WC_Coupon();
+        $coupon->set_code($couponCode);
+        $coupon->set_discount_type('fixed_cart');
+        $coupon->set_amount($discountAmount);
+        $coupon->set_description(sprintf('Points discount: %d points redeemed via Funnel', $points));
+        $coupon->add_meta_data('ywpar_coupon', 1, true);
+        $coupon->set_usage_limit(1);
+        $coupon->save();
+
+        // Apply to order
+        $order->apply_coupon($couponCode);
+
+        // Standard YITH meta
+        $order->update_meta_data('_ywpar_coupon_points', $points);
+        $order->update_meta_data('_ywpar_coupon_amount', $discountAmount);
+
+        error_log('[HP-RW] Applied points redemption coupon: ' . $couponCode . ' for $' . $discountAmount);
     }
 
     /**
@@ -521,6 +561,7 @@ class CheckoutService
             $itemPct = isset($it['item_discount_percent']) ? (float) $it['item_discount_percent'] : null;
             if ($itemPct !== null && $itemPct >= 0) {
                 $total = max(0.0, $price * (1 - ($itemPct / 100.0)) * $qty);
+                $item->add_meta_data('_eao_item_discount_percent', $itemPct, true);
                 $item->add_meta_data('_hp_rw_item_discount_percent', $itemPct, true);
             }
 
