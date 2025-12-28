@@ -366,6 +366,7 @@ class CheckoutApi
         if ($piId !== '' && $storedPiId !== $piId) return new WP_Error('unauthorized', 'Invalid authorization', ['status' => 403]);
 
         $items = [];
+        $itemsRegularSum = 0.0;
         foreach ($order->get_items() as $item) {
             if (!$item instanceof \WC_Order_Item_Product) continue;
             $product = $item->get_product();
@@ -378,17 +379,18 @@ class CheckoutApi
                 }
             }
             $qty = max(1, $item->get_quantity());
-            $regularUnitPrice = (float) ($item->get_subtotal() / $qty);
+            $unitPrice = (float) ($item->get_subtotal() / $qty);
 
             $items[] = [
                 'name'     => $item->get_name(),
                 'qty'      => $qty,
-                'price'    => $regularUnitPrice,
-                'subtotal' => $regularUnitPrice,
-                'total'    => (float) ($regularUnitPrice * $qty),
+                'price'    => $unitPrice,
+                'subtotal' => $unitPrice,
+                'total'    => (float) ($unitPrice * $qty),
                 'image'    => $imageUrl,
                 'sku'      => $product ? $product->get_sku() : '',
             ];
+            $itemsRegularSum += ($unitPrice * $qty);
         }
 
         $pointsRedeemed = ['points' => 0, 'value' => 0.0];
@@ -402,31 +404,41 @@ class CheckoutApi
 
         foreach ($order->get_fees() as $fee) {
             $feeTotal = (float) $fee->get_total();
-            if ($feeTotal < 0 && stripos($fee->get_name(), 'points') === false) {
-                $extraDiscounts += abs($feeTotal);
+            if ($feeTotal < 0) {
+                // EXCLUDE points from the general discount line
+                if (stripos($fee->get_name(), 'points') === false) {
+                    $extraDiscounts += abs($feeTotal);
+                }
             }
         }
 
         foreach ($order->get_coupon_codes() as $code) {
             try {
                 $coupon = new \WC_Coupon($code);
-                $isPointsCoupon = ($coupon->get_meta('ywpar_coupon') || $coupon->get_meta('_ywpar_coupon') || str_starts_with($code, 'ywpar_discount_'));
+                // Identification of points coupon
+                $isPointsCoupon = (
+                    $coupon->get_meta('ywpar_coupon') || 
+                    $coupon->get_meta('_ywpar_coupon') || 
+                    str_starts_with($code, 'ywpar_discount_')
+                );
+                
                 if ($isPointsCoupon) continue;
+                
                 foreach ($order->get_items('coupon') as $orderCoupon) {
-                    if ($orderCoupon->get_code() === $code) $extraDiscounts += (float) $orderCoupon->get_discount();
+                    if ($orderCoupon->get_code() === $code) {
+                        $extraDiscounts += (float) $orderCoupon->get_discount();
+                    }
                 }
             } catch (\Throwable $e) { continue; }
         }
 
-        $itemsSum = 0.0;
-        foreach ($items as $it) $itemsSum += $it['total'];
+        // The "Discount" line on TY page should be ONLY product savings (fees like "Offer Savings")
+        $totalDiscount = (float) $extraDiscounts;
         
         $shippingTotal = (float) $order->get_shipping_total();
         
-        // NOW INCLUDE item-level discounts in the final discount line
-        $totalDiscount = (float) $order->get_discount_total() + $extraDiscounts;
-
-        $calculatedGrandTotal = $itemsSum + $shippingTotal - $totalDiscount - $pointsRedeemed['value'];
+        // Manual grand total calculation for consistency
+        $calculatedGrandTotal = $itemsRegularSum + $shippingTotal - $totalDiscount - $pointsRedeemed['value'];
 
         return new WP_REST_Response([
             'success'         => true,
