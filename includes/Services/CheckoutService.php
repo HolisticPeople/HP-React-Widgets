@@ -85,6 +85,7 @@ class CheckoutService
         array $funnelConfig = [],
         ?float $offerTotal = null  // Admin-set total price for entire offer
     ): array {
+        error_log('[HP-RW] calculateTotals: items=' . count($items) . ' points=' . $pointsToRedeem . ' rate=' . ($selectedRate['amount'] ?? 'null'));
         $order_id = 0;
         
         try {

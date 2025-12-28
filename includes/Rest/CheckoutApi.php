@@ -113,9 +113,11 @@ class CheckoutApi
     public function handle_customer_lookup(WP_REST_Request $request): WP_REST_Response
     {
         $email = sanitize_email($request->get_param('email'));
+        error_log('[HP-RW] Customer lookup for: ' . $email);
         $user = get_user_by('email', $email);
 
         if (!$user) {
+            error_log('[HP-RW] Customer lookup: User not found for ' . $email);
             return new WP_REST_Response([
                 'user_id'         => 0,
                 'points_balance'  => 0,
@@ -125,6 +127,7 @@ class CheckoutApi
             ]);
         }
 
+        error_log('[HP-RW] Customer lookup: Found user ID ' . $user->ID);
         $pointsService = new PointsService();
         $customer = new \WC_Customer($user->ID);
 
@@ -283,6 +286,8 @@ class CheckoutApi
         $pointsToRedeem = (int) ($request->get_param('points_to_redeem') ?? 0);
         $funnelId = (string) ($request->get_param('funnel_id') ?? 'default');
         $offerTotal = $request->get_param('offer_total');  // Admin-set total price
+
+        error_log('[HP-RW] handle_totals: items=' . count($items) . ' points=' . $pointsToRedeem . ' funnel=' . $funnelId);
 
         if (empty($items)) {
             return new WP_Error('bad_request', 'Items required', ['status' => 400]);
