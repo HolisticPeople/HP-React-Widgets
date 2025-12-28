@@ -364,6 +364,7 @@ class CheckoutService
             $item->set_subtotal($subtotal);
             $item->set_total($total);
             $order->add_item($item);
+            error_log('[HP-RW TRACE] Added item: ' . $product->get_sku() . ' Price: ' . ($total / $qty) . ' Total: ' . $total);
         }
 
         // Set addresses
@@ -381,9 +382,12 @@ class CheckoutService
                 $ship->set_method_id('hp_rw_shipping:1');
                 $ship->set_total($amount);
                 $order->add_item($ship);
-                error_log('[HP-RW] Added shipping to order: ' . ($selectedRate['serviceName'] ?? 'Shipping') . ' = ' . $amount);
+                error_log('[HP-RW TRACE] Added shipping: ' . $amount);
             }
         }
+
+        $order->calculate_totals(false);
+        error_log('[HP-RW TRACE] Total after items+shipping: ' . $order->get_total());
 
         // Apply global discount if configured
         $globalDiscountPercent = (float) ($draftData['global_discount_percent'] ?? 0);
@@ -401,18 +405,23 @@ class CheckoutService
 
             $globalDiscount = round($productsGross * ($globalDiscountPercent / 100.0), 2);
             if ($globalDiscount > 0.0) {
-                $fee = new WC_Order_Item_Fee();
+                $fee = new \WC_Order_Item_Fee();
                 $fee->set_name('Global discount (' . $globalDiscountPercent . '%)');
                 $fee->set_amount(-1 * $globalDiscount);
                 $fee->set_total(-1 * $globalDiscount);
                 $order->add_item($fee);
+                error_log('[HP-RW TRACE] Added global discount: ' . $globalDiscount);
             }
         }
 
         // Points redemption - Use EAO/YITH style coupon for robustness
         if ($pointsToRedeem > 0) {
             $this->applyPointsRedemption($order, $pointsToRedeem);
+            error_log('[HP-RW TRACE] Points redemption triggered: ' . $pointsToRedeem);
         }
+
+        $order->calculate_totals(false);
+        error_log('[HP-RW TRACE] Total after discounts/points: ' . $order->get_total());
 
         // Link to existing user if found
         $user = $email ? get_user_by('email', $email) : null;
@@ -432,7 +441,6 @@ class CheckoutService
 
         // --- CUSTOM TOTALS ADJUSTMENT ---
         // Calculate the current subtotal of products and fees added so far
-        // Note: applyPointsRedemption already called calculate_totals()
         $order->calculate_totals(false);
         $currentItemsTotal = 0.0;
         foreach ($order->get_items() as $item) {
@@ -452,13 +460,17 @@ class CheckoutService
                 $savingsFee->set_amount($diff);
                 $savingsFee->set_total($diff);
                 $order->add_item($savingsFee);
-                error_log('[HP-RW] Added adjustment fee to match offer total: ' . $diff . ' (Offer: ' . $offerTotal . ', Items: ' . $currentItemsTotal . ')');
+                error_log('[HP-RW TRACE] Added adjustment fee to match offer total: ' . $diff . ' (Offer: ' . $offerTotal . ', Items: ' . $currentItemsTotal . ')');
             }
         }
 
         // Store Stripe metadata
         $order->update_meta_data('_hp_rw_stripe_customer_id', $stripeCustomerId);
         $order->update_meta_data('_hp_rw_stripe_pi_id', $stripePaymentIntentId);
+        
+        $order->calculate_totals(false);
+        error_log('[HP-RW TRACE] Total before final save: ' . $order->get_total());
+
         if ($stripeChargeId) {
             $order->update_meta_data('_hp_rw_stripe_charge_id', $stripeChargeId);
         }
@@ -494,7 +506,10 @@ class CheckoutService
         $order->calculate_totals(false);
         $order->save();
 
-        error_log('[HP-RW] Order created successfully: ' . $order->get_id() . ' for PI: ' . $stripePaymentIntentId . ' with Total: ' . $order->get_total());
+        error_log('[HP-RW TRACE] Final saved total: ' . $order->get_total());
+
+        return $order;
+    }
 
         return $order;
     }
