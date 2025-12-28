@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 export interface ScienceSection {
@@ -14,7 +13,7 @@ export interface FunnelScienceProps {
   sections: ScienceSection[];
   ctaText?: string;
   ctaUrl?: string;
-  layout?: 'columns' | 'stacked' | 'cards';
+  layout?: 'columns' | 'stacked';
   className?: string;
 }
 
@@ -30,50 +29,79 @@ export const FunnelScience = ({
   return (
     <section
       className={cn(
-        'hp-funnel-science py-20 px-4 bg-gradient-to-b from-background via-secondary/10 to-background',
+        'hp-funnel-science hp-funnel-section py-16 md:py-20 px-4',
         className
       )}
     >
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}
         {(title || subtitle) && (
-          <div className="text-center mb-12">
+          <div className="text-center mb-12 md:mb-16">
             {title && (
-              <h2 className="text-4xl md:text-5xl font-bold text-accent mb-4">
+              <h2 
+                className="text-3xl md:text-4xl lg:text-5xl font-bold italic mb-4"
+                style={{ color: 'var(--hp-funnel-text-accent, #eab308)' }}
+              >
                 {title}
               </h2>
             )}
             {subtitle && (
-              <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              <p 
+                className="text-lg md:text-xl max-w-3xl mx-auto"
+                style={{ color: 'var(--hp-funnel-text-note, #a3a3a3)' }}
+              >
                 {subtitle}
               </p>
             )}
           </div>
         )}
 
-        {/* Columns Layout */}
+        {/* Cards Grid Layout */}
         {layout === 'columns' && (
           <div className={cn(
-            'grid gap-8',
+            'grid gap-6 md:gap-8',
+            sections.length === 1 && 'max-w-2xl mx-auto',
             sections.length === 2 && 'md:grid-cols-2',
             sections.length >= 3 && 'md:grid-cols-2 lg:grid-cols-3'
           )}>
             {sections.map((section, index) => (
-              <div key={index} className="space-y-4">
-                <h3 className="text-2xl font-bold text-foreground">
+              <div 
+                key={index} 
+                className="hp-science-card rounded-xl p-6 md:p-8 transition-all duration-300 hover:shadow-lg"
+                style={{
+                  backgroundColor: 'var(--hp-funnel-card-bg, #1a1a1a)',
+                  border: '1px solid var(--hp-funnel-border, #7c3aed)',
+                }}
+              >
+                <h3 
+                  className="text-xl md:text-2xl font-bold mb-4"
+                  style={{ color: 'var(--hp-funnel-text-accent, #eab308)' }}
+                >
                   {section.title}
                 </h3>
                 {section.description && (
-                  <p className="text-muted-foreground">
+                  <p 
+                    className="mb-4 leading-relaxed"
+                    style={{ color: 'var(--hp-funnel-text-basic, #e5e5e5)' }}
+                  >
                     {section.description}
                   </p>
                 )}
                 {section.bullets && section.bullets.length > 0 && (
-                  <ul className="space-y-2 text-foreground/90">
+                  <ul className="space-y-2">
                     {section.bullets.map((bullet, bIndex) => (
-                      <li key={bIndex} className="flex items-start gap-2">
-                        <span className="text-accent mt-1">•</span>
-                        <span>{bullet}</span>
+                      <li 
+                        key={bIndex} 
+                        className="flex items-start gap-3"
+                        style={{ color: 'var(--hp-funnel-text-basic, #e5e5e5)' }}
+                      >
+                        <span 
+                          className="mt-1.5 flex-shrink-0"
+                          style={{ color: 'var(--hp-funnel-text-accent, #eab308)' }}
+                        >
+                          •
+                        </span>
+                        <span className="text-sm md:text-base">{bullet}</span>
                       </li>
                     ))}
                   </ul>
@@ -85,90 +113,65 @@ export const FunnelScience = ({
 
         {/* Stacked Layout */}
         {layout === 'stacked' && (
-          <div className="space-y-12">
+          <div className="space-y-8 md:space-y-12">
             {sections.map((section, index) => (
               <div 
                 key={index} 
-                className={cn(
-                  'grid gap-8 items-center',
-                  index % 2 === 0 ? 'md:grid-cols-[2fr,1fr]' : 'md:grid-cols-[1fr,2fr] md:flex-row-reverse'
-                )}
+                className="hp-science-card rounded-xl p-6 md:p-8"
+                style={{
+                  backgroundColor: 'var(--hp-funnel-card-bg, #1a1a1a)',
+                  border: '1px solid var(--hp-funnel-border, #7c3aed)',
+                }}
               >
-                <div className="space-y-4">
-                  <h3 className="text-3xl font-bold text-foreground">
-                    {section.title}
-                  </h3>
-                  {section.description && (
-                    <p className="text-lg text-muted-foreground">
-                      {section.description}
-                    </p>
-                  )}
-                  {section.bullets && section.bullets.length > 0 && (
-                    <ul className="space-y-3 text-foreground/90">
-                      {section.bullets.map((bullet, bIndex) => (
-                        <li key={bIndex} className="flex items-start gap-3">
-                          <svg className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                          <span>{bullet}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                <div className="hidden md:block">
-                  {/* Decorative element */}
-                  <div className="aspect-square bg-gradient-to-br from-accent/10 via-primary/10 to-accent/10 rounded-2xl flex items-center justify-center">
-                    <div className="text-8xl text-accent/20 font-bold">{index + 1}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Cards Layout */}
-        {layout === 'cards' && (
-          <div className={cn(
-            'grid gap-6',
-            sections.length === 2 && 'md:grid-cols-2',
-            sections.length >= 3 && 'md:grid-cols-2 lg:grid-cols-3'
-          )}>
-            {sections.map((section, index) => (
-              <Card 
-                key={index} 
-                className="p-8 bg-card/50 backdrop-blur-sm border-border/50 hover:border-accent/30 transition-all duration-300"
-              >
-                <h3 className="text-2xl font-bold text-accent mb-4">
+                <h3 
+                  className="text-2xl md:text-3xl font-bold mb-4"
+                  style={{ color: 'var(--hp-funnel-text-accent, #eab308)' }}
+                >
                   {section.title}
                 </h3>
                 {section.description && (
-                  <p className="text-muted-foreground mb-4">
+                  <p 
+                    className="text-lg mb-4 leading-relaxed"
+                    style={{ color: 'var(--hp-funnel-text-basic, #e5e5e5)' }}
+                  >
                     {section.description}
                   </p>
                 )}
                 {section.bullets && section.bullets.length > 0 && (
-                  <ul className="space-y-2 text-foreground/90">
+                  <ul className="space-y-3">
                     {section.bullets.map((bullet, bIndex) => (
-                      <li key={bIndex} className="flex items-start gap-2">
-                        <span className="text-accent mt-1">•</span>
-                        <span className="text-sm">{bullet}</span>
+                      <li 
+                        key={bIndex} 
+                        className="flex items-start gap-3"
+                        style={{ color: 'var(--hp-funnel-text-basic, #e5e5e5)' }}
+                      >
+                        <svg 
+                          className="w-5 h-5 flex-shrink-0 mt-0.5" 
+                          viewBox="0 0 24 24" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          strokeWidth="2"
+                          style={{ color: 'var(--hp-funnel-text-accent, #eab308)' }}
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        <span>{bullet}</span>
                       </li>
                     ))}
                   </ul>
                 )}
-              </Card>
+              </div>
             ))}
           </div>
         )}
 
         {/* CTA */}
         {ctaText && ctaUrl && (
-          <div className="text-center mt-12">
+          <div className="text-center mt-12 md:mt-16">
             <Button
               size="lg"
               onClick={() => window.location.href = ctaUrl}
-              className="hp-funnel-cta-btn font-bold text-xl px-12 py-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+              className="hp-funnel-cta-btn font-bold text-lg md:text-xl px-10 md:px-12 py-5 md:py-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
             >
               {ctaText}
             </Button>
@@ -180,17 +183,3 @@ export const FunnelScience = ({
 };
 
 export default FunnelScience;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
