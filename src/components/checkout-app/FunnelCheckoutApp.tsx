@@ -212,8 +212,9 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
           items.push({ 
             sku: item.sku, 
             qty: item.qty * offerQuantity, // Multiply by quantity selector
-            // Use the effective price (admin-set sale price) if different from WC price
-            salePrice: item.price,  // This is the effective price from config loader
+            // Use the effective sale price (0 = FREE, regularPrice = no discount)
+            salePrice: item.salePrice ?? item.price,
+            regularPrice: item.regularPrice,
           });
         });
         break;

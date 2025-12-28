@@ -919,7 +919,8 @@ class FunnelConfigLoader
                 'sku'          => $sku,
                 'qty'          => $qty,
                 'name'         => $wcData['name'] ?? $sku,
-                'price'        => $effectivePrice,  // Final sale price
+                'price'        => $effectivePrice,  // Final sale price (0 = FREE)
+                'salePrice'    => $effectivePrice,  // Explicit sale price for backend
                 'regularPrice' => $regularPrice,    // For strikethrough display
                 'wcPrice'      => $wcPrice,         // Original WC price
                 'image'        => $wcData['image'] ?? '',

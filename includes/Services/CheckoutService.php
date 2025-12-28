@@ -210,9 +210,11 @@ class CheckoutService
             $resolvedItems[] = ['product' => $product, 'qty' => $qty, 'regPrice' => $regPrice, 'originalItem' => $it];
         }
 
-        // IMPORTANT: Add items at FULL PRICE (subtotal = total = regularPrice × qty)
-        // The offer discount will be applied as a separate "Offer Savings" fee
-        // This prevents WC coupons (like points) from overwriting item totals
+        // Add items at FULL PRICE with per-item discount metadata
+        // Each item has its own discount based on salePrice vs regularPrice
+        // The total discount is applied as a "Offer Savings" fee to prevent coupon conflicts
+        $totalOfferDiscount = 0.0;
+        
         foreach ($resolvedItems as $ri) {
             $product = $ri['product'];
             $qty = $ri['qty'];
@@ -224,32 +226,54 @@ class CheckoutService
             $item->set_quantity($qty);
             if (!empty($it['label'])) $item->set_name($product->get_name() . ' ' . $it['label']);
 
-            // Set both subtotal and total to full price
-            // The offer discount is applied as a fee, not per-item
-            $lineTotal = $regPrice * $qty;
-            $item->set_subtotal($lineTotal);
-            $item->set_total($lineTotal);
+            // Full price for this item
+            $lineSubtotal = $regPrice * $qty;
+            
+            // Get the item's individual sale price (0 = free, null = no discount)
+            $salePrice = null;
+            if (isset($it['salePrice'])) {
+                $salePrice = (float) $it['salePrice'];
+            } elseif (isset($it['sale_price'])) {
+                $salePrice = (float) $it['sale_price'];
+            }
+            
+            // Calculate item-level discount
+            $itemDiscount = 0.0;
+            $itemDiscountPercent = 0.0;
+            if ($salePrice !== null && $regPrice > 0) {
+                // Use the explicit sale price
+                $itemDiscount = ($regPrice - $salePrice) * $qty;
+                $itemDiscountPercent = round((($regPrice - $salePrice) / $regPrice) * 100, 2);
+            }
+            
+            $totalOfferDiscount += $itemDiscount;
+
+            // Set subtotal and total to FULL PRICE
+            // The discount is tracked via meta and applied as a fee
+            $item->set_subtotal($lineSubtotal);
+            $item->set_total($lineSubtotal);
             $item->set_total_tax(0);
             $item->set_subtotal_tax(0);
+            
+            // Set per-item discount meta for EAO (each item has its own discount, not global)
+            if ($itemDiscountPercent > 0) {
+                $item->add_meta_data('_eao_exclude_global_discount', '1', true);
+                $item->add_meta_data('_eao_item_discount_percent', $itemDiscountPercent, true);
+                $item->add_meta_data('_hp_rw_item_discount_percent', $itemDiscountPercent, true);
+                $item->add_meta_data('_hp_rw_exclude_global_discount', '1', true);
+            }
 
             $order->add_item($item);
         }
 
-        // Calculate and apply offer discount as a fee (like EAO admin discounts)
-        $offerDiscount = 0.0;
-        if ($offerTotal !== null && $offerTotal > 0 && $sumRegularPrice > $offerTotal) {
+        // Use calculated per-item discounts, or fall back to offer total difference
+        $offerDiscount = $totalOfferDiscount;
+        if ($offerDiscount <= 0 && $offerTotal !== null && $offerTotal > 0 && $sumRegularPrice > $offerTotal) {
             $offerDiscount = round($sumRegularPrice - $offerTotal, 2);
         }
-
-        // Store the offer discount percentage for EAO display
-        $offerDiscountPercent = ($sumRegularPrice > 0 && $offerDiscount > 0) 
-            ? round(($offerDiscount / $sumRegularPrice) * 100, 2) 
-            : 0;
         
-        // Store metadata on the order for EAO to use
-        if ($offerDiscountPercent > 0) {
-            $order->update_meta_data('_eao_global_product_discount_percent', $offerDiscountPercent);
-            $order->update_meta_data('_hp_rw_offer_discount_percent', $offerDiscountPercent);
+        // Store the total discount amount on the order (but NOT as a global discount %)
+        if ($offerDiscount > 0) {
             $order->update_meta_data('_hp_rw_offer_discount_amount', $offerDiscount);
         }
 
