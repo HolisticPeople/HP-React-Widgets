@@ -113,11 +113,9 @@ class CheckoutApi
     public function handle_customer_lookup(WP_REST_Request $request): WP_REST_Response
     {
         $email = sanitize_email($request->get_param('email'));
-        error_log('[HP-RW] Customer lookup for: ' . $email);
         $user = get_user_by('email', $email);
 
         if (!$user) {
-            error_log('[HP-RW] Customer lookup: User not found for ' . $email);
             return new WP_REST_Response([
                 'user_id'         => 0,
                 'points_balance'  => 0,
@@ -127,7 +125,6 @@ class CheckoutApi
             ]);
         }
 
-        error_log('[HP-RW] Customer lookup: Found user ID ' . $user->ID);
         $pointsService = new PointsService();
         $customer = new \WC_Customer($user->ID);
 
@@ -264,13 +261,11 @@ class CheckoutApi
             $result = $shippingService->getRates($address, $items);
 
             if (!$result['success']) {
-                error_log('[HP-RW CheckoutApi] Shipping rates failed: ' . ($result['error'] ?? 'Unknown error'));
                 return new WP_Error('shipping_error', $result['error'] ?? 'Failed to get rates', ['status' => 502]);
             }
 
             return new WP_REST_Response(['rates' => $result['rates']]);
         } catch (\Throwable $e) {
-            error_log('[HP-RW CheckoutApi] Shipping rates exception: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
             return new WP_Error('shipping_error', 'Shipping calculation failed: ' . $e->getMessage(), ['status' => 502]);
         }
     }
@@ -285,9 +280,7 @@ class CheckoutApi
         $selectedRate = $request->get_param('selected_rate');
         $pointsToRedeem = (int) ($request->get_param('points_to_redeem') ?? 0);
         $funnelId = (string) ($request->get_param('funnel_id') ?? 'default');
-        $offerTotal = $request->get_param('offer_total');  // Admin-set total price
-
-        error_log('[HP-RW] handle_totals: items=' . count($items) . ' points=' . $pointsToRedeem . ' funnel=' . $funnelId);
+        $offerTotal = $request->get_param('offer_total');
 
         if (empty($items)) {
             return new WP_Error('bad_request', 'Items required', ['status' => 400]);
@@ -304,7 +297,7 @@ class CheckoutApi
             $pointsToRedeem,
             $globalDiscountPercent,
             [],
-            $offerTotal !== null ? (float) $offerTotal : null  // Pass offer total
+            $offerTotal !== null ? (float) $offerTotal : null
         );
 
         return new WP_REST_Response($totals);
@@ -323,7 +316,7 @@ class CheckoutApi
         $selectedRate = $request->get_param('selected_rate');
         $pointsToRedeem = (int) ($request->get_param('points_to_redeem') ?? 0);
         $analytics = (array) ($request->get_param('analytics') ?? []);
-        $offerTotal = $request->get_param('offer_total');  // Admin-set total price
+        $offerTotal = $request->get_param('offer_total');
 
         if (empty($items)) {
             return new WP_Error('bad_request', 'Items required', ['status' => 400]);
@@ -334,7 +327,7 @@ class CheckoutApi
             return new WP_Error('bad_request', 'Valid customer email required', ['status' => 400]);
         }
 
-        // Check funnel status (legacy gate)
+        // Check funnel status
         $funnelMode = $this->getFunnelMode($funnelId);
         if ($funnelMode === 'off') {
             return new WP_Error('funnel_off', 'Funnel is currently disabled', [
@@ -343,7 +336,7 @@ class CheckoutApi
             ]);
         }
 
-        // Initialize Stripe with funnel stripe_mode (from funnel config), fallback to legacy mode
+        // Initialize Stripe with funnel stripe_mode
         $stripeMode = $this->getStripeModeForFunnel($funnelId);
         $stripe = new StripeService($stripeMode);
 
@@ -363,7 +356,7 @@ class CheckoutApi
             $pointsToRedeem,
             $globalDiscountPercent,
             [],
-            $offerTotal !== null ? (float) $offerTotal : null  // Pass offer total
+            $offerTotal !== null ? (float) $offerTotal : null
         );
 
         $grandTotal = $totals['grand_total'];
@@ -438,8 +431,6 @@ class CheckoutApi
         $draftId = (string) $request->get_param('order_draft_id');
         $piId = (string) $request->get_param('pi_id');
 
-        error_log('[HP-RW] handle_complete hit with draft: ' . $draftId . ' and PI: ' . $piId);
-
         if ($draftId === '' || $piId === '') {
             return new WP_Error('bad_request', 'Draft ID and PaymentIntent ID required', ['status' => 400]);
         }
@@ -463,12 +454,8 @@ class CheckoutApi
 
         // Extract payment details
         $stripeCustomerId = $pi['customer'] ?? $draftData['stripe_customer'] ?? '';
-        $chargeId = '';
+        $chargeId = $pi['latest_charge'] ?? '';
         $paymentMethodId = $pi['payment_method'] ?? '';
-
-        if (!empty($pi['latest_charge'])) {
-            $chargeId = $pi['latest_charge'];
-        }
 
         // Create the order
         $order = $checkoutService->createOrderFromDraft(
@@ -485,10 +472,6 @@ class CheckoutApi
 
         // Clean up draft
         $checkoutService->deleteDraft($draftId);
-
-        // Note: Points deduction is handled by YITH based on the order meta fields
-        // (_ywpar_coupon_points and _ywpar_coupon_amount) set during order creation.
-        // We no longer manually deduct points here to avoid conflicts and "refunds" on status change.
 
         return new WP_REST_Response([
             'success'      => true,
@@ -509,7 +492,6 @@ class CheckoutApi
         if ($orderId > 0) {
             $order = wc_get_order($orderId);
         } elseif ($piId !== '') {
-            // Try to find order by PI ID meta
             $orders = wc_get_orders([
                 'limit'      => 1,
                 'meta_key'   => '_hp_rw_stripe_pi_id',
@@ -552,13 +534,11 @@ class CheckoutApi
 
             $qty = max(1, $item->get_quantity());
             
-            // "Funnel Price" is what they were quoted in the funnel (after kit discount etc)
-            // Use get_metadata directly to distinguish between 0 and missing.
+            // "Funnel Price" is what they were quoted in the funnel
             $metaValue = get_metadata('order_item', $item->get_id(), '_hp_rw_funnel_price', true);
             if ($metaValue !== '') {
                 $funnelUnitPrice = (float) $metaValue;
             } else {
-                // Fallback for legacy orders: use current item total
                 $funnelUnitPrice = (float) ($item->get_total() / $qty);
             }
 
@@ -567,8 +547,6 @@ class CheckoutApi
             
             // Accumulate savings from funnel pricing (regular - funnel)
             $lineItemSavings += (float) (($regularUnitPrice - $funnelUnitPrice) * $qty);
-
-            error_log(sprintf('[HP-RW] handle_order_summary Item: %s, Qty: %d, RegularUnit: %f, FunnelUnit: %f, LineSaving: %f', $item->get_name(), $qty, $regularUnitPrice, $funnelUnitPrice, ($regularUnitPrice - $funnelUnitPrice) * $qty));
 
             $items[] = [
                 'name'     => $item->get_name(),
@@ -585,32 +563,28 @@ class CheckoutApi
         $pointsRedeemed = ['points' => 0, 'value' => 0.0];
         $extraDiscounts = 0.0;
 
-        // 1. Points from meta (our robust coupon flow)
+        // Points from meta
         $metaPointsValue = (float) $order->get_meta('_ywpar_coupon_amount');
         if ($metaPointsValue > 0) {
             $pointsRedeemed['value'] = $metaPointsValue;
             $pointsRedeemed['points'] = (int) $order->get_meta('_ywpar_coupon_points');
         }
 
-        // 2. Scan fees for "Savings" or other adjustments (Global discount, Offer Savings)
+        // Scan fees for "Savings" or other adjustments
         foreach ($order->get_fees() as $fee) {
             $feeTotal = (float) $fee->get_total();
-            // If it's a discount fee (negative) and NOT points, count it as a general discount
             if ($feeTotal < 0 && stripos($fee->get_name(), 'points') === false) {
                 $extraDiscounts += abs($feeTotal);
             }
         }
 
-        // 3. Scan coupons for other discounts
-        // We only want coupons that ARE NOT our points coupon
+        // Scan coupons for other discounts
         foreach ($order->get_coupon_codes() as $code) {
             try {
                 $coupon = new \WC_Coupon($code);
                 if ($coupon->get_meta('ywpar_coupon')) {
-                    continue; // Already handled points
+                    continue;
                 }
-                
-                // Get the discount amount for this coupon from the order
                 foreach ($order->get_items('coupon') as $orderCoupon) {
                     if ($orderCoupon->get_code() === $code) {
                         $extraDiscounts += (float) $orderCoupon->get_discount();
@@ -621,10 +595,8 @@ class CheckoutApi
             }
         }
 
-        // Combined discount: funnel savings (regular-funnel) + extra fees/coupons
+        // Combined discount
         $totalDiscount = (float) ($lineItemSavings + $extraDiscounts);
-
-        error_log(sprintf('[HP-RW] handle_order_summary Final: lineItemSavings: %f, extraDiscounts: %f, totalDiscount: %f', $lineItemSavings, $extraDiscounts, $totalDiscount));
 
         return new WP_REST_Response([
             'success'         => true,
@@ -683,7 +655,6 @@ class CheckoutApi
         $opts = get_option('hp_rw_settings', []);
         $env = isset($opts['env']) && $opts['env'] === 'production' ? 'production' : 'staging';
 
-        // Check funnel-specific config
         if (!empty($opts['funnels']) && is_array($opts['funnels'])) {
             foreach ($opts['funnels'] as $f) {
                 if (is_array($f) && !empty($f['id']) && (string) $f['id'] === $funnelId) {
@@ -696,15 +667,11 @@ class CheckoutApi
             }
         }
 
-        // Default based on environment
         return $env === 'production' ? 'live' : 'test';
     }
 
     /**
-     * Resolve Stripe mode for a funnel using the funnel CPT config (`stripe_mode`),
-     * falling back to the legacy env-driven funnel mode.
-     *
-     * @return string 'test' | 'live'
+     * Resolve Stripe mode for a funnel.
      */
     private function getStripeModeForFunnel(string $funnelId): string
     {
@@ -730,14 +697,12 @@ class CheckoutApi
     {
         $opts = get_option('hp_rw_settings', []);
 
-        // Check funnel-specific config
         if (!empty($opts['funnel_configs']) && is_array($opts['funnel_configs'])) {
             if (isset($opts['funnel_configs'][$funnelId]['global_discount_percent'])) {
                 return (float) $opts['funnel_configs'][$funnelId]['global_discount_percent'];
             }
         }
 
-        // Default global discount
         return (float) ($opts['default_global_discount'] ?? 0);
     }
 }
