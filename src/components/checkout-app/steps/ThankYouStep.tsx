@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import type { OrderSummary } from '../types';
 
@@ -33,6 +34,10 @@ export const ThankYouStep = ({
   orderSummary,
   logoLink = '/',
 }: ThankYouStepProps) => {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   return (
     <div className="max-w-4xl mx-auto py-12">
       {/* Success Header */}

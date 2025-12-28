@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import type { CartItem, ShippingRate, TotalsResponse, Address, OrderSummary } from '../types';
+import { extractShippingCost } from '../utils/shipping';
 
 interface UseCheckoutApiOptions {
   apiBase?: string;
@@ -87,8 +88,8 @@ export function useCheckoutApi(options: UseCheckoutApiOptions) {
           salePrice: item.salePrice,  // Admin-set price per unit
         })),
         selected_rate: selectedRate ? {
-          serviceName: selectedRate.serviceName,
-          amount: selectedRate.shipmentCost + selectedRate.otherCost,
+          serviceName: selectedRate.serviceName || (selectedRate as any).service_name || 'Shipping',
+          amount: extractShippingCost(selectedRate),
         } : null,
         points_to_redeem: pointsToRedeem,
         offer_total: offerTotal,  // Admin-set total price for entire offer
@@ -152,8 +153,8 @@ export function useCheckoutApi(options: UseCheckoutApiOptions) {
           last_name: customerLastName,
         },
         selected_rate: selectedRate ? {
-          serviceName: selectedRate.serviceName,
-          amount: selectedRate.shipmentCost + selectedRate.otherCost,
+          serviceName: selectedRate.serviceName || (selectedRate as any).service_name || 'Shipping',
+          amount: extractShippingCost(selectedRate),
         } : null,
         points_to_redeem: pointsToRedeem,
       }),

@@ -329,12 +329,15 @@ class CheckoutService
 
         // Add shipping
         if ($selectedRate && isset($selectedRate['amount'])) {
-            $ship = new WC_Order_Item_Shipping();
-            $ship->set_method_title($selectedRate['serviceName'] ?? 'Shipping');
-            $ship->set_method_id('hp_rw_shipping');
-            $ship->set_total((float) $selectedRate['amount']);
-            $order->add_item($ship);
-            error_log('[HP-RW] Added shipping to order: ' . ($selectedRate['serviceName'] ?? 'Shipping') . ' = ' . $selectedRate['amount']);
+            $amount = (float) $selectedRate['amount'];
+            if ($amount > 0) {
+                $ship = new WC_Order_Item_Shipping();
+                $ship->set_method_title($selectedRate['serviceName'] ?? 'Shipping');
+                $ship->set_method_id('hp_rw_shipping:1');
+                $ship->set_total($amount);
+                $order->add_item($ship);
+                error_log('[HP-RW] Added shipping to order: ' . ($selectedRate['serviceName'] ?? 'Shipping') . ' = ' . $amount);
+            }
         }
 
         // Apply global discount if configured
@@ -371,6 +374,10 @@ class CheckoutService
                 $fee->set_amount(-1 * $pointsDiscount);
                 $fee->set_total(-1 * $pointsDiscount);
                 $order->add_item($fee);
+                
+                // Add YITH-specific meta so it shows up in "Points Discount" field
+                $order->update_meta_data('_ywpar_coupon_points', $pointsToRedeem);
+                $order->update_meta_data('_ywpar_coupon_amount', $pointsDiscount);
             }
         }
 
@@ -379,9 +386,6 @@ class CheckoutService
         if ($user) {
             $order->set_customer_id($user->ID);
         }
-
-        // Calculate totals
-        $order->calculate_totals(false);
 
         // Set payment method (reflect the funnel's stripe mode if available)
         $draftStripeMode = isset($draftData['stripe_mode']) ? (string) $draftData['stripe_mode'] : null;
