@@ -77,9 +77,50 @@ class FunnelOfferFields
             }
         }
 
+        // Get the funnel slug for URL auto-generation
+        $funnelSlug = get_post_meta($post->ID, 'funnel_slug', true) ?: $post->post_name;
+        $siteUrl = home_url();
+        
         ?>
         <script>
         window.hpOfferSavedProducts = <?php echo json_encode($productsMap); ?>;
+        
+        // Auto-generate Thank You URL based on funnel slug
+        jQuery(function($) {
+            var funnelSlug = <?php echo json_encode($funnelSlug); ?>;
+            var siteUrl = <?php echo json_encode($siteUrl); ?>;
+            
+            // Function to generate and set the Thank You URL
+            function autoGenerateThankYouUrl() {
+                var $tyField = $('[data-name="thankyou_url"] input, [name*="thankyou_url"]').first();
+                if ($tyField.length && !$tyField.val()) {
+                    // Generate URL based on funnel slug
+                    var generatedUrl = siteUrl + '/express-shop/' + funnelSlug + '/thank-you/';
+                    $tyField.val(generatedUrl);
+                    $tyField.trigger('change');
+                }
+            }
+            
+            // Also listen for funnel_slug field changes to update the URL
+            $(document).on('change', '[data-name="funnel_slug"] input, [name*="funnel_slug"]', function() {
+                var newSlug = $(this).val();
+                if (newSlug) {
+                    var $tyField = $('[data-name="thankyou_url"] input, [name*="thankyou_url"]').first();
+                    if ($tyField.length) {
+                        var currentVal = $tyField.val();
+                        // Only update if empty or still has the default pattern
+                        if (!currentVal || currentVal.indexOf('/express-shop/') !== -1) {
+                            var generatedUrl = siteUrl + '/express-shop/' + newSlug + '/thank-you/';
+                            $tyField.val(generatedUrl);
+                            $tyField.trigger('change');
+                        }
+                    }
+                }
+            });
+            
+            // Run on page load (with delay to let ACF initialize)
+            setTimeout(autoGenerateThankYouUrl, 500);
+        });
         </script>
         <?php
     }
