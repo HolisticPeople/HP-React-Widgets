@@ -277,6 +277,7 @@ export const CheckoutStep = ({
 
   const stripePayment = useStripePayment({
     publishableKey: stripePublishableKey,
+    stripeMode,
     onPaymentSuccess: (piId) => {
       const address: Address = {
         firstName: formData.firstName,
@@ -1354,6 +1355,24 @@ export const CheckoutStep = ({
                     </span>
                   )}
                 </div>
+                
+                {stripeMode === 'test' && (
+                  <div className="mb-3 p-3 bg-accent/5 border border-accent/20 rounded-md text-[11px] space-y-1">
+                    <p className="text-accent/80 font-medium">Use Test Card:</p>
+                    <div className="flex gap-4 text-foreground/70">
+                      <span>Card: <code className="text-accent bg-accent/10 px-1 rounded select-all cursor-pointer" title="Click to copy" onClick={(e) => {
+                        navigator.clipboard.writeText('4242 4242 4242 4242');
+                        const el = e.currentTarget;
+                        const original = el.innerText;
+                        el.innerText = 'Copied!';
+                        setTimeout(() => el.innerText = original, 1000);
+                      }}>4242 4242 4242 4242</code></span>
+                      <span>Exp: <code className="text-accent bg-accent/10 px-1 rounded">12/33</code></span>
+                      <span>CVC: <code className="text-accent bg-accent/10 px-1 rounded">333</code></span>
+                    </div>
+                  </div>
+                )}
+
                 <div 
                   ref={stripeContainerRef}
                   className="p-4 bg-input border border-border/50 rounded-md min-h-[80px]"
@@ -1379,13 +1398,13 @@ export const CheckoutStep = ({
                 size="lg"
                 variant="ghost"
                 disabled={isSubmitting || isCalculating || stripePayment.isProcessing || !stripePayment.isReady}
-                className="w-full rounded-full py-6 font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl !bg-card/30 !border !border-border/30 !text-warning hover:!bg-card/40 hover:!border-border/50 hover:!text-warning focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:!ring-warning focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="w-full rounded-full py-6 font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-[0_0_20px_rgba(234,179,8,0.3)] !bg-card/30 !border !border-border/30 !text-warning hover:!bg-card/40 hover:!border-border/50 hover:!text-warning focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:!ring-warning focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 {isSubmitting || stripePayment.isProcessing ? (
-                  <>
-                    <LoaderIcon />
-                    <span className="ml-2">Processing...</span>
-                  </>
+                  <div className="flex items-center justify-center">
+                    <LoaderIcon className="w-6 h-6" />
+                    <span className="ml-3">Processing...</span>
+                  </div>
                 ) : (
                   `Pay $${displayTotal.toFixed(2)}`
                 )}
