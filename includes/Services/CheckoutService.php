@@ -511,9 +511,6 @@ class CheckoutService
         return $order;
     }
 
-        return $order;
-    }
-
     /**
      * Apply points redemption using a YITH-compatible coupon.
      */
