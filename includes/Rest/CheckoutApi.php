@@ -366,6 +366,7 @@ class CheckoutApi
         if ($piId !== '' && $storedPiId !== $piId) return new WP_Error('unauthorized', 'Invalid authorization', ['status' => 403]);
 
         $items = [];
+        $itemsBySku = [];  // For consolidating items by SKU on TY page
         $sumSubtotal = 0.0;
         $itemLevelDiscount = 0.0;
         
@@ -381,25 +382,45 @@ class CheckoutApi
                 }
             }
             $qty = max(1, $item->get_quantity());
+            $sku = $product ? $product->get_sku() : '';
             
             // FULL PRICE for the display list (WC subtotal = pre-discount, total = post-discount)
             $lineSubtotal = (float) $item->get_subtotal();
             $lineTotal = (float) $item->get_total();
-            $unitPrice = $lineSubtotal / $qty;
+            // Use WC regular price for display (consistent full price regardless of line item pricing)
+            $unitPrice = $product ? (float) $product->get_regular_price() : ($lineSubtotal / $qty);
             
             // Calculate item-level discount (subtotal - total)
             $itemLevelDiscount += ($lineSubtotal - $lineTotal);
 
-            $items[] = [
-                'name'     => $item->get_name(),
-                'qty'      => $qty,
-                'price'    => $unitPrice,
-                'subtotal' => $unitPrice,
-                'total'    => (float) ($unitPrice * $qty),
-                'image'    => $imageUrl,
-                'sku'      => $product ? $product->get_sku() : '',
-            ];
+            // Consolidate items by SKU for TY page display
+            // (WC order keeps separate lines for admin clarity, but TY page shows consolidated)
+            if (!empty($sku) && isset($itemsBySku[$sku])) {
+                // Add to existing item
+                $itemsBySku[$sku]['qty'] += $qty;
+                $itemsBySku[$sku]['total'] = $itemsBySku[$sku]['price'] * $itemsBySku[$sku]['qty'];
+            } else {
+                $itemData = [
+                    'name'     => $item->get_name(),
+                    'qty'      => $qty,
+                    'price'    => $unitPrice,
+                    'subtotal' => $unitPrice,
+                    'total'    => (float) ($unitPrice * $qty),
+                    'image'    => $imageUrl,
+                    'sku'      => $sku,
+                ];
+                if (!empty($sku)) {
+                    $itemsBySku[$sku] = $itemData;
+                } else {
+                    $items[] = $itemData;
+                }
+            }
             $sumSubtotal += $lineSubtotal;
+        }
+        
+        // Merge consolidated items back into items array
+        foreach ($itemsBySku as $itemData) {
+            $items[] = $itemData;
         }
 
         $pointsRedeemed = ['points' => 0, 'value' => 0.0];
