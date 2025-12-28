@@ -148,6 +148,8 @@ class CheckoutService
 
                 $item->set_subtotal($subtotal);
                 $item->set_total($total);
+                $item->set_total_tax(0);
+                $item->set_subtotal_tax(0);
                 $order->add_item($item);
             }
 
@@ -363,6 +365,8 @@ class CheckoutService
 
             $item->set_subtotal($subtotal);
             $item->set_total($total);
+            $item->set_total_tax(0);
+            $item->set_subtotal_tax(0);
             $order->add_item($item);
         }
 

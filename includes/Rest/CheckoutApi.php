@@ -582,8 +582,9 @@ class CheckoutApi
         foreach ($order->get_coupon_codes() as $code) {
             try {
                 $coupon = new \WC_Coupon($code);
-                if ($coupon->get_meta('ywpar_coupon')) {
-                    continue;
+                // Check both prefixed and non-prefixed meta for points coupon detection
+                if ($coupon->get_meta('ywpar_coupon') || $coupon->get_meta('_ywpar_coupon')) {
+                    continue; // Already handled points row
                 }
                 foreach ($order->get_items('coupon') as $orderCoupon) {
                     if ($orderCoupon->get_code() === $code) {
@@ -595,8 +596,20 @@ class CheckoutApi
             }
         }
 
-        // Combined discount
-        $totalDiscount = (float) ($lineItemSavings + $extraDiscounts);
+        // Combined discount: ONLY include non-points coupons/fees here.
+        // Item-level savings are already visually represented in the items list via strikethrough.
+        $totalDiscount = (float) $extraDiscounts;
+
+        // Calculate grand total manually from the data we are sending to ensure consistency
+        $itemsSum = 0.0;
+        foreach ($items as $it) {
+            $itemsSum += $it['total'];
+        }
+        
+        $shippingTotal = (float) $order->get_shipping_total();
+        // Grand total = Items (discounted) + Shipping - Extra Coupons - Points
+        // We subtract extraDiscounts because they are positive values in our logic above
+        $calculatedGrandTotal = $itemsSum + $shippingTotal - $extraDiscounts - $pointsRedeemed['value'];
 
         return new WP_REST_Response([
             'success'         => true,
@@ -605,8 +618,8 @@ class CheckoutApi
             'items'           => $items,
             'items_discount'  => (float) $totalDiscount,
             'points_redeemed' => $pointsRedeemed,
-            'shipping_total'  => (float) $order->get_shipping_total(),
-            'grand_total'     => (float) $order->get_total(),
+            'shipping_total'  => $shippingTotal,
+            'grand_total'     => (float) max(0, $calculatedGrandTotal),
             'status'          => $order->get_status(),
             'date'            => $order->get_date_created() ? $order->get_date_created()->date('Y-m-d H:i:s') : '',
         ]);
