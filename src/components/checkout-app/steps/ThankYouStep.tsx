@@ -81,14 +81,14 @@ export const ThankYouStep = ({
                   <h3 className="font-semibold text-foreground">{item.name}</h3>
                   <p className="text-sm text-muted-foreground">Qty: {item.qty}</p>
                 </div>
-                <div className="text-right">
-                  <p className="font-semibold text-foreground">${item.total.toFixed(2)}</p>
-                  {item.subtotal !== item.total && (
-                    <p className="text-sm text-muted-foreground line-through">
-                      ${item.subtotal.toFixed(2)}
-                    </p>
-                  )}
-                </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-foreground">${item.total.toFixed(2)}</p>
+                          {item.subtotal * item.qty !== item.total && (
+                            <p className="text-sm text-muted-foreground line-through">
+                              ${(item.subtotal * item.qty).toFixed(2)}
+                            </p>
+                          )}
+                        </div>
               </div>
             ))}
           </div>

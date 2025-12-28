@@ -553,22 +553,28 @@ class CheckoutApi
             $qty = max(1, $item->get_quantity());
             
             // "Funnel Price" is what they were quoted in the funnel (after kit discount etc)
-            $funnelUnitPrice = (float) $item->get_meta('_hp_rw_funnel_price');
-            if ($funnelUnitPrice <= 0 && $item->get_total() > 0) {
+            // Use get_metadata directly to distinguish between 0 and missing.
+            $metaValue = get_metadata('order_item', $item->get_id(), '_hp_rw_funnel_price', true);
+            if ($metaValue !== '') {
+                $funnelUnitPrice = (float) $metaValue;
+            } else {
+                // Fallback for legacy orders: use current item total
                 $funnelUnitPrice = (float) ($item->get_total() / $qty);
             }
 
             // "Regular Price" for line-through display
             $regularUnitPrice = (float) ($item->get_subtotal() / $qty);
             
-            // Accumulate savings from funnel pricing (e.g. kit discount)
-            $lineItemSavings += (float) ($item->get_subtotal() - ($funnelUnitPrice * $qty));
+            // Accumulate savings from funnel pricing (regular - funnel)
+            $lineItemSavings += (float) (($regularUnitPrice - $funnelUnitPrice) * $qty);
+
+            error_log(sprintf('[HP-RW] handle_order_summary Item: %s, Qty: %d, RegularUnit: %f, FunnelUnit: %f, LineSaving: %f', $item->get_name(), $qty, $regularUnitPrice, $funnelUnitPrice, ($regularUnitPrice - $funnelUnitPrice) * $qty));
 
             $items[] = [
                 'name'     => $item->get_name(),
                 'qty'      => $qty,
-                'price'    => $funnelUnitPrice,
-                'subtotal' => $regularUnitPrice,
+                'price'    => (float) $funnelUnitPrice,
+                'subtotal' => (float) $regularUnitPrice,
                 'total'    => (float) ($funnelUnitPrice * $qty),
                 'image'    => $imageUrl,
                 'sku'      => $product ? $product->get_sku() : '',
@@ -615,8 +621,10 @@ class CheckoutApi
             }
         }
 
-        // Combined discount: funnel savings + extra (fees/coupons)
-        $totalDiscount = $lineItemSavings + $extraDiscounts;
+        // Combined discount: funnel savings (regular-funnel) + extra fees/coupons
+        $totalDiscount = (float) ($lineItemSavings + $extraDiscounts);
+
+        error_log(sprintf('[HP-RW] handle_order_summary Final: lineItemSavings: %f, extraDiscounts: %f, totalDiscount: %f', $lineItemSavings, $extraDiscounts, $totalDiscount));
 
         return new WP_REST_Response([
             'success'         => true,

@@ -494,7 +494,7 @@ export const CheckoutStep = ({
   // This does NOT fetch shipping rates - just recalculates totals
   useEffect(() => {
     debouncedFetchTotals();
-  }, [selectedOfferId, kitSelection, offerQuantity, offerPrice.discounted, pointsToRedeem, selectedRate, debouncedFetchTotals]);
+  }, [selectedOfferId, items, kitSelection, offerQuantity, offerPrice.discounted, pointsToRedeem, selectedRate, debouncedFetchTotals]);
 
   // Create a shipping key to track when we need to refetch rates
   const shippingKeyRef = useRef<string>('');

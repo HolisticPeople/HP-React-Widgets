@@ -110,11 +110,22 @@ class CheckoutService
                 $item->set_name($productName);
             }
 
+            // Use admin-set sale price if provided, otherwise use WC price
+            $regularPrice = (float) $product->get_regular_price();
+            if ($regularPrice <= 0) {
+                $regularPrice = (float) $product->get_price();
+            }
+            
+            $salePrice = isset($it['salePrice']) ? (float) $it['salePrice'] : null;
+            $price = ($salePrice !== null) ? $salePrice : (float) $product->get_price();
+
             // Standard WC practice: subtotal is regular price, total is what they pay
             $subtotal = $regularPrice * $qty;
             
             // Base total is price from frontend/product (already discounted if sale price)
             $total = $price * $qty;
+            
+            error_log(sprintf('[HP-RW] calculateTotals Item: %s, Qty: %d, Regular: %f, Price: %f, Total: %f', $product->get_sku(), $qty, $regularPrice, $price, $total));
 
             // Check for per-item discount overrides
             $excludeGd = !empty($it['exclude_global_discount']);
@@ -328,6 +339,8 @@ class CheckoutService
             // Base total is price from frontend/product (already discounted if sale price)
             $total = $price * $qty;
 
+            error_log(sprintf('[HP-RW] createOrderFromDraft Item: %s, Qty: %d, Regular: %f, Price: %f, Total: %f', $product->get_sku(), $qty, $regularPrice, $price, $total));
+
             // Check for per-item discount overrides from funnel config
             $excludeGd = !empty($it['exclude_global_discount']);
             $itemPct = isset($it['item_discount_percent']) ? (float) $it['item_discount_percent'] : null;
@@ -408,34 +421,11 @@ class CheckoutService
             }
         }
 
-        // Points redemption - Use EAO/YITH style coupon for robustness
-        if ($pointsToRedeem > 0) {
-            $this->applyPointsRedemption($order, $pointsToRedeem);
-            error_log('[HP-RW TRACE] Points redemption triggered: ' . $pointsToRedeem);
-        }
-
         $order->calculate_totals(false);
-        error_log('[HP-RW TRACE] Total after discounts/points: ' . $order->get_total());
-
-        // Link to existing user if found
-        $user = $email ? get_user_by('email', $email) : null;
-        if ($user) {
-            $order->set_customer_id($user->ID);
-        }
-
-        // Set payment method (reflect the funnel's stripe mode if available)
-        $draftStripeMode = isset($draftData['stripe_mode']) ? (string) $draftData['stripe_mode'] : null;
-        $stripeService = new StripeService($draftStripeMode);
-        
-        $modeLabel = ($stripeService->mode === 'test') ? ' (Test)' : '';
-        $paymentMethodTitle = 'HP Express Shop' . $modeLabel;
-        
-        $order->set_payment_method('hp_rw_stripe');
-        $order->set_payment_method_title($paymentMethodTitle);
+        error_log('[HP-RW TRACE] Total before Offer Savings adjustment: ' . $order->get_total());
 
         // --- CUSTOM TOTALS ADJUSTMENT ---
         // Calculate the current subtotal of products and fees added so far
-        $order->calculate_totals(false);
         $currentItemsTotal = 0.0;
         foreach ($order->get_items() as $item) {
             if ($item instanceof WC_Order_Item_Product) {
@@ -456,6 +446,12 @@ class CheckoutService
                 $order->add_item($savingsFee);
                 error_log('[HP-RW TRACE] Added adjustment fee to match offer total: ' . $diff . ' (Offer: ' . $offerTotal . ', Items: ' . $currentItemsTotal . ')');
             }
+        }
+
+        // Points redemption - Apply this LAST so it doesn't interfere with item totals used for Offer Savings calculation.
+        if ($pointsToRedeem > 0) {
+            $this->applyPointsRedemption($order, $pointsToRedeem);
+            error_log('[HP-RW TRACE] Points redemption triggered: ' . $pointsToRedeem);
         }
 
         // Store Stripe metadata
