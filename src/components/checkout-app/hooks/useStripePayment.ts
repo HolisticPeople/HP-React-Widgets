@@ -100,7 +100,7 @@ function loadStripeSingleton(publishableKey: string): Promise<Stripe | null> {
 }
 
 export function useStripePayment(options: UseStripePaymentOptions) {
-  const { publishableKey, onPaymentSuccess, onPaymentError } = options;
+  const { publishableKey, stripeMode, onPaymentSuccess, onPaymentError } = options;
   
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -205,7 +205,7 @@ export function useStripePayment(options: UseStripePaymentOptions) {
         setError(null);
       }
     });
-  }, []);
+  }, [stripeMode]);
 
   // Unmount card element
   const unmountCardElement = useCallback(() => {
