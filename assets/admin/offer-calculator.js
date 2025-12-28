@@ -35,6 +35,15 @@
                     initializeOfferRow($el);
                 }, 100);
             });
+            
+            // Handle offer row reordering - re-initialize tables after sort
+            acf.addAction('sortstop', function($repeater) {
+                console.log('[HP Offer] ACF sortstop fired - reinitializing offers');
+                // Re-initialize all offers after a short delay to let ACF settle
+                setTimeout(function() {
+                    reinitializeAllOffers();
+                }, 150);
+            });
         }
         
         // Fallback: also try on document ready
@@ -258,6 +267,44 @@
             initializeOfferRow($(this));
             decorateCollapseZone($(this));
         });
+    }
+
+    /**
+     * Reinitialize all offers after ACF reordering.
+     * This destroys existing Tabulator instances and rebuilds them.
+     */
+    function reinitializeAllOffers() {
+        console.log('[HP Offer] Reinitializing all offers after sort...');
+        
+        // Destroy all existing Tabulator tables
+        if (window.HPOfferTable && window.HPOfferTable.tables) {
+            Object.keys(window.HPOfferTable.tables).forEach(function(tableId) {
+                window.HPOfferTable.destroy(tableId);
+            });
+        }
+        
+        // Clear initialized flag and rebuild each offer
+        let $offerRows = $('.acf-field[data-name="funnel_offers"] .acf-row:not(.acf-clone)');
+        if ($offerRows.length === 0) {
+            $offerRows = $('.acf-field[data-key="field_funnel_offers"] .acf-row:not(.acf-clone)');
+        }
+        
+        $offerRows.each(function(index) {
+            const $row = $(this);
+            const $container = $row.find('[data-offer-products]');
+            
+            if ($container.length) {
+                // Clear the initialized flag to force rebuild
+                $container.data('initialized', false);
+                $container.removeData('tableId');
+                
+                // Clear the container HTML to force fresh rebuild
+                $container.empty();
+            }
+        });
+        
+        // Now reinitialize all offers
+        initializeAllOffers();
     }
 
     function initializeOfferRow($row) {
