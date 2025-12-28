@@ -235,6 +235,14 @@ export function useStripePayment(options: UseStripePaymentOptions) {
     setError(null);
 
     try {
+      // Required for Deferred Intent flow (using 'mode' in elements() initialization)
+      const { error: submitError } = await elementsRef.current.submit();
+      if (submitError) {
+        setError(submitError.message || 'Validation failed');
+        setIsProcessing(false);
+        return false;
+      }
+
       const { error: confirmError, paymentIntent } = await stripeRef.current.confirmPayment({
         elements: elementsRef.current,
         clientSecret,
