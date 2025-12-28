@@ -1083,10 +1083,10 @@ export const CheckoutStep = ({
                 </div>
               )}
 
-              {totals && totals.pointsDiscount > 0 && (
+              {pointsValue > 0 && (
                 <div className="flex justify-between text-green-500">
-                  <span>Points Redeemed</span>
-                  <span>-${totals.pointsDiscount.toFixed(2)}</span>
+                  <span>Points Redeemed ({pointsToRedeem} pts)</span>
+                  <span>-${pointsValue.toFixed(2)}</span>
                 </div>
               )}
 
