@@ -432,6 +432,8 @@ class CheckoutApi
         $draftId = (string) $request->get_param('order_draft_id');
         $piId = (string) $request->get_param('pi_id');
 
+        error_log('[HP-RW] handle_complete hit with draft: ' . $draftId . ' and PI: ' . $piId);
+
         if ($draftId === '' || $piId === '') {
             return new WP_Error('bad_request', 'Draft ID and PaymentIntent ID required', ['status' => 400]);
         }

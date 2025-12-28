@@ -35,6 +35,7 @@ class CheckoutService
     {
         $id = uniqid('hprw_', true);
         set_transient(self::TRANSIENT_PREFIX . $id, wp_json_encode($payload), self::TTL);
+        error_log('[HP-RW] Draft created: ' . $id . ' for email: ' . ($payload['customer']['email'] ?? 'unknown'));
         return $id;
     }
 
@@ -256,6 +257,7 @@ class CheckoutService
         ?string $stripeChargeId = null,
         ?string $paymentMethodId = null
     ): ?WC_Order {
+        error_log('[HP-RW] createOrderFromDraft starting for PI: ' . $stripePaymentIntentId);
         $items = $draftData['items'] ?? [];
         $customer = $draftData['customer'] ?? [];
         $shippingAddress = $draftData['shipping_address'] ?? [];
@@ -419,6 +421,8 @@ class CheckoutService
         // Set status to processing
         $order->set_status('processing');
         $order->save();
+
+        error_log('[HP-RW] Order created successfully: ' . $order->get_id() . ' for PI: ' . $stripePaymentIntentId);
 
         return $order;
     }
