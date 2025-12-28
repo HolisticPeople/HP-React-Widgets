@@ -223,6 +223,8 @@ class CheckoutService
                 $grandTotal = max(0.0, $itemsTotalAfterDiscounts + $feesTotal + $shippingTotal + $taxTotal);
             }
 
+            error_log('[HP-RW] calculateTotals returning: grand_total=' . $grandTotal . ' shipping=' . $shippingTotal . ' points_discount=' . $pointsDiscount . ' offer_total=' . ($offerTotal ?? 'null'));
+
             return [
                 'subtotal'            => $allProductsSubtotal,
                 'discount_total'      => $discountTotal,
