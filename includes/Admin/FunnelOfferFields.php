@@ -24,38 +24,8 @@ class FunnelOfferFields
         add_filter('acf/update_value/name=thankyou_url', [self::class, 'autoGenerateThankYouUrl'], 10, 3);
         add_filter('acf/validate_value/name=thankyou_url', [self::class, 'validateThankYouUrl'], 10, 4);
         
-        // Sync funnel_slug with WordPress post slug
-        add_filter('acf/update_value/name=funnel_slug', [self::class, 'syncFunnelSlugToPostSlug'], 10, 3);
-    }
-    
-    /**
-     * Sync funnel_slug field to WordPress post slug (post_name).
-     */
-    public static function syncFunnelSlugToPostSlug($value, $post_id, $field)
-    {
-        if (empty($value)) {
-            return $value;
-        }
-        
-        // Get the post
-        $post = get_post($post_id);
-        if (!$post || $post->post_type !== 'hp-funnel') {
-            return $value;
-        }
-        
-        // Sanitize the slug
-        $new_slug = sanitize_title($value);
-        
-        // Only update if different from current slug
-        if ($post->post_name !== $new_slug) {
-            // Update the post slug directly
-            wp_update_post([
-                'ID' => $post_id,
-                'post_name' => $new_slug,
-            ]);
-        }
-        
-        return $value;
+        // Note: Slug sync is handled in Plugin::onFunnelSave() using direct $wpdb->update
+        // to avoid conflicts with WordPress's save process.
     }
     
     /**

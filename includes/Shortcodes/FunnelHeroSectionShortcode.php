@@ -76,7 +76,7 @@ class FunnelHeroSectionShortcode
      */
     private function buildBackgroundGradient(array $styling): ?string
     {
-        $type = $styling['background_type'] ?? 'gradient';
+        $type = $styling['background_type'] ?? 'solid';
         
         if ($type === 'solid' && !empty($styling['page_bg_color'])) {
             return $styling['page_bg_color'];

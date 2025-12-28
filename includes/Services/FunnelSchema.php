@@ -322,7 +322,7 @@ class FunnelSchema
                         'input_bg_color' => ['type' => 'string', 'description' => 'Form input background color', 'default' => '#333333'],
                         'border_color' => ['type' => 'string', 'description' => 'Border/divider color', 'default' => '#7c3aed'],
                         // Background type settings
-                        'background_type' => ['type' => 'string', 'enum' => ['gradient', 'solid', 'image'], 'default' => 'gradient'],
+                        'background_type' => ['type' => 'string', 'enum' => ['solid', 'gradient', 'image'], 'default' => 'solid'],
                         'background_image' => ['type' => 'string'],
                         'custom_css' => ['type' => 'string'],
                     ],
@@ -506,7 +506,7 @@ class FunnelSchema
             ],
             'styling' => [
                 'accent_color' => '#eab308',
-                'background_type' => 'gradient',
+                'background_type' => 'solid',
             ],
             'footer' => [
                 'disclaimer' => 'These statements have not been evaluated by the FDA. This product is not intended to diagnose, treat, cure or prevent any disease.',

@@ -201,6 +201,9 @@ class Plugin
         // This shim is safe and tiny; it just guarantees the global exists early.
         add_action('wp_head', [self::class, 'outputElementorFrontendConfigShim'], 0);
         
+        // Add funnel-specific body classes for styling
+        add_filter('body_class', [self::class, 'addFunnelBodyClasses']);
+        
         // Set up funnel CPT customizations (CPT registered via ACF Pro)
         self::setupFunnelCptHooks();
 
@@ -249,6 +252,35 @@ class Plugin
         // Register the admin settings page for managing shortcodes.
         $settingsPage = new SettingsPage();
         $settingsPage->init();
+    }
+
+    /**
+     * Add funnel-specific body classes for CSS targeting.
+     * 
+     * @param array $classes Existing body classes
+     * @return array Modified body classes
+     */
+    public static function addFunnelBodyClasses(array $classes): array
+    {
+        // Check if we're on a funnel page (hp-funnel post type)
+        if (is_singular(self::FUNNEL_POST_TYPE)) {
+            $slug = get_post_field('post_name', get_the_ID());
+            if ($slug) {
+                $classes[] = 'hp-funnel-page';
+                $classes[] = 'hp-funnel-' . $slug;
+            }
+        }
+        
+        // Also check for funnel sub-routes (checkout, thankyou)
+        $funnelRoute = get_query_var('hp_funnel_route');
+        $funnelSlug = get_query_var('hp_funnel_slug');
+        if ($funnelRoute && $funnelSlug) {
+            $classes[] = 'hp-funnel-page';
+            $classes[] = 'hp-funnel-' . sanitize_title($funnelSlug);
+            $classes[] = 'hp-funnel-route-' . sanitize_title($funnelRoute);
+        }
+        
+        return $classes;
     }
 
     /**

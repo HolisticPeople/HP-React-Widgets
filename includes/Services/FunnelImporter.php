@@ -514,7 +514,7 @@ class FunnelImporter
         self::setField($postId, 'input_bg_color', $styling['input_bg_color'] ?? '#333333');
         self::setField($postId, 'border_color', $styling['border_color'] ?? '#7c3aed');
         // Background type settings
-        self::setField($postId, 'background_type', $styling['background_type'] ?? 'gradient');
+        self::setField($postId, 'background_type', $styling['background_type'] ?? 'solid');
         self::setField($postId, 'background_image', $styling['background_image'] ?? '');
         self::setField($postId, 'custom_css', $styling['custom_css'] ?? '');
     }

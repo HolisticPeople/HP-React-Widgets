@@ -439,7 +439,7 @@ class FunnelExporter
             'input_bg_color' => get_field('input_bg_color', $postId) ?: '#333333',
             'border_color' => get_field('border_color', $postId) ?: '#7c3aed',
             // Background type settings
-            'background_type' => get_field('background_type', $postId) ?: 'gradient',
+            'background_type' => get_field('background_type', $postId) ?: 'solid',
             'background_image' => self::resolveImageUrl(get_field('background_image', $postId)),
             'custom_css' => get_field('custom_css', $postId) ?: '',
         ];

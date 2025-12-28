@@ -36,7 +36,7 @@ function hp_build_funnel_styles($funnel) {
     
     // Primary accent color (for buttons, UI)
     $accentColor = $styling['accent_color'] ?? '#eab308';
-    $bgType = strtolower($styling['background_type'] ?? 'gradient');
+    $bgType = strtolower($styling['background_type'] ?? 'solid');
     $bgImage = $styling['background_image'] ?? '';
     $customCss = $styling['custom_css'] ?? '';
     

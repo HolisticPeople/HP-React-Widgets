@@ -55,7 +55,7 @@ class FunnelStylesShortcode
         $borderColor = $styling['border_color'] ?? '#7c3aed';
         
         // Background settings (page_bg_color is used for solid backgrounds)
-        $bgType = $styling['background_type'] ?? 'gradient';
+        $bgType = $styling['background_type'] ?? 'solid';
         $bgImage = $styling['background_image'] ?? '';
         $customCss = $styling['custom_css'] ?? '';
 

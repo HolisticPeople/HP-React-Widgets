@@ -481,7 +481,7 @@ class FunnelConfigLoader
             'input_bg_color'      => self::getFieldValue('input_bg_color', $postId, '#333333'),
             'border_color'        => self::getFieldValue('border_color', $postId, '#7c3aed'),
             // Background type settings (gradient/solid/image)
-            'background_type'     => self::getFieldValue('background_type', $postId, 'gradient'),
+            'background_type'     => self::getFieldValue('background_type', $postId, 'solid'),
             'background_image'    => self::getFieldValue('background_image', $postId, ''),
             'custom_css'          => self::getFieldValue('custom_css', $postId, ''),
         ];
@@ -1245,7 +1245,7 @@ class FunnelConfigLoader
             
             'styling' => [
                 'accent_color'     => $legacy['payment_style']['accent_color'] ?? '#eab308',
-                'background_type'  => 'gradient',
+                'background_type'  => 'solid',
                 'page_bg_color'    => $legacy['payment_style']['background_color'] ?? '#121212',
                 'background_image' => '',
                 'custom_css'       => '',
