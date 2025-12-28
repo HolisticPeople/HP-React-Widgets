@@ -54,13 +54,23 @@ class FunnelTestimonialsShortcode
             return '';
         }
 
+        // Get layout from config or shortcode attribute
+        $layout = !empty($atts['layout']) && $atts['layout'] !== 'cards' 
+            ? $atts['layout'] 
+            : ($testimonialsConfig['displayMode'] ?? 'cards');
+        
+        // Get columns from config or shortcode attribute
+        $columns = (int) $atts['columns'] !== 3 
+            ? (int) $atts['columns'] 
+            : ($testimonialsConfig['columns'] ?? 3);
+
         $props = [
             'title'        => !empty($atts['title']) ? $atts['title'] : ($testimonialsConfig['title'] ?? 'What Our Customers Say'),
             'subtitle'     => !empty($atts['subtitle']) ? $atts['subtitle'] : ($testimonialsConfig['subtitle'] ?? ''),
             'testimonials' => $testimonials,
-            'columns'      => min((int) $atts['columns'], 3),
+            'columns'      => min($columns, 3),
             'showRatings'  => filter_var($atts['show_ratings'], FILTER_VALIDATE_BOOLEAN),
-            'layout'       => $atts['layout'],
+            'layout'       => $layout,
             'ctaText'      => $config['hero']['cta_text'] ?? '',
             'ctaUrl'       => $config['checkout']['url'] ?? '',
         ];

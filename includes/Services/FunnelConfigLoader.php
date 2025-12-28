@@ -420,9 +420,11 @@ class FunnelConfigLoader
             
             // Testimonials section
             'testimonials' => [
-                'title'    => self::getFieldValue('testimonials_title', $postId, 'What Our Customers Say'),
-                'subtitle' => self::getFieldValue('testimonials_subtitle', $postId, ''),
-                'items'    => self::extractTestimonials(self::getFieldValue('testimonials_list', $postId, [])),
+                'title'       => self::getFieldValue('testimonials_title', $postId, 'What Our Customers Say'),
+                'subtitle'    => self::getFieldValue('testimonials_subtitle', $postId, ''),
+                'displayMode' => self::getFieldValue('testimonials_display_mode', $postId, 'cards'),
+                'columns'     => (int) self::getFieldValue('testimonials_columns', $postId, 3),
+                'items'       => self::extractTestimonials(self::getFieldValue('testimonials_list', $postId, [])),
             ],
             
             // FAQ section
