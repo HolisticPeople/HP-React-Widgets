@@ -17,33 +17,18 @@ if (!defined('ABSPATH')) {
 
 /**
  * REST API endpoints for checkout operations.
- * 
- * Provides endpoints for:
- * - Shipping rates calculation
- * - Cart totals calculation
- * - Payment intent creation
- * - Order completion
- * - Customer lookup
- * - Product catalog/prices
  */
 class CheckoutApi
 {
-    /**
-     * Register REST routes.
-     */
     public function register(): void
     {
         add_action('rest_api_init', [$this, 'register_routes']);
     }
 
-    /**
-     * Register all checkout REST routes.
-     */
     public function register_routes(): void
     {
         $namespace = 'hp-rw/v1';
 
-        // Customer lookup
         register_rest_route($namespace, '/checkout/customer', [
             'methods'             => 'POST',
             'callback'            => [$this, 'handle_customer_lookup'],
@@ -56,49 +41,42 @@ class CheckoutApi
             ],
         ]);
 
-        // Shipping rates
         register_rest_route($namespace, '/checkout/shipping-rates', [
             'methods'             => 'POST',
             'callback'            => [$this, 'handle_shipping_rates'],
             'permission_callback' => '__return_true',
         ]);
 
-        // Totals calculation
         register_rest_route($namespace, '/checkout/totals', [
             'methods'             => 'POST',
             'callback'            => [$this, 'handle_totals'],
             'permission_callback' => '__return_true',
         ]);
 
-        // Create payment intent
         register_rest_route($namespace, '/checkout/create-intent', [
             'methods'             => 'POST',
             'callback'            => [$this, 'handle_create_intent'],
             'permission_callback' => '__return_true',
         ]);
 
-        // Complete order after payment
         register_rest_route($namespace, '/checkout/complete', [
             'methods'             => 'POST',
             'callback'            => [$this, 'handle_complete'],
             'permission_callback' => '__return_true',
         ]);
 
-        // Get order summary
         register_rest_route($namespace, '/checkout/order-summary', [
             'methods'             => 'GET',
             'callback'            => [$this, 'handle_order_summary'],
             'permission_callback' => '__return_true',
         ]);
 
-        // Catalog prices
         register_rest_route($namespace, '/catalog/prices', [
             'methods'             => 'GET',
             'callback'            => [$this, 'handle_catalog_prices'],
             'permission_callback' => '__return_true',
         ]);
 
-        // Funnel status
         register_rest_route($namespace, '/funnel/status', [
             'methods'             => 'GET',
             'callback'            => [$this, 'handle_funnel_status'],
@@ -106,10 +84,6 @@ class CheckoutApi
         ]);
     }
 
-    /**
-     * Look up a customer by email.
-     * Returns user info, addresses (including all from HP-Multi-Address), and points balance if the user exists.
-     */
     public function handle_customer_lookup(WP_REST_Request $request): WP_REST_Response
     {
         $email = sanitize_email($request->get_param('email'));
@@ -128,18 +102,14 @@ class CheckoutApi
         $pointsService = new PointsService();
         $customer = new \WC_Customer($user->ID);
 
-        // Helper to normalize country to 2-letter code
         $normalizeCountry = function($country) {
             if (empty($country)) return '';
-            // If already a 2-letter code, return as-is
             if (strlen($country) === 2) return strtoupper($country);
-            // Try to convert full name to code using WooCommerce
             $countries = WC()->countries->get_countries();
             $code = array_search($country, $countries);
             return $code !== false ? $code : $country;
         };
 
-        // Get primary addresses
         $primaryBilling = [
             'id'         => 'billing_primary',
             'first_name' => $customer->get_billing_first_name(),
@@ -171,23 +141,14 @@ class CheckoutApi
             'is_default' => true,
         ];
 
-        // Get all addresses from HP-Multi-Address if available
         $allAddresses = ['billing' => [], 'shipping' => []];
-        
-        // Add primary addresses first
-        if (!empty($primaryBilling['address_1'])) {
-            $allAddresses['billing'][] = $primaryBilling;
-        }
-        if (!empty($primaryShipping['address_1'])) {
-            $allAddresses['shipping'][] = $primaryShipping;
-        }
+        if (!empty($primaryBilling['address_1'])) $allAddresses['billing'][] = $primaryBilling;
+        if (!empty($primaryShipping['address_1'])) $allAddresses['shipping'][] = $primaryShipping;
 
-        // Try to get additional addresses from HP-Multi-Address
         if (class_exists('\\HP_MA\\AddressManager')) {
             $additionalBilling = \HP_MA\AddressManager::get_addresses($user->ID, 'billing');
             $additionalShipping = \HP_MA\AddressManager::get_addresses($user->ID, 'shipping');
 
-            // Helper to extract address field with or without prefix
             $getField = function($addr, $type, $field) {
                 $prefixed = $type . '_' . $field;
                 return $addr[$prefixed] ?? $addr[$field] ?? '';
@@ -244,25 +205,16 @@ class CheckoutApi
         ]);
     }
 
-    /**
-     * Get shipping rates for given address and items.
-     */
     public function handle_shipping_rates(WP_REST_Request $request): WP_REST_Response|WP_Error
     {
         try {
             $address = (array) $request->get_param('address');
             $items = (array) $request->get_param('items');
-
-            if (empty($items)) {
-                return new WP_Error('bad_request', 'Items required', ['status' => 400]);
-            }
+            if (empty($items)) return new WP_Error('bad_request', 'Items required', ['status' => 400]);
 
             $shippingService = new ShippingService();
             $result = $shippingService->getRates($address, $items);
-
-            if (!$result['success']) {
-                return new WP_Error('shipping_error', $result['error'] ?? 'Failed to get rates', ['status' => 502]);
-            }
+            if (!$result['success']) return new WP_Error('shipping_error', $result['error'] ?? 'Failed to get rates', ['status' => 502]);
 
             return new WP_REST_Response(['rates' => $result['rates']]);
         } catch (\Throwable $e) {
@@ -270,9 +222,6 @@ class CheckoutApi
         }
     }
 
-    /**
-     * Calculate totals for a cart.
-     */
     public function handle_totals(WP_REST_Request $request): WP_REST_Response|WP_Error
     {
         $items = (array) $request->get_param('items');
@@ -282,30 +231,15 @@ class CheckoutApi
         $funnelId = (string) ($request->get_param('funnel_id') ?? 'default');
         $offerTotal = $request->get_param('offer_total');
 
-        if (empty($items)) {
-            return new WP_Error('bad_request', 'Items required', ['status' => 400]);
-        }
+        if (empty($items)) return new WP_Error('bad_request', 'Items required', ['status' => 400]);
 
-        // Get funnel config for global discount
         $globalDiscountPercent = $this->getFunnelGlobalDiscount($funnelId);
-
         $checkoutService = new CheckoutService();
-        $totals = $checkoutService->calculateTotals(
-            $items,
-            $address,
-            $selectedRate,
-            $pointsToRedeem,
-            $globalDiscountPercent,
-            [],
-            $offerTotal !== null ? (float) $offerTotal : null
-        );
+        $totals = $checkoutService->calculateTotals($items, $address, $selectedRate, $pointsToRedeem, $globalDiscountPercent, [], $offerTotal !== null ? (float) $offerTotal : null);
 
         return new WP_REST_Response($totals);
     }
 
-    /**
-     * Create a Stripe PaymentIntent for checkout.
-     */
     public function handle_create_intent(WP_REST_Request $request): WP_REST_Response|WP_Error
     {
         $funnelId = (string) ($request->get_param('funnel_id') ?? 'default');
@@ -318,64 +252,31 @@ class CheckoutApi
         $analytics = (array) ($request->get_param('analytics') ?? []);
         $offerTotal = $request->get_param('offer_total');
 
-        if (empty($items)) {
-            return new WP_Error('bad_request', 'Items required', ['status' => 400]);
-        }
+        if (empty($items)) return new WP_Error('bad_request', 'Items required', ['status' => 400]);
 
         $email = isset($customer['email']) ? (string) $customer['email'] : '';
-        if ($email === '' || !is_email($email)) {
-            return new WP_Error('bad_request', 'Valid customer email required', ['status' => 400]);
-        }
+        if ($email === '' || !is_email($email)) return new WP_Error('bad_request', 'Valid customer email required', ['status' => 400]);
 
-        // Check funnel status
         $funnelMode = $this->getFunnelMode($funnelId);
-        if ($funnelMode === 'off') {
-            return new WP_Error('funnel_off', 'Funnel is currently disabled', [
-                'status'   => 409,
-                'redirect' => home_url('/'),
-            ]);
-        }
+        if ($funnelMode === 'off') return new WP_Error('funnel_off', 'Funnel is currently disabled', ['status' => 409, 'redirect' => home_url('/')]);
 
-        // Initialize Stripe with funnel stripe_mode
         $stripeMode = $this->getStripeModeForFunnel($funnelId);
         $stripe = new StripeService($stripeMode);
+        if (!$stripe->isConfigured()) return new WP_Error('stripe_not_configured', 'Stripe keys are missing', ['status' => 500]);
 
-        if (!$stripe->isConfigured()) {
-            return new WP_Error('stripe_not_configured', 'Stripe keys are missing', ['status' => 500]);
-        }
-
-        // Get global discount for this funnel
         $globalDiscountPercent = $this->getFunnelGlobalDiscount($funnelId);
-
-        // Calculate totals
         $checkoutService = new CheckoutService();
-        $totals = $checkoutService->calculateTotals(
-            $items,
-            $address,
-            $selectedRate,
-            $pointsToRedeem,
-            $globalDiscountPercent,
-            [],
-            $offerTotal !== null ? (float) $offerTotal : null
-        );
+        $totals = $checkoutService->calculateTotals($items, $address, $selectedRate, $pointsToRedeem, $globalDiscountPercent, [], $offerTotal !== null ? (float) $offerTotal : null);
 
         $grandTotal = $totals['grand_total'];
         $amountCents = (int) round($grandTotal * 100);
+        if ($amountCents <= 0) return new WP_Error('bad_amount', 'Amount must be greater than zero', ['status' => 400]);
 
-        if ($amountCents <= 0) {
-            return new WP_Error('bad_amount', 'Amount must be greater than zero', ['status' => 400]);
-        }
-
-        // Create or get Stripe customer
         $name = trim(($customer['first_name'] ?? '') . ' ' . ($customer['last_name'] ?? ''));
         $user = get_user_by('email', $email);
         $stripeCustomerId = $stripe->createOrGetCustomer($email, $name, $user ? (int) $user->ID : 0);
+        if (!$stripeCustomerId) return new WP_Error('stripe_customer', 'Could not create Stripe customer', ['status' => 502]);
 
-        if (!$stripeCustomerId) {
-            return new WP_Error('stripe_customer', 'Could not create Stripe customer', ['status' => 502]);
-        }
-
-        // Create draft order
         $draftData = [
             'funnel_id'               => $funnelId,
             'funnel_name'             => $funnelName,
@@ -394,8 +295,6 @@ class CheckoutApi
         ];
 
         $draftId = $checkoutService->createDraft($draftData);
-
-        // Create PaymentIntent
         $params = [
             'amount'                                               => $amountCents,
             'currency'                                             => strtolower(get_woocommerce_currency() ?: 'usd'),
@@ -409,10 +308,7 @@ class CheckoutApi
         ];
 
         $pi = $stripe->createPaymentIntent($params);
-
-        if (!$pi || empty($pi['client_secret'])) {
-            return new WP_Error('stripe_pi', 'Could not create PaymentIntent', ['status' => 502]);
-        }
+        if (!$pi || empty($pi['client_secret'])) return new WP_Error('stripe_pi', 'Could not create PaymentIntent', ['status' => 502]);
 
         return new WP_REST_Response([
             'client_secret'  => (string) $pi['client_secret'],
@@ -423,66 +319,34 @@ class CheckoutApi
         ]);
     }
 
-    /**
-     * Complete an order after successful payment.
-     */
     public function handle_complete(WP_REST_Request $request): WP_REST_Response|WP_Error
     {
         $draftId = (string) $request->get_param('order_draft_id');
         $piId = (string) $request->get_param('pi_id');
-
-        if ($draftId === '' || $piId === '') {
-            return new WP_Error('bad_request', 'Draft ID and PaymentIntent ID required', ['status' => 400]);
-        }
+        if ($draftId === '' || $piId === '') return new WP_Error('bad_request', 'Draft ID and PaymentIntent ID required', ['status' => 400]);
 
         $checkoutService = new CheckoutService();
         $draftData = $checkoutService->getDraft($draftId);
+        if (!$draftData) return new WP_Error('not_found', 'Order draft not found', ['status' => 404]);
 
-        if (!$draftData) {
-            return new WP_Error('not_found', 'Order draft not found', ['status' => 404]);
-        }
-
-        // Verify payment with Stripe
         $funnelId = (string) ($draftData['funnel_id'] ?? 'default');
         $stripeMode = (string) ($draftData['stripe_mode'] ?? $this->getStripeModeForFunnel($funnelId));
         $stripe = new StripeService($stripeMode);
 
         $pi = $stripe->retrievePaymentIntent($piId);
-        if (!$pi || ($pi['status'] ?? '') !== 'succeeded') {
-            return new WP_Error('payment_failed', 'Payment has not succeeded', ['status' => 400]);
-        }
+        if (!$pi || ($pi['status'] ?? '') !== 'succeeded') return new WP_Error('payment_failed', 'Payment has not succeeded', ['status' => 400]);
 
-        // Extract payment details
         $stripeCustomerId = $pi['customer'] ?? $draftData['stripe_customer'] ?? '';
         $chargeId = $pi['latest_charge'] ?? '';
         $paymentMethodId = $pi['payment_method'] ?? '';
 
-        // Create the order
-        $order = $checkoutService->createOrderFromDraft(
-            $draftData,
-            $stripeCustomerId,
-            $piId,
-            $chargeId,
-            $paymentMethodId
-        );
+        $order = $checkoutService->createOrderFromDraft($draftData, $stripeCustomerId, $piId, $chargeId, $paymentMethodId);
+        if (!$order) return new WP_Error('order_failed', 'Failed to create order', ['status' => 500]);
 
-        if (!$order) {
-            return new WP_Error('order_failed', 'Failed to create order', ['status' => 500]);
-        }
-
-        // Clean up draft
         $checkoutService->deleteDraft($draftId);
-
-        return new WP_REST_Response([
-            'success'      => true,
-            'order_id'     => $order->get_id(),
-            'order_number' => $order->get_order_number(),
-        ]);
+        return new WP_REST_Response(['success' => true, 'order_id' => $order->get_id(), 'order_number' => $order->get_order_number()]);
     }
 
-    /**
-     * Get order summary for thank you page.
-     */
     public function handle_order_summary(WP_REST_Request $request): WP_REST_Response|WP_Error
     {
         $orderId = (int) $request->get_param('order_id');
@@ -492,85 +356,52 @@ class CheckoutApi
         if ($orderId > 0) {
             $order = wc_get_order($orderId);
         } elseif ($piId !== '') {
-            $orders = wc_get_orders([
-                'limit'      => 1,
-                'meta_key'   => '_hp_rw_stripe_pi_id',
-                'meta_value' => $piId,
-            ]);
-            if (!empty($orders)) {
-                $order = $orders[0];
-            }
+            $orders = wc_get_orders(['limit' => 1, 'meta_key' => '_hp_rw_stripe_pi_id', 'meta_value' => $piId]);
+            if (!empty($orders)) $order = $orders[0];
         }
 
-        if (!$order) {
-            return new WP_Error('not_found', 'Order not found', ['status' => 404]);
-        }
+        if (!$order) return new WP_Error('not_found', 'Order not found', ['status' => 404]);
 
-        // Verify pi_id matches for security (if provided)
         $storedPiId = $order->get_meta('_hp_rw_stripe_pi_id');
-        if ($piId !== '' && $storedPiId !== $piId) {
-            return new WP_Error('unauthorized', 'Invalid authorization', ['status' => 403]);
-        }
+        if ($piId !== '' && $storedPiId !== $piId) return new WP_Error('unauthorized', 'Invalid authorization', ['status' => 403]);
 
         $items = [];
-        $lineItemSavings = 0.0;
         foreach ($order->get_items() as $item) {
-            if (!$item instanceof \WC_Order_Item_Product) {
-                continue;
-            }
-
+            if (!$item instanceof \WC_Order_Item_Product) continue;
             $product = $item->get_product();
             $imageUrl = '';
-
             if ($product) {
                 $imageId = $product->get_image_id();
                 if ($imageId) {
                     $imageData = wp_get_attachment_image_src($imageId, 'woocommerce_thumbnail');
-                    if ($imageData && isset($imageData[0])) {
-                        $imageUrl = $imageData[0];
-                    }
+                    if ($imageData && isset($imageData[0])) $imageUrl = $imageData[0];
                 }
             }
-
             $qty = max(1, $item->get_quantity());
             
-            // "Funnel Price" is what they were quoted in the funnel
-            $metaValue = get_metadata('order_item', $item->get_id(), '_hp_rw_funnel_price', true);
-            if ($metaValue !== '') {
-                $funnelUnitPrice = (float) $metaValue;
-            } else {
-                $funnelUnitPrice = (float) ($item->get_total() / $qty);
-            }
-
-            // "Regular Price" for line-through display
+            // USE FULL REGULAR PRICE FOR SUMMARY LIST TO MATCH USER'S CONSISTENCY REQUEST
             $regularUnitPrice = (float) ($item->get_subtotal() / $qty);
-            
-            // Accumulate savings from funnel pricing (regular - funnel)
-            $lineItemSavings += (float) (($regularUnitPrice - $funnelUnitPrice) * $qty);
 
             $items[] = [
                 'name'     => $item->get_name(),
                 'qty'      => $qty,
-                'price'    => (float) $funnelUnitPrice,
-                'subtotal' => (float) $regularUnitPrice,
-                'total'    => (float) ($funnelUnitPrice * $qty),
+                'price'    => $regularUnitPrice,
+                'subtotal' => $regularUnitPrice,
+                'total'    => (float) ($regularUnitPrice * $qty),
                 'image'    => $imageUrl,
                 'sku'      => $product ? $product->get_sku() : '',
             ];
         }
 
-        // Calculate extra discounts (fees and non-points coupons)
         $pointsRedeemed = ['points' => 0, 'value' => 0.0];
         $extraDiscounts = 0.0;
 
-        // Points from meta
         $metaPointsValue = (float) $order->get_meta('_ywpar_coupon_amount');
         if ($metaPointsValue > 0) {
             $pointsRedeemed['value'] = $metaPointsValue;
             $pointsRedeemed['points'] = (int) $order->get_meta('_ywpar_coupon_points');
         }
 
-        // Scan fees for "Savings" or other adjustments
         foreach ($order->get_fees() as $fee) {
             $feeTotal = (float) $fee->get_total();
             if ($feeTotal < 0 && stripos($fee->get_name(), 'points') === false) {
@@ -578,46 +409,21 @@ class CheckoutApi
             }
         }
 
-        // 3. Scan coupons for other discounts
-        // We only want coupons that ARE NOT our points coupon
         foreach ($order->get_coupon_codes() as $code) {
             try {
                 $coupon = new \WC_Coupon($code);
-                // Check multiple ways to identify the points coupon
-                $isPointsCoupon = (
-                    $coupon->get_meta('ywpar_coupon') || 
-                    $coupon->get_meta('_ywpar_coupon') || 
-                    str_starts_with($code, 'ywpar_discount_')
-                );
-                
-                if ($isPointsCoupon) {
-                    continue; // Already handled points row
-                }
-                
-                // Get the discount amount for this coupon from the order
+                $isPointsCoupon = ($coupon->get_meta('ywpar_coupon') || $coupon->get_meta('_ywpar_coupon') || str_starts_with($code, 'ywpar_discount_'));
+                if ($isPointsCoupon) continue;
                 foreach ($order->get_items('coupon') as $orderCoupon) {
-                    if ($orderCoupon->get_code() === $code) {
-                        $extraDiscounts += (float) $orderCoupon->get_discount();
-                    }
+                    if ($orderCoupon->get_code() === $code) $extraDiscounts += (float) $orderCoupon->get_discount();
                 }
-            } catch (\Throwable $e) {
-                continue;
-            }
+            } catch (\Throwable $e) { continue; }
         }
 
-        // Combined discount: ONLY include non-points coupons/fees here.
-        // Item-level savings are already visually represented in the items list via strikethrough.
-        $totalDiscount = (float) $extraDiscounts;
-
-        // Calculate grand total manually from the data we are sending to ensure consistency
         $itemsSum = 0.0;
-        foreach ($items as $it) {
-            $itemsSum += $it['total'];
-        }
+        foreach ($items as $it) $itemsSum += $it['total'];
         
         $shippingTotal = (float) $order->get_shipping_total();
-        // Grand total = Items (discounted) + Shipping - Extra Coupons - Points
-        // We subtract extraDiscounts because they are positive values in our logic above
         $calculatedGrandTotal = $itemsSum + $shippingTotal - $extraDiscounts - $pointsRedeemed['value'];
 
         return new WP_REST_Response([
@@ -625,7 +431,7 @@ class CheckoutApi
             'order_id'        => $order->get_id(),
             'order_number'    => $order->get_order_number(),
             'items'           => $items,
-            'items_discount'  => (float) $totalDiscount,
+            'items_discount'  => (float) $extraDiscounts,
             'points_redeemed' => $pointsRedeemed,
             'shipping_total'  => $shippingTotal,
             'grand_total'     => (float) max(0, $calculatedGrandTotal),
@@ -634,67 +440,35 @@ class CheckoutApi
         ]);
     }
 
-    /**
-     * Get prices for catalog products.
-     */
     public function handle_catalog_prices(WP_REST_Request $request): WP_REST_Response
     {
         $skusParam = $request->get_param('skus');
         $skus = is_string($skusParam) ? explode(',', $skusParam) : [];
         $skus = array_filter(array_map('trim', $skus));
-
-        if (empty($skus)) {
-            return new WP_REST_Response(['prices' => []]);
-        }
-
-        $prices = Resolver::getPricesForSkus($skus);
-
-        return new WP_REST_Response([
-            'ok'     => true,
-            'prices' => $prices,
-        ]);
+        if (empty($skus)) return new WP_REST_Response(['prices' => []]);
+        return new WP_REST_Response(['ok' => true, 'prices' => Resolver::getPricesForSkus($skus)]);
     }
 
-    /**
-     * Get funnel status.
-     */
     public function handle_funnel_status(WP_REST_Request $request): WP_REST_Response
     {
         $funnelId = (string) ($request->get_param('funnel_id') ?? 'default');
-        $mode = $this->getFunnelMode($funnelId);
-
-        return new WP_REST_Response([
-            'funnel_id' => $funnelId,
-            'mode'      => $mode,
-        ]);
+        return new WP_REST_Response(['funnel_id' => $funnelId, 'mode' => $this->getFunnelMode($funnelId)]);
     }
 
-    /**
-     * Get funnel mode (test/live/off).
-     */
     private function getFunnelMode(string $funnelId): string
     {
         $opts = get_option('hp_rw_settings', []);
         $env = isset($opts['env']) && $opts['env'] === 'production' ? 'production' : 'staging';
-
         if (!empty($opts['funnels']) && is_array($opts['funnels'])) {
             foreach ($opts['funnels'] as $f) {
                 if (is_array($f) && !empty($f['id']) && (string) $f['id'] === $funnelId) {
-                    if ($env === 'staging') {
-                        return $f['mode_staging'] ?? 'test';
-                    } else {
-                        return $f['mode_production'] ?? 'live';
-                    }
+                    return ($env === 'staging') ? ($f['mode_staging'] ?? 'test') : ($f['mode_production'] ?? 'live');
                 }
             }
         }
-
         return $env === 'production' ? 'live' : 'test';
     }
 
-    /**
-     * Resolve Stripe mode for a funnel.
-     */
     private function getStripeModeForFunnel(string $funnelId): string
     {
         $postId = absint($funnelId);
@@ -702,29 +476,18 @@ class CheckoutApi
             $config = FunnelConfigLoader::getById($postId);
             if (is_array($config)) {
                 $mode = strtolower(trim((string) ($config['stripe_mode'] ?? 'auto')));
-                if ($mode === 'test' || $mode === 'live') {
-                    return $mode;
-                }
+                if ($mode === 'test' || $mode === 'live') return $mode;
             }
         }
-
-        $legacy = $this->getFunnelMode($funnelId);
-        return ($legacy === 'live') ? 'live' : 'test';
+        return ($this->getFunnelMode($funnelId) === 'live') ? 'live' : 'test';
     }
 
-    /**
-     * Get global discount percentage for a funnel.
-     */
     private function getFunnelGlobalDiscount(string $funnelId): float
     {
         $opts = get_option('hp_rw_settings', []);
-
         if (!empty($opts['funnel_configs']) && is_array($opts['funnel_configs'])) {
-            if (isset($opts['funnel_configs'][$funnelId]['global_discount_percent'])) {
-                return (float) $opts['funnel_configs'][$funnelId]['global_discount_percent'];
-            }
+            if (isset($opts['funnel_configs'][$funnelId]['global_discount_percent'])) return (float) $opts['funnel_configs'][$funnelId]['global_discount_percent'];
         }
-
         return (float) ($opts['default_global_discount'] ?? 0);
     }
 }
