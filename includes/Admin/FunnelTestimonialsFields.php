@@ -31,11 +31,11 @@ class FunnelTestimonialsFields
 
         acf_add_local_field_group([
             'key' => 'group_testimonials_display_settings',
-            'title' => '',
+            'title' => 'Testimonials Display',
             'fields' => [
                 [
                     'key' => 'field_testimonials_display_mode',
-                    'label' => '',
+                    'label' => 'Display Mode',
                     'name' => 'testimonials_display_mode',
                     'type' => 'select',
                     'choices' => [
@@ -43,11 +43,12 @@ class FunnelTestimonialsFields
                         'carousel' => 'Slider',
                     ],
                     'default_value' => 'cards',
-                    'wrapper' => ['class' => 'hp-testimonials-hidden-field'],
+                    'ui' => 0,
+                    'wrapper' => ['class' => 'hp-testimonials-hidden-field', 'width' => '50'],
                 ],
                 [
                     'key' => 'field_testimonials_columns',
-                    'label' => '',
+                    'label' => 'Columns',
                     'name' => 'testimonials_columns',
                     'type' => 'select',
                     'choices' => [
@@ -56,7 +57,8 @@ class FunnelTestimonialsFields
                         '4' => '4',
                     ],
                     'default_value' => '3',
-                    'wrapper' => ['class' => 'hp-testimonials-hidden-field'],
+                    'ui' => 0,
+                    'wrapper' => ['class' => 'hp-testimonials-hidden-field', 'width' => '50'],
                 ],
             ],
             'location' => [
@@ -68,10 +70,12 @@ class FunnelTestimonialsFields
                     ],
                 ],
             ],
-            'menu_order' => 99,
+            'menu_order' => 8,
             'position' => 'normal',
-            'style' => 'seamless',
+            'style' => 'default',
             'label_placement' => 'top',
+            'hide_on_screen' => '',
+            'active' => true,
         ]);
     }
 
