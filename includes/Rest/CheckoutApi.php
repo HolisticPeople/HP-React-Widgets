@@ -565,9 +565,9 @@ class CheckoutApi
             $items[] = [
                 'name'     => $item->get_name(),
                 'qty'      => $qty,
-                'price'    => $paidPrice,
+                'price'    => (float) $paidPrice,
                 'subtotal' => (float) ($item->get_subtotal() / $qty),
-                'total'    => $item->get_total(),
+                'total'    => (float) $item->get_total(),
                 'image'    => $imageUrl,
                 'sku'      => $product ? $product->get_sku() : '',
             ];
@@ -584,7 +584,7 @@ class CheckoutApi
             $pointsRedeemed['points'] = (int) $order->get_meta('_ywpar_coupon_points');
         }
 
-        // 2. Scan fees for "Savings" or other adjustments
+        // 2. Scan fees for \"Savings\" or other adjustments
         foreach ($order->get_fees() as $fee) {
             $feeTotal = (float) $fee->get_total();
             // If it's a discount fee (negative) and NOT points, count it as a general discount
@@ -614,7 +614,7 @@ class CheckoutApi
             'order_id'        => $order->get_id(),
             'order_number'    => $order->get_order_number(),
             'items'           => $items,
-            'items_discount'  => $extraDiscounts, // Only extra discounts not on items
+            'items_discount'  => (float) $extraDiscounts, // Only extra discounts not on items
             'points_redeemed' => $pointsRedeemed,
             'shipping_total'  => (float) $order->get_shipping_total(),
             'grand_total'     => (float) $order->get_total(),
