@@ -574,17 +574,24 @@ class CheckoutApi
         // Calculate fees and points breakdown
         $feesTotal = 0.0;
         $pointsRedeemed = ['points' => 0, 'value' => 0.0];
+        $extraDiscounts = 0.0;
 
-        // Check for Points Discount from Meta (from our coupon flow)
+        // 1. Points from meta (our robust coupon flow)
         $metaPointsValue = (float) $order->get_meta('_ywpar_coupon_amount');
         if ($metaPointsValue > 0) {
             $pointsRedeemed['value'] = $metaPointsValue;
             $pointsRedeemed['points'] = (int) $order->get_meta('_ywpar_coupon_points');
         }
 
+        // 2. Scan fees for "Savings" or other discounts
         foreach ($order->get_fees() as $fee) {
             $feeTotal = (float) $fee->get_total();
             $feesTotal += $feeTotal;
+
+            // If it's a discount fee (negative) and NOT points, count it as a general discount
+            if ($feeTotal < 0 && stripos($fee->get_name(), 'points') === false) {
+                $extraDiscounts += abs($feeTotal);
+            }
 
             // Legacy points fee fallback
             if ($pointsRedeemed['value'] <= 0 && stripos($fee->get_name(), 'points') !== false) {
@@ -593,6 +600,12 @@ class CheckoutApi
                 $pointsRedeemed['points'] = $pointsService->moneyToPoints(abs($feeTotal));
             }
         }
+
+        // 3. Scan coupons for other discounts
+        $couponDiscount = (float) $order->get_discount_total();
+        // total_discount includes our points coupon, so we must subtract it to avoid double counting
+        $otherCouponDiscount = max(0.0, $couponDiscount - $pointsRedeemed['value']);
+        $itemsDiscount += $extraDiscounts + $otherCouponDiscount;
 
         return new WP_REST_Response([
             'order_id'        => $order->get_id(),

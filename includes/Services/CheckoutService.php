@@ -489,8 +489,9 @@ class CheckoutService
         // Set status to processing
         $order->set_status('processing');
         
-        // Final total calculation before save
-        $order->calculate_totals(true);
+        // Final total calculation before save.
+        // Use FALSE to prevent resetting manual overrides/coupons that may not yet be in the DB context.
+        $order->calculate_totals(false);
         $order->save();
 
         error_log('[HP-RW] Order created successfully: ' . $order->get_id() . ' for PI: ' . $stripePaymentIntentId . ' with Total: ' . $order->get_total());
