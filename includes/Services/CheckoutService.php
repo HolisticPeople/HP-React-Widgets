@@ -110,14 +110,8 @@ class CheckoutService
                 $item->set_name($productName);
             }
 
-            // Use admin-set sale price if provided, otherwise use WC price
-            $regularPrice = (float) $product->get_regular_price();
-            if ($regularPrice <= 0) {
-                $regularPrice = (float) $product->get_price();
-            }
-            
-            $salePrice = isset($it['salePrice']) ? (float) $it['salePrice'] : null;
-            $price = ($salePrice !== null) ? $salePrice : (float) $product->get_price();
+            // Standard WC practice: subtotal is regular price, total is what they pay
+            $subtotal = $regularPrice * $qty;
             
             // Base total is price from frontend/product (already discounted if sale price)
             $total = $price * $qty;

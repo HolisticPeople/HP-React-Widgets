@@ -531,7 +531,7 @@ class CheckoutApi
         }
 
         $items = [];
-        $lineItemDiscount = 0.0;
+        $lineItemSavings = 0.0;
         foreach ($order->get_items() as $item) {
             if (!$item instanceof \WC_Order_Item_Product) {
                 continue;
@@ -552,19 +552,24 @@ class CheckoutApi
 
             $qty = max(1, $item->get_quantity());
             
-            // For the summary, we want to show the REGULAR price on the item line
-            // and the discount in the separate discount row, to match the checkout page.
+            // "Funnel Price" is what they were quoted in the funnel (after kit discount etc)
+            $funnelUnitPrice = (float) $item->get_meta('_hp_rw_funnel_price');
+            if ($funnelUnitPrice <= 0 && $item->get_total() > 0) {
+                $funnelUnitPrice = (float) ($item->get_total() / $qty);
+            }
+
+            // "Regular Price" for line-through display
             $regularUnitPrice = (float) ($item->get_subtotal() / $qty);
             
-            // Accumulate line item discount
-            $lineItemDiscount += (float) ($item->get_subtotal() - $item->get_total());
+            // Accumulate savings from funnel pricing (e.g. kit discount)
+            $lineItemSavings += (float) ($item->get_subtotal() - ($funnelUnitPrice * $qty));
 
             $items[] = [
                 'name'     => $item->get_name(),
                 'qty'      => $qty,
-                'price'    => $regularUnitPrice,
+                'price'    => $funnelUnitPrice,
                 'subtotal' => $regularUnitPrice,
-                'total'    => (float) $item->get_subtotal(),
+                'total'    => (float) ($funnelUnitPrice * $qty),
                 'image'    => $imageUrl,
                 'sku'      => $product ? $product->get_sku() : '',
             ];
@@ -581,7 +586,7 @@ class CheckoutApi
             $pointsRedeemed['points'] = (int) $order->get_meta('_ywpar_coupon_points');
         }
 
-        // 2. Scan fees for \"Savings\" or other adjustments
+        // 2. Scan fees for "Savings" or other adjustments (Global discount, Offer Savings)
         foreach ($order->get_fees() as $fee) {
             $feeTotal = (float) $fee->get_total();
             // If it's a discount fee (negative) and NOT points, count it as a general discount
@@ -593,28 +598,32 @@ class CheckoutApi
         // 3. Scan coupons for other discounts
         // We only want coupons that ARE NOT our points coupon
         foreach ($order->get_coupon_codes() as $code) {
-            $coupon = new \WC_Coupon($code);
-            if ($coupon->get_meta('ywpar_coupon')) {
-                continue; // Already handled points
-            }
-            // For other coupons, we add their amount
-            // Note: in WC 3.0+ we get the discount from the order itself for that coupon
-            foreach ($order->get_coupons() as $orderCoupon) {
-                if ($orderCoupon->get_code() === $code) {
-                    $extraDiscounts += (float) $orderCoupon->get_discount();
+            try {
+                $coupon = new \WC_Coupon($code);
+                if ($coupon->get_meta('ywpar_coupon')) {
+                    continue; // Already handled points
                 }
+                
+                // Get the discount amount for this coupon from the order
+                foreach ($order->get_items('coupon') as $orderCoupon) {
+                    if ($orderCoupon->get_code() === $code) {
+                        $extraDiscounts += (float) $orderCoupon->get_discount();
+                    }
+                }
+            } catch (\Throwable $e) {
+                continue;
             }
         }
 
-        // Combined discount: line item savings + extra discounts (fees/coupons)
-        $totalDiscount = $lineItemDiscount + $extraDiscounts;
+        // Combined discount: funnel savings + extra (fees/coupons)
+        $totalDiscount = $lineItemSavings + $extraDiscounts;
 
         return new WP_REST_Response([
             'success'         => true,
             'order_id'        => $order->get_id(),
             'order_number'    => $order->get_order_number(),
             'items'           => $items,
-            'items_discount'  => (float) $totalDiscount, // Now includes line item savings
+            'items_discount'  => (float) $totalDiscount,
             'points_redeemed' => $pointsRedeemed,
             'shipping_total'  => (float) $order->get_shipping_total(),
             'grand_total'     => (float) $order->get_total(),
@@ -724,18 +733,3 @@ class CheckoutApi
         return (float) ($opts['default_global_discount'] ?? 0);
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
