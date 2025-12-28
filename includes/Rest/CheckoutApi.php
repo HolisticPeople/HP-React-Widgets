@@ -531,6 +531,7 @@ class CheckoutApi
         }
 
         $items = [];
+        $itemsDiscount = 0.0;
         foreach ($order->get_items() as $item) {
             if (!$item instanceof \WC_Order_Item_Product) {
                 continue;
@@ -549,37 +550,47 @@ class CheckoutApi
                 }
             }
 
+            // Get the price intended by the funnel (before coupons)
+            $funnelPrice = (float) $item->get_meta('_hp_rw_funnel_price');
+            if ($funnelPrice <= 0) {
+                // Fallback: if meta is missing, use item subtotal which is MSRP
+                $funnelPrice = (float) ($item->get_subtotal() / max(1, $item->get_quantity()));
+            }
+
             $items[] = [
                 'name'     => $item->get_name(),
                 'qty'      => $item->get_quantity(),
-                'price'    => (float) ($item->get_subtotal() / max(1, $item->get_quantity())),
+                'price'    => $funnelPrice,
                 'subtotal' => (float) $item->get_subtotal(),
-                'total'    => (float) $item->get_total(),
+                'total'    => $funnelPrice * $item->get_quantity(),
                 'image'    => $imageUrl,
                 'sku'      => $product ? $product->get_sku() : '',
             ];
+
+            // Item discount is MSRP - Intended Price
+            $itemsDiscount += ((float) $item->get_subtotal() - ($funnelPrice * $item->get_quantity()));
         }
 
-        // Calculate fees breakdown
+        // Calculate fees and points breakdown
         $feesTotal = 0.0;
         $pointsRedeemed = ['points' => 0, 'value' => 0.0];
-        $itemsDiscount = 0.0;
+
+        // Check for Points Discount from Meta (from our coupon flow)
+        $metaPointsValue = (float) $order->get_meta('_ywpar_coupon_amount');
+        if ($metaPointsValue > 0) {
+            $pointsRedeemed['value'] = $metaPointsValue;
+            $pointsRedeemed['points'] = (int) $order->get_meta('_ywpar_coupon_points');
+        }
 
         foreach ($order->get_fees() as $fee) {
             $feeTotal = (float) $fee->get_total();
             $feesTotal += $feeTotal;
 
-            if (stripos($fee->get_name(), 'points') !== false) {
+            // Legacy points fee fallback
+            if ($pointsRedeemed['value'] <= 0 && stripos($fee->get_name(), 'points') !== false) {
                 $pointsService = new PointsService();
                 $pointsRedeemed['value'] = abs($feeTotal);
                 $pointsRedeemed['points'] = $pointsService->moneyToPoints(abs($feeTotal));
-            }
-        }
-
-        // Calculate items discount from subtotal vs total difference
-        foreach ($order->get_items() as $item) {
-            if ($item instanceof \WC_Order_Item_Product) {
-                $itemsDiscount += ((float) $item->get_subtotal() - (float) $item->get_total());
             }
         }
 

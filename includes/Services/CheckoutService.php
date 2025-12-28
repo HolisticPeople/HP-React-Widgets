@@ -119,22 +119,29 @@ class CheckoutService
             $salePrice = isset($it['salePrice']) ? (float) $it['salePrice'] : null;
             $price = ($salePrice !== null) ? $salePrice : (float) $product->get_price();
             
-            // Standard WC practice: subtotal is regular price, total is what they pay
-            $subtotal = $regularPrice * $qty;
+            // Base total is price from frontend/product (already discounted if sale price)
             $total = $price * $qty;
 
             // Check for per-item discount overrides
             $excludeGd = !empty($it['exclude_global_discount']);
             $itemPct = isset($it['item_discount_percent']) ? (float) $it['item_discount_percent'] : null;
 
-            if ($itemPct !== null && $itemPct >= 0) {
-                $total = max(0.0, $price * (1 - ($itemPct / 100.0)) * $qty);
+            if ($itemPct !== null && $itemPct > 0) {
+                // Percentage is off regular price
+                $total = max(0.0, $regularPrice * (1 - ($itemPct / 100.0)) * $qty);
+                $item->add_meta_data('_hp_rw_item_discount_percent', $itemPct, true);
+            } else if ($regularPrice > 0 && abs($price - $regularPrice) > 0.01) {
+                // Implied percentage for EAO
+                $itemPct = round((1 - ($price / $regularPrice)) * 100, 2);
                 $item->add_meta_data('_hp_rw_item_discount_percent', $itemPct, true);
             }
             
             if ($excludeGd) {
                 $item->add_meta_data('_hp_rw_exclude_global_discount', '1', true);
             }
+
+            // Store pre-coupon price for summary
+            $item->add_meta_data('_hp_rw_funnel_price', ($total / $qty), true);
 
             $item->set_subtotal($subtotal);
             $item->set_total($total);
@@ -323,28 +330,36 @@ class CheckoutService
             
             // Standard WC practice: subtotal is regular price, total is what they pay
             $subtotal = $regularPrice * $qty;
+            
+            // Base total is price from frontend/product (already discounted if sale price)
             $total = $price * $qty;
 
-            // Per-item discounts override
+            // Check for per-item discount overrides from funnel config
             $excludeGd = !empty($it['exclude_global_discount']);
             $itemPct = isset($it['item_discount_percent']) ? (float) $it['item_discount_percent'] : null;
 
-            // If price is different from regular price, calculate implied discount percent for EAO compatibility
-            if ($itemPct === null && $regularPrice > 0 && abs($price - $regularPrice) > 0.01) {
+            if ($itemPct !== null && $itemPct > 0) {
+                // If a percentage is given, it's always off the regular price
+                $total = max(0.0, $regularPrice * (1 - ($itemPct / 100.0)) * $qty);
+            } else if ($regularPrice > 0 && abs($price - $regularPrice) > 0.01) {
+                // No percentage given, but price differs from regular. 
+                // Calculate implied percentage for EAO display.
                 $itemPct = round((1 - ($price / $regularPrice)) * 100, 2);
             }
 
             if ($itemPct !== null && $itemPct > 0) {
-                $total = max(0.0, $price * (1 - ($itemPct / 100.0)) * $qty);
                 // Use EAO's meta key for visibility in admin
                 $item->add_meta_data('_eao_item_discount_percent', $itemPct, true);
                 $item->add_meta_data('_hp_rw_item_discount_percent', $itemPct, true);
             }
-
+            
             if ($excludeGd) {
                 $item->add_meta_data('_eao_exclude_global_discount', '1', true);
                 $item->add_meta_data('_hp_rw_exclude_global_discount', '1', true);
             }
+
+            // Store the "Funnel Price" (pre-coupon price) for summary display
+            $item->add_meta_data('_hp_rw_funnel_price', ($total / $qty), true);
 
             $item->set_subtotal($subtotal);
             $item->set_total($total);
@@ -474,8 +489,8 @@ class CheckoutService
         // Set status to processing
         $order->set_status('processing');
         
-        // Final total calculation before save - use FALSE to avoid resetting our manual overrides
-        $order->calculate_totals(false);
+        // Final total calculation before save
+        $order->calculate_totals(true);
         $order->save();
 
         error_log('[HP-RW] Order created successfully: ' . $order->get_id() . ' for PI: ' . $stripePaymentIntentId . ' with Total: ' . $order->get_total());
@@ -559,11 +574,18 @@ class CheckoutService
 
             // Check for item-specific discount
             $itemPct = isset($it['item_discount_percent']) ? (float) $it['item_discount_percent'] : null;
-            if ($itemPct !== null && $itemPct >= 0) {
-                $total = max(0.0, $price * (1 - ($itemPct / 100.0)) * $qty);
+            if ($itemPct !== null && $itemPct > 0) {
+                $total = max(0.0, $regularPrice * (1 - ($itemPct / 100.0)) * $qty);
+                $item->add_meta_data('_eao_item_discount_percent', $itemPct, true);
+                $item->add_meta_data('_hp_rw_item_discount_percent', $itemPct, true);
+            } else if ($regularPrice > 0 && abs($price - $regularPrice) > 0.01) {
+                $itemPct = round((1 - ($price / $regularPrice)) * 100, 2);
                 $item->add_meta_data('_eao_item_discount_percent', $itemPct, true);
                 $item->add_meta_data('_hp_rw_item_discount_percent', $itemPct, true);
             }
+
+            // Store pre-coupon price for summary
+            $item->add_meta_data('_hp_rw_funnel_price', ($total / $qty), true);
 
             $item->set_subtotal($subtotal);
             $item->set_total($total);
