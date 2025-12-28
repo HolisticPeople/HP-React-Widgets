@@ -19,6 +19,39 @@ class FunnelOfferFields
         add_filter('acf/update_value/key=field_offer_id', [self::class, 'generateOfferId'], 10, 3);
         add_action('edit_form_top', [self::class, 'displayVersionLabel']);
         add_action('admin_footer', [self::class, 'injectSavedProductsData']);
+        
+        // Auto-generate Thank You URL when saving
+        add_filter('acf/update_value/name=thankyou_url', [self::class, 'autoGenerateThankYouUrl'], 10, 3);
+        add_filter('acf/validate_value/name=thankyou_url', [self::class, 'validateThankYouUrl'], 10, 4);
+    }
+    
+    /**
+     * Auto-generate Thank You URL if empty or invalid.
+     */
+    public static function autoGenerateThankYouUrl($value, $post_id, $field)
+    {
+        // If empty or just a path, generate full URL
+        if (empty($value) || $value === '/thank-you/' || !filter_var($value, FILTER_VALIDATE_URL)) {
+            $slug = get_post_meta($post_id, 'funnel_slug', true);
+            if (!$slug) {
+                $post = get_post($post_id);
+                $slug = $post ? $post->post_name : 'funnel';
+            }
+            $value = home_url('/express-shop/' . $slug . '/thank-you/');
+        }
+        return $value;
+    }
+    
+    /**
+     * Validate Thank You URL - allow relative paths by converting them.
+     */
+    public static function validateThankYouUrl($valid, $value, $field, $input)
+    {
+        // If it's a relative path, it will be converted in update_value, so allow it
+        if ($value === '/thank-you/' || strpos($value, '/') === 0) {
+            return true;
+        }
+        return $valid;
     }
 
     /**
@@ -90,36 +123,78 @@ class FunnelOfferFields
             var funnelSlug = <?php echo json_encode($funnelSlug); ?>;
             var siteUrl = <?php echo json_encode($siteUrl); ?>;
             
-            // Function to generate and set the Thank You URL
-            function autoGenerateThankYouUrl() {
-                var $tyField = $('[data-name="thankyou_url"] input, [name*="thankyou_url"]').first();
-                if ($tyField.length && !$tyField.val()) {
-                    // Generate URL based on funnel slug
-                    var generatedUrl = siteUrl + '/express-shop/' + funnelSlug + '/thank-you/';
+            // Function to generate URL from slug
+            function generateThankYouUrl(slug) {
+                return siteUrl + '/express-shop/' + slug + '/thank-you/';
+            }
+            
+            // Function to get the Thank You URL field
+            function getThankYouField() {
+                return $('[data-name="thankyou_url"] input[type="url"], [data-name="thankyou_url"] input[type="text"], input[name*="thankyou_url"]').first();
+            }
+            
+            // Function to get the current slug from the slug field
+            function getCurrentSlug() {
+                var $slugField = $('[data-name="funnel_slug"] input, input[name*="funnel_slug"]').first();
+                return $slugField.length ? $slugField.val() : funnelSlug;
+            }
+            
+            // Function to set the Thank You URL
+            function setThankYouUrl(slug) {
+                if (!slug) return;
+                var $tyField = getThankYouField();
+                if ($tyField.length) {
+                    var generatedUrl = generateThankYouUrl(slug);
                     $tyField.val(generatedUrl);
-                    $tyField.trigger('change');
+                    // Trigger events to clear validation errors
+                    $tyField.trigger('input').trigger('change').trigger('blur');
+                    // Also update the ACF hidden field if exists
+                    $tyField.closest('.acf-input').find('input[type="hidden"]').val(generatedUrl);
                 }
             }
             
-            // Also listen for funnel_slug field changes to update the URL
-            $(document).on('change', '[data-name="funnel_slug"] input, [name*="funnel_slug"]', function() {
+            // Listen for slug field input (real-time as user types)
+            $(document).on('input change blur', '[data-name="funnel_slug"] input, input[name*="funnel_slug"]', function() {
                 var newSlug = $(this).val();
                 if (newSlug) {
-                    var $tyField = $('[data-name="thankyou_url"] input, [name*="thankyou_url"]').first();
-                    if ($tyField.length) {
-                        var currentVal = $tyField.val();
-                        // Only update if empty or still has the default pattern
-                        if (!currentVal || currentVal.indexOf('/express-shop/') !== -1) {
-                            var generatedUrl = siteUrl + '/express-shop/' + newSlug + '/thank-you/';
-                            $tyField.val(generatedUrl);
-                            $tyField.trigger('change');
-                        }
+                    var $tyField = getThankYouField();
+                    var currentVal = $tyField.val();
+                    // Update if empty, has validation error, or matches auto-generated pattern
+                    if (!currentVal || currentVal === '/thank-you/' || currentVal.indexOf('/express-shop/') !== -1) {
+                        setThankYouUrl(newSlug);
                     }
                 }
             });
             
             // Run on page load (with delay to let ACF initialize)
-            setTimeout(autoGenerateThankYouUrl, 500);
+            setTimeout(function() {
+                var $tyField = getThankYouField();
+                var currentVal = $tyField.val();
+                // If empty or just the path, populate with full URL
+                if (!currentVal || currentVal === '/thank-you/' || !currentVal.startsWith('http')) {
+                    var slug = getCurrentSlug();
+                    if (slug) {
+                        setThankYouUrl(slug);
+                    }
+                }
+            }, 500);
+            
+            // Also run when Thank You tab is clicked
+            $(document).on('click', '.acf-tab-button', function() {
+                var tabName = $(this).text().trim().toLowerCase();
+                if (tabName.indexOf('thank') !== -1) {
+                    setTimeout(function() {
+                        var $tyField = getThankYouField();
+                        var currentVal = $tyField.val();
+                        if (!currentVal || currentVal === '/thank-you/' || !currentVal.startsWith('http')) {
+                            var slug = getCurrentSlug();
+                            if (slug) {
+                                setThankYouUrl(slug);
+                            }
+                        }
+                    }, 100);
+                }
+            });
         });
         </script>
         <?php
