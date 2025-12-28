@@ -453,8 +453,8 @@ export const CheckoutStep = ({
         email: formData.email,
       };
 
-      // Use ref to get current rate without triggering re-renders
-      const currentRate = selectedRateRef.current;
+      // Use the actual selected rate if available
+      const currentRate = selectedRate;
 
       // Pass the admin-set offer total to override calculated sum
       const result = await api.calculateTotals(address, items, currentRate, pointsToRedeem, offerPrice.discounted);
@@ -464,7 +464,7 @@ export const CheckoutStep = ({
     } finally {
       setIsCalculating(false);
     }
-  }, [formData, getCartItems, pointsToRedeem, api, offerPrice.discounted]);
+  }, [formData, getCartItems, pointsToRedeem, api, offerPrice.discounted, selectedRate]);
 
   // Debounce timer ref for selection changes
   const selectionDebounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -490,11 +490,11 @@ export const CheckoutStep = ({
     };
   }, []);
 
-  // Trigger totals update when selection, offerPrice, or points change (debounced)
+  // Trigger totals update when selection, offerPrice, points, or shipping rate change (debounced)
   // This does NOT fetch shipping rates - just recalculates totals
   useEffect(() => {
     debouncedFetchTotals();
-  }, [selectedOfferId, kitSelection, offerQuantity, offerPrice.discounted, pointsToRedeem, debouncedFetchTotals]);
+  }, [selectedOfferId, kitSelection, offerQuantity, offerPrice.discounted, pointsToRedeem, selectedRate, debouncedFetchTotals]);
 
   // Create a shipping key to track when we need to refetch rates
   const shippingKeyRef = useRef<string>('');
