@@ -13,10 +13,10 @@ if (!defined('ABSPATH')) {
 class FunnelStylingFields
 {
     /**
-     * The key of the Styling tab in Funnel Configuration.
-     * Fields will be added as children of this tab.
+     * The field group key for Funnel Configuration.
+     * This is the parent for all fields in this group.
      */
-    private const STYLING_TAB_KEY = 'field_styling_tab';
+    private const FUNNEL_CONFIG_GROUP = 'group_hp_funnel_config';
     
     public static function init(): void
     {
@@ -32,7 +32,8 @@ class FunnelStylingFields
 
     /**
      * Add color fields to the existing Styling tab.
-     * Uses acf_add_local_field to insert fields into the tab.
+     * Uses acf_add_local_field to insert fields into the Funnel Configuration group.
+     * Fields appear after Custom CSS (menu_order 63) in the Styling tab.
      */
     public static function addColorFieldsToStylingTab(): void
     {
@@ -40,13 +41,17 @@ class FunnelStylingFields
             return;
         }
 
+        // Base menu_order - fields will be added after Custom CSS (63)
+        $order = 64;
+
         // Separator after existing styling fields
         acf_add_local_field([
             'key' => 'field_styling_colors_separator',
             'label' => '',
             'name' => '',
             'type' => 'message',
-            'parent' => self::STYLING_TAB_KEY,
+            'parent' => self::FUNNEL_CONFIG_GROUP,
+            'menu_order' => $order++,
             'message' => '<hr style="margin:25px 0 15px;border:0;border-top:2px solid #ddd;">',
             'new_lines' => '',
             'esc_html' => 0,
@@ -58,7 +63,8 @@ class FunnelStylingFields
             'label' => '',
             'name' => '',
             'type' => 'message',
-            'parent' => self::STYLING_TAB_KEY,
+            'parent' => self::FUNNEL_CONFIG_GROUP,
+            'menu_order' => $order++,
             'message' => '<p style="margin:0 0 5px;color:#23282d;font-weight:600;font-size:14px;">Text Colors</p>',
             'new_lines' => '',
             'esc_html' => 0,
@@ -70,7 +76,8 @@ class FunnelStylingFields
             'label' => 'Basic Text',
             'name' => 'text_color_basic',
             'type' => 'color_picker',
-            'parent' => self::STYLING_TAB_KEY,
+            'parent' => self::FUNNEL_CONFIG_GROUP,
+            'menu_order' => $order++,
             'instructions' => 'Main text (off-white)',
             'default_value' => '#e5e5e5',
             'enable_opacity' => 0,
@@ -84,7 +91,8 @@ class FunnelStylingFields
             'label' => 'Custom Accent',
             'name' => 'text_color_accent_override',
             'type' => 'true_false',
-            'parent' => self::STYLING_TAB_KEY,
+            'parent' => self::FUNNEL_CONFIG_GROUP,
+            'menu_order' => $order++,
             'instructions' => '',
             'message' => 'Use custom color instead of global Accent',
             'default_value' => 0,
@@ -98,7 +106,8 @@ class FunnelStylingFields
             'label' => 'Accent Text',
             'name' => 'text_color_accent',
             'type' => 'color_picker',
-            'parent' => self::STYLING_TAB_KEY,
+            'parent' => self::FUNNEL_CONFIG_GROUP,
+            'menu_order' => $order++,
             'instructions' => 'Headings, CTAs',
             'default_value' => '#eab308',
             'enable_opacity' => 0,
@@ -121,7 +130,8 @@ class FunnelStylingFields
             'label' => 'Note Text',
             'name' => 'text_color_note',
             'type' => 'color_picker',
-            'parent' => self::STYLING_TAB_KEY,
+            'parent' => self::FUNNEL_CONFIG_GROUP,
+            'menu_order' => $order++,
             'instructions' => 'Secondary (muted)',
             'default_value' => '#a3a3a3',
             'enable_opacity' => 0,
@@ -135,7 +145,8 @@ class FunnelStylingFields
             'label' => 'Discount Text',
             'name' => 'text_color_discount',
             'type' => 'color_picker',
-            'parent' => self::STYLING_TAB_KEY,
+            'parent' => self::FUNNEL_CONFIG_GROUP,
+            'menu_order' => $order++,
             'instructions' => 'Savings (green)',
             'default_value' => '#22c55e',
             'enable_opacity' => 0,
@@ -149,7 +160,8 @@ class FunnelStylingFields
             'label' => '',
             'name' => '',
             'type' => 'message',
-            'parent' => self::STYLING_TAB_KEY,
+            'parent' => self::FUNNEL_CONFIG_GROUP,
+            'menu_order' => $order++,
             'message' => '<hr style="margin:20px 0 10px;border:0;border-top:1px solid #ddd;"><p style="margin:0 0 5px;color:#23282d;font-weight:600;font-size:14px;">UI Element Colors</p>',
             'new_lines' => '',
             'esc_html' => 0,
@@ -161,7 +173,8 @@ class FunnelStylingFields
             'label' => 'Page Background',
             'name' => 'page_bg_color',
             'type' => 'color_picker',
-            'parent' => self::STYLING_TAB_KEY,
+            'parent' => self::FUNNEL_CONFIG_GROUP,
+            'menu_order' => $order++,
             'instructions' => 'Main background',
             'default_value' => '#121212',
             'enable_opacity' => 0,
@@ -175,7 +188,8 @@ class FunnelStylingFields
             'label' => 'Card Background',
             'name' => 'card_bg_color',
             'type' => 'color_picker',
-            'parent' => self::STYLING_TAB_KEY,
+            'parent' => self::FUNNEL_CONFIG_GROUP,
+            'menu_order' => $order++,
             'instructions' => 'Cards/panels',
             'default_value' => '#1a1a1a',
             'enable_opacity' => 0,
@@ -189,7 +203,8 @@ class FunnelStylingFields
             'label' => 'Input Background',
             'name' => 'input_bg_color',
             'type' => 'color_picker',
-            'parent' => self::STYLING_TAB_KEY,
+            'parent' => self::FUNNEL_CONFIG_GROUP,
+            'menu_order' => $order++,
             'instructions' => 'Form inputs',
             'default_value' => '#333333',
             'enable_opacity' => 0,
@@ -203,7 +218,8 @@ class FunnelStylingFields
             'label' => 'Border Color',
             'name' => 'border_color',
             'type' => 'color_picker',
-            'parent' => self::STYLING_TAB_KEY,
+            'parent' => self::FUNNEL_CONFIG_GROUP,
+            'menu_order' => $order++,
             'instructions' => 'Borders/dividers',
             'default_value' => '#7c3aed',
             'enable_opacity' => 0,
