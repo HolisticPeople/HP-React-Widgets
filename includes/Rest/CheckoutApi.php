@@ -578,14 +578,23 @@ class CheckoutApi
             }
         }
 
-        // Scan coupons for other discounts
+        // 3. Scan coupons for other discounts
+        // We only want coupons that ARE NOT our points coupon
         foreach ($order->get_coupon_codes() as $code) {
             try {
                 $coupon = new \WC_Coupon($code);
-                // Check both prefixed and non-prefixed meta for points coupon detection
-                if ($coupon->get_meta('ywpar_coupon') || $coupon->get_meta('_ywpar_coupon')) {
+                // Check multiple ways to identify the points coupon
+                $isPointsCoupon = (
+                    $coupon->get_meta('ywpar_coupon') || 
+                    $coupon->get_meta('_ywpar_coupon') || 
+                    str_starts_with($code, 'ywpar_discount_')
+                );
+                
+                if ($isPointsCoupon) {
                     continue; // Already handled points row
                 }
+                
+                // Get the discount amount for this coupon from the order
                 foreach ($order->get_items('coupon') as $orderCoupon) {
                     if ($orderCoupon->get_code() === $code) {
                         $extraDiscounts += (float) $orderCoupon->get_discount();
