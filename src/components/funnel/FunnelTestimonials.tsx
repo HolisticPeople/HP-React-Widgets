@@ -27,31 +27,11 @@ const QuoteIcon = () => (
 );
 
 const ArrowLeftIcon = () => (
-  <svg 
-    className="w-6 h-6" 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <polyline points="15 18 9 12 15 6" />
-  </svg>
+  <span style={{ fontSize: '20px', lineHeight: 1 }}>‹</span>
 );
 
 const ArrowRightIcon = () => (
-  <svg 
-    className="w-6 h-6" 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <polyline points="9 18 15 12 9 6" />
-  </svg>
+  <span style={{ fontSize: '20px', lineHeight: 1 }}>›</span>
 );
 
 export interface Testimonial {
@@ -67,7 +47,7 @@ export interface FunnelTestimonialsProps {
   title?: string;
   subtitle?: string;
   testimonials: Testimonial[];
-  columns?: 2 | 3;
+  columns?: 2 | 3 | 4;
   showRatings?: boolean;
   layout?: 'cards' | 'carousel' | 'simple';
   ctaText?: string;
@@ -89,9 +69,10 @@ export const FunnelTestimonials = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
 
-  const gridCols = {
+  const gridCols: Record<number, string> = {
     2: 'md:grid-cols-2',
     3: 'md:grid-cols-2 lg:grid-cols-3',
+    4: 'md:grid-cols-2 lg:grid-cols-4',
   };
 
   const renderRating = (rating: number = 5) => (

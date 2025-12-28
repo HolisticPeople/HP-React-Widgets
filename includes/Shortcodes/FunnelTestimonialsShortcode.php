@@ -68,7 +68,7 @@ class FunnelTestimonialsShortcode
             'title'        => !empty($atts['title']) ? $atts['title'] : ($testimonialsConfig['title'] ?? 'What Our Customers Say'),
             'subtitle'     => !empty($atts['subtitle']) ? $atts['subtitle'] : ($testimonialsConfig['subtitle'] ?? ''),
             'testimonials' => $testimonials,
-            'columns'      => min($columns, 3),
+            'columns'      => min($columns, 4),
             'showRatings'  => filter_var($atts['show_ratings'], FILTER_VALIDATE_BOOLEAN),
             'layout'       => $layout,
             'ctaText'      => $config['hero']['cta_text'] ?? '',
