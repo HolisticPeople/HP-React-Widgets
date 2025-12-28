@@ -210,9 +210,10 @@ class CheckoutService
             $resolvedItems[] = ['product' => $product, 'qty' => $qty, 'regPrice' => $regPrice, 'originalItem' => $it];
         }
 
-        $runningTotal = 0.0;
-        $count = count($resolvedItems);
-        foreach ($resolvedItems as $idx => $ri) {
+        // IMPORTANT: Add items at FULL PRICE (subtotal = total = regularPrice × qty)
+        // The offer discount will be applied as a separate "Offer Savings" fee
+        // This prevents WC coupons (like points) from overwriting item totals
+        foreach ($resolvedItems as $ri) {
             $product = $ri['product'];
             $qty = $ri['qty'];
             $regPrice = $ri['regPrice'];
@@ -223,50 +224,33 @@ class CheckoutService
             $item->set_quantity($qty);
             if (!empty($it['label'])) $item->set_name($product->get_name() . ' ' . $it['label']);
 
-            $subtotal = $regPrice * $qty;
-            $total = $subtotal;
-
-            if ($offerTotal !== null && $offerTotal > 0 && $sumRegularPrice > 0) {
-                if ($idx === $count - 1) {
-                    $total = $offerTotal - $runningTotal;
-                } else {
-                    $total = round(($subtotal / $sumRegularPrice) * $offerTotal, 2);
-                    $runningTotal += $total;
-                }
-            } else {
-                $salePrice = isset($it['salePrice']) ? (float) $it['salePrice'] : (isset($it['sale_price']) ? (float) $it['sale_price'] : null);
-                $price = ($salePrice !== null) ? $salePrice : (float) $product->get_price();
-                $itemPct = isset($it['item_discount_percent']) ? (float) $it['item_discount_percent'] : (isset($it['itemDiscountPercent']) ? (float) $it['itemDiscountPercent'] : null);
-                if ($itemPct !== null && $itemPct > 0) {
-                    $total = max(0.0, $regPrice * (1 - ($itemPct / 100.0)) * $qty);
-                } else if ($regPrice > 0 && abs($price - $regPrice) > 0.01) {
-                    $total = $price * $qty;
-                }
-            }
-
-            $item->set_subtotal($subtotal);
-            $item->set_total($total);
+            // Set both subtotal and total to full price
+            // The offer discount is applied as a fee, not per-item
+            $lineTotal = $regPrice * $qty;
+            $item->set_subtotal($lineTotal);
+            $item->set_total($lineTotal);
             $item->set_total_tax(0);
             $item->set_subtotal_tax(0);
 
-            // Metadata for EAO compatibility
-            // EAO only shows item-level discounts for items marked as "excluded from global discount"
-            // Offer discounts are effectively item-level discounts, so we mark them as excluded
-            $discountAmt = $subtotal - $total;
-            if ($discountAmt > 0.01 && $subtotal > 0) {
-                $pct = round(($discountAmt / $subtotal) * 100, 2);
-                // Mark as excluded from global discount so EAO recognizes this as an item-level discount
-                $item->add_meta_data('_eao_exclude_global_discount', '1', true);
-                $item->add_meta_data('_eao_item_discount_percent', $pct, true);
-                $item->add_meta_data('_hp_rw_item_discount_percent', $pct, true);
-                $item->add_meta_data('_hp_rw_exclude_global_discount', '1', true);
-            } elseif (!empty($it['exclude_global_discount']) || !empty($it['excludeGlobalDiscount'])) {
-                // Explicit exclusion flag from input
-                $item->add_meta_data('_eao_exclude_global_discount', '1', true);
-                $item->add_meta_data('_hp_rw_exclude_global_discount', '1', true);
-            }
-
             $order->add_item($item);
+        }
+
+        // Calculate and apply offer discount as a fee (like EAO admin discounts)
+        $offerDiscount = 0.0;
+        if ($offerTotal !== null && $offerTotal > 0 && $sumRegularPrice > $offerTotal) {
+            $offerDiscount = round($sumRegularPrice - $offerTotal, 2);
+        }
+
+        // Store the offer discount percentage for EAO display
+        $offerDiscountPercent = ($sumRegularPrice > 0 && $offerDiscount > 0) 
+            ? round(($offerDiscount / $sumRegularPrice) * 100, 2) 
+            : 0;
+        
+        // Store metadata on the order for EAO to use
+        if ($offerDiscountPercent > 0) {
+            $order->update_meta_data('_eao_global_product_discount_percent', $offerDiscountPercent);
+            $order->update_meta_data('_hp_rw_offer_discount_percent', $offerDiscountPercent);
+            $order->update_meta_data('_hp_rw_offer_discount_amount', $offerDiscount);
         }
 
         $this->applyAddress($order, 'billing', array_merge($shippingAddress, ['email' => $email]));
@@ -280,9 +264,19 @@ class CheckoutService
             $order->add_item($ship);
         }
 
+        // Apply offer discount as a fee (before coupons)
+        // This prevents WC coupons from overwriting item-level discounts
+        if ($offerDiscount > 0) {
+            $fee = new WC_Order_Item_Fee();
+            $fee->set_name('Offer Savings');
+            $fee->set_total(-1 * $offerDiscount);
+            $fee->set_tax_status('none');
+            $order->add_item($fee);
+        }
+
         $order->calculate_totals(false);
 
-        // Global discount
+        // Global discount (only if no offer total - mutually exclusive)
         if ($offerTotal === null && $globalDiscountPercent > 0) {
             $productsNet = 0.0;
             foreach ($order->get_items() as $item) {

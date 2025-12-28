@@ -403,7 +403,8 @@ class CheckoutApi
         }
 
         $pointsRedeemed = ['points' => 0, 'value' => 0.0];
-        $extraDiscounts = 0.0;
+        $offerSavings = 0.0;
+        $otherDiscounts = 0.0;
 
         $metaPointsValue = (float) $order->get_meta('_ywpar_coupon_amount');
         if ($metaPointsValue > 0) {
@@ -411,12 +412,25 @@ class CheckoutApi
             $pointsRedeemed['points'] = (int) $order->get_meta('_ywpar_coupon_points');
         }
 
-        // Scan fees for general savings (excluding points)
+        // Scan fees for discounts
         foreach ($order->get_fees() as $fee) {
             $feeTotal = (float) $fee->get_total();
-            if ($feeTotal < 0 && stripos($fee->get_name(), 'points') === false) {
-                $extraDiscounts += abs($feeTotal);
+            if ($feeTotal < 0) {
+                $feeName = strtolower($fee->get_name());
+                if (strpos($feeName, 'offer') !== false || strpos($feeName, 'savings') !== false) {
+                    // This is the offer/product discount
+                    $offerSavings += abs($feeTotal);
+                } elseif (strpos($feeName, 'points') === false) {
+                    // Other discount (not points, not offer)
+                    $otherDiscounts += abs($feeTotal);
+                }
             }
+        }
+
+        // Also check for item-level discounts (subtotal - total)
+        // These would exist if individual items have discounts applied
+        if ($itemLevelDiscount > 0 && $offerSavings == 0) {
+            $offerSavings = $itemLevelDiscount;
         }
 
         // Scan coupons for non-points discounts (exclude YITH points coupons)
@@ -426,13 +440,13 @@ class CheckoutApi
                 $isPointsCoupon = ($coupon->get_meta('ywpar_coupon') || $coupon->get_meta('_ywpar_coupon') || str_starts_with($code, 'ywpar_discount_'));
                 if ($isPointsCoupon) continue;
                 foreach ($order->get_items('coupon') as $orderCoupon) {
-                    if ($orderCoupon->get_code() === $code) $extraDiscounts += (float) $orderCoupon->get_discount();
+                    if ($orderCoupon->get_code() === $code) $otherDiscounts += (float) $orderCoupon->get_discount();
                 }
             } catch (\Throwable $e) { continue; }
         }
 
-        // COMBINED DISCOUNT: Item-level savings (subtotal - total) + non-points coupon/fee discounts
-        $totalDiscount = $itemLevelDiscount + $extraDiscounts;
+        // Total product discount = offer savings + other non-points discounts
+        $totalDiscount = $offerSavings + $otherDiscounts;
         
         $shippingTotal = (float) $order->get_shipping_total();
         
