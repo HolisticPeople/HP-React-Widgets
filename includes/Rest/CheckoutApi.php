@@ -367,6 +367,8 @@ class CheckoutApi
 
         $items = [];
         $sumSubtotal = 0.0;
+        $itemLevelDiscount = 0.0;
+        
         foreach ($order->get_items() as $item) {
             if (!$item instanceof \WC_Order_Item_Product) continue;
             $product = $item->get_product();
@@ -380,8 +382,13 @@ class CheckoutApi
             }
             $qty = max(1, $item->get_quantity());
             
-            // FULL PRICE for the display list (Standard WC uses subtotal for pre-discount)
-            $unitPrice = (float) ($item->get_subtotal() / $qty);
+            // FULL PRICE for the display list (WC subtotal = pre-discount, total = post-discount)
+            $lineSubtotal = (float) $item->get_subtotal();
+            $lineTotal = (float) $item->get_total();
+            $unitPrice = $lineSubtotal / $qty;
+            
+            // Calculate item-level discount (subtotal - total)
+            $itemLevelDiscount += ($lineSubtotal - $lineTotal);
 
             $items[] = [
                 'name'     => $item->get_name(),
@@ -392,7 +399,7 @@ class CheckoutApi
                 'image'    => $imageUrl,
                 'sku'      => $product ? $product->get_sku() : '',
             ];
-            $sumSubtotal += ($unitPrice * $qty);
+            $sumSubtotal += $lineSubtotal;
         }
 
         $pointsRedeemed = ['points' => 0, 'value' => 0.0];
@@ -412,7 +419,7 @@ class CheckoutApi
             }
         }
 
-        // Scan coupons for non-points discounts
+        // Scan coupons for non-points discounts (exclude YITH points coupons)
         foreach ($order->get_coupon_codes() as $code) {
             try {
                 $coupon = new \WC_Coupon($code);
@@ -424,13 +431,13 @@ class CheckoutApi
             } catch (\Throwable $e) { continue; }
         }
 
-        // COMBINED DISCOUNT: Item-level savings (sum of subtotal - total) + Extra non-points discounts
-        $totalDiscount = (float) $order->get_discount_total() + $extraDiscounts;
+        // COMBINED DISCOUNT: Item-level savings (subtotal - total) + non-points coupon/fee discounts
+        $totalDiscount = $itemLevelDiscount + $extraDiscounts;
         
         $shippingTotal = (float) $order->get_shipping_total();
         
-        // Manual calculation for consistency
-        $calculatedGrandTotal = $sumSubtotal + $shippingTotal - $totalDiscount - $pointsRedeemed['value'];
+        // Calculate grand total: Items (full price) - Discount - Points + Shipping
+        $calculatedGrandTotal = $sumSubtotal - $totalDiscount - $pointsRedeemed['value'] + $shippingTotal;
 
         return new WP_REST_Response([
             'success'         => true,

@@ -249,14 +249,19 @@ class CheckoutService
             $item->set_total_tax(0);
             $item->set_subtotal_tax(0);
 
-            // Metadata for EAO
+            // Metadata for EAO compatibility
+            // EAO only shows item-level discounts for items marked as "excluded from global discount"
+            // Offer discounts are effectively item-level discounts, so we mark them as excluded
             $discountAmt = $subtotal - $total;
             if ($discountAmt > 0.01 && $subtotal > 0) {
                 $pct = round(($discountAmt / $subtotal) * 100, 2);
+                // Mark as excluded from global discount so EAO recognizes this as an item-level discount
+                $item->add_meta_data('_eao_exclude_global_discount', '1', true);
                 $item->add_meta_data('_eao_item_discount_percent', $pct, true);
                 $item->add_meta_data('_hp_rw_item_discount_percent', $pct, true);
-            }
-            if (!empty($it['exclude_global_discount']) || !empty($it['excludeGlobalDiscount'])) {
+                $item->add_meta_data('_hp_rw_exclude_global_discount', '1', true);
+            } elseif (!empty($it['exclude_global_discount']) || !empty($it['excludeGlobalDiscount'])) {
+                // Explicit exclusion flag from input
                 $item->add_meta_data('_eao_exclude_global_discount', '1', true);
                 $item->add_meta_data('_hp_rw_exclude_global_discount', '1', true);
             }
