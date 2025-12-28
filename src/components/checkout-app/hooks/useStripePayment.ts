@@ -126,7 +126,6 @@ export function useStripePayment(options: UseStripePaymentOptions) {
       return;
     }
 
-    console.log('[useStripePayment] Initializing with key:', publishableKey.substring(0, 10) + '...');
     let cancelled = false;
 
     loadStripeSingleton(publishableKey).then((stripe) => {

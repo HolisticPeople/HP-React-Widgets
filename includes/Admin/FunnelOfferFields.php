@@ -80,8 +80,6 @@ class FunnelOfferFields
         ?>
         <script>
         window.hpOfferSavedProducts = <?php echo json_encode($productsMap); ?>;
-        console.log('[HP Offer PHP] Injected saved products:', window.hpOfferSavedProducts);
-        console.log('[HP Offer PHP] Post ID:', <?php echo $post->ID; ?>);
         </script>
         <?php
     }
