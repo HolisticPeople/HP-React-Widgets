@@ -331,19 +331,21 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
   }, []);
 
   // Handle checkout step completion (payment successful)
-  const handleCheckoutComplete = useCallback(async (piId: string, address: Address) => {
+  const handleCheckoutComplete = useCallback(async (piId: string, address: Address, orderDraftId: string) => {
     setPaymentIntentId(piId);
     setShippingAddress(address);
     setCurrentStep('processing');
     
-    // Fetch order summary
     try {
-      // Give webhook a moment to process
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const summary = await api.getOrderSummary(undefined, piId);
+      // 1. Explicitly complete the order on the backend
+      const result = await api.completeOrder(orderDraftId, piId);
+      if (result.success) {
+        setOrderId(result.orderId);
+      }
+
+      // 2. Fetch order summary
+      const summary = await api.getOrderSummary(result.orderId, piId);
       if (summary) {
-        setOrderId(summary.orderId);
         setOrderSummary(summary);
         
         // Decide next step
@@ -353,25 +355,11 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
           setCurrentStep('thankyou');
         }
       } else {
-        // Retry after delay
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        const retrySummary = await api.getOrderSummary(undefined, piId);
-        if (retrySummary) {
-          setOrderId(retrySummary.orderId);
-          setOrderSummary(retrySummary);
-          
-          if (showUpsell && upsellOffers.length > 0) {
-            setCurrentStep('upsell');
-          } else {
-            setCurrentStep('thankyou');
-          }
-        } else {
-          // Fallback - go to thank you without summary
-          setCurrentStep('thankyou');
-        }
+        // Fallback - go to thank you without summary
+        setCurrentStep('thankyou');
       }
     } catch (err) {
-      console.error('[FunnelCheckoutApp] Failed to get order summary:', err);
+      console.error('[FunnelCheckoutApp] Failed to complete order or get summary:', err);
       // Still proceed to next step
       if (showUpsell && upsellOffers.length > 0) {
         setCurrentStep('upsell');

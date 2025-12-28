@@ -192,7 +192,7 @@ interface CheckoutStepProps {
   landingUrl: string;
   apiBase: string;
   getCartItems: () => CartItem[];
-  onComplete: (paymentIntentId: string, address: Address) => void;
+  onComplete: (piId: string, address: Address, orderDraftId: string) => void;
 }
 
 export const CheckoutStep = ({
@@ -246,6 +246,9 @@ export const CheckoutStep = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
+  // Store draft ID across attempts
+  const orderDraftIdRef = useRef<string | null>(null);
+
   const stripeContainerRef = useRef<HTMLDivElement>(null);
   const stripeMountedRef = useRef(false);
 
@@ -286,7 +289,7 @@ export const CheckoutStep = ({
         phone: formData.phone,
         email: formData.email,
       };
-      onComplete(piId, address);
+      onComplete(piId, address, orderDraftIdRef.current || '');
     },
     onPaymentError: (err) => {
       setError(err);
@@ -589,6 +592,8 @@ export const CheckoutStep = ({
         pointsToRedeem,
         offerPrice.discounted  // Admin-set offer total
       );
+
+      orderDraftIdRef.current = result.orderDraftId;
 
       const success = await stripePayment.confirmPayment(result.clientSecret, {
         name: `${formData.firstName} ${formData.lastName}`,

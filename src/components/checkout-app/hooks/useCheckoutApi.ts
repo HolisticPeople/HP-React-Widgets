@@ -214,6 +214,32 @@ export function useCheckoutApi(options: UseCheckoutApiOptions) {
     };
   }, [apiBase]);
 
+  const completeOrder = useCallback(async (
+    orderDraftId: string,
+    piId: string
+  ): Promise<{ success: boolean; orderId: number; orderNumber: string }> => {
+    const res = await fetch(`${apiBase}/checkout/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        order_draft_id: orderDraftId,
+        pi_id: piId,
+      }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.message || 'Failed to complete order');
+    }
+
+    const data = await res.json();
+    return {
+      success: true,
+      orderId: data.order_id,
+      orderNumber: data.order_number,
+    };
+  }, [apiBase]);
+
   const chargeUpsell = useCallback(async (
     parentOrderId: number,
     parentPiId: string,

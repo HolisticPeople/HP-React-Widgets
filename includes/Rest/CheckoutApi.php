@@ -507,16 +507,26 @@ class CheckoutApi
         $orderId = (int) $request->get_param('order_id');
         $piId = (string) $request->get_param('pi_id');
 
-        if ($orderId <= 0) {
-            return new WP_Error('bad_request', 'Order ID required', ['status' => 400]);
+        $order = null;
+        if ($orderId > 0) {
+            $order = wc_get_order($orderId);
+        } elseif ($piId !== '') {
+            // Try to find order by PI ID meta
+            $orders = wc_get_orders([
+                'limit'      => 1,
+                'meta_key'   => '_hp_rw_stripe_pi_id',
+                'meta_value' => $piId,
+            ]);
+            if (!empty($orders)) {
+                $order = $orders[0];
+            }
         }
 
-        $order = wc_get_order($orderId);
         if (!$order) {
             return new WP_Error('not_found', 'Order not found', ['status' => 404]);
         }
 
-        // Verify pi_id matches for security
+        // Verify pi_id matches for security (if provided)
         $storedPiId = $order->get_meta('_hp_rw_stripe_pi_id');
         if ($piId !== '' && $storedPiId !== $piId) {
             return new WP_Error('unauthorized', 'Invalid authorization', ['status' => 403]);
