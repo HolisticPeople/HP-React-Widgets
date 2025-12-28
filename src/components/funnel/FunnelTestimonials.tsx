@@ -27,14 +27,30 @@ const QuoteIcon = () => (
 );
 
 const ArrowLeftIcon = () => (
-  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M19 12H5M12 19l-7-7 7-7" />
+  <svg 
+    className="w-6 h-6" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="15 18 9 12 15 6" />
   </svg>
 );
 
 const ArrowRightIcon = () => (
-  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 12h14M12 5l7 7-7 7" />
+  <svg 
+    className="w-6 h-6" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="9 18 15 12 9 6" />
   </svg>
 );
 

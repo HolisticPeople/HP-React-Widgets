@@ -68,7 +68,7 @@ class FunnelTestimonialsFields
     }
 
     /**
-     * Inject display mode UI next to the Section Title in Testimonials tab.
+     * Inject display mode UI on the same row as Section Title input.
      */
     public static function injectDisplayModeUI(): void
     {
@@ -79,17 +79,35 @@ class FunnelTestimonialsFields
         ?>
         <style>
             .hp-hidden-field { display: none !important; }
+            
+            /* Make the title field row a flex container */
+            .hp-testimonials-row {
+                display: flex !important;
+                align-items: flex-start;
+                gap: 20px;
+            }
+            .hp-testimonials-row .acf-input {
+                flex: 1;
+                min-width: 0;
+            }
+            
             .hp-testimonials-display-controls {
-                display: inline-flex;
+                display: flex;
                 align-items: center;
-                gap: 12px;
-                margin-left: 20px;
-                vertical-align: middle;
+                gap: 16px;
+                padding-top: 28px; /* Align with input field */
+                flex-shrink: 0;
+            }
+            .hp-testimonials-display-controls .hp-control-group {
+                display: flex;
+                align-items: center;
+                gap: 8px;
             }
             .hp-testimonials-display-controls label {
                 font-weight: 500;
                 color: #1d2327;
-                margin-right: 4px;
+                font-size: 13px;
+                white-space: nowrap;
             }
             .hp-display-toggle {
                 display: inline-flex;
@@ -98,7 +116,7 @@ class FunnelTestimonialsFields
                 overflow: hidden;
             }
             .hp-display-toggle button {
-                padding: 6px 14px;
+                padding: 6px 12px;
                 border: none;
                 background: #f0f0f1;
                 color: #50575e;
@@ -106,7 +124,7 @@ class FunnelTestimonialsFields
                 font-size: 13px;
                 display: flex;
                 align-items: center;
-                gap: 6px;
+                gap: 5px;
                 transition: all 0.15s ease;
             }
             .hp-display-toggle button:not(:last-child) {
@@ -123,15 +141,25 @@ class FunnelTestimonialsFields
                 font-size: 16px;
                 width: 16px;
                 height: 16px;
+                line-height: 16px;
             }
             .hp-columns-select {
-                display: inline-flex;
+                display: flex;
                 align-items: center;
-                gap: 6px;
+                gap: 8px;
             }
             .hp-columns-select select {
-                padding: 4px 8px;
+                padding: 5px 28px 5px 10px;
+                border: 1px solid #8c8f94;
                 border-radius: 4px;
+                background: #fff;
+                font-size: 13px;
+                min-width: 60px;
+                appearance: none;
+                -webkit-appearance: none;
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23555' d='M2 4l4 4 4-4z'/%3E%3C/svg%3E");
+                background-repeat: no-repeat;
+                background-position: right 8px center;
             }
         </style>
         <script>
@@ -150,16 +178,18 @@ class FunnelTestimonialsFields
                 // Create the controls HTML
                 var controlsHtml = `
                     <div class="hp-testimonials-display-controls">
-                        <label>Display:</label>
-                        <div class="hp-display-toggle">
-                            <button type="button" data-mode="cards" class="${displayMode === 'cards' ? 'active' : ''}">
-                                <span class="dashicons dashicons-grid-view"></span> Grid
-                            </button>
-                            <button type="button" data-mode="carousel" class="${displayMode === 'carousel' ? 'active' : ''}">
-                                <span class="dashicons dashicons-slides"></span> Slider
-                            </button>
+                        <div class="hp-control-group">
+                            <label>Display:</label>
+                            <div class="hp-display-toggle">
+                                <button type="button" data-mode="cards" class="${displayMode === 'cards' ? 'active' : ''}">
+                                    <span class="dashicons dashicons-grid-view"></span> Grid
+                                </button>
+                                <button type="button" data-mode="carousel" class="${displayMode === 'carousel' ? 'active' : ''}">
+                                    <span class="dashicons dashicons-slides"></span> Slider
+                                </button>
+                            </div>
                         </div>
-                        <div class="hp-columns-select" style="${displayMode === 'carousel' ? 'display:none' : ''}">
+                        <div class="hp-control-group hp-columns-select" style="${displayMode === 'carousel' ? 'display:none' : ''}">
                             <label>Columns:</label>
                             <select>
                                 <option value="2" ${columns === '2' ? 'selected' : ''}>2</option>
@@ -169,12 +199,11 @@ class FunnelTestimonialsFields
                     </div>
                 `;
                 
-                // Insert controls next to the title field label
-                var $label = $titleField.find('.acf-label');
-                if ($label.length) {
-                    $label.css('display', 'flex').css('align-items', 'center').css('flex-wrap', 'wrap');
-                    $label.append(controlsHtml);
-                }
+                // Add class to make the field row a flex container
+                $titleField.addClass('hp-testimonials-row');
+                
+                // Append controls after the input wrapper
+                $titleField.append(controlsHtml);
                 
                 // Handle toggle clicks
                 $(document).on('click', '.hp-display-toggle button', function(e) {
