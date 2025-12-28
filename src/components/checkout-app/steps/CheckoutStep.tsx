@@ -642,9 +642,10 @@ export const CheckoutStep = ({
   // For display logic - check if we have a rate selected
   const hasShippingRate = selectedRate !== null && shippingCost > 0;
   
-  // Calculate display total including shipping
-  const productTotal = totals?.grandTotal ?? offerPrice.discounted;
-  const displayTotal = productTotal + shippingCost;
+  // Calculate display total
+  // If we have totals from the backend, use its grandTotal (which includes shipping and points)
+  // Otherwise fall back to manual calculation
+  const displayTotal = totals ? totals.grandTotal : (offerPrice.discounted + shippingCost - pointsValue);
 
   // Render offer card based on type
   const renderOfferCard = (offer: Offer) => {

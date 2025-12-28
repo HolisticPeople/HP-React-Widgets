@@ -277,6 +277,16 @@ class CheckoutService
             return null;
         }
 
+        // Link to existing customer if found by email
+        $email = $customer['email'] ?? '';
+        if ($email) {
+            $user = get_user_by('email', $email);
+            if ($user) {
+                $order->set_customer_id($user->ID);
+                error_log('[HP-RW] Linked order to existing customer ID: ' . $user->ID);
+            }
+        }
+
         // Add items
         foreach ($items as $it) {
             $qty = max(1, (int) ($it['qty'] ?? 1));
