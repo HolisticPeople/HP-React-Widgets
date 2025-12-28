@@ -385,76 +385,8 @@ export const CheckoutStep = ({
     onSelectRateRef.current = onSelectRate;
   }, [onSelectRate]);
 
-  // Ref to hold fetch shipping function without causing dependency changes
-  const fetchShippingRatesRef = useRef<() => Promise<void>>(async () => {});
-  
   // DEBUG: Track shipping rate state
   const debugShipping = true; // Set to false for production
-  
-  // Update the ref whenever dependencies change
-  useEffect(() => {
-    fetchShippingRatesRef.current = async () => {
-      const items = getCartItems();
-      if (items.length === 0) {
-        if (debugShipping) console.log('[SHIPPING DEBUG] Skipped fetch: no items');
-        return;
-      }
-      
-      if (!formData.zipCode || !formData.country || !formData.address) {
-        if (debugShipping) console.log('[SHIPPING DEBUG] Skipped fetch: missing address fields', {
-          hasZip: !!formData.zipCode,
-          hasCountry: !!formData.country,
-          hasAddress: !!formData.address,
-        });
-        return;
-      }
-      
-      // For free shipping countries, set free rate
-      if (isFreeShipping) {
-        if (debugShipping) console.log('[SHIPPING DEBUG] Free shipping country, setting free rate');
-        const freeRate: ShippingRate = {
-          serviceCode: 'free_shipping',
-          serviceName: 'Free Shipping',
-          shipmentCost: 0,
-          otherCost: 0,
-        };
-        setShippingRates([freeRate]);
-        onSelectRateRef.current(freeRate);
-        return;
-      }
-      
-      const address: Address = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        address1: formData.address,
-        city: formData.city,
-        state: formData.state,
-        postcode: formData.zipCode,
-        country: formData.country,
-        phone: formData.phone,
-        email: formData.email,
-      };
-      
-      if (debugShipping) console.log('[SHIPPING DEBUG] >>> FETCHING RATES for:', {
-        country: formData.country,
-        zip: formData.zipCode,
-        items: items.map(i => `${i.sku}:${i.qty}`).join(','),
-        timestamp: new Date().toISOString(),
-      });
-      
-      try {
-        const rates = await api.getShippingRates(address, items);
-        if (debugShipping) console.log('[SHIPPING DEBUG] <<< RECEIVED RATES:', rates.length, 'rates', rates.map(r => `${r.serviceName}: $${(r.shipmentCost + r.otherCost).toFixed(2)}`));
-        if (rates.length > 0) {
-          setShippingRates(rates);
-          // Select the first rate by default - cost will be calculated by shippingCost useMemo
-          onSelectRateRef.current(rates[0]);
-        }
-      } catch (e) {
-        console.warn('[CheckoutStep] Shipping fetch failed', e);
-      }
-    };
-  }, [formData, getCartItems, isFreeShipping, api]);
   
   // Calculate totals - does NOT fetch shipping rates (that's separate)
   const fetchTotals = useCallback(async () => {
@@ -520,6 +452,8 @@ export const CheckoutStep = ({
 
   // Create a shipping key to track when we need to refetch rates
   const shippingKeyRef = useRef<string>('');
+  // Request counter to ignore stale responses
+  const shippingRequestIdRef = useRef<number>(0);
   
   // Fetch shipping rates ONLY when address/zip/country/items actually change
   // Uses ref to avoid dependency on the fetch function itself
@@ -547,21 +481,88 @@ export const CheckoutStep = ({
     }
     shippingKeyRef.current = newShippingKey;
     
-    if (debugShipping) console.log('[SHIPPING DEBUG] Key CHANGED! Clearing rates and scheduling fetch...');
+    // Increment request ID to invalidate any in-flight requests
+    const requestId = ++shippingRequestIdRef.current;
+    
+    if (debugShipping) console.log('[SHIPPING DEBUG] Key CHANGED! Clearing rates and scheduling fetch (requestId:', requestId, ')');
     
     // Clear stale rates while fetching new ones
     setShippingRates([]);
     onSelectRateRef.current(null as unknown as ShippingRate);
     
-    const timer = setTimeout(() => {
-      if (debugShipping) console.log('[SHIPPING DEBUG] Debounce timer fired, executing fetch');
-      fetchShippingRatesRef.current();
+    const timer = setTimeout(async () => {
+      if (debugShipping) console.log('[SHIPPING DEBUG] Debounce timer fired, executing fetch (requestId:', requestId, ')');
+      
+      // Capture the current request ID before async call
+      const currentRequestId = requestId;
+      
+      // Call the fetch function but handle response staleness here
+      const fetchItems = getCartItems();
+      if (fetchItems.length === 0) return;
+      
+      if (!formData.zipCode || !formData.country || !formData.address) return;
+      
+      // For free shipping countries, set free rate
+      if (isFreeShipping) {
+        if (currentRequestId !== shippingRequestIdRef.current) {
+          if (debugShipping) console.log('[SHIPPING DEBUG] STALE response ignored (free shipping)', currentRequestId, 'vs', shippingRequestIdRef.current);
+          return;
+        }
+        const freeRate: ShippingRate = {
+          serviceCode: 'free_shipping',
+          serviceName: 'Free Shipping',
+          shipmentCost: 0,
+          otherCost: 0,
+        };
+        setShippingRates([freeRate]);
+        onSelectRateRef.current(freeRate);
+        return;
+      }
+      
+      const address: Address = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        address1: formData.address,
+        city: formData.city,
+        state: formData.state,
+        postcode: formData.zipCode,
+        country: formData.country,
+        phone: formData.phone,
+        email: formData.email,
+      };
+      
+      if (debugShipping) console.log('[SHIPPING DEBUG] >>> FETCHING RATES (requestId:', currentRequestId, ') for:', {
+        country: formData.country,
+        zip: formData.zipCode,
+        items: fetchItems.map(i => `${i.sku}:${i.qty}`).join(','),
+      });
+      
+      try {
+        const rates = await api.getShippingRates(address, fetchItems);
+        
+        // Check if this response is still relevant
+        if (currentRequestId !== shippingRequestIdRef.current) {
+          if (debugShipping) console.log('[SHIPPING DEBUG] STALE response IGNORED (requestId:', currentRequestId, 'current:', shippingRequestIdRef.current, ')');
+          return;
+        }
+        
+        if (debugShipping) console.log('[SHIPPING DEBUG] <<< RECEIVED RATES (requestId:', currentRequestId, '):', rates.length, 'rates');
+        if (rates.length > 0) {
+          setShippingRates(rates);
+          onSelectRateRef.current(rates[0]);
+        }
+      } catch (e) {
+        if (currentRequestId === shippingRequestIdRef.current) {
+          console.warn('[CheckoutStep] Shipping fetch failed', e);
+        }
+      }
     }, 500);
+    
     return () => {
       if (debugShipping) console.log('[SHIPPING DEBUG] Cleanup: clearing debounce timer');
       clearTimeout(timer);
     };
-  }, [formData.address, formData.city, formData.zipCode, formData.country, getCartItems]);
+  }, [formData, getCartItems, isFreeShipping, api]);
   
   // Fetch totals when address changes (separate from shipping rates)
   useEffect(() => {
