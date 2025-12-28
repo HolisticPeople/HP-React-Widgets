@@ -67,7 +67,7 @@ class CheckoutApi
 
         register_rest_route($namespace, '/checkout/order-summary', [
             'methods'             => 'GET',
-            'callback'            => [$this, 'handle_order_summary'],
+            'callback'            => [$this, handle_order_summary'],
             'permission_callback' => '__return_true',
         ]);
 
@@ -366,7 +366,7 @@ class CheckoutApi
         if ($piId !== '' && $storedPiId !== $piId) return new WP_Error('unauthorized', 'Invalid authorization', ['status' => 403]);
 
         $items = [];
-        $itemsRegularSum = 0.0;
+        $sumSubtotal = 0.0;
         foreach ($order->get_items() as $item) {
             if (!$item instanceof \WC_Order_Item_Product) continue;
             $product = $item->get_product();
@@ -379,6 +379,8 @@ class CheckoutApi
                 }
             }
             $qty = max(1, $item->get_quantity());
+            
+            // FULL PRICE for the display list (Standard WC uses subtotal for pre-discount)
             $unitPrice = (float) ($item->get_subtotal() / $qty);
 
             $items[] = [
@@ -390,7 +392,7 @@ class CheckoutApi
                 'image'    => $imageUrl,
                 'sku'      => $product ? $product->get_sku() : '',
             ];
-            $itemsRegularSum += ($unitPrice * $qty);
+            $sumSubtotal += ($unitPrice * $qty);
         }
 
         $pointsRedeemed = ['points' => 0, 'value' => 0.0];
@@ -402,43 +404,33 @@ class CheckoutApi
             $pointsRedeemed['points'] = (int) $order->get_meta('_ywpar_coupon_points');
         }
 
+        // Scan fees for general savings (excluding points)
         foreach ($order->get_fees() as $fee) {
             $feeTotal = (float) $fee->get_total();
-            if ($feeTotal < 0) {
-                // EXCLUDE points from the general discount line
-                if (stripos($fee->get_name(), 'points') === false) {
-                    $extraDiscounts += abs($feeTotal);
-                }
+            if ($feeTotal < 0 && stripos($fee->get_name(), 'points') === false) {
+                $extraDiscounts += abs($feeTotal);
             }
         }
 
+        // Scan coupons for non-points discounts
         foreach ($order->get_coupon_codes() as $code) {
             try {
                 $coupon = new \WC_Coupon($code);
-                // Identification of points coupon
-                $isPointsCoupon = (
-                    $coupon->get_meta('ywpar_coupon') || 
-                    $coupon->get_meta('_ywpar_coupon') || 
-                    str_starts_with($code, 'ywpar_discount_')
-                );
-                
+                $isPointsCoupon = ($coupon->get_meta('ywpar_coupon') || $coupon->get_meta('_ywpar_coupon') || str_starts_with($code, 'ywpar_discount_'));
                 if ($isPointsCoupon) continue;
-                
                 foreach ($order->get_items('coupon') as $orderCoupon) {
-                    if ($orderCoupon->get_code() === $code) {
-                        $extraDiscounts += (float) $orderCoupon->get_discount();
-                    }
+                    if ($orderCoupon->get_code() === $code) $extraDiscounts += (float) $orderCoupon->get_discount();
                 }
             } catch (\Throwable $e) { continue; }
         }
 
-        // The "Discount" line on TY page should be ONLY product savings (fees like "Offer Savings")
-        $totalDiscount = (float) $extraDiscounts;
+        // COMBINED DISCOUNT: Item-level savings (sum of subtotal - total) + Extra non-points discounts
+        $totalDiscount = (float) $order->get_discount_total() + $extraDiscounts;
         
         $shippingTotal = (float) $order->get_shipping_total();
         
-        // Manual grand total calculation for consistency
-        $calculatedGrandTotal = $itemsRegularSum + $shippingTotal - $totalDiscount - $pointsRedeemed['value'];
+        // Manual calculation for consistency
+        $calculatedGrandTotal = $sumSubtotal + $shippingTotal - $totalDiscount - $pointsRedeemed['value'];
 
         return new WP_REST_Response([
             'success'         => true,
