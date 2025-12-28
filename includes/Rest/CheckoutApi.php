@@ -67,7 +67,7 @@ class CheckoutApi
 
         register_rest_route($namespace, '/checkout/order-summary', [
             'methods'             => 'GET',
-            'callback'            => [$this, handle_order_summary'],
+            'callback'            => [$this, 'handle_order_summary'],
             'permission_callback' => '__return_true',
         ]);
 
