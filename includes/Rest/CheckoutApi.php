@@ -531,7 +531,6 @@ class CheckoutApi
         }
 
         $items = [];
-        $itemsDiscount = 0.0;
         foreach ($order->get_items() as $item) {
             if (!$item instanceof \WC_Order_Item_Product) {
                 continue;
@@ -550,31 +549,31 @@ class CheckoutApi
                 }
             }
 
-            // Get the price intended by the funnel (before coupons)
+            // Get the price intended by the funnel (before points/extra coupons)
             $funnelPriceRaw = $item->get_meta('_hp_rw_funnel_price');
-            $funnelPrice = ($funnelPriceRaw !== '') ? (float) $funnelPriceRaw : -1.0;
-
-            if ($funnelPrice < 0) {
-                // Fallback: if meta is missing, use item total which is usually correct
-                $funnelPrice = (float) ($item->get_total() / max(1, $item->get_quantity()));
+            $qty = max(1, $item->get_quantity());
+            
+            // If funnel price exists (even if 0), use it. 
+            // It represents the price per unit shown in the funnel.
+            if ($funnelPriceRaw !== '') {
+                $paidPrice = (float) $funnelPriceRaw;
+            } else {
+                // Fallback: item total / qty
+                $paidPrice = (float) ($item->get_total() / $qty);
             }
 
             $items[] = [
                 'name'     => $item->get_name(),
-                'qty'      => $item->get_quantity(),
-                'price'    => $funnelPrice,
-                'subtotal' => (float) ($item->get_subtotal() / max(1, $item->get_quantity())),
-                'total'    => $funnelPrice * $item->get_quantity(),
+                'qty'      => $qty,
+                'price'    => $paidPrice,
+                'subtotal' => (float) ($item->get_subtotal() / $qty),
+                'total'    => $item->get_total(),
                 'image'    => $imageUrl,
                 'sku'      => $product ? $product->get_sku() : '',
             ];
-
-            // Item discount is MSRP - Paid Price (from items only)
-            $itemsDiscount += ((float) $item->get_subtotal() - ($funnelPrice * $item->get_quantity()));
         }
 
-        // Calculate fees and points breakdown
-        $feesTotal = 0.0;
+        // Calculate extra discounts (fees and non-points coupons)
         $pointsRedeemed = ['points' => 0, 'value' => 0.0];
         $extraDiscounts = 0.0;
 
@@ -585,40 +584,42 @@ class CheckoutApi
             $pointsRedeemed['points'] = (int) $order->get_meta('_ywpar_coupon_points');
         }
 
-        // 2. Scan fees for "Savings" or other discounts
+        // 2. Scan fees for "Savings" or other adjustments
         foreach ($order->get_fees() as $fee) {
             $feeTotal = (float) $fee->get_total();
-            $feesTotal += $feeTotal;
-
             // If it's a discount fee (negative) and NOT points, count it as a general discount
             if ($feeTotal < 0 && stripos($fee->get_name(), 'points') === false) {
                 $extraDiscounts += abs($feeTotal);
             }
-
-            // Legacy points fee fallback
-            if ($pointsRedeemed['value'] <= 0 && stripos($fee->get_name(), 'points') !== false) {
-                $pointsService = new PointsService();
-                $pointsRedeemed['value'] = abs($feeTotal);
-                $pointsRedeemed['points'] = $pointsService->moneyToPoints(abs($feeTotal));
-            }
         }
 
         // 3. Scan coupons for other discounts
-        $couponDiscount = (float) $order->get_discount_total();
-        // total_discount includes our points coupon, so we must subtract it to avoid double counting
-        $otherCouponDiscount = max(0.0, $couponDiscount - $pointsRedeemed['value']);
-        $itemsDiscount += $extraDiscounts + $otherCouponDiscount;
+        // We only want coupons that ARE NOT our points coupon
+        foreach ($order->get_coupon_codes() as $code) {
+            $coupon = new \WC_Coupon($code);
+            if ($coupon->get_meta('ywpar_coupon')) {
+                continue; // Already handled points
+            }
+            // For other coupons, we add their amount
+            // Note: in WC 3.0+ we get the discount from the order itself for that coupon
+            foreach ($order->get_coupons() as $orderCoupon) {
+                if ($orderCoupon->get_code() === $code) {
+                    $extraDiscounts += (float) $orderCoupon->get_discount();
+                }
+            }
+        }
 
         return new WP_REST_Response([
+            'success'         => true,
             'order_id'        => $order->get_id(),
             'order_number'    => $order->get_order_number(),
             'items'           => $items,
-            'shipping_total'  => (float) $order->get_shipping_total(),
-            'fees_total'      => $feesTotal,
+            'items_discount'  => $extraDiscounts, // Only extra discounts not on items
             'points_redeemed' => $pointsRedeemed,
-            'items_discount'  => $itemsDiscount,
+            'shipping_total'  => (float) $order->get_shipping_total(),
             'grand_total'     => (float) $order->get_total(),
             'status'          => $order->get_status(),
+            'date'            => $order->get_date_created() ? $order->get_date_created()->date('Y-m-d H:i:s') : '',
         ]);
     }
 
