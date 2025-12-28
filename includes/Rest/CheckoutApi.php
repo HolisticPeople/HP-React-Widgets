@@ -551,23 +551,25 @@ class CheckoutApi
             }
 
             // Get the price intended by the funnel (before coupons)
-            $funnelPrice = (float) $item->get_meta('_hp_rw_funnel_price');
-            if ($funnelPrice <= 0) {
-                // Fallback: if meta is missing, use item subtotal which is MSRP
-                $funnelPrice = (float) ($item->get_subtotal() / max(1, $item->get_quantity()));
+            $funnelPriceRaw = $item->get_meta('_hp_rw_funnel_price');
+            $funnelPrice = ($funnelPriceRaw !== '') ? (float) $funnelPriceRaw : -1.0;
+
+            if ($funnelPrice < 0) {
+                // Fallback: if meta is missing, use item total which is usually correct
+                $funnelPrice = (float) ($item->get_total() / max(1, $item->get_quantity()));
             }
 
             $items[] = [
                 'name'     => $item->get_name(),
                 'qty'      => $item->get_quantity(),
                 'price'    => $funnelPrice,
-                'subtotal' => (float) $item->get_subtotal(),
+                'subtotal' => (float) ($item->get_subtotal() / max(1, $item->get_quantity())),
                 'total'    => $funnelPrice * $item->get_quantity(),
                 'image'    => $imageUrl,
                 'sku'      => $product ? $product->get_sku() : '',
             ];
 
-            // Item discount is MSRP - Intended Price
+            // Item discount is MSRP - Paid Price (from items only)
             $itemsDiscount += ((float) $item->get_subtotal() - ($funnelPrice * $item->get_quantity()));
         }
 
