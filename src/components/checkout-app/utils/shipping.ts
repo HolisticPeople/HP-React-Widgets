@@ -29,3 +29,4 @@ export const extractShippingCost = (rate: ShippingRate | null): number => {
   return shipmentCost + otherCost;
 };
 
+
