@@ -1,7 +1,7 @@
 {
   "name": "hp-react-widgets",
   "private": true,
-  "version": "2.18.33",
+  "version": "2.18.34",
   "type": "module",
   "scripts": {
     "dev": "vite",

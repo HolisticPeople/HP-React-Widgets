@@ -531,6 +531,7 @@ class CheckoutApi
         }
 
         $items = [];
+        $lineItemDiscount = 0.0;
         foreach ($order->get_items() as $item) {
             if (!$item instanceof \WC_Order_Item_Product) {
                 continue;
@@ -549,25 +550,21 @@ class CheckoutApi
                 }
             }
 
-            // Get the price intended by the funnel (before points/extra coupons)
-            $funnelPriceRaw = $item->get_meta('_hp_rw_funnel_price');
             $qty = max(1, $item->get_quantity());
             
-            // If funnel price exists (even if 0), use it. 
-            // It represents the price per unit shown in the funnel.
-            if ($funnelPriceRaw !== '') {
-                $paidPrice = (float) $funnelPriceRaw;
-            } else {
-                // Fallback: item total / qty
-                $paidPrice = (float) ($item->get_total() / $qty);
-            }
+            // For the summary, we want to show the REGULAR price on the item line
+            // and the discount in the separate discount row, to match the checkout page.
+            $regularUnitPrice = (float) ($item->get_subtotal() / $qty);
+            
+            // Accumulate line item discount
+            $lineItemDiscount += (float) ($item->get_subtotal() - $item->get_total());
 
             $items[] = [
                 'name'     => $item->get_name(),
                 'qty'      => $qty,
-                'price'    => (float) $paidPrice,
-                'subtotal' => (float) ($item->get_subtotal() / $qty),
-                'total'    => (float) $item->get_total(),
+                'price'    => $regularUnitPrice,
+                'subtotal' => $regularUnitPrice,
+                'total'    => (float) $item->get_subtotal(),
                 'image'    => $imageUrl,
                 'sku'      => $product ? $product->get_sku() : '',
             ];
@@ -609,12 +606,15 @@ class CheckoutApi
             }
         }
 
+        // Combined discount: line item savings + extra discounts (fees/coupons)
+        $totalDiscount = $lineItemDiscount + $extraDiscounts;
+
         return new WP_REST_Response([
             'success'         => true,
             'order_id'        => $order->get_id(),
             'order_number'    => $order->get_order_number(),
             'items'           => $items,
-            'items_discount'  => (float) $extraDiscounts, // Only extra discounts not on items
+            'items_discount'  => (float) $totalDiscount, // Now includes line item savings
             'points_redeemed' => $pointsRedeemed,
             'shipping_total'  => (float) $order->get_shipping_total(),
             'grand_total'     => (float) $order->get_total(),
