@@ -244,6 +244,7 @@ export const CheckoutStep = ({
   const [totals, setTotals] = useState<TotalsResponse | null>(null);
   const [shippingRates, setShippingRates] = useState<ShippingRate[]>([]);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [isFetchingShipping, setIsFetchingShipping] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -488,6 +489,7 @@ export const CheckoutStep = ({
     
     // Clear stale rates while fetching new ones
     setShippingRates([]);
+    setIsFetchingShipping(true);
     onSelectRateRef.current(null as unknown as ShippingRate);
     
     const timer = setTimeout(async () => {
@@ -515,6 +517,7 @@ export const CheckoutStep = ({
           otherCost: 0,
         };
         setShippingRates([freeRate]);
+        setIsFetchingShipping(false);
         onSelectRateRef.current(freeRate);
         return;
       }
@@ -547,12 +550,14 @@ export const CheckoutStep = ({
         }
         
         if (debugShipping) console.log('[SHIPPING DEBUG] <<< RECEIVED RATES (requestId:', currentRequestId, '):', rates.length, 'rates');
+        setIsFetchingShipping(false);
         if (rates.length > 0) {
           setShippingRates(rates);
           onSelectRateRef.current(rates[0]);
         }
       } catch (e) {
         if (currentRequestId === shippingRequestIdRef.current) {
+          setIsFetchingShipping(false);
           console.warn('[CheckoutStep] Shipping fetch failed', e);
         }
       }
@@ -693,10 +698,10 @@ export const CheckoutStep = ({
   // For display logic - check if we have a rate selected
   const hasShippingRate = selectedRate !== null && shippingCost > 0;
   
-  // Calculate display total
-  // If we have totals from the backend, use its grandTotal (which includes shipping and points)
-  // Otherwise fall back to manual calculation
-  const displayTotal = totals ? totals.grandTotal : (offerPrice.discounted + shippingCost - pointsValue);
+  // Calculate display total - always use client-side calculation for instant UI updates
+  // This gives immediate feedback when points slider moves
+  // Backend validation happens at checkout time
+  const displayTotal = Math.max(0, offerPrice.discounted + shippingCost - pointsValue);
 
   // Render offer card based on type
   const renderOfferCard = (offer: Offer) => {
@@ -1088,7 +1093,7 @@ export const CheckoutStep = ({
               <div className="flex justify-between text-foreground">
                 <span>Shipping</span>
                 <span className="font-semibold text-accent">
-                  {isCalculating ? (
+                  {isFetchingShipping ? (
                     <LoaderIcon className="w-3 h-3" />
                   ) : isFreeShipping ? (
                     'FREE'
@@ -1107,7 +1112,7 @@ export const CheckoutStep = ({
               <div className="pt-3 border-t border-accent/30 flex justify-between text-xl font-bold">
                 <span className="text-accent">Total:</span>
                 <span className="text-accent">
-                  {isCalculating ? <LoaderIcon /> : `$${displayTotal.toFixed(2)}`}
+                  ${displayTotal.toFixed(2)}
                 </span>
               </div>
             </div>
