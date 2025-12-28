@@ -282,8 +282,9 @@ export function useCheckoutApi(options: UseCheckoutApiOptions) {
     calculateTotals,
     createPaymentIntent,
     getOrderSummary,
+    completeOrder,
     chargeUpsell,
-  }), [getShippingRates, calculateTotals, createPaymentIntent, getOrderSummary, chargeUpsell]);
+  }), [getShippingRates, calculateTotals, createPaymentIntent, getOrderSummary, completeOrder, chargeUpsell]);
 }
 
 
