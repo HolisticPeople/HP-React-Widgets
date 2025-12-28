@@ -20,8 +20,10 @@ class FunnelStylingFields
         // Register hero title size as separate field group
         add_action('acf/init', [self::class, 'registerHeroTitleSizeField'], 25);
         
-        // Hide the redundant background_color field (we use page_bg_color instead)
-        add_filter('acf/prepare_field/name=background_color', [self::class, 'hideBackgroundColorField']);
+        // Hide fields from Styling tab that are now in Styling Colors metabox
+        add_filter('acf/prepare_field/name=background_color', [self::class, 'hideFunnelField']);
+        add_filter('acf/prepare_field/name=accent_color', [self::class, 'hideFunnelField']);
+        add_filter('acf/prepare_field/name=background_type', [self::class, 'hideFunnelField']);
     }
 
     /**
@@ -38,13 +40,25 @@ class FunnelStylingFields
             'key' => 'group_funnel_styling_colors',
             'title' => 'Styling Colors',
             'fields' => [
+                // Accent Color (moved from Styling tab)
+                [
+                    'key' => 'field_accent_color_local',
+                    'label' => 'Accent Color',
+                    'name' => 'accent_color',
+                    'type' => 'color_picker',
+                    'instructions' => 'Primary accent for buttons, links, highlights',
+                    'default_value' => '#eab308',
+                    'enable_opacity' => 0,
+                    'return_format' => 'string',
+                    'wrapper' => ['width' => '25'],
+                ],
                 // Text Colors header
                 [
                     'key' => 'field_text_colors_header',
                     'label' => '',
                     'name' => '',
                     'type' => 'message',
-                    'message' => '<p style="margin:0 0 10px;color:#23282d;font-weight:600;font-size:14px;">Text Colors</p>',
+                    'message' => '<hr style="margin:20px 0 15px;border:0;border-top:1px solid #ddd;"><p style="margin:0 0 10px;color:#23282d;font-weight:600;font-size:14px;">Text Colors</p>',
                     'new_lines' => '',
                     'esc_html' => 0,
                 ],
@@ -123,17 +137,36 @@ class FunnelStylingFields
                     'label' => '',
                     'name' => '',
                     'type' => 'message',
-                    'message' => '<hr style="margin:20px 0 15px;border:0;border-top:1px solid #ddd;"><p style="margin:0 0 10px;color:#23282d;font-weight:600;font-size:14px;">UI Element Colors</p>',
+                    'message' => '<hr style="margin:20px 0 15px;border:0;border-top:1px solid #ddd;"><p style="margin:0 0 10px;color:#23282d;font-weight:600;font-size:14px;">Page Background</p>',
                     'new_lines' => '',
                     'esc_html' => 0,
+                ],
+                // Background Type (moved from Styling tab)
+                [
+                    'key' => 'field_background_type_local',
+                    'label' => 'Background Type',
+                    'name' => 'background_type',
+                    'type' => 'select',
+                    'instructions' => '',
+                    'choices' => [
+                        'solid' => 'Solid Color',
+                        'gradient' => 'Gradient',
+                        'image' => 'Image',
+                    ],
+                    'default_value' => 'solid',
+                    'allow_null' => 0,
+                    'multiple' => 0,
+                    'ui' => 1,
+                    'return_format' => 'value',
+                    'wrapper' => ['width' => '25'],
                 ],
                 // Page Background color
                 [
                     'key' => 'field_page_bg_color',
-                    'label' => 'Page Background',
+                    'label' => 'Page BG Color',
                     'name' => 'page_bg_color',
                     'type' => 'color_picker',
-                    'instructions' => 'Main background',
+                    'instructions' => 'Solid or gradient start',
                     'default_value' => '#121212',
                     'enable_opacity' => 0,
                     'return_format' => 'string',
@@ -246,10 +279,9 @@ class FunnelStylingFields
     }
 
     /**
-     * Hide the background_color field from the Styling tab.
-     * We now use page_bg_color instead.
+     * Hide fields from the Styling tab that are now in the Styling Colors metabox.
      */
-    public static function hideBackgroundColorField($field)
+    public static function hideFunnelField($field)
     {
         global $post;
         if ($post && $post->post_type === 'hp-funnel') {
