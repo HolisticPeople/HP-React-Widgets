@@ -659,6 +659,25 @@ class FunnelOfferFields
                 border-right: 1px solid #f0f0f0;
             }
             
+            /* Drag handle for row reordering */
+            .hp-drag-handle-cell {
+                cursor: grab;
+            }
+            .hp-drag-handle-cell:active {
+                cursor: grabbing;
+            }
+            .hp-drag-icon {
+                color: #999;
+                font-size: 16px;
+            }
+            .hp-drag-icon:hover {
+                color: #0073aa;
+            }
+            .tabulator-row.tabulator-moving {
+                background: #e8f4fc !important;
+                border: 2px dashed #0073aa !important;
+            }
+            
             /* Tabulator cell content styling */
             .hp-item-thumb img {
                 width: 40px;

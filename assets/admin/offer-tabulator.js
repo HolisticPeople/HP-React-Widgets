@@ -35,7 +35,8 @@
                 // Update existing table
                 this.tables[containerId].setData(data);
             } else {
-                // Create new table
+                // Create new table with drag-and-drop row reordering
+                const self = this;
                 this.tables[containerId] = new Tabulator('#' + containerId, {
                     data: data,
                     layout: "fitColumns",
@@ -43,6 +44,8 @@
                     headerVisible: true,
                     columnDefaults: { resizable: false, headerSort: false },
                     movableColumns: false,
+                    movableRows: true,           // Enable row drag-and-drop
+                    movableRowsConnectedTables: false,
                     reactiveData: false,
                     columns: columns,
                     placeholder: "No products added. Use search above to add products."
@@ -51,6 +54,11 @@
                 // On table built, store reference
                 this.tables[containerId].on('tableBuilt', () => {
                     console.log('[HP Offer Table] Table built:', containerId);
+                });
+
+                // On row moved, update the products_data
+                this.tables[containerId].on('rowMoved', function(row) {
+                    self._handleRowMoved(containerId, row);
                 });
             }
 
@@ -64,6 +72,18 @@
          */
         _buildColumns: function(isKit) {
             const columns = [
+                // Drag handle column for reordering
+                { 
+                    title: "", 
+                    field: "drag_handle", 
+                    rowHandle: true,          // Makes this the drag handle
+                    formatter: "html",
+                    width: 30, 
+                    widthGrow: 0, 
+                    headerSort: false,
+                    hozAlign: "center",
+                    cssClass: "hp-drag-handle-cell"
+                },
                 { 
                     title: "", 
                     field: "thumb", 
@@ -227,6 +247,8 @@
                     _subseqDiscountPercent: subseqDiscountPercent,
                     _qty: qty,
                     _role: role,
+                    _productData: p,  // Store original product data for reordering
+                    drag_handle: '<span class="dashicons dashicons-menu hp-drag-icon" title="Drag to reorder"></span>',
                     thumb: `<div class="hp-item-thumb"><img src="${p.image || ''}" alt=""></div>`,
                     product: this._renderProduct(p),
                     qty: this._renderQty(p),
@@ -521,6 +543,42 @@
             
             if (isAutoValue) {
                 $labelField.val(autoLabel);
+            }
+        },
+
+        /**
+         * Handle row moved event - update products_data with new order
+         */
+        _handleRowMoved: function(containerId, movedRow) {
+            const table = this.tables[containerId];
+            if (!table) return;
+
+            const $container = $('#' + containerId);
+            const $section = $container.closest('.hp-products-section');
+            const $row = $section.closest('.acf-row');
+            
+            if (!$row.length) {
+                console.warn('[HP Offer Table] Could not find ACF row for reorder');
+                return;
+            }
+
+            // Get all rows in new order
+            const rows = table.getRows();
+            const reorderedProducts = [];
+
+            rows.forEach(function(row) {
+                const data = row.getData();
+                if (data._productData) {
+                    reorderedProducts.push(data._productData);
+                }
+            });
+
+            // Save to the products_data textarea
+            const $field = $row.find('.acf-field[data-name="products_data"] textarea');
+            if ($field.length) {
+                const json = JSON.stringify(reorderedProducts);
+                $field.val(json);
+                console.log('[HP Offer Table] Products reordered:', reorderedProducts.map(p => p.sku).join(', '));
             }
         },
 
