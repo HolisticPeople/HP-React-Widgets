@@ -484,13 +484,17 @@ class CheckoutApi
         $pointsToRedeem = (int) ($draftData['points_to_redeem'] ?? 0);
         if ($pointsToRedeem > 0) {
             $customerId = $order->get_customer_id();
+            error_log('[HP-RW] Points deduction triggered for customer ' . $customerId . ': ' . $pointsToRedeem);
             if ($customerId > 0) {
                 $pointsService = new PointsService();
-                $pointsService->deductPoints(
+                $success = $pointsService->deductPoints(
                     $customerId,
                     $pointsToRedeem,
                     sprintf('Redeemed for order #%s', $order->get_order_number())
                 );
+                error_log('[HP-RW] Points deduction result: ' . ($success ? 'Success' : 'Failed'));
+            } else {
+                error_log('[HP-RW] Points deduction skipped - Guest user');
             }
         }
 

@@ -331,8 +331,10 @@ class CheckoutService
         if ($selectedRate && isset($selectedRate['amount'])) {
             $ship = new WC_Order_Item_Shipping();
             $ship->set_method_title($selectedRate['serviceName'] ?? 'Shipping');
+            $ship->set_method_id('hp_rw_shipping');
             $ship->set_total((float) $selectedRate['amount']);
             $order->add_item($ship);
+            error_log('[HP-RW] Added shipping to order: ' . ($selectedRate['serviceName'] ?? 'Shipping') . ' = ' . $selectedRate['amount']);
         }
 
         // Apply global discount if configured
@@ -423,9 +425,12 @@ class CheckoutService
 
         // Set status to processing
         $order->set_status('processing');
+        
+        // Final total calculation before save
+        $order->calculate_totals(true);
         $order->save();
 
-        error_log('[HP-RW] Order created successfully: ' . $order->get_id() . ' for PI: ' . $stripePaymentIntentId);
+        error_log('[HP-RW] Order created successfully: ' . $order->get_id() . ' for PI: ' . $stripePaymentIntentId . ' with Total: ' . $order->get_total());
 
         return $order;
     }

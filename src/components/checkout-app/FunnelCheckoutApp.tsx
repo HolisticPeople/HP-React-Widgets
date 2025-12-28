@@ -118,6 +118,11 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     [offers, selectedOfferId]
   );
 
+  // Scroll to top when step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentStep]);
+
   // Handle offer selection change - reset kit selection and quantity ONLY when changing offers
   const handleOfferSelect = useCallback((offerId: string) => {
     // Don't reset if selecting the same offer (prevents kit selection reset on internal clicks)
