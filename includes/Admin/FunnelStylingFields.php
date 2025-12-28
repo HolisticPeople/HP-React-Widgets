@@ -20,10 +20,10 @@ class FunnelStylingFields
         // Register hero title size as separate field group
         add_action('acf/init', [self::class, 'registerHeroTitleSizeField'], 25);
         
-        // Hide fields from Styling tab that are now in Styling Colors metabox
+        // Hide original fields from Styling tab (by key, not name, to preserve our local fields)
+        add_filter('acf/prepare_field/key=field_accent_color', [self::class, 'hideFunnelField']);
+        add_filter('acf/prepare_field/key=field_background_type', [self::class, 'hideFunnelField']);
         add_filter('acf/prepare_field/name=background_color', [self::class, 'hideFunnelField']);
-        add_filter('acf/prepare_field/name=accent_color', [self::class, 'hideFunnelField']);
-        add_filter('acf/prepare_field/name=background_type', [self::class, 'hideFunnelField']);
     }
 
     /**
@@ -40,13 +40,35 @@ class FunnelStylingFields
             'key' => 'group_funnel_styling_colors',
             'title' => 'Styling Colors',
             'fields' => [
-                // Accent Color (moved from Styling tab)
+                // Accent Colors header
+                [
+                    'key' => 'field_accent_colors_header',
+                    'label' => '',
+                    'name' => '',
+                    'type' => 'message',
+                    'message' => '<p style="margin:0 0 10px;color:#23282d;font-weight:600;font-size:14px;">Accent Colors</p>',
+                    'new_lines' => '',
+                    'esc_html' => 0,
+                ],
+                // Accent Color (for UI elements)
                 [
                     'key' => 'field_accent_color_local',
-                    'label' => 'Accent Color',
+                    'label' => 'UI Accent',
                     'name' => 'accent_color',
                     'type' => 'color_picker',
-                    'instructions' => 'Primary accent for buttons, links, highlights',
+                    'instructions' => 'Buttons, links, borders',
+                    'default_value' => '#eab308',
+                    'enable_opacity' => 0,
+                    'return_format' => 'string',
+                    'wrapper' => ['width' => '25'],
+                ],
+                // Accent Text color (always visible)
+                [
+                    'key' => 'field_text_color_accent',
+                    'label' => 'Text Accent',
+                    'name' => 'text_color_accent',
+                    'type' => 'color_picker',
+                    'instructions' => 'Headings, CTAs',
                     'default_value' => '#eab308',
                     'enable_opacity' => 0,
                     'return_format' => 'string',
@@ -72,40 +94,7 @@ class FunnelStylingFields
                     'default_value' => '#e5e5e5',
                     'enable_opacity' => 0,
                     'return_format' => 'string',
-                    'wrapper' => ['width' => '20'],
-                ],
-                // Custom Accent toggle
-                [
-                    'key' => 'field_text_color_accent_override',
-                    'label' => 'Custom Accent',
-                    'name' => 'text_color_accent_override',
-                    'type' => 'true_false',
-                    'instructions' => '',
-                    'message' => 'Use custom color instead of global Accent',
-                    'default_value' => 0,
-                    'ui' => 1,
-                    'wrapper' => ['width' => '20'],
-                ],
-                // Accent Text color (conditional)
-                [
-                    'key' => 'field_text_color_accent',
-                    'label' => 'Accent Text',
-                    'name' => 'text_color_accent',
-                    'type' => 'color_picker',
-                    'instructions' => 'Headings, CTAs',
-                    'default_value' => '#eab308',
-                    'enable_opacity' => 0,
-                    'return_format' => 'string',
-                    'wrapper' => ['width' => '20'],
-                    'conditional_logic' => [
-                        [
-                            [
-                                'field' => 'field_text_color_accent_override',
-                                'operator' => '==',
-                                'value' => '1',
-                            ],
-                        ],
-                    ],
+                    'wrapper' => ['width' => '25'],
                 ],
                 // Note Text color
                 [
@@ -117,7 +106,7 @@ class FunnelStylingFields
                     'default_value' => '#a3a3a3',
                     'enable_opacity' => 0,
                     'return_format' => 'string',
-                    'wrapper' => ['width' => '20'],
+                    'wrapper' => ['width' => '25'],
                 ],
                 // Discount Text color
                 [
@@ -129,7 +118,7 @@ class FunnelStylingFields
                     'default_value' => '#22c55e',
                     'enable_opacity' => 0,
                     'return_format' => 'string',
-                    'wrapper' => ['width' => '20'],
+                    'wrapper' => ['width' => '25'],
                 ],
                 // UI Colors header
                 [
