@@ -393,6 +393,7 @@ class CheckoutApi
             'selected_rate'           => $selectedRate,
             'points_to_redeem'        => $pointsToRedeem,
             'global_discount_percent' => $globalDiscountPercent,
+            'offer_total'             => $offerTotal !== null ? (float) $offerTotal : null,
             'analytics'               => $analytics,
             'currency'                => get_woocommerce_currency() ?: 'USD',
             'amount'                  => $grandTotal,
@@ -485,23 +486,9 @@ class CheckoutApi
         // Clean up draft
         $checkoutService->deleteDraft($draftId);
 
-        // Handle points deduction if any
-        $pointsToRedeem = (int) ($draftData['points_to_redeem'] ?? 0);
-        if ($pointsToRedeem > 0) {
-            $customerId = $order->get_customer_id();
-            error_log('[HP-RW] Points deduction triggered for customer ' . $customerId . ': ' . $pointsToRedeem);
-            if ($customerId > 0) {
-                $pointsService = new PointsService();
-                $success = $pointsService->deductPoints(
-                    $customerId,
-                    $pointsToRedeem,
-                    sprintf('Redeemed for order #%s', $order->get_order_number())
-                );
-                error_log('[HP-RW] Points deduction result: ' . ($success ? 'Success' : 'Failed'));
-            } else {
-                error_log('[HP-RW] Points deduction skipped - Guest user');
-            }
-        }
+        // Note: Points deduction is handled by YITH based on the order meta fields
+        // (_ywpar_coupon_points and _ywpar_coupon_amount) set during order creation.
+        // We no longer manually deduct points here to avoid conflicts and "refunds" on status change.
 
         return new WP_REST_Response([
             'success'      => true,

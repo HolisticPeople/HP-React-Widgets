@@ -111,20 +111,24 @@ class CheckoutService
             }
 
             // Use admin-set sale price if provided, otherwise use WC price
-            $wcPrice = (float) $product->get_price();
-            $salePrice = isset($it['salePrice']) ? (float) $it['salePrice'] : null;
-            $price = ($salePrice !== null) ? $salePrice : $wcPrice;
+            $regularPrice = (float) $product->get_regular_price();
+            if ($regularPrice <= 0) {
+                $regularPrice = (float) $product->get_price();
+            }
             
-            $subtotal = $price * $qty;
-            $total = $subtotal;
+            $salePrice = isset($it['salePrice']) ? (float) $it['salePrice'] : null;
+            $price = ($salePrice !== null) ? $salePrice : (float) $product->get_price();
+            
+            // Standard WC practice: subtotal is regular price, total is what they pay
+            $subtotal = $regularPrice * $qty;
+            $total = $price * $qty;
 
             // Check for per-item discount overrides
             $excludeGd = !empty($it['exclude_global_discount']);
             $itemPct = isset($it['item_discount_percent']) ? (float) $it['item_discount_percent'] : null;
 
             if ($itemPct !== null && $itemPct >= 0) {
-                $discounted = $price * (1 - ($itemPct / 100.0));
-                $total = max(0.0, $discounted * $qty);
+                $total = max(0.0, $price * (1 - ($itemPct / 100.0)) * $qty);
                 $item->add_meta_data('_hp_rw_item_discount_percent', $itemPct, true);
             }
             
@@ -266,6 +270,7 @@ class CheckoutService
         $shippingAddress = $draftData['shipping_address'] ?? [];
         $selectedRate = $draftData['selected_rate'] ?? null;
         $pointsToRedeem = (int) ($draftData['points_to_redeem'] ?? 0);
+        $offerTotal = isset($draftData['offer_total']) ? (float) $draftData['offer_total'] : null;
         $funnelId = $draftData['funnel_id'] ?? 'default';
         $funnelName = $draftData['funnel_name'] ?? 'Funnel';
         $analytics = $draftData['analytics'] ?? [];
@@ -308,20 +313,24 @@ class CheckoutService
             }
 
             // Use admin-set sale price if provided, otherwise use WC price
-            $wcPrice = (float) $product->get_price();
-            $salePrice = isset($it['salePrice']) ? (float) $it['salePrice'] : null;
-            $price = ($salePrice !== null) ? $salePrice : $wcPrice;
+            $regularPrice = (float) $product->get_regular_price();
+            if ($regularPrice <= 0) {
+                $regularPrice = (float) $product->get_price();
+            }
             
-            $subtotal = $price * $qty;
-            $total = $subtotal;
+            $salePrice = isset($it['salePrice']) ? (float) $it['salePrice'] : null;
+            $price = ($salePrice !== null) ? $salePrice : (float) $product->get_price();
+            
+            // Standard WC practice: subtotal is regular price, total is what they pay
+            $subtotal = $regularPrice * $qty;
+            $total = $price * $qty;
 
-            // Per-item discounts
+            // Per-item discounts override
             $excludeGd = !empty($it['exclude_global_discount']);
             $itemPct = isset($it['item_discount_percent']) ? (float) $it['item_discount_percent'] : null;
 
             if ($itemPct !== null && $itemPct >= 0) {
-                $discounted = $price * (1 - ($itemPct / 100.0));
-                $total = max(0.0, $discounted * $qty);
+                $total = max(0.0, $price * (1 - ($itemPct / 100.0)) * $qty);
                 $item->add_meta_data('_hp_rw_item_discount_percent', $itemPct, true);
             }
 
@@ -410,6 +419,31 @@ class CheckoutService
         $order->set_payment_method('hp_rw_stripe');
         $order->set_payment_method_title($paymentMethodTitle);
 
+        // --- CUSTOM TOTALS ADJUSTMENT ---
+        // Calculate the current subtotal of products and fees added so far
+        $order->calculate_totals(false);
+        $currentItemsTotal = 0.0;
+        foreach ($order->get_items() as $item) {
+            if ($item instanceof WC_Order_Item_Product) {
+                $currentItemsTotal += (float) $item->get_total();
+            }
+        }
+
+        // If an explicit offer total was set by admin, and it differs from our calculated items total,
+        // add a "Savings" fee to bridge the gap. This ensures the grand total matches the payment.
+        if ($offerTotal !== null && $offerTotal > 0) {
+            $diff = $offerTotal - $currentItemsTotal;
+            // Allow a small margin for rounding
+            if (abs($diff) > 0.01) {
+                $savingsFee = new WC_Order_Item_Fee();
+                $savingsFee->set_name($diff < 0 ? 'Offer Savings' : 'Package Adjustment');
+                $savingsFee->set_amount($diff);
+                $savingsFee->set_total($diff);
+                $order->add_item($savingsFee);
+                error_log('[HP-RW] Added adjustment fee to match offer total: ' . $diff);
+            }
+        }
+
         // Store Stripe metadata
         $order->update_meta_data('_hp_rw_stripe_customer_id', $stripeCustomerId);
         $order->update_meta_data('_hp_rw_stripe_pi_id', $stripePaymentIntentId);
@@ -474,15 +508,19 @@ class CheckoutService
             $item->set_product($product);
             $item->set_quantity($qty);
 
+            $regularPrice = (float) $product->get_regular_price();
+            if ($regularPrice <= 0) {
+                $regularPrice = (float) $product->get_price();
+            }
+            
             $price = (float) $product->get_price();
-            $subtotal = $price * $qty;
-            $total = $subtotal;
+            $subtotal = $regularPrice * $qty;
+            $total = $price * $qty;
 
             // Check for item-specific discount
             $itemPct = isset($it['item_discount_percent']) ? (float) $it['item_discount_percent'] : null;
             if ($itemPct !== null && $itemPct >= 0) {
-                $discounted = $price * (1 - ($itemPct / 100.0));
-                $total = max(0.0, $discounted * $qty);
+                $total = max(0.0, $price * (1 - ($itemPct / 100.0)) * $qty);
                 $item->add_meta_data('_hp_rw_item_discount_percent', $itemPct, true);
             }
 
