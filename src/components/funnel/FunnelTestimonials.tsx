@@ -273,51 +273,109 @@ export const FunnelTestimonials = ({
 
         {/* Carousel/Slider Layout */}
         {layout === 'carousel' && (
-          <div className="relative">
+          <div className="relative px-12 md:px-16">
+            {/* Navigation arrows - positioned outside cards */}
+            {testimonials.length > 1 && (
+              <button
+                onClick={() => scrollCarousel('prev')}
+                disabled={currentIndex === 0}
+                className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:scale-110"
+                style={{ 
+                  backgroundColor: 'var(--hp-funnel-card-bg, #1a1a1a)',
+                  border: '1px solid var(--hp-funnel-border, #7c3aed)',
+                  color: 'var(--hp-funnel-text-basic, #e5e5e5)',
+                }}
+              >
+                <ArrowLeftIcon />
+              </button>
+            )}
+
             <div 
               ref={carouselRef}
-              className="overflow-x-auto pb-4 scroll-smooth"
+              className="overflow-x-auto scroll-smooth"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-              <style>{`.hp-funnel-testimonials .carousel-container::-webkit-scrollbar { display: none; }`}</style>
+              <style>{`.hp-funnel-testimonials::-webkit-scrollbar { display: none; }`}</style>
               <div 
-                className="carousel-container flex gap-6 px-4"
+                className="flex gap-6"
                 style={{ minWidth: 'max-content' }}
               >
-                {testimonials.map((testimonial, index) => 
-                  renderTestimonialCard(testimonial, index, true)
-                )}
+                {testimonials.map((testimonial, index) => (
+                  <div
+                    key={index}
+                    className="testimonial-card rounded-xl p-6 flex-shrink-0"
+                    style={{
+                      ...cardStyle,
+                      width: 'min(600px, 80vw)',
+                      minHeight: 'auto',
+                    }}
+                  >
+                    {/* Quote icon and stars row */}
+                    <div className="flex items-center justify-between mb-3">
+                      <QuoteIcon />
+                      {showRatings && renderRating(testimonial.rating)}
+                    </div>
+
+                    {testimonial.title && (
+                      <h3 
+                        className="text-lg font-bold mb-2"
+                        style={{ color: 'var(--hp-funnel-text-accent, #eab308)' }}
+                      >
+                        {testimonial.title}
+                      </h3>
+                    )}
+
+                    <p 
+                      className="italic mb-4 leading-relaxed line-clamp-4"
+                      style={{ color: 'var(--hp-funnel-text-basic, #e5e5e5)' }}
+                    >
+                      "{testimonial.quote}"
+                    </p>
+
+                    <div className="flex items-center gap-3">
+                      {testimonial.image && (
+                        <img
+                          src={testimonial.image}
+                          alt={testimonial.name}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      )}
+                      <div>
+                        <p 
+                          className="font-semibold text-sm"
+                          style={{ color: 'var(--hp-funnel-text-basic, #e5e5e5)' }}
+                        >
+                          — {testimonial.name}
+                        </p>
+                        {testimonial.role && (
+                          <p 
+                            className="text-xs"
+                            style={{ color: 'var(--hp-funnel-text-note, #a3a3a3)' }}
+                          >
+                            {testimonial.role}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Navigation arrows */}
+            {/* Right arrow */}
             {testimonials.length > 1 && (
-              <>
-                <button
-                  onClick={() => scrollCarousel('prev')}
-                  disabled={currentIndex === 0}
-                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 md:-translate-x-4 w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                  style={{ 
-                    backgroundColor: 'var(--hp-funnel-page-bg, #121212)',
-                    border: '1px solid var(--hp-funnel-border, #7c3aed)',
-                    color: 'var(--hp-funnel-text-basic, #e5e5e5)',
-                  }}
-                >
-                  <ArrowLeftIcon />
-                </button>
-                <button
-                  onClick={() => scrollCarousel('next')}
-                  disabled={currentIndex >= testimonials.length - 1}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 md:translate-x-4 w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                  style={{ 
-                    backgroundColor: 'var(--hp-funnel-page-bg, #121212)',
-                    border: '1px solid var(--hp-funnel-border, #7c3aed)',
-                    color: 'var(--hp-funnel-text-basic, #e5e5e5)',
-                  }}
-                >
-                  <ArrowRightIcon />
-                </button>
-              </>
+              <button
+                onClick={() => scrollCarousel('next')}
+                disabled={currentIndex >= testimonials.length - 1}
+                className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:scale-110"
+                style={{ 
+                  backgroundColor: 'var(--hp-funnel-card-bg, #1a1a1a)',
+                  border: '1px solid var(--hp-funnel-border, #7c3aed)',
+                  color: 'var(--hp-funnel-text-basic, #e5e5e5)',
+                }}
+              >
+                <ArrowRightIcon />
+              </button>
             )}
           </div>
         )}
