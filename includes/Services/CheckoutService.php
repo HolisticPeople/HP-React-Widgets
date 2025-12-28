@@ -384,7 +384,10 @@ class CheckoutService
         // Set payment method (reflect the funnel's stripe mode if available)
         $draftStripeMode = isset($draftData['stripe_mode']) ? (string) $draftData['stripe_mode'] : null;
         $stripeService = new StripeService($draftStripeMode);
-        $paymentMethodTitle = 'HP React Widgets (Stripe - ' . ucfirst($stripeService->mode) . ')';
+        
+        $modeLabel = ($stripeService->mode === 'test') ? ' (Test)' : '';
+        $paymentMethodTitle = 'HP Express Shop' . $modeLabel;
+        
         $order->set_payment_method('hp_rw_stripe');
         $order->set_payment_method_title($paymentMethodTitle);
 
