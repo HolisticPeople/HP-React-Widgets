@@ -388,16 +388,30 @@ export const CheckoutStep = ({
   // Ref to hold fetch shipping function without causing dependency changes
   const fetchShippingRatesRef = useRef<() => Promise<void>>(async () => {});
   
+  // DEBUG: Track shipping rate state
+  const debugShipping = true; // Set to false for production
+  
   // Update the ref whenever dependencies change
   useEffect(() => {
     fetchShippingRatesRef.current = async () => {
       const items = getCartItems();
-      if (items.length === 0) return;
+      if (items.length === 0) {
+        if (debugShipping) console.log('[SHIPPING DEBUG] Skipped fetch: no items');
+        return;
+      }
       
-      if (!formData.zipCode || !formData.country || !formData.address) return;
+      if (!formData.zipCode || !formData.country || !formData.address) {
+        if (debugShipping) console.log('[SHIPPING DEBUG] Skipped fetch: missing address fields', {
+          hasZip: !!formData.zipCode,
+          hasCountry: !!formData.country,
+          hasAddress: !!formData.address,
+        });
+        return;
+      }
       
       // For free shipping countries, set free rate
       if (isFreeShipping) {
+        if (debugShipping) console.log('[SHIPPING DEBUG] Free shipping country, setting free rate');
         const freeRate: ShippingRate = {
           serviceCode: 'free_shipping',
           serviceName: 'Free Shipping',
@@ -421,8 +435,16 @@ export const CheckoutStep = ({
         email: formData.email,
       };
       
+      if (debugShipping) console.log('[SHIPPING DEBUG] >>> FETCHING RATES for:', {
+        country: formData.country,
+        zip: formData.zipCode,
+        items: items.map(i => `${i.sku}:${i.qty}`).join(','),
+        timestamp: new Date().toISOString(),
+      });
+      
       try {
         const rates = await api.getShippingRates(address, items);
+        if (debugShipping) console.log('[SHIPPING DEBUG] <<< RECEIVED RATES:', rates.length, 'rates', rates.map(r => `${r.serviceName}: $${(r.shipmentCost + r.otherCost).toFixed(2)}`));
         if (rates.length > 0) {
           setShippingRates(rates);
           // Select the first rate by default - cost will be calculated by shippingCost useMemo
@@ -503,22 +525,42 @@ export const CheckoutStep = ({
   // Uses ref to avoid dependency on the fetch function itself
   useEffect(() => {
     const hasCore = formData.address && formData.city && formData.zipCode && formData.country.length >= 2;
-    if (!hasCore) return;
+    if (!hasCore) {
+      if (debugShipping) console.log('[SHIPPING DEBUG] useEffect: missing core address fields, skipping');
+      return;
+    }
     
     const items = getCartItems();
     const itemsKey = items.map(i => `${i.sku}:${i.qty}`).join(',');
     const newShippingKey = `${formData.country}|${formData.zipCode}|${itemsKey}`;
     
+    if (debugShipping) console.log('[SHIPPING DEBUG] useEffect triggered:', {
+      newKey: newShippingKey,
+      oldKey: shippingKeyRef.current,
+      changed: newShippingKey !== shippingKeyRef.current,
+    });
+    
     // Only fetch if shipping key actually changed
-    if (newShippingKey === shippingKeyRef.current) return;
+    if (newShippingKey === shippingKeyRef.current) {
+      if (debugShipping) console.log('[SHIPPING DEBUG] Key unchanged, skipping fetch');
+      return;
+    }
     shippingKeyRef.current = newShippingKey;
+    
+    if (debugShipping) console.log('[SHIPPING DEBUG] Key CHANGED! Clearing rates and scheduling fetch...');
     
     // Clear stale rates while fetching new ones
     setShippingRates([]);
     onSelectRateRef.current(null as unknown as ShippingRate);
     
-    const timer = setTimeout(() => fetchShippingRatesRef.current(), 500);
-    return () => clearTimeout(timer);
+    const timer = setTimeout(() => {
+      if (debugShipping) console.log('[SHIPPING DEBUG] Debounce timer fired, executing fetch');
+      fetchShippingRatesRef.current();
+    }, 500);
+    return () => {
+      if (debugShipping) console.log('[SHIPPING DEBUG] Cleanup: clearing debounce timer');
+      clearTimeout(timer);
+    };
   }, [formData.address, formData.city, formData.zipCode, formData.country, getCartItems]);
   
   // Fetch totals when address changes (separate from shipping rates)
@@ -632,10 +674,18 @@ export const CheckoutStep = ({
   // SIMPLIFIED: Compute shipping cost directly from selectedRate on every render
   // No complex state syncing - just derive from the source of truth
   const shippingCost = useMemo(() => {
-    if (!selectedRate) return 0;
+    if (!selectedRate) {
+      if (debugShipping) console.log('[SHIPPING DEBUG] shippingCost: no selectedRate, returning 0');
+      return 0;
+    }
     const serviceCode = getServiceCode(selectedRate);
-    if (serviceCode === 'free_shipping') return 0;
-    return extractShippingCost(selectedRate);
+    if (serviceCode === 'free_shipping') {
+      if (debugShipping) console.log('[SHIPPING DEBUG] shippingCost: free shipping');
+      return 0;
+    }
+    const cost = extractShippingCost(selectedRate);
+    if (debugShipping) console.log('[SHIPPING DEBUG] shippingCost DISPLAYED:', cost, 'from', selectedRate.serviceName);
+    return cost;
   }, [selectedRate]);
   
   
