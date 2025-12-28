@@ -378,8 +378,6 @@ class CheckoutApi
                 }
             }
             $qty = max(1, $item->get_quantity());
-            
-            // USE FULL REGULAR PRICE FOR SUMMARY LIST TO MATCH USER'S CONSISTENCY REQUEST
             $regularUnitPrice = (float) ($item->get_subtotal() / $qty);
 
             $items[] = [
@@ -424,14 +422,18 @@ class CheckoutApi
         foreach ($items as $it) $itemsSum += $it['total'];
         
         $shippingTotal = (float) $order->get_shipping_total();
-        $calculatedGrandTotal = $itemsSum + $shippingTotal - $extraDiscounts - $pointsRedeemed['value'];
+        
+        // NOW INCLUDE item-level discounts in the final discount line
+        $totalDiscount = (float) $order->get_discount_total() + $extraDiscounts;
+
+        $calculatedGrandTotal = $itemsSum + $shippingTotal - $totalDiscount - $pointsRedeemed['value'];
 
         return new WP_REST_Response([
             'success'         => true,
             'order_id'        => $order->get_id(),
             'order_number'    => $order->get_order_number(),
             'items'           => $items,
-            'items_discount'  => (float) $extraDiscounts,
+            'items_discount'  => (float) $totalDiscount,
             'points_redeemed' => $pointsRedeemed,
             'shipping_total'  => $shippingTotal,
             'grand_total'     => (float) max(0, $calculatedGrandTotal),

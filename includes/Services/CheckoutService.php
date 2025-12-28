@@ -14,23 +14,12 @@ if (!defined('ABSPATH')) {
 
 /**
  * Checkout service for managing order drafts and creating WooCommerce orders.
- * 
- * Handles the complete checkout flow including:
- * - Order draft storage (for multi-step checkout)
- * - Totals calculation with discounts and points
- * - Order creation from completed payments
  */
 class CheckoutService
 {
     private const TRANSIENT_PREFIX = 'hp_rw_draft_';
     private const TTL = 2 * HOUR_IN_SECONDS;
 
-    /**
-     * Create a new order draft.
-     * 
-     * @param array $payload Draft data including items, customer, address, etc.
-     * @return string Draft ID
-     */
     public function createDraft(array $payload): string
     {
         $id = uniqid('hprw_', true);
@@ -38,44 +27,19 @@ class CheckoutService
         return $id;
     }
 
-    /**
-     * Get an order draft by ID.
-     * 
-     * @param string $id Draft ID
-     * @return array|null Draft data or null if not found
-     */
     public function getDraft(string $id): ?array
     {
         $raw = get_transient(self::TRANSIENT_PREFIX . $id);
-        if (!$raw) {
-            return null;
-        }
+        if (!$raw) return null;
         $data = json_decode((string) $raw, true);
         return is_array($data) ? $data : null;
     }
 
-    /**
-     * Delete an order draft.
-     * 
-     * @param string $id Draft ID
-     */
     public function deleteDraft(string $id): void
     {
         delete_transient(self::TRANSIENT_PREFIX . $id);
     }
 
-    /**
-     * Calculate totals for a cart.
-     * 
-     * @param array $items Array of items with sku, qty
-     * @param array $address Shipping address
-     * @param array|null $selectedRate Selected shipping rate with serviceName, amount
-     * @param int $pointsToRedeem Points to redeem
-     * @param float $globalDiscountPercent Global discount percentage
-     * @param array $funnelConfig Optional funnel-specific config for per-item discounts
-     * @param float|null $offerTotal Admin-set total price for entire offer
-     * @return array Totals breakdown
-     */
     public function calculateTotals(
         array $items,
         array $address,
@@ -86,73 +50,83 @@ class CheckoutService
         ?float $offerTotal = null
     ): array {
         $order_id = 0;
-        
         try {
             $order = wc_create_order(['status' => 'auto-draft']);
             $order_id = $order->get_id();
 
-            $totalRegularItemsPrice = 0.0;
-
-            // Add items
+            // First pass: Resolve products and calculate sum of regular prices
+            $resolvedItems = [];
+            $sumRegularPrice = 0.0;
             foreach ($items as $it) {
                 $qty = max(1, (int) ($it['qty'] ?? 1));
                 $product = Resolver::resolveProductFromItem((array) $it);
-                if (!$product) {
-                    continue;
-                }
+                if (!$product) continue;
+
+                $regPrice = (float) $product->get_regular_price();
+                if ($regPrice <= 0) $regPrice = (float) $product->get_price();
+                
+                $sumRegularPrice += ($regPrice * $qty);
+                $resolvedItems[] = [
+                    'product' => $product,
+                    'qty' => $qty,
+                    'regPrice' => $regPrice,
+                    'originalItem' => $it
+                ];
+            }
+
+            // Second pass: Add items to order with proper subtotal/total
+            $runningTotal = 0.0;
+            $count = count($resolvedItems);
+            foreach ($resolvedItems as $idx => $ri) {
+                $product = $ri['product'];
+                $qty = $ri['qty'];
+                $regPrice = $ri['regPrice'];
+                $it = $ri['originalItem'];
 
                 $item = new WC_Order_Item_Product();
                 $item->set_product($product);
                 $item->set_quantity($qty);
-                
-                if (!empty($it['label'])) {
-                    $item->set_name($product->get_name() . ' ' . $it['label']);
+                if (!empty($it['label'])) $item->set_name($product->get_name() . ' ' . $it['label']);
+
+                $subtotal = $regPrice * $qty;
+                $total = $subtotal;
+
+                if ($offerTotal !== null && $offerTotal > 0 && $sumRegularPrice > 0) {
+                    // Distribute offer total proportionally
+                    if ($idx === $count - 1) {
+                        $total = $offerTotal - $runningTotal;
+                    } else {
+                        $total = round(($subtotal / $sumRegularPrice) * $offerTotal, 2);
+                        $runningTotal += $total;
+                    }
+                } else {
+                    // Standard discount logic
+                    $salePrice = isset($it['salePrice']) ? (float) $it['salePrice'] : (isset($it['sale_price']) ? (float) $it['sale_price'] : null);
+                    $price = ($salePrice !== null) ? $salePrice : (float) $product->get_price();
+                    
+                    $itemPct = isset($it['item_discount_percent']) ? (float) $it['item_discount_percent'] : (isset($it['itemDiscountPercent']) ? (float) $it['itemDiscountPercent'] : null);
+                    if ($itemPct !== null && $itemPct > 0) {
+                        $total = max(0.0, $regPrice * (1 - ($itemPct / 100.0)) * $qty);
+                    } else if ($regPrice > 0 && abs($price - $regPrice) > 0.01) {
+                        $total = $price * $qty;
+                    }
                 }
-
-                $regularPrice = (float) $product->get_regular_price();
-                if ($regularPrice <= 0) {
-                    $regularPrice = (float) $product->get_price();
-                }
-                
-                $salePrice = isset($it['salePrice']) ? (float) $it['salePrice'] : (isset($it['sale_price']) ? (float) $it['sale_price'] : null);
-                $price = ($salePrice !== null) ? $salePrice : (float) $product->get_price();
-
-                $subtotal = $regularPrice * $qty;
-                $total = $price * $qty;
-                
-                $totalRegularItemsPrice += $subtotal;
-
-                // Handle item-level discounts
-                $excludeGd = !empty($it['exclude_global_discount']) || !empty($it['excludeGlobalDiscount']);
-                $itemPct = isset($it['item_discount_percent']) ? (float) $it['item_discount_percent'] : (isset($it['itemDiscountPercent']) ? (float) $it['itemDiscountPercent'] : null);
-
-                if ($itemPct !== null && $itemPct > 0) {
-                    $total = max(0.0, $regularPrice * (1 - ($itemPct / 100.0)) * $qty);
-                    $item->add_meta_data('_hp_rw_item_discount_percent', $itemPct, true);
-                } else if ($regularPrice > 0 && abs($price - $regularPrice) > 0.01) {
-                    $itemPct = round((1 - ($price / $regularPrice)) * 100, 2);
-                    $item->add_meta_data('_hp_rw_item_discount_percent', $itemPct, true);
-                }
-                
-                if ($excludeGd) {
-                    $item->add_meta_data('_hp_rw_exclude_global_discount', '1', true);
-                }
-
-                // Store pre-coupon price for summary
-                $item->add_meta_data('_hp_rw_funnel_price', ($total / $qty), true);
 
                 $item->set_subtotal($subtotal);
                 $item->set_total($total);
                 $item->set_total_tax(0);
                 $item->set_subtotal_tax(0);
+                
+                // Meta for identification
+                $excludeGd = !empty($it['exclude_global_discount']) || !empty($it['excludeGlobalDiscount']);
+                if ($excludeGd) $item->add_meta_data('_hp_rw_exclude_global_discount', '1', true);
+                
                 $order->add_item($item);
             }
 
-            // Set addresses
             $this->applyAddress($order, 'billing', $address);
             $this->applyAddress($order, 'shipping', $address);
 
-            // Add shipping
             $shippingTotal = 0.0;
             if ($selectedRate && isset($selectedRate['amount'])) {
                 $shippingTotal = (float) $selectedRate['amount'];
@@ -162,56 +136,30 @@ class CheckoutService
                 $order->add_item($ship);
             }
 
-            // First calculation
             $order->calculate_totals(false);
 
-            // Global discount logic (only if offerTotal is not set)
+            // Global discount (only if not an explicit offer bundle)
             $globalDiscount = 0.0;
             if ($offerTotal === null && $globalDiscountPercent > 0.0) {
                 $productsGross = 0.0;
                 foreach ($order->get_items() as $item) {
                     if (!$item instanceof WC_Order_Item_Product) continue;
                     if ($item->get_meta('_hp_rw_exclude_global_discount')) continue;
-                    $productsGross += (float) $item->get_subtotal();
+                    $productsGross += (float) $item->get_total();
                 }
                 $globalDiscount = round($productsGross * ($globalDiscountPercent / 100.0), 2);
                 if ($globalDiscount > 0.0) {
                     $fee = new WC_Order_Item_Fee();
                     $fee->set_name('Global discount (' . $globalDiscountPercent . '%)');
-                    $fee->set_amount(-1 * $globalDiscount);
                     $fee->set_total(-1 * $globalDiscount);
                     $order->add_item($fee);
                 }
             }
 
-            $allProductsSubtotal = (float) $order->get_subtotal();
-            $discountTotal = (float) $order->get_discount_total();
-            $productsNet = max(0.0, $allProductsSubtotal - $discountTotal - $globalDiscount);
-
-            // If offerTotal is set, we use it to calculate a single "Savings" fee
-            // This ensures the items can be full price in WC while the order total remains correct.
-            if ($offerTotal !== null && $offerTotal > 0) {
-                // We recalculate productsNet based on the requested offer price
-                $productsNet = $offerTotal;
-                
-                // Clear any existing per-item discount logic from the running total
-                // (The totals in the $order object currently reflect the item totals set above)
-                $currentItemsSum = 0.0;
-                foreach ($order->get_items() as $it) {
-                    if ($it instanceof WC_Order_Item_Product) $currentItemsSum += (float) $it->get_total();
-                }
-                
-                $diff = $offerTotal - $currentItemsSum;
-                if (abs($diff) > 0.01) {
-                    $fee = new WC_Order_Item_Fee();
-                    $fee->set_name($diff < 0 ? 'Offer Savings' : 'Package Adjustment');
-                    $fee->set_amount($diff);
-                    $fee->set_total($diff);
-                    $order->add_item($fee);
-                }
-            }
-
-            // Points redemption
+            $order->calculate_totals(false);
+            $productsNet = (float) $order->get_subtotal() - (float) $order->get_discount_total();
+            
+            // We need the net price for fees and points (already includes item discounts)
             $pointsService = new PointsService();
             $pointsDiscount = 0.0;
             if ($pointsToRedeem > 0 && $productsNet > 0) {
@@ -219,17 +167,15 @@ class CheckoutService
                 if ($pointsDiscount > 0) {
                     $fee = new WC_Order_Item_Fee();
                     $fee->set_name('Points redemption');
-                    $fee->set_amount(-1 * $pointsDiscount);
                     $fee->set_total(-1 * $pointsDiscount);
                     $order->add_item($fee);
                 }
             }
 
-            // Final calculation
             $order->calculate_totals(false);
 
             return [
-                'subtotal'            => $allProductsSubtotal,
+                'subtotal'            => (float) $order->get_subtotal(),
                 'discount_total'      => (float) $order->get_discount_total(),
                 'shipping_total'      => $shippingTotal,
                 'tax_total'           => (float) $order->get_total_tax(),
@@ -240,15 +186,10 @@ class CheckoutService
                 'grand_total'         => (float) $order->get_total(),
             ];
         } finally {
-            if ($order_id > 0) {
-                wp_delete_post($order_id, true);
-            }
+            if ($order_id > 0) wp_delete_post($order_id, true);
         }
     }
 
-    /**
-     * Create a WooCommerce order from a completed checkout.
-     */
     public function createOrderFromDraft(
         array $draftData,
         string $stripeCustomerId,
@@ -277,55 +218,73 @@ class CheckoutService
             if ($user) $order->set_customer_id($user->ID);
         }
 
-        // Add items with FULL prices first to ensure WC stability.
-        // We will apply the discount as a single fee if offerTotal is present.
+        // Calculate sum of regular prices for proportional distribution
+        $sumRegularPrice = 0.0;
+        $resolvedItems = [];
         foreach ($items as $it) {
             $qty = max(1, (int) ($it['qty'] ?? 1));
             $product = Resolver::resolveProductFromItem((array) $it);
             if (!$product) continue;
 
+            $regPrice = (float) $product->get_regular_price();
+            if ($regPrice <= 0) $regPrice = (float) $product->get_price();
+            
+            $sumRegularPrice += ($regPrice * $qty);
+            $resolvedItems[] = ['product' => $product, 'qty' => $qty, 'regPrice' => $regPrice, 'originalItem' => $it];
+        }
+
+        $runningTotal = 0.0;
+        $count = count($resolvedItems);
+        foreach ($resolvedItems as $idx => $ri) {
+            $product = $ri['product'];
+            $qty = $ri['qty'];
+            $regPrice = $ri['regPrice'];
+            $it = $ri['originalItem'];
+
             $item = new WC_Order_Item_Product();
             $item->set_product($product);
             $item->set_quantity($qty);
-            
-            if (!empty($it['label'])) {
-                $item->set_name($product->get_name() . ' ' . $it['label']);
+            if (!empty($it['label'])) $item->set_name($product->get_name() . ' ' . $it['label']);
+
+            $subtotal = $regPrice * $qty;
+            $total = $subtotal;
+
+            if ($offerTotal !== null && $offerTotal > 0 && $sumRegularPrice > 0) {
+                if ($idx === $count - 1) {
+                    $total = $offerTotal - $runningTotal;
+                } else {
+                    $total = round(($subtotal / $sumRegularPrice) * $offerTotal, 2);
+                    $runningTotal += $total;
+                }
+            } else {
+                $salePrice = isset($it['salePrice']) ? (float) $it['salePrice'] : (isset($it['sale_price']) ? (float) $it['sale_price'] : null);
+                $price = ($salePrice !== null) ? $salePrice : (float) $product->get_price();
+                $itemPct = isset($it['item_discount_percent']) ? (float) $it['item_discount_percent'] : (isset($it['itemDiscountPercent']) ? (float) $it['itemDiscountPercent'] : null);
+                
+                if ($itemPct !== null && $itemPct > 0) {
+                    $total = max(0.0, $regPrice * (1 - ($itemPct / 100.0)) * $qty);
+                } else if ($regPrice > 0 && abs($price - $regPrice) > 0.01) {
+                    $total = $price * $qty;
+                }
             }
 
-            $regularPrice = (float) $product->get_regular_price();
-            if ($regularPrice <= 0) $regularPrice = (float) $product->get_price();
-            
-            $salePrice = isset($it['salePrice']) ? (float) $it['salePrice'] : (isset($it['sale_price']) ? (float) $it['sale_price'] : null);
-            $price = ($salePrice !== null) ? $salePrice : (float) $product->get_price();
+            $item->set_subtotal($subtotal);
+            $item->set_total($total);
+            $item->set_total_tax(0);
+            $item->set_subtotal_tax(0);
 
-            // If we have an explicit offer total, we set items to FULL price and handle savings as a fee.
-            // If NOT, we set them to discounted price.
-            $finalPrice = ($offerTotal !== null) ? $regularPrice : $price;
-            $subtotal = $regularPrice * $qty;
-            $total = $finalPrice * $qty;
-
-            // Handle metadata for EAO display
-            $itemPct = isset($it['item_discount_percent']) ? (float) $it['item_discount_percent'] : (isset($it['itemDiscountPercent']) ? (float) $it['itemDiscountPercent'] : null);
-            if ($itemPct === null && $regularPrice > 0 && abs($price - $regularPrice) > 0.01) {
-                $itemPct = round((1 - ($price / $regularPrice)) * 100, 2);
-            }
-            if ($itemPct > 0) {
-                $item->add_meta_data('_eao_item_discount_percent', $itemPct, true);
-                $item->add_meta_data('_hp_rw_item_discount_percent', $itemPct, true);
+            // Metadata for EAO
+            $discountAmt = $subtotal - $total;
+            if ($discountAmt > 0 && $subtotal > 0) {
+                $pct = round(($discountAmt / $subtotal) * 100, 2);
+                $item->add_meta_data('_eao_item_discount_percent', $pct, true);
+                $item->add_meta_data('_hp_rw_item_discount_percent', $pct, true);
             }
             if (!empty($it['exclude_global_discount']) || !empty($it['excludeGlobalDiscount'])) {
                 $item->add_meta_data('_eao_exclude_global_discount', '1', true);
                 $item->add_meta_data('_hp_rw_exclude_global_discount', '1', true);
             }
 
-            // Always store the real funnel price (discounted) for summary display
-            $realDiscountedPrice = ($salePrice !== null) ? $salePrice : $price;
-            $item->add_meta_data('_hp_rw_funnel_price', $realDiscountedPrice, true);
-
-            $item->set_subtotal($subtotal);
-            $item->set_total($total);
-            $item->set_total_tax(0);
-            $item->set_subtotal_tax(0);
             $order->add_item($item);
         }
 
@@ -342,47 +301,25 @@ class CheckoutService
 
         $order->calculate_totals(false);
 
-        // Global discount logic (if no offerTotal)
+        // Global discount logic
         $globalDiscountPercent = (float) ($draftData['global_discount_percent'] ?? 0);
         if ($offerTotal === null && $globalDiscountPercent > 0) {
-            $productsGross = 0.0;
+            $productsNet = 0.0;
             foreach ($order->get_items() as $item) {
                 if (!$item instanceof WC_Order_Item_Product) continue;
                 if ($item->get_meta('_hp_rw_exclude_global_discount')) continue;
-                $productsGross += (float) $item->get_subtotal();
+                $productsNet += (float) $item->get_total();
             }
-            $globalDiscount = round($productsGross * ($globalDiscountPercent / 100.0), 2);
+            $globalDiscount = round($productsNet * ($globalDiscountPercent / 100.0), 2);
             if ($globalDiscount > 0.0) {
                 $fee = new \WC_Order_Item_Fee();
                 $fee->set_name('Global discount (' . $globalDiscountPercent . '%)');
-                $fee->set_amount(-1 * $globalDiscount);
                 $fee->set_total(-1 * $globalDiscount);
                 $order->add_item($fee);
             }
         }
 
-        $order->calculate_totals(false);
-
-        // Savings fee for offer-based orders
-        if ($offerTotal !== null && $offerTotal > 0) {
-            $currentItemsSum = 0.0;
-            foreach ($order->get_items() as $it) {
-                if ($it instanceof WC_Order_Item_Product) $currentItemsSum += (float) $it->get_total();
-            }
-            $diff = $offerTotal - $currentItemsSum;
-            if (abs($diff) > 0.01) {
-                $savingsFee = new \WC_Order_Item_Fee();
-                $savingsFee->set_name($diff < 0 ? 'Offer Savings' : 'Package Adjustment');
-                $savingsFee->set_amount($diff);
-                $savingsFee->set_total($diff);
-                $order->add_item($savingsFee);
-            }
-        }
-
-        // Points redemption last
-        if ($pointsToRedeem > 0) {
-            $this->applyPointsRedemption($order, $pointsToRedeem);
-        }
+        if ($pointsToRedeem > 0) $this->applyPointsRedemption($order, $pointsToRedeem);
 
         $order->update_meta_data('_hp_rw_stripe_customer_id', $stripeCustomerId);
         $order->update_meta_data('_hp_rw_stripe_pi_id', $stripePaymentIntentId);
@@ -405,9 +342,6 @@ class CheckoutService
         return $order;
     }
 
-    /**
-     * Apply points redemption using a YITH-compatible coupon.
-     */
     private function applyPointsRedemption(WC_Order $order, int $points): void
     {
         $pointsService = new PointsService();
@@ -436,9 +370,6 @@ class CheckoutService
         $order->update_meta_data('_ywpar_coupon_amount', $discountAmount);
     }
 
-    /**
-     * Add items to an existing order (for upsells).
-     */
     public function addItemsToOrder(WC_Order $order, array $items): float
     {
         $addedTotal = 0.0;
@@ -451,24 +382,23 @@ class CheckoutService
             $item->set_product($product);
             $item->set_quantity($qty);
 
-            $regularPrice = (float) $product->get_regular_price();
-            if ($regularPrice <= 0) $regularPrice = (float) $product->get_price();
+            $regPrice = (float) $product->get_regular_price();
+            if ($regPrice <= 0) $regPrice = (float) $product->get_price();
             $price = (float) $product->get_price();
             
             $itemPct = isset($it['item_discount_percent']) ? (float) $it['item_discount_percent'] : (isset($it['itemDiscountPercent']) ? (float) $it['itemDiscountPercent'] : null);
-            if ($itemPct === null && $regularPrice > 0 && abs($price - $regularPrice) > 0.01) {
-                $itemPct = round((1 - ($price / $regularPrice)) * 100, 2);
+            if ($itemPct === null && $regPrice > 0 && abs($price - $regPrice) > 0.01) {
+                $itemPct = round((1 - ($price / $regPrice)) * 100, 2);
             }
 
-            $finalPrice = ($itemPct > 0) ? $regularPrice * (1 - ($itemPct / 100)) : $price;
+            $finalPrice = ($itemPct > 0) ? $regPrice * (1 - ($itemPct / 100)) : $price;
             $total = $finalPrice * $qty;
 
             if ($itemPct > 0) {
                 $item->add_meta_data('_eao_item_discount_percent', $itemPct, true);
                 $item->add_meta_data('_hp_rw_item_discount_percent', $itemPct, true);
             }
-            $item->add_meta_data('_hp_rw_funnel_price', $finalPrice, true);
-            $item->set_subtotal($regularPrice * $qty);
+            $item->set_subtotal($regPrice * $qty);
             $item->set_total($total);
             $item->add_meta_data('_hp_rw_upsell_item', '1', true);
             $order->add_item($item);
@@ -479,15 +409,9 @@ class CheckoutService
         return $addedTotal;
     }
 
-    /**
-     * Apply address fields to a WooCommerce order.
-     */
     private function applyAddress($order, string $type, array $addr): void
     {
-        $map = [
-            'first_name', 'last_name', 'company', 'address_1', 'address_2',
-            'city', 'state', 'postcode', 'country', 'phone', 'email'
-        ];
+        $map = ['first_name', 'last_name', 'company', 'address_1', 'address_2', 'city', 'state', 'postcode', 'country', 'phone', 'email'];
         foreach ($map as $key) {
             $method = "set_{$type}_{$key}";
             if (method_exists($order, $method) && isset($addr[$key])) {
