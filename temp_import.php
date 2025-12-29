@@ -1,0 +1,148 @@
+<?php
+require_once 'wp-load.php';
+$data = [
+  'funnel' => [
+    'name' => '3-Week Liver & Gallbladder Cleanse',
+    'slug' => 'liver-detox-protocol',
+    'status' => 'active'
+  ],
+  'header' => [
+    'sticky' => true,
+    'transparent' => true
+  ],
+  'hero' => [
+    'title' => 'Revitalize Your Health with the Ultimate 3-Week Liver Cleanse',
+    'subtitle' => 'Eliminate toxins, boost energy, and restore your body\'s first line of defense with our science-backed natural protocol.',
+    'tagline' => 'A science-backed protocol for profound systemic detoxification.',
+    'description' => 'Your liver filters one-fourth of your total blood volume every minute. When it\'s sluggish, your entire body suffers. Our 3-week protocol is designed to eliminate \'toxic sludge\' and restore peak organ function.',
+    'cta_text' => 'Start Your Cleanse Today'
+  ],
+  'benefits' => [
+    'title' => 'Why Your Liver Needs This Cleanse',
+    'items' => [
+      ['text' => 'Eliminates accumulated fatty toxic sludge from the liver and gallbladder.', 'icon' => 'shield'],
+      ['text' => 'Filters environmental carcinogens and toxins from your bloodstream.', 'icon' => 'check'],
+      ['text' => 'Regulates and maintains healthy blood sugar and cholesterol levels.', 'icon' => 'bolt'],
+      ['text' => 'Boosts natural energy levels by reducing metabolic exhaustion.', 'icon' => 'star'],
+      ['text' => 'Improves lymphatic circulation and nutrient assimilation.', 'icon' => 'heart'],
+      ['text' => '100% natural protocol using high-bioavailability nutrients.', 'icon' => 'leaf']
+    ]
+  ],
+  'offers' => [
+    [
+      'id' => 'full-cleanse-bundle',
+      'name' => 'Complete 3-Week Cleanse Kit',
+      'description' => 'Everything you need for the full 3-week protocol including the preparation phase and the final flush.',
+      'type' => 'fixed_bundle',
+      'badge' => 'BEST VALUE',
+      'is_featured' => true,
+      'discount_label' => 'Save 23%',
+      'discount_type' => 'percent',
+      'discount_value' => 23,
+      'bundle_items' => [
+        ['sku' => 'PRLabS-02355', 'qty' => 1],
+        ['sku' => 'PRLabD-02470', 'qty' => 1],
+        ['sku' => 'PRLabS-02411', 'qty' => 1],
+        ['sku' => 'PRLabS-01505', 'qty' => 1],
+        ['sku' => 'PRLabD-04520', 'qty' => 1],
+        ['sku' => 'PRLabD-02447', 'qty' => 1],
+        ['sku' => 'WWB-RCP-Tea125', 'qty' => 1]
+      ]
+    ],
+    [
+      'id' => 'custom-cleanse-kit',
+      'name' => 'Build Your Own Cleanse',
+      'description' => 'Need to restock specific protocol items? Customize your kit here.',
+      'type' => 'customizable_kit',
+      'badge' => 'CUSTOMIZE',
+      'discount_label' => 'Save up to 15%',
+      'max_total_items' => 10,
+      'kit_products' => [
+        ['sku' => 'PRLabS-02355', 'role' => 'optional', 'qty' => 0, 'max_qty' => 2, 'discount_type' => 'percent', 'discount_value' => 10],
+        ['sku' => 'PRLabD-02470', 'role' => 'optional', 'qty' => 0, 'max_qty' => 2, 'discount_type' => 'percent', 'discount_value' => 10],
+        ['sku' => 'PRLabS-02411', 'role' => 'optional', 'qty' => 0, 'max_qty' => 2, 'discount_type' => 'percent', 'discount_value' => 10],
+        ['sku' => 'WWB-RCP-Tea125', 'role' => 'optional', 'qty' => 0, 'max_qty' => 2, 'discount_type' => 'percent', 'discount_value' => 10]
+      ]
+    ]
+  ],
+  'features' => [
+    'title' => 'Protocol Essentials',
+    'subtitle' => 'Clinically-formulated nutrients for maximum detoxification.',
+    'items' => [
+      ['icon' => 'leaf', 'title' => 'Liver-ND & Gallbladder-ND', 'description' => 'Probiotic-fermented formulas for superior absorption and systemic support.'],
+      ['icon' => 'shield', 'title' => 'Castor Oil Packs', 'description' => 'Speed the removal of toxins surrounding cells and improve lymphatic flow.'],
+      ['icon' => 'bolt', 'title' => 'The 7th Day Flush', 'description' => 'A precise sequence of nutrients to safely eliminate gallstones and sludge.']
+    ]
+  ],
+  'authority' => [
+    'title' => 'Meet Dr. Gabriel Cousens',
+    'name' => 'Dr. Gabriel Cousens, M.D.',
+    'credentials' => 'MD, MD(H), DD, Diplomat of the American Board of Integrative Holistic Medicine',
+    'bio' => '<p>Dr. Gabriel Cousens is a world-renowned holistic physician and the founder of the Tree of Life Rejuvenation Center. With over 40 years of experience, he has supervised thousands through detoxification protocols, claiming the liver/gallbladder flush is the \'single greatest practice for improving health.\'</p>',
+    'quotes' => [
+      ['text' => 'The liver is our defensive shield. When it becomes exhausted, our entire health is compromised.'],
+      ['text' => 'A periodic liver cleanse is necessary for the elimination of old, accumulated fatty toxic sludge.']
+    ]
+  ],
+  'science' => [
+    'title' => 'The Science of the Cleanse',
+    'subtitle' => 'How the 3-week protocol works within your biology.',
+    'sections' => [
+      [
+        'title' => 'Weeks 1-2: Preparation',
+        'description' => 'Softening the \'sludge\' and opening detoxification pathways.',
+        'bullets' => [
+          'BiliVen and HepatoVen support liver cell regeneration.',
+          'Chanca Piedra tea helps break down calcium-based deposits.',
+          'Castor oil packs stimulate lymphatic drainage.'
+        ]
+      ],
+      [
+        'title' => 'Week 3: The Flush',
+        'description' => 'The active elimination phase culminating in Day 7.',
+        'bullets' => [
+          'Increased dosage of Gallbladder support.',
+          'Elimination of fats to build \'bile pressure\'.',
+          'The Olive Oil and Citrus flush to safely eject stones.'
+        ]
+      ]
+    ]
+  ],
+  'faq' => [
+    'title' => 'Cleanse Questions',
+    'items' => [
+      ['question' => 'Is this cleanse safe?', 'answer' => 'Yes, our protocol uses all-natural, food-grade nutrients and has been supervised by Dr. Cousens for over 25 years with thousands of successful cases.'],
+      ['question' => 'Will I see results immediately?', 'answer' => 'Many users report dramatic energy shifts overnight following the Day 7 flush, often passing visible gallstones.'],
+      ['question' => 'Can I eat while on the cleanse?', 'answer' => 'Yes, we recommend a diet of 80-90% raw, organic foods during the first two weeks to support the detoxification process.']
+    ]
+  ],
+  'checkout' => [
+    'url' => '/express-shop/liver-detox-protocol/checkout/',
+    'free_shipping_countries' => 'US',
+    'enable_points_redemption' => true
+  ],
+  'thankyou' => [
+    'url' => '/express-shop/liver-detox-protocol/thank-you/',
+    'headline' => 'Your Cleanse Journey Begins!',
+    'message' => 'Check your email for the detailed PDF protocol instructions.'
+  ],
+  'styling' => [
+    'accent_color' => '#10b981',
+    'page_bg_color' => '#0a0f0d',
+    'card_bg_color' => '#111816',
+    'text_color_basic' => '#e5e5e5',
+    'text_color_accent' => '#34d399',
+    'border_color' => '#065f46'
+  ],
+  'footer' => [
+    'disclaimer' => 'These statements have not been evaluated by the FDA. This product is not intended to diagnose, treat, cure or prevent any disease.',
+    'links' => [
+      ['label' => 'Privacy Policy', 'url' => '/privacy-policy/'],
+      ['label' => 'Terms of Service', 'url' => '/terms-of-service/']
+    ]
+  ]
+];
+
+$result = \HP_RW\Services\FunnelImporter::importFunnel($data, \HP_RW\Services\FunnelImporter::MODE_UPDATE);
+echo json_encode($result);
+

@@ -202,12 +202,23 @@ class FunnelImporter
 
             // Resolve products for this offer to build 'products_data' JSON
             $productsList = [];
-            
+            $discountType = $o['discount_type'] ?? 'none';
+            $discountValue = (float) ($o['discount_value'] ?? 0);
+            $calculatedPrice = 0;
+
             if ($o['type'] === 'single' && !empty($o['product_sku'])) {
-                $productsList[] = self::resolveProductForData($o['product_sku'], $o['quantity'] ?? 1, 'must');
+                $p = self::resolveProductForData($o['product_sku'], $o['quantity'] ?? 1, 'must', $discountType, $discountValue);
+                if ($p) {
+                    $productsList[] = $p;
+                    $calculatedPrice += $p['salePrice'] * $p['qty'];
+                }
             } elseif ($o['type'] === 'fixed_bundle' && !empty($o['bundle_items'])) {
                 foreach ($o['bundle_items'] as $item) {
-                    $productsList[] = self::resolveProductForData($item['sku'], $item['qty'] ?? 1, 'must');
+                    $p = self::resolveProductForData($item['sku'], $item['qty'] ?? 1, 'must', $discountType, $discountValue);
+                    if ($p) {
+                        $productsList[] = $p;
+                        $calculatedPrice += $p['salePrice'] * $p['qty'];
+                    }
                 }
             } elseif ($o['type'] === 'customizable_kit' && !empty($o['kit_products'])) {
                 foreach ($o['kit_products'] as $item) {
@@ -219,6 +230,11 @@ class FunnelImporter
                         $item['discount_value'] ?? 0
                     );
                 }
+            }
+
+            // If offer price is not set, use calculated price from items
+            if (empty($offer['offer_price']) && $calculatedPrice > 0) {
+                $offer['offer_price'] = round($calculatedPrice, 2);
             }
 
             // Remove nulls (unresolved products)
