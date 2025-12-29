@@ -252,7 +252,7 @@ class EconomicsDashboard
         $offersBelowThreshold = 0;
 
         foreach ($posts as $post) {
-            $funnelData = FunnelExporter::exportFunnel($post->ID);
+            $funnelData = FunnelExporter::exportById($post->ID);
             $offers = $funnelData['offers'] ?? [];
             
             $funnelMargins = [];

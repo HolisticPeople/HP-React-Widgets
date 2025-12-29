@@ -77,7 +77,7 @@ class FunnelListEnhancements
      */
     private static function renderEconomicsColumn(int $postId): void
     {
-        $funnelData = FunnelExporter::exportFunnel($postId);
+        $funnelData = FunnelExporter::exportById($postId);
         
         if (!$funnelData || empty($funnelData['offers'])) {
             echo '<span class="hp-econ-na">—</span>';

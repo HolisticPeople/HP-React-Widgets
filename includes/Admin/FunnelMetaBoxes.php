@@ -130,7 +130,7 @@ class FunnelMetaBoxes
      */
     public static function renderEconomicsMetaBox(\WP_Post $post): void
     {
-        $funnelData = FunnelExporter::exportFunnel($post->ID);
+        $funnelData = FunnelExporter::exportById($post->ID);
         $offers = $funnelData['offers'] ?? [];
         $guidelines = EconomicsService::getGuidelines();
         ?>
