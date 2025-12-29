@@ -215,26 +215,28 @@ class EconomicsService
     {
         // Extract items based on offer type
         $items = [];
+        $type = $offer['type'] ?? 'single';
         
-        switch ($offer['type'] ?? 'single') {
+        switch ($type) {
             case 'single':
                 $items[] = [
-                    'sku' => $offer['product_sku'] ?? '',
+                    'sku' => $offer['product_sku'] ?? $offer['productSku'] ?? '',
                     'qty' => $offer['quantity'] ?? 1,
                 ];
                 break;
                 
             case 'fixed_bundle':
-                $items = $offer['bundle_items'] ?? [];
+                $items = $offer['bundle_items'] ?? $offer['bundleItems'] ?? [];
                 break;
                 
             case 'customizable_kit':
                 // For kits, use the default configuration
-                foreach ($offer['kit_products'] ?? [] as $kitProduct) {
-                    if (($kitProduct['role'] ?? 'optional') === 'must' || ($kitProduct['qty'] ?? 0) > 0) {
+                $kitProducts = $offer['kit_products'] ?? $offer['kitProducts'] ?? [];
+                foreach ($kitProducts as $kitProduct) {
+                    if (($kitProduct['role'] ?? 'optional') === 'must' || ($kitProduct['qty'] ?? $kitProduct['quantity'] ?? 0) > 0) {
                         $items[] = [
                             'sku' => $kitProduct['sku'],
-                            'qty' => $kitProduct['qty'] ?? 1,
+                            'qty' => $kitProduct['qty'] ?? $kitProduct['quantity'] ?? 1,
                         ];
                     }
                 }
@@ -258,11 +260,15 @@ class EconomicsService
         }
 
         // Calculate proposed price from discount
-        $discountType = $offer['discount_type'] ?? 'none';
-        $discountValue = $offer['discount_value'] ?? 0;
+        $discountType = $offer['discount_type'] ?? $offer['discountType'] ?? 'none';
+        $discountValue = (float) ($offer['discount_value'] ?? $offer['discountValue'] ?? 0);
         
         $proposedPrice = $retailTotal;
-        if ($discountType === 'percent' && $discountValue > 0) {
+        $offerPrice = isset($offer['offer_price']) ? $offer['offer_price'] : ($offer['offerPrice'] ?? null);
+
+        if ($offerPrice !== null && $offerPrice !== '') {
+            $proposedPrice = (float) $offerPrice;
+        } elseif ($discountType === 'percent' && $discountValue > 0) {
             $proposedPrice = $retailTotal * (1 - $discountValue / 100);
         } elseif ($discountType === 'fixed' && $discountValue > 0) {
             $proposedPrice = $retailTotal - $discountValue;
@@ -273,6 +279,7 @@ class EconomicsService
 
     /**
      * Calculate shipping cost.
+     * Note: This is currently disabled as we use live Shipstation rates.
      *
      * @param string $scenario 'domestic' or 'international'
      * @param int $itemCount Number of items
@@ -281,14 +288,7 @@ class EconomicsService
      */
     public static function calculateShippingCost(string $scenario, int $itemCount, float $weightOz): float
     {
-        $guidelines = self::getGuidelines();
-        $config = $guidelines['shipping'][$scenario] ?? $guidelines['shipping']['domestic'];
-
-        $baseCost = $config['base_cost'] ?? 5.99;
-        $perItemCost = $config['per_item_cost'] ?? 0.50;
-        $weightRate = $config['weight_rate'] ?? 0.15;
-
-        return $baseCost + ($itemCount * $perItemCost) + ($weightOz * $weightRate);
+        return 0.0;
     }
 
     /**

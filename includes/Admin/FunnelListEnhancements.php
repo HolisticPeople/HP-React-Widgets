@@ -21,7 +21,19 @@ class FunnelListEnhancements
     {
         add_filter('manage_hp-funnel_posts_columns', [self::class, 'addColumns'], 20);
         add_action('manage_hp-funnel_posts_custom_column', [self::class, 'renderColumn'], 10, 2);
+        add_filter('display_post_states', [self::class, 'addAiPostState'], 10, 2);
         add_action('admin_head', [self::class, 'addStyles']);
+    }
+
+    /**
+     * Add AI Generated post state.
+     */
+    public static function addAiPostState(array $post_states, \WP_Post $post): array
+    {
+        if ($post->post_type === 'hp-funnel' && get_post_meta($post->ID, '_hp_is_ai_generated', true) === '1') {
+            $post_states['ai_generated'] = '🤖 ' . __('AI Generated', 'hp-react-widgets');
+        }
+        return $post_states;
     }
 
     /**

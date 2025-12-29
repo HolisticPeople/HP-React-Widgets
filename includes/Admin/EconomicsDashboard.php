@@ -87,17 +87,24 @@ class EconomicsDashboard
                 'warnings' => [],
             ];
 
-            // Extract offers from checkout section
-            $checkout = $config['checkout'] ?? [];
-            $products = $checkout['products'] ?? [];
+            // Extract offers from config
+            $offers = $config['offers'] ?? [];
 
             $totalMargin = 0;
             $offerCount = 0;
 
-            foreach ($products as $product) {
-                $offerAnalysis = self::analyzeOffer($product, $guidelines);
+            foreach ($offers as $offer) {
+                $offerAnalysis = self::analyzeOffer($offer, $guidelines);
                 $funnelData['offers'][] = $offerAnalysis;
-                $funnelData['total_products'] += count($product['products'] ?? [1]);
+                
+                // Calculate total products in this funnel
+                if ($offer['type'] === 'single') {
+                    $funnelData['total_products'] += 1;
+                } elseif ($offer['type'] === 'fixed_bundle') {
+                    $funnelData['total_products'] += count($offer['bundleItems'] ?? []);
+                } elseif ($offer['type'] === 'customizable_kit') {
+                    $funnelData['total_products'] += count($offer['kitProducts'] ?? []);
+                }
 
                 if (isset($offerAnalysis['margin_percent'])) {
                     $totalMargin += $offerAnalysis['margin_percent'];
@@ -110,7 +117,7 @@ class EconomicsDashboard
                         __('Offer "%s" has margin %.1f%% (min: %.1f%%)', 'hp-react-widgets'),
                         $offerAnalysis['name'],
                         $offerAnalysis['margin_percent'],
-                        $guidelines['min_margin_percent']
+                        $guidelines['profit_requirements']['min_profit_percent']
                     );
                 }
             }
@@ -127,9 +134,9 @@ class EconomicsDashboard
      */
     private static function analyzeOffer(array $offer, array $guidelines): array
     {
-        $offerType = $offer['offer_type'] ?? 'single';
-        $price = floatval($offer['price'] ?? 0);
-        $originalPrice = floatval($offer['original_price'] ?? $price);
+        $offerType = $offer['type'] ?? 'single';
+        $price = floatval($offer['calculatedPrice'] ?? $offer['offerPrice'] ?? 0);
+        $originalPrice = floatval($offer['originalPrice'] ?? $price);
         $name = $offer['name'] ?? __('Unnamed Offer', 'hp-react-widgets');
 
         // Calculate cost
@@ -137,17 +144,32 @@ class EconomicsDashboard
         $items = [];
 
         if ($offerType === 'single') {
-            $sku = $offer['sku'] ?? '';
+            $sku = $offer['productSku'] ?? '';
             $qty = intval($offer['quantity'] ?? 1);
-            $cost = EconomicsService::getProductCost($sku);
+            $economics = \HP_RW\Services\ProductCatalogService::getProductEconomics($sku);
+            $cost = $economics ? $economics['cost'] : 0;
             $totalCost = $cost * $qty;
             $items[] = ['sku' => $sku, 'quantity' => $qty, 'cost' => $cost];
-        } elseif ($offerType === 'bundle' || $offerType === 'fixed_bundle') {
-            $bundleProducts = $offer['products'] ?? [];
-            foreach ($bundleProducts as $bundleItem) {
+        } elseif ($offerType === 'fixed_bundle') {
+            $bundleItems = $offer['bundleItems'] ?? [];
+            foreach ($bundleItems as $bundleItem) {
                 $sku = $bundleItem['sku'] ?? '';
-                $qty = intval($bundleItem['quantity'] ?? 1);
-                $cost = EconomicsService::getProductCost($sku);
+                $qty = intval($bundleItem['qty'] ?? 1);
+                $economics = \HP_RW\Services\ProductCatalogService::getProductEconomics($sku);
+                $cost = $economics ? $economics['cost'] : 0;
+                $totalCost += $cost * $qty;
+                $items[] = ['sku' => $sku, 'quantity' => $qty, 'cost' => $cost];
+            }
+        } elseif ($offerType === 'customizable_kit') {
+            $kitProducts = $offer['kitProducts'] ?? [];
+            foreach ($kitProducts as $kitProduct) {
+                // Use default qty for kit analysis
+                $sku = $kitProduct['sku'] ?? '';
+                $qty = intval($kitProduct['qty'] ?? 0);
+                if ($qty <= 0) continue;
+                
+                $economics = \HP_RW\Services\ProductCatalogService::getProductEconomics($sku);
+                $cost = $economics ? $economics['cost'] : 0;
                 $totalCost += $cost * $qty;
                 $items[] = ['sku' => $sku, 'quantity' => $qty, 'cost' => $cost];
             }
@@ -156,8 +178,11 @@ class EconomicsDashboard
         $profit = $price - $totalCost;
         $marginPercent = $price > 0 ? ($profit / $price) * 100 : 0;
         
-        $passesMargin = $marginPercent >= $guidelines['min_margin_percent'];
-        $passesProfit = $profit >= $guidelines['min_profit_dollars'];
+        $minMargin = $guidelines['profit_requirements']['min_profit_percent'];
+        $minProfit = $guidelines['profit_requirements']['min_profit_dollars'];
+
+        $passesMargin = $marginPercent >= $minMargin;
+        $passesProfit = $profit >= $minProfit;
         $passesGuidelines = $passesMargin && $passesProfit;
 
         return [
@@ -240,18 +265,14 @@ class EconomicsDashboard
                 <div class="hp-econ-guidelines-grid">
                     <div class="hp-econ-guideline">
                         <span class="label"><?php esc_html_e('Min Margin', 'hp-react-widgets'); ?></span>
-                        <span class="value"><?php echo esc_html($guidelines['min_margin_percent']); ?>%</span>
+                        <span class="value"><?php echo esc_html($guidelines['profit_requirements']['min_profit_percent']); ?>%</span>
                     </div>
                     <div class="hp-econ-guideline">
                         <span class="label"><?php esc_html_e('Min Profit', 'hp-react-widgets'); ?></span>
-                        <span class="value">$<?php echo esc_html(number_format($guidelines['min_profit_dollars'], 2)); ?></span>
-                    </div>
-                    <div class="hp-econ-guideline">
-                        <span class="label"><?php esc_html_e('Free Shipping (US)', 'hp-react-widgets'); ?></span>
-                        <span class="value">$<?php echo esc_html($guidelines['free_shipping_threshold_us']); ?>+</span>
+                        <span class="value">$<?php echo esc_html(number_format($guidelines['profit_requirements']['min_profit_dollars'], 2)); ?></span>
                     </div>
                 </div>
-                <a href="<?php echo esc_url(admin_url('admin.php?page=hp-rw-ai-settings')); ?>" class="button">
+                <a href="<?php echo esc_url(admin_url('edit.php?post_type=hp-funnel&page=hp-funnel-ai-settings')); ?>" class="button">
                     <?php esc_html_e('Edit Guidelines', 'hp-react-widgets'); ?>
                 </a>
             </div>

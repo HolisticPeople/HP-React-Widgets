@@ -94,7 +94,7 @@ class FunnelExporter
             'header' => self::exportHeader($postId),
             'hero' => self::exportHero($postId),
             'benefits' => self::exportBenefits($postId),
-            'products' => self::exportProducts($postId),
+            'offers' => self::exportOffers($postId),
             'features' => self::exportFeatures($postId),
             'authority' => self::exportAuthority($postId),
             'testimonials' => self::exportTestimonials($postId),
@@ -174,41 +174,55 @@ class FunnelExporter
     }
 
     /**
-     * Export products section.
+     * Export offers section.
      */
-    private static function exportProducts(int $postId): array
+    private static function exportOffers(int $postId): array
     {
-        $products = get_field('funnel_products', $postId) ?: [];
+        $offers = get_field('funnel_offers', $postId) ?: [];
         $result = [];
 
-        foreach ($products as $p) {
-            if (empty($p['sku'])) {
-                continue;
-            }
-
-            $product = [
-                'sku' => $p['sku'],
-                'display_name' => $p['display_name'] ?? '',
-                'display_price' => !empty($p['display_price']) ? (float) $p['display_price'] : null,
-                'description' => $p['description'] ?? '',
-                'image' => self::resolveImageUrl($p['image'] ?? null),
-                'badge' => $p['badge'] ?? '',
-                'is_best_value' => !empty($p['is_best_value']),
-                'features' => [],
-                'free_item_sku' => $p['free_item_sku'] ?? '',
-                'free_item_qty' => (int) ($p['free_item_qty'] ?? 1),
+        foreach ($offers as $o) {
+            $offerType = $o['offer_type'] ?? 'single';
+            $offer = [
+                'name' => $o['offer_name'] ?? '',
+                'type' => $offerType,
+                'description' => $o['offer_description'] ?? '',
+                'image' => self::resolveImageUrl($o['offer_image'] ?? null),
+                'badge' => $o['offer_badge'] ?? '',
+                'discount_type' => $o['offer_discount_type'] ?? 'none',
+                'discount_value' => (float) ($o['offer_discount_value'] ?? 0),
+                'offer_price' => isset($o['offer_price']) && $o['offer_price'] !== '' ? (float) $o['offer_price'] : null,
             ];
 
-            // Export features
-            if (!empty($p['features']) && is_array($p['features'])) {
-                foreach ($p['features'] as $f) {
-                    if (!empty($f['text'])) {
-                        $product['features'][] = ['text' => $f['text']];
+            if ($offerType === 'single') {
+                $offer['product_sku'] = $o['single_product_sku'] ?? '';
+                $offer['quantity'] = (int) ($o['single_product_qty'] ?? 1);
+            } elseif ($offerType === 'fixed_bundle') {
+                $offer['bundle_items'] = [];
+                $items = $o['bundle_items'] ?? [];
+                foreach ($items as $item) {
+                    if (!empty($item['sku'])) {
+                        $offer['bundle_items'][] = [
+                            'sku' => $item['sku'],
+                            'qty' => (int) ($item['qty'] ?? 1),
+                        ];
+                    }
+                }
+            } elseif ($offerType === 'customizable_kit') {
+                $offer['kit_products'] = [];
+                $items = $o['kit_products'] ?? [];
+                foreach ($items as $item) {
+                    if (!empty($item['sku'])) {
+                        $offer['kit_products'][] = [
+                            'sku' => $item['sku'],
+                            'qty' => (int) ($item['qty'] ?? 1),
+                            'role' => $item['role'] ?? 'optional',
+                        ];
                     }
                 }
             }
 
-            $result[] = $product;
+            $result[] = $offer;
         }
 
         return $result;

@@ -50,7 +50,7 @@ class FunnelVersionControl
     public static function createVersion(int $postId, string $description = '', string $createdBy = 'admin'): string
     {
         // Get current funnel data
-        $funnelData = FunnelExporter::exportFunnel($postId);
+        $funnelData = FunnelExporter::exportById($postId);
         
         if (!$funnelData) {
             return '';
