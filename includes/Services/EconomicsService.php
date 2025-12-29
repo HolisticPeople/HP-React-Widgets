@@ -253,9 +253,9 @@ class EconomicsService
         // Calculate retail total for price derivation if not provided
         $retailTotal = 0;
         foreach ($items as $item) {
-            $details = ProductCatalogService::getProductDetails($item['sku']);
-            if ($details) {
-                $retailTotal += $details['price'] * ($item['qty'] ?? 1);
+            $economics = ProductCatalogService::getProductEconomics($item['sku']);
+            if ($economics) {
+                $retailTotal += $economics['price'] * ($item['qty'] ?? 1);
             }
         }
 

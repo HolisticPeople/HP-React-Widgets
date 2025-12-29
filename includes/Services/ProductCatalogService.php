@@ -335,25 +335,38 @@ class ProductCatalogService
      */
     private static function getProductCost(\WC_Product $product): float
     {
-        // 1) Primary: Custom HP field
-        $value = $product->get_meta(self::META_PRODUCT_COST);
-        
-        // 2) Fallback: EAO / Cost of Goods Sold plugin key
-        if (empty($value) || !is_numeric($value)) {
-            $value = $product->get_meta('_cogs_total_value');
+        $candidate_ids = [$product->get_id()];
+        if ($product->is_type('variation')) {
+            $parent_id = $product->get_parent_id();
+            if ($parent_id) {
+                $candidate_ids[] = $parent_id;
+            }
         }
 
-        // 3) Fallback: ACF field if available
-        if ((empty($value) || !is_numeric($value)) && function_exists('get_field')) {
-            $value = get_field('product_cost', $product->get_id());
+        foreach ($candidate_ids as $id) {
+            $p = ($id === $product->get_id()) ? $product : wc_get_product($id);
+            if (!$p) continue;
+
+            // 1) Primary: Custom HP field
+            $value = $p->get_meta(self::META_PRODUCT_COST);
+            if (!empty($value) && is_numeric($value)) return (float) $value;
+            
+            // 2) Fallback: EAO / Cost of Goods Sold plugin key
+            $value = $p->get_meta('_cogs_total_value');
+            if (!empty($value) && is_numeric($value)) return (float) $value;
+
+            // 3) Fallback: ACF field if available
+            if (function_exists('get_field')) {
+                $value = get_field('product_cost', $id);
+                if (!empty($value) && is_numeric($value)) return (float) $value;
+            }
+            
+            // 4) Fallback: WooCommerce Cost of Goods plugin
+            $value = $p->get_meta('_wc_cog_cost');
+            if (!empty($value) && is_numeric($value)) return (float) $value;
         }
         
-        // 4) Fallback: WooCommerce Cost of Goods plugin
-        if (empty($value) || !is_numeric($value)) {
-            $value = $product->get_meta('_wc_cog_cost');
-        }
-        
-        return (float) $value;
+        return 0.0;
     }
 
     /**

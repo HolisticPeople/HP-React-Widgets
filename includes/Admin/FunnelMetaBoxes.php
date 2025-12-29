@@ -155,12 +155,12 @@ class FunnelMetaBoxes
                         ?>
                             <tr class="<?php echo $valid ? 'hp-econ-pass' : 'hp-econ-fail'; ?>">
                                 <td class="hp-offer-name" title="<?php echo esc_attr($offer['name'] ?? ''); ?>">
-                                    <?php echo esc_html(substr($offer['name'] ?? $offer['id'], 0, 15)); ?>
+                                    <?php echo esc_html($offer['name'] ?? $offer['id']); ?>
                                 </td>
                                 <td class="hp-offer-margin">
                                     <?php echo esc_html(round($margin, 1)); ?>%
                                     <br>
-                                    <small>$<?php echo esc_html(round($profit, 2)); ?></small>
+                                    <small>$<?php echo esc_html(number_format($profit, 2)); ?></small>
                                 </td>
                                 <td class="hp-offer-status">
                                     <?php if ($valid): ?>
