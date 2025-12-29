@@ -248,6 +248,17 @@ class Plugin
         $funnelApi = new Rest\FunnelApi();
         $funnelApi->register();
 
+        // Register AI Funnel REST API endpoints (Phase 1: Funnel Generation Capability).
+        $aiFunnelApi = new Rest\AiFunnelApi();
+        $aiFunnelApi->register();
+
+        // Initialize AI admin components.
+        Admin\AiSettingsPage::init();
+        Admin\FunnelListEnhancements::init();
+        Admin\FunnelMetaBoxes::init();
+        Admin\AiActivityLog::init();
+        Admin\EconomicsDashboard::init();
+
         // Register shortcodes based on current settings.
         $shortcodeRegistry = new ShortcodeRegistry($assetLoader);
         $shortcodeRegistry->register();

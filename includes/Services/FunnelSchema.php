@@ -595,6 +595,294 @@ class FunnelSchema
             'schema' => self::getSchema(),
             'field_descriptions' => self::getFieldDescriptions(),
             'example' => self::getExample(),
+            'ai_generation_hints' => self::getAiGenerationHints(),
+            'content_guidelines' => self::getContentGuidelines(),
+        ];
+    }
+
+    /**
+     * Get AI generation hints for each section.
+     * 
+     * These hints help AI agents understand how to generate effective content
+     * for each section of the funnel.
+     *
+     * @return array AI generation hints by section
+     */
+    public static function getAiGenerationHints(): array
+    {
+        return [
+            'general' => [
+                'tone' => 'Professional, trustworthy, and persuasive without being pushy',
+                'audience' => 'Health-conscious consumers interested in natural supplements',
+                'avoid' => [
+                    'Medical claims that could violate FDA regulations',
+                    'Guaranteed results or cure language',
+                    'Comparison to prescription medications',
+                    'Pressure tactics or artificial scarcity',
+                ],
+                'include' => [
+                    'Science-backed information where applicable',
+                    'Clear benefit statements',
+                    'Social proof and authority signals',
+                    'Clear calls-to-action',
+                ],
+            ],
+            'hero' => [
+                'title' => [
+                    'length' => '3-8 words',
+                    'style' => 'Action-oriented, benefit-focused',
+                    'examples' => [
+                        'Transform Your Health Today',
+                        'Unlock Your Natural Energy',
+                        'Support Your Thyroid Naturally',
+                    ],
+                    'patterns' => [
+                        '[Action Verb] Your [Benefit]',
+                        'The [Adjective] Way to [Benefit]',
+                        'Discover [Benefit] with [Product]',
+                    ],
+                ],
+                'subtitle' => [
+                    'length' => '5-12 words',
+                    'style' => 'Expands on title, adds specificity',
+                    'relationship' => 'Should complement, not repeat, the title',
+                ],
+                'tagline' => [
+                    'length' => '8-15 words',
+                    'style' => 'Value proposition or unique selling point',
+                ],
+                'cta_text' => [
+                    'length' => '3-6 words',
+                    'style' => 'Action verb + benefit or offer',
+                    'examples' => [
+                        'Get Your Special Offer Now',
+                        'Start Your Health Journey',
+                        'Claim Your Discount Today',
+                    ],
+                ],
+            ],
+            'benefits' => [
+                'count' => '6-12 items',
+                'item_length' => '5-15 words each',
+                'structure' => [
+                    'Start with action verb or benefit outcome',
+                    'Be specific rather than vague',
+                    'Mix emotional and functional benefits',
+                ],
+                'categories' => [
+                    'Health outcomes (e.g., "Supports healthy thyroid function")',
+                    'Quality/purity (e.g., "100% pure and vegan formula")',
+                    'Convenience (e.g., "Easy to take daily")',
+                    'Trust signals (e.g., "Made in USA-based facility")',
+                ],
+                'icon_mapping' => [
+                    'check' => 'General benefits, features',
+                    'star' => 'Quality, excellence',
+                    'shield' => 'Protection, safety, purity',
+                    'heart' => 'Health, wellness, care',
+                ],
+            ],
+            'offers' => [
+                'structure' => [
+                    'Include 2-4 offers for choice without overwhelm',
+                    'One should be clearly "featured" or "best value"',
+                    'Consider: entry-level, mid-tier, best value, custom',
+                ],
+                'pricing_psychology' => [
+                    'Use odd pricing (e.g., $47 instead of $50)',
+                    'Show original price with discount',
+                    'Highlight savings in absolute and percentage terms',
+                ],
+                'badge_examples' => [
+                    'BEST VALUE',
+                    'MOST POPULAR',
+                    'SAVE 25%',
+                    'STARTER',
+                    'PREMIUM',
+                ],
+                'naming' => [
+                    'Be descriptive of what customer gets',
+                    'Include quantity or duration when relevant',
+                    'Examples: "90-Day Supply", "Family Pack", "Starter Kit"',
+                ],
+            ],
+            'features' => [
+                'count' => '3-6 items',
+                'structure' => [
+                    'title' => '2-4 words, feature name',
+                    'description' => '15-30 words, explain the benefit',
+                ],
+                'focus' => 'Technical/scientific differentiators',
+                'icon_mapping' => [
+                    'check' => 'General features',
+                    'star' => 'Premium/unique features',
+                    'shield' => 'Safety, protection features',
+                    'heart' => 'Health benefits',
+                    'bolt' => 'Energy, performance',
+                    'leaf' => 'Natural, organic, plant-based',
+                ],
+            ],
+            'authority' => [
+                'purpose' => 'Build trust through expertise and credentials',
+                'elements' => [
+                    'Expert name with credentials',
+                    'Professional photo',
+                    'Bio highlighting relevant experience',
+                    'Notable quotes that support product benefits',
+                ],
+                'bio_length' => '100-200 words',
+                'quotes_count' => '2-5 quotes',
+            ],
+            'science' => [
+                'purpose' => 'Provide scientific backing without medical claims',
+                'structure' => [
+                    'Section title describing the science',
+                    'Brief explanation in plain language',
+                    'Bullet points for key facts',
+                ],
+                'tone' => 'Educational, not promotional',
+                'avoid' => 'Specific medical claims, cure language',
+            ],
+            'testimonials' => [
+                'count' => '3-6 testimonials',
+                'structure' => [
+                    'name' => 'First name + last initial or full name',
+                    'role' => 'Identifier like "Verified Buyer" or location',
+                    'quote' => '20-50 words, specific benefit experienced',
+                ],
+                'variety' => 'Include diverse perspectives and use cases',
+                'authenticity' => 'Use realistic, relatable language',
+            ],
+            'faq' => [
+                'count' => '4-8 questions',
+                'categories' => [
+                    'Product usage (how to take, dosage)',
+                    'Ingredients/quality',
+                    'Shipping/delivery',
+                    'Returns/guarantee',
+                    'Results/expectations',
+                ],
+                'answer_length' => '50-150 words each',
+                'address_objections' => 'Anticipate and overcome purchase hesitations',
+            ],
+            'cta' => [
+                'purpose' => 'Secondary conversion point after scrolling content',
+                'title' => [
+                    'length' => '4-8 words',
+                    'style' => 'Question or statement that invites action',
+                ],
+                'button_text' => [
+                    'length' => '2-5 words',
+                    'style' => 'Clear action verb',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Get content guidelines for AI generation.
+     *
+     * @return array Content guidelines
+     */
+    public static function getContentGuidelines(): array
+    {
+        return [
+            'compliance' => [
+                'fda' => [
+                    'rule' => 'No claims that products diagnose, treat, cure, or prevent disease',
+                    'required_disclaimer' => 'These statements have not been evaluated by the FDA. This product is not intended to diagnose, treat, cure or prevent any disease.',
+                    'safe_language' => [
+                        'Supports healthy [function]',
+                        'May help with [general wellness goal]',
+                        'Promotes [positive state]',
+                    ],
+                    'avoid_language' => [
+                        'Cures [condition]',
+                        'Treats [disease]',
+                        'Prevents [illness]',
+                        'Guaranteed results',
+                    ],
+                ],
+                'ftc' => [
+                    'rule' => 'Testimonials must reflect typical results or include disclaimer',
+                    'rule' => 'No false or misleading claims',
+                ],
+            ],
+            'brand_voice' => [
+                'primary_attributes' => [
+                    'Trustworthy',
+                    'Knowledgeable',
+                    'Caring',
+                    'Professional',
+                ],
+                'secondary_attributes' => [
+                    'Approachable',
+                    'Empowering',
+                    'Science-backed',
+                ],
+                'avoid' => [
+                    'Hype or exaggeration',
+                    'Pressure tactics',
+                    'Competitor bashing',
+                    'Overpromising',
+                ],
+            ],
+            'seo' => [
+                'considerations' => [
+                    'Include relevant keywords naturally',
+                    'Use descriptive headings',
+                    'Provide valuable, unique content',
+                ],
+                'meta' => [
+                    'title_length' => '50-60 characters',
+                    'description_length' => '150-160 characters',
+                ],
+            ],
+            'accessibility' => [
+                'images' => 'Include alt text for all images',
+                'contrast' => 'Ensure sufficient color contrast for text',
+                'structure' => 'Use semantic heading hierarchy',
+            ],
+            'conversion_optimization' => [
+                'above_fold' => [
+                    'Clear value proposition',
+                    'Visible call-to-action',
+                    'Trust signals (badges, reviews)',
+                ],
+                'social_proof' => [
+                    'Customer testimonials',
+                    'Expert endorsements',
+                    'Trust badges',
+                    'Review counts/ratings',
+                ],
+                'urgency' => [
+                    'Use sparingly and authentically',
+                    'Avoid fake countdown timers',
+                    'Highlight genuine limited offers',
+                ],
+            ],
+            'content_derivation' => [
+                'from_article' => [
+                    'hero.title' => 'Extract main benefit or transformation',
+                    'hero.subtitle' => 'Secondary benefit or product description',
+                    'benefits.items' => 'Pull key points and convert to benefit statements',
+                    'features.items' => 'Extract technical or scientific details',
+                    'science.sections' => 'Summarize research or mechanism explanations',
+                    'authority.quotes' => 'Pull notable expert statements',
+                    'faq.items' => 'Address questions raised or implied in article',
+                ],
+                'from_protocol' => [
+                    'offers' => 'Build product bundles based on protocol requirements',
+                    'benefits.items' => 'Derive from protocol goals and expected outcomes',
+                    'science.sections' => 'Explain why each component is included',
+                ],
+                'from_product_labels' => [
+                    'styling.accent_color' => 'Extract dominant brand color',
+                    'styling.page_bg_color' => 'Match product packaging aesthetic',
+                    'benefits.items' => 'Include label claims as benefits',
+                    'features.items' => 'Highlight key ingredients from label',
+                ],
+            ],
         ];
     }
 }
