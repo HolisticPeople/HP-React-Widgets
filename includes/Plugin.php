@@ -489,7 +489,6 @@ class Plugin
             // Add our columns after title
             if ($key === 'title') {
                 $new_columns['funnel_slug'] = __('Slug', 'hp-react-widgets');
-                $new_columns['shortcode'] = __('Shortcode', 'hp-react-widgets');
                 $new_columns['status'] = __('Status', 'hp-react-widgets');
             }
         }
@@ -512,15 +511,6 @@ class Plugin
                     $slug = get_post_field('post_name', $post_id);
                 }
                 echo '<code>' . esc_html($slug) . '</code>';
-                break;
-                
-            case 'shortcode':
-                $slug = get_field('funnel_slug', $post_id);
-                if (!$slug) {
-                    $slug = get_post_field('post_name', $post_id);
-                }
-                $shortcode = '[hp_funnel_hero funnel="' . esc_attr($slug) . '"]';
-                echo '<code style="font-size: 11px; background: #f0f0f1; padding: 2px 6px; border-radius: 3px;">' . esc_html($shortcode) . '</code>';
                 break;
                 
             case 'status':
