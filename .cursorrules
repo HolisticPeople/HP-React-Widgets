@@ -1,0 +1,106 @@
+# HP-React-Widgets AI Funnel Instructions
+
+## IMPORTANT: Funnel Creation System
+
+When asked to create, modify, or build funnels, you MUST use the **HP-React-Widgets AI Funnel API**, NOT the HP-Funnel-Bridge.
+
+### Correct System: HP-React-Widgets (hp-funnel CPT)
+- **REST API Base**: `/wp-json/hp-rw/v1/ai/`
+- **Post Type**: `hp-funnel` (WordPress Custom Post Type)
+- **Purpose**: Native WordPress funnels with modular shortcode sections
+- **MCP Server**: `woocommerce_mcp_staging` or `woocommerce_mcp_production`
+
+### WRONG System: HP-Funnel-Bridge (DO NOT USE for funnel creation)
+- HP-Funnel-Bridge is for connecting external React/Lovable funnels
+- It is NOT for creating new funnels
+- If you find yourself looking at "illumodine-boost-funnel" or similar Lovable projects, STOP
+
+## How to Create a Funnel
+
+### Step 1: Get System Documentation
+```
+GET /wp-json/hp-rw/v1/ai/system/explain
+```
+This returns complete documentation of the funnel CPT structure, sections, offer types, and styling.
+
+### Step 2: Get Schema with AI Hints
+```
+GET /wp-json/hp-rw/v1/ai/schema
+```
+This returns the JSON schema with AI generation hints for each section.
+
+### Step 3: Get Reference Funnel (Optional)
+```
+GET /wp-json/hp-rw/v1/ai/funnels
+GET /wp-json/hp-rw/v1/ai/funnels/{slug}
+```
+List existing funnels and get a complete funnel as a reference template.
+
+### Step 4: Search Products for the Kit
+```
+GET /wp-json/hp-rw/v1/ai/products?category=supplements
+GET /wp-json/hp-rw/v1/ai/products/{sku}
+```
+
+### Step 5: Build Kit from Protocol
+```
+POST /wp-json/hp-rw/v1/ai/protocols/build-kit
+Body: {
+  "supplements": [
+    {"sku": "PRODUCT-SKU", "servings_per_day": 3}
+  ],
+  "duration_days": 90
+}
+```
+
+### Step 6: Validate Economics
+```
+POST /wp-json/hp-rw/v1/ai/economics/validate-offer
+```
+
+### Step 7: Create the Funnel
+```
+POST /wp-json/hp-rw/v1/ai/funnels
+Body: { complete funnel JSON conforming to hp-funnel/v1 schema }
+```
+
+## Available Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/ai/system/explain` | GET | Complete system documentation |
+| `/ai/schema` | GET | JSON schema with AI hints |
+| `/ai/styling/schema` | GET | Styling presets and color palettes |
+| `/ai/funnels` | GET/POST | List or create funnels |
+| `/ai/funnels/{slug}` | GET/PUT/DELETE | CRUD operations on specific funnel |
+| `/ai/funnels/{slug}/versions` | GET/POST | Version control |
+| `/ai/products` | GET | Search products |
+| `/ai/products/{sku}` | GET | Get product details |
+| `/ai/products/calculate-supply` | POST | Calculate supply for protocol |
+| `/ai/protocols/build-kit` | POST | Build kit from protocol |
+| `/ai/economics/calculate` | POST | Calculate profitability |
+| `/ai/economics/validate-offer` | POST | Validate offer economics |
+| `/ai/economics/guidelines` | GET/PUT | Economic guidelines config |
+
+## Authentication
+
+All AI endpoints require `manage_woocommerce` capability. Use the WooCommerce MCP server which handles authentication automatically:
+- Staging: `woocommerce_mcp_staging`
+- Production: `woocommerce_mcp_production`
+
+## Local Documentation
+
+Full documentation is available at:
+- `HP-React-Widgets/docs/AI_FUNNEL_CREATION.md`
+
+## Decision Points
+
+When building funnels, present choices to the admin for:
+- Offer structure (fixed_bundle vs customizable_kit)
+- Discount strategy (percent_off vs fixed_discount)
+- Headline style (benefit-focused vs problem-focused)
+- Theme (dark vs light, accent color)
+- Sections to include (minimal, standard, comprehensive)
+
+Do NOT make autonomous decisions on these points.
+
