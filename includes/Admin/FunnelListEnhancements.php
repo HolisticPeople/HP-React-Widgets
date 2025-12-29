@@ -163,14 +163,15 @@ class FunnelListEnhancements
         }
 
         // Check if last action was by AI
+        $isAiGenerated = get_post_meta($postId, '_hp_is_ai_generated', true) === '1';
         $aiActivity = FunnelVersionControl::getAiActivity($postId, 1);
-        $byAi = false;
+        $byAi = $isAiGenerated;
         
         if (!empty($aiActivity)) {
             $lastActivity = $aiActivity[0];
             $activityTime = strtotime($lastActivity['timestamp']);
-            // If AI activity was within 5 seconds of post modified, consider it AI-modified
-            if (abs($activityTime - $modified) < 5) {
+            // If AI activity was within 60 seconds of post modified, consider it AI-modified
+            if (abs($activityTime - $modified) < 60) {
                 $byAi = true;
             }
         }

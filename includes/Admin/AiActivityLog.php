@@ -36,6 +36,21 @@ class AiActivityLog
     }
 
     /**
+     * Log AI activity.
+     *
+     * @param int    $postId      Post ID
+     * @param string $slug        Funnel slug
+     * @param string $description Action description
+     * @param string $action      Action type (e.g., 'Created', 'Updated')
+     */
+    public static function logActivity(int $postId, string $slug, string $description, string $action): void
+    {
+        if (class_exists('\HP_RW\Services\FunnelVersionControl')) {
+            \HP_RW\Services\FunnelVersionControl::logAiActivity($postId, sanitize_title($action), $description);
+        }
+    }
+
+    /**
      * Render the activity log page.
      */
     public static function renderPage(): void

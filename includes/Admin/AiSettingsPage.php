@@ -51,14 +51,6 @@ class AiSettingsPage
             'hp-funnel-ai-settings'
         );
 
-        // Shipping Configuration Section
-        add_settings_section(
-            'hp_ai_shipping',
-            __('Shipping Rules', 'hp-react-widgets'),
-            [self::class, 'renderShippingSection'],
-            'hp-funnel-ai-settings'
-        );
-
         // Version Control Section
         add_settings_section(
             'hp_ai_version_control',
@@ -131,42 +123,6 @@ class AiSettingsPage
                             <p class="description"><?php esc_html_e('Round prices to this ending (e.g., 99 for $X.99)', 'hp-react-widgets'); ?></p>
                         </td>
                     </tr>
-                </table>
-
-                <h2><?php esc_html_e('Shipping Rules', 'hp-react-widgets'); ?></h2>
-                
-                <h3><?php esc_html_e('Domestic (US)', 'hp-react-widgets'); ?></h3>
-                <table class="form-table">
-                    <tr>
-                        <th scope="row"><?php esc_html_e('Free Shipping Threshold', 'hp-react-widgets'); ?></th>
-                        <td>
-                            $<input type="number" name="domestic_free_threshold" value="<?php echo esc_attr($guidelines['shipping']['domestic']['free_shipping_threshold']); ?>" min="0" step="1" class="small-text">
-                            <p class="description"><?php esc_html_e('Orders over this amount get free shipping domestically.', 'hp-react-widgets'); ?></p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><?php esc_html_e('Shipping Cost Calculation', 'hp-react-widgets'); ?></th>
-                        <td>
-                            <?php esc_html_e('Base:', 'hp-react-widgets'); ?> $<input type="number" name="domestic_base_cost" value="<?php echo esc_attr($guidelines['shipping']['domestic']['base_cost']); ?>" step="0.01" class="small-text">
-                            + <?php esc_html_e('Per item:', 'hp-react-widgets'); ?> $<input type="number" name="domestic_per_item" value="<?php echo esc_attr($guidelines['shipping']['domestic']['per_item_cost']); ?>" step="0.01" class="small-text">
-                            + <?php esc_html_e('Per oz:', 'hp-react-widgets'); ?> $<input type="number" name="domestic_weight_rate" value="<?php echo esc_attr($guidelines['shipping']['domestic']['weight_rate']); ?>" step="0.01" class="small-text">
-                        </td>
-                    </tr>
-                </table>
-
-                <h3><?php esc_html_e('International Shipping Subsidies', 'hp-react-widgets'); ?></h3>
-                <p class="description"><?php esc_html_e('Subsidy percentage based on order profit. Higher profit orders get more shipping subsidy.', 'hp-react-widgets'); ?></p>
-                <table class="form-table" id="subsidy-tiers">
-                    <tr>
-                        <th><?php esc_html_e('Min Profit', 'hp-react-widgets'); ?></th>
-                        <th><?php esc_html_e('Subsidy %', 'hp-react-widgets'); ?></th>
-                    </tr>
-                    <?php foreach ($guidelines['shipping']['international']['subsidy_tiers'] as $i => $tier): ?>
-                    <tr>
-                        <td>$<input type="number" name="subsidy_tier_profit[<?php echo $i; ?>]" value="<?php echo esc_attr($tier['min_profit']); ?>" class="small-text"></td>
-                        <td><input type="number" name="subsidy_tier_percent[<?php echo $i; ?>]" value="<?php echo esc_attr($tier['subsidy_percent']); ?>" min="0" max="100" class="small-text">%</td>
-                    </tr>
-                    <?php endforeach; ?>
                 </table>
 
                 <h2><?php esc_html_e('Version Control', 'hp-react-widgets'); ?></h2>
@@ -265,14 +221,6 @@ class AiSettingsPage
     }
 
     /**
-     * Render shipping section description.
-     */
-    public static function renderShippingSection(): void
-    {
-        echo '<p>' . esc_html__('Configure shipping costs and subsidy tiers for different regions.', 'hp-react-widgets') . '</p>';
-    }
-
-    /**
      * Render version control section description.
      */
     public static function renderVersionControlSection(): void
@@ -297,26 +245,6 @@ class AiSettingsPage
         $guidelines['pricing_strategy']['max_discount_percent'] = absint($_POST['max_discount_percent'] ?? 40);
         $roundTo = sanitize_text_field($_POST['round_to'] ?? '99');
         $guidelines['pricing_strategy']['round_to'] = floatval('0.' . $roundTo);
-        
-        // Update domestic shipping
-        $guidelines['shipping']['domestic']['free_shipping_threshold'] = absint($_POST['domestic_free_threshold'] ?? 100);
-        $guidelines['shipping']['domestic']['base_cost'] = floatval($_POST['domestic_base_cost'] ?? 5.99);
-        $guidelines['shipping']['domestic']['per_item_cost'] = floatval($_POST['domestic_per_item'] ?? 0.50);
-        $guidelines['shipping']['domestic']['weight_rate'] = floatval($_POST['domestic_weight_rate'] ?? 0.15);
-        
-        // Update subsidy tiers
-        $subsidyProfits = $_POST['subsidy_tier_profit'] ?? [];
-        $subsidyPercents = $_POST['subsidy_tier_percent'] ?? [];
-        $tiers = [];
-        foreach ($subsidyProfits as $i => $profit) {
-            $tiers[] = [
-                'min_profit' => absint($profit),
-                'subsidy_percent' => absint($subsidyPercents[$i] ?? 0),
-            ];
-        }
-        // Sort by profit descending
-        usort($tiers, fn($a, $b) => $b['min_profit'] - $a['min_profit']);
-        $guidelines['shipping']['international']['subsidy_tiers'] = $tiers;
         
         EconomicsService::saveGuidelines($guidelines);
         

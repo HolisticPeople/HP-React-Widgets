@@ -39,6 +39,7 @@ $data = [
       'discount_label' => 'Save 23%',
       'discount_type' => 'percent',
       'discount_value' => 23,
+      'price' => 146.81, // Hardcoded for now to fix the $0 issue
       'bundle_items' => [
         ['sku' => 'PRLabS-02355', 'qty' => 1],
         ['sku' => 'PRLabD-02470', 'qty' => 1],
@@ -145,4 +146,3 @@ $data = [
 
 $result = \HP_RW\Services\FunnelImporter::importFunnel($data, \HP_RW\Services\FunnelImporter::MODE_UPDATE);
 echo json_encode($result);
-

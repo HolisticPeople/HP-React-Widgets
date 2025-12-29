@@ -71,7 +71,7 @@ class EconomicsDashboard
         $guidelines = EconomicsService::getGuidelines();
 
         foreach ($funnels as $funnel) {
-            $config = FunnelConfigLoader::load($funnel->ID);
+            $config = FunnelConfigLoader::get($funnel->ID);
             if (!$config) {
                 continue;
             }
