@@ -20,7 +20,17 @@ class FunnelMetaBoxes
     public static function init(): void
     {
         add_action('add_meta_boxes', [self::class, 'registerMetaBoxes']);
+        add_action('add_meta_boxes', [self::class, 'removeRedundantMetaBoxes'], 99);
         add_action('admin_enqueue_scripts', [self::class, 'enqueueScripts']);
+    }
+
+    /**
+     * Remove redundant meta boxes.
+     */
+    public static function removeRedundantMetaBoxes(): void
+    {
+        // Remove the native slug meta box as it is redundant with the ACF funnel_slug field
+        remove_meta_box('slugdiv', 'hp-funnel', 'normal');
     }
 
     /**
