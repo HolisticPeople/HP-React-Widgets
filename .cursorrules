@@ -1,5 +1,15 @@
 # HP-React-Widgets AI Funnel Instructions
 
+## MCP Tool Standards (CRITICAL)
+
+To prevent tools from disappearing in Cursor, follow these strict schema rules:
+
+1. **JSON Object vs Array**: PHP `[]` becomes `[]` in JSON. JSON Schema `properties` MUST be an object `{}`. Always use `(object) []` in PHP for empty schema properties.
+2. **Naming**: Use `namespace/ability-name` (one slash only). Use dashes for further nesting (e.g., `hp-funnels/versions-list`).
+3. **Hooks**: Register categories on `wp_abilities_api_categories_init` and abilities on `wp_abilities_api_init`.
+4. **Proxy Compatibility**: The local proxy handles the conversion of slashes to dashes for Cursor. Do not change the slash in the PHP registration.
+5. **Metadata Stripping**: If tool definitions are bulky, ensure `STRIP_TOOL_METADATA: "true"` is set in `mcp.json`.
+
 ## IMPORTANT: Funnel Creation System
 
 When asked to create, modify, or build funnels, you MUST use the **HP-Abilities MCP Tools**, NOT the HP-Funnel-Bridge.

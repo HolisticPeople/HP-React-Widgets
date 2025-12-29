@@ -2,6 +2,7 @@
 namespace HP_RW\Services;
 
 use HP_RW\Plugin;
+use HP_RW\Services\ProductCatalogService;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -56,9 +57,10 @@ class FunnelImporter
      *
      * @param array $data Funnel data
      * @param string $mode Import mode for existing funnels
+     * @param int $existingPostId Optional post ID if updating
      * @return array Import result
      */
-    public static function import(array $data, string $mode = self::MODE_SKIP): array
+    public static function importFunnel(array $data, string $mode = self::MODE_SKIP, int $existingPostId = 0): array
     {
         // Validate schema
         $validation = FunnelSchema::validate($data);
@@ -74,7 +76,7 @@ class FunnelImporter
         $slug = $funnel['slug'];
 
         // Check for existing funnel
-        $existingPost = FunnelConfigLoader::findPostBySlug($slug);
+        $existingPost = $existingPostId ? get_post($existingPostId) : FunnelConfigLoader::findPostBySlug($slug);
 
         if ($existingPost) {
             if ($mode === self::MODE_SKIP) {
@@ -85,7 +87,7 @@ class FunnelImporter
                     'slug' => $slug,
                     'message' => 'Funnel with this slug already exists',
                 ];
-            } elseif ($mode === self::MODE_CREATE_NEW) {
+            } elseif ($mode === self::MODE_CREATE_NEW && !$existingPostId) {
                 // Generate new unique slug
                 $slug = self::generateUniqueSlug($slug);
                 $funnel['slug'] = $slug;
@@ -131,7 +133,14 @@ class FunnelImporter
             self::importHeader($postId, $data['header'] ?? []);
             self::importHero($postId, $data['hero'] ?? []);
             self::importBenefits($postId, $data['benefits'] ?? []);
-            self::importProducts($postId, $data['products'] ?? []);
+            
+            // Handle both 'offers' (v1 schema) and legacy 'products'
+            if (!empty($data['offers'])) {
+                self::importOffers($postId, $data['offers']);
+            } elseif (!empty($data['products'])) {
+                self::importProducts($postId, $data['products']);
+            }
+
             self::importFeatures($postId, $data['features'] ?? []);
             self::importAuthority($postId, $data['authority'] ?? []);
             self::importTestimonials($postId, $data['testimonials'] ?? []);
@@ -163,6 +172,99 @@ class FunnelImporter
                 'error' => $e->getMessage(),
             ];
         }
+    }
+
+    /**
+     * Import offers section (v1 schema).
+     * Maps to 'funnel_offers' repeater and constructs 'products_data' JSON.
+     */
+    private static function importOffers(int $postId, array $offers): void
+    {
+        if (empty($offers)) return;
+
+        $offersData = [];
+        foreach ($offers as $o) {
+            if (empty($o['id']) || empty($o['type'])) continue;
+
+            $offer = [
+                'offer_id' => $o['id'],
+                'offer_name' => $o['name'] ?? '',
+                'offer_description' => $o['description'] ?? '',
+                'offer_type' => $o['type'],
+                'offer_badge' => $o['badge'] ?? '',
+                'offer_is_featured' => !empty($o['is_featured']),
+                'offer_image' => $o['image'] ?? '',
+                'offer_discount_label' => $o['discount_label'] ?? '',
+                'offer_price' => $o['price'] ?? 0,
+                'offer_bonus_message' => $o['bonus_message'] ?? '',
+                'kit_max_items' => $o['max_total_items'] ?? 6,
+            ];
+
+            // Resolve products for this offer to build 'products_data' JSON
+            $productsList = [];
+            
+            if ($o['type'] === 'single' && !empty($o['product_sku'])) {
+                $productsList[] = self::resolveProductForData($o['product_sku'], $o['quantity'] ?? 1, 'must');
+            } elseif ($o['type'] === 'fixed_bundle' && !empty($o['bundle_items'])) {
+                foreach ($o['bundle_items'] as $item) {
+                    $productsList[] = self::resolveProductForData($item['sku'], $item['qty'] ?? 1, 'must');
+                }
+            } elseif ($o['type'] === 'customizable_kit' && !empty($o['kit_products'])) {
+                foreach ($o['kit_products'] as $item) {
+                    $productsList[] = self::resolveProductForData(
+                        $item['sku'], 
+                        $item['qty'] ?? 1, 
+                        $item['role'] ?? 'optional',
+                        $item['discount_type'] ?? 'none',
+                        $item['discount_value'] ?? 0
+                    );
+                }
+            }
+
+            // Remove nulls (unresolved products)
+            $productsList = array_filter($productsList);
+            $offer['products_data'] = wp_json_encode(array_values($productsList));
+
+            $offersData[] = $offer;
+        }
+
+        self::setField($postId, 'funnel_offers', $offersData);
+    }
+
+    /**
+     * Helper to fetch product details and format for 'products_data' JSON.
+     */
+    private static function resolveProductForData(string $sku, int $qty, string $role, string $discountType = 'none', float $discountValue = 0): ?array
+    {
+        $details = ProductCatalogService::getProductDetails($sku);
+        if (!$details) return null;
+
+        $price = $details['price'];
+        $salePrice = $price;
+
+        if ($discountType === 'percent' && $discountValue > 0) {
+            $salePrice = $price * (1 - ($discountValue / 100));
+        } elseif ($discountType === 'fixed' && $discountValue > 0) {
+            $salePrice = max(0, $price - $discountValue);
+        }
+
+        return [
+            'sku' => $sku,
+            'name' => $details['name'],
+            'price' => $price,
+            'image' => $details['image_url'],
+            'qty' => $qty,
+            'role' => $role,
+            'salePrice' => round($salePrice, 2),
+        ];
+    }
+
+    /**
+     * Legacy wrapper for importFunnel.
+     */
+    public static function import(array $data, string $mode = self::MODE_SKIP): array
+    {
+        return self::importFunnel($data, $mode);
     }
 
     /**

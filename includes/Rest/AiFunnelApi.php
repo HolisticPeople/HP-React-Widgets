@@ -966,3 +966,17 @@ class AiFunnelApi
     }
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+

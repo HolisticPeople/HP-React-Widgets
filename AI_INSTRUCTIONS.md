@@ -117,3 +117,17 @@ Present choices rather than making autonomous decisions for:
 | `slick-address-slider` | Address UI component | Not for funnels |
 | `HP-Multi-Address` | Multi-address component | Not for funnels |
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
