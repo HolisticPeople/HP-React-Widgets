@@ -1,0 +1,283 @@
+{
+  "funnel": {
+    "name": "Three Week Liver Gallbladder Cleanse",
+    "slug": "liver-gallbladder-cleanse",
+    "status": "active",
+    "stripe_mode": "auto"
+  },
+  "header": {
+    "logo": "/wp-content/uploads/2024/01/holistic-people-logo.png",
+    "logo_link": "https://holisticpeople.com",
+    "sticky": true,
+    "transparent": false,
+    "nav_items": [
+      {"label": "Home", "url": "/", "is_external": false},
+      {"label": "Shop", "url": "/shop/", "is_external": false},
+      {"label": "About", "url": "/about/", "is_external": false}
+    ]
+  },
+  "hero": {
+    "title": "Revitalize Your Liver & Gallbladder",
+    "subtitle": "The Complete Three-Week Cleanse Protocol",
+    "tagline": "Unlock Your Body's Natural Detox Power",
+    "description": "This gentle yet powerful cleanse supports your liver and gallbladder function through three carefully designed phases. Release stored toxins, improve digestion, and restore optimal bile flow with our professionally curated supplement protocol.",
+    "cta_text": "Start Your Cleanse Today"
+  },
+  "benefits": {
+    "title": "Why Cleanse Your Liver & Gallbladder?",
+    "items": [
+      {"text": "Supports healthy bile production and gallstone prevention", "icon": "shield"},
+      {"text": "Enhances your body's natural detoxification pathways", "icon": "leaf"},
+      {"text": "Improves digestion and nutrient absorption", "icon": "check"},
+      {"text": "Reduces bloating and digestive discomfort", "icon": "heart"},
+      {"text": "Boosts energy levels and mental clarity", "icon": "bolt"},
+      {"text": "Supports healthy cholesterol metabolism", "icon": "shield"},
+      {"text": "Gentle three-phase approach for lasting results", "icon": "star"},
+      {"text": "All-natural herbs and supplements", "icon": "leaf"},
+      {"text": "Professionally formulated protocol", "icon": "check"},
+      {"text": "Complete written guide included", "icon": "star"}
+    ]
+  },
+  "offers": [
+    {
+      "id": "essential-cleanse",
+      "name": "Essential Cleanse Kit",
+      "description": "Core supplements for the three-week liver gallbladder protocol. Perfect for first-time cleansers.",
+      "type": "fixed_bundle",
+      "badge": "STARTER",
+      "is_featured": false,
+      "discount_label": "Save 10%",
+      "discount_type": "percent",
+      "discount_value": 10,
+      "bundle_items": [
+        {"sku": "ATT-OS-21", "qty": 1},
+        {"sku": "WWB-RCP-Caps120", "qty": 1},
+        {"sku": "OI-trip180", "qty": 1}
+      ]
+    },
+    {
+      "id": "complete-cleanse",
+      "name": "Complete Cleanse Kit",
+      "description": "Full protocol with digestive support. Includes the core cleanse supplements plus enzymes and tea for optimal results.",
+      "type": "fixed_bundle",
+      "badge": "BEST VALUE",
+      "is_featured": true,
+      "discount_label": "Save 15%",
+      "discount_type": "percent",
+      "discount_value": 15,
+      "bundle_items": [
+        {"sku": "ATT-OS-21", "qty": 1},
+        {"sku": "WWB-RCP-Caps120", "qty": 1},
+        {"sku": "WWB-RCP-Tea125", "qty": 1},
+        {"sku": "OI-trip180", "qty": 1},
+        {"sku": "USE-261", "qty": 1}
+      ]
+    },
+    {
+      "id": "premium-cleanse",
+      "name": "Premium Detox & Restore Kit",
+      "description": "Our most comprehensive package with probiotic restoration, anti-inflammatory support, and advanced detox tools for maximum results.",
+      "type": "fixed_bundle",
+      "badge": "PREMIUM",
+      "is_featured": false,
+      "discount_label": "Save 20%",
+      "discount_type": "percent",
+      "discount_value": 20,
+      "bundle_items": [
+        {"sku": "ATT-OS-21", "qty": 1},
+        {"sku": "WWB-RCP-Caps120", "qty": 1},
+        {"sku": "WWB-RCP-Tea125", "qty": 1},
+        {"sku": "OI-trip180", "qty": 1},
+        {"sku": "USE-261", "qty": 1},
+        {"sku": "USE-TRLCP", "qty": 1},
+        {"sku": "PE-CUB56", "qty": 1}
+      ]
+    }
+  ],
+  "features": {
+    "title": "The Three-Phase Protocol",
+    "subtitle": "A scientifically designed approach to liver and gallbladder wellness",
+    "items": [
+      {
+        "icon": "leaf",
+        "title": "Week 1: Preparation Phase",
+        "description": "Gentle preparation with Chanca Piedra and Triphala to soften deposits and improve bile flow. Diet modifications help prime your system for the cleanse."
+      },
+      {
+        "icon": "bolt",
+        "title": "Week 2: Active Cleanse Phase",
+        "description": "Intensified support with the Liver Gallbladder Tonic. This phase works to actively release stored toxins while Chanca Piedra continues to support gallstone dissolution."
+      },
+      {
+        "icon": "heart",
+        "title": "Week 3: Restoration Phase",
+        "description": "Focus on rebuilding gut flora with probiotics and continued enzyme support. Gentle transition back to normal eating while maintaining cleanse benefits."
+      },
+      {
+        "icon": "shield",
+        "title": "Ongoing Maintenance",
+        "description": "Optional continued support with curcumin and digestive enzymes for long-term liver health and inflammation management."
+      }
+    ]
+  },
+  "authority": {
+    "title": "Trusted Holistic Wellness",
+    "subtitle": "Curated by health professionals with decades of experience",
+    "name": "Holistic People",
+    "credentials": "Natural Health & Wellness Since 2010",
+    "bio": "<p>At Holistic People, we've helped thousands of customers achieve better health through carefully selected natural supplements and protocols.</p><p>Our Liver Gallbladder Cleanse protocol is based on traditional herbal wisdom combined with modern understanding of detoxification pathways. Each product in this kit has been selected for quality, efficacy, and synergy with the overall protocol.</p>",
+    "quotes": [
+      {"text": "The liver is the body's master detoxifier – supporting it naturally is one of the most powerful things you can do for your health."},
+      {"text": "Gentle, consistent cleansing beats aggressive detox programs every time."}
+    ]
+  },
+  "science": {
+    "title": "The Science of Liver Detoxification",
+    "subtitle": "Understanding how this protocol works",
+    "sections": [
+      {
+        "title": "Bile Flow & Gallstone Prevention",
+        "description": "Healthy bile flow is essential for fat digestion and toxin elimination. Chanca Piedra (\"stone breaker\") has been used for centuries to support kidney and gallbladder health.",
+        "bullets": [
+          "Supports healthy bile production and flow",
+          "Traditional use for gallstone prevention",
+          "Gentle yet effective herbal support"
+        ]
+      },
+      {
+        "title": "Phase I & II Liver Detoxification",
+        "description": "Your liver processes toxins in two phases. Phase I activates toxins for removal, while Phase II conjugates them for safe elimination. This protocol supports both phases.",
+        "bullets": [
+          "Triphala supports digestive elimination pathways",
+          "Liver Gallbladder Tonic provides targeted herbal support",
+          "Digestive enzymes ensure proper breakdown and absorption"
+        ]
+      },
+      {
+        "title": "Gut-Liver Axis",
+        "description": "Your gut and liver are intimately connected through the portal vein. A healthy gut means less work for your liver and better overall detoxification.",
+        "bullets": [
+          "Probiotics restore beneficial gut bacteria",
+          "Reduced toxic load from intestinal sources",
+          "Improved nutrient absorption supports liver function"
+        ]
+      }
+    ]
+  },
+  "testimonials": {
+    "title": "What Our Customers Say",
+    "subtitle": "Real experiences from people who've completed the cleanse",
+    "items": [
+      {
+        "name": "Sarah M.",
+        "role": "Verified Buyer",
+        "title": "Life Changing!",
+        "quote": "I've tried many cleanses before, but this three-week protocol was different. The gradual approach made it easy to stick with, and I felt amazing by the end. My digestion has never been better.",
+        "rating": 5
+      },
+      {
+        "name": "Michael R.",
+        "role": "Verified Buyer",
+        "title": "Finally Found Relief",
+        "quote": "After years of digestive issues and bloating, this cleanse gave me real results. The products are high quality and the protocol is well thought out. Highly recommend the Complete Kit.",
+        "rating": 5
+      },
+      {
+        "name": "Jennifer L.",
+        "role": "Verified Buyer",
+        "title": "Gentle Yet Effective",
+        "quote": "I was worried about harsh detox symptoms, but this protocol was incredibly gentle. I had more energy by week two and my skin cleared up significantly.",
+        "rating": 5
+      },
+      {
+        "name": "David K.",
+        "role": "Verified Buyer",
+        "title": "Great Value",
+        "quote": "The Premium Kit seemed like a lot at first, but getting everything bundled with a discount made it worth it. The probiotics and curcumin really helped with the restoration phase.",
+        "rating": 5
+      }
+    ]
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "items": [
+      {
+        "question": "How long does the cleanse take?",
+        "answer": "The complete protocol is designed for three weeks. Week 1 is preparation, Week 2 is the active cleanse phase, and Week 3 focuses on restoration. You can extend the maintenance phase as long as you'd like."
+      },
+      {
+        "question": "Can I eat normally during the cleanse?",
+        "answer": "We recommend reducing processed foods, alcohol, caffeine, and heavy fats during the cleanse. Focus on vegetables, fruits, lean proteins, and plenty of water. A detailed dietary guide is included with your order."
+      },
+      {
+        "question": "Are there any side effects?",
+        "answer": "Most people experience only mild effects like increased bowel movements or slight fatigue in the first few days. This is normal as your body begins releasing stored toxins. The gentle three-phase approach minimizes any discomfort."
+      },
+      {
+        "question": "Which kit should I choose?",
+        "answer": "The <strong>Essential Kit</strong> is great for first-timers or those on a budget. The <strong>Complete Kit</strong> (our most popular) includes digestive enzymes and tea for optimal results. The <strong>Premium Kit</strong> adds probiotic restoration and anti-inflammatory support for maximum benefits."
+      },
+      {
+        "question": "Can I do this cleanse if I don't have a gallbladder?",
+        "answer": "Yes! This protocol supports overall liver function and bile production, which is still important even without a gallbladder. The digestive enzymes in our Complete and Premium kits are especially helpful for those without a gallbladder."
+      },
+      {
+        "question": "How often can I repeat this cleanse?",
+        "answer": "We recommend completing the full protocol 2-4 times per year, typically with the change of seasons. Between cleanses, you can continue with maintenance supplements like the Liver Gallbladder Tonic or Curcumin."
+      },
+      {
+        "question": "Is this protocol safe during pregnancy or breastfeeding?",
+        "answer": "We recommend consulting with your healthcare provider before starting any cleanse protocol during pregnancy or breastfeeding. Some herbs may not be appropriate during these times."
+      }
+    ]
+  },
+  "cta": {
+    "title": "Ready to Revitalize Your Liver?",
+    "subtitle": "Choose your kit and start your three-week transformation today",
+    "button_text": "Get Started Now"
+  },
+  "checkout": {
+    "url": "/checkout/",
+    "free_shipping_countries": "US",
+    "global_discount_percent": 0,
+    "enable_points_redemption": true,
+    "show_order_summary": true
+  },
+  "thankyou": {
+    "url": "/thank-you/",
+    "headline": "Thank You for Your Order!",
+    "message": "Your Liver Gallbladder Cleanse Kit is on its way! Check your email for your detailed protocol guide and preparation instructions. We recommend reading through the guide before starting your cleanse.",
+    "show_upsell": true,
+    "upsell": {
+      "sku": "DOT-ZEN15",
+      "qty": 1,
+      "discount_percent": 20,
+      "headline": "Add Zendocrine Essential Oil Blend",
+      "description": "Enhance your cleanse with this powerful detox-supporting essential oil blend. Apply topically over liver area or diffuse during your cleanse for added support.",
+      "image": ""
+    }
+  },
+  "styling": {
+    "accent_color": "#4a7c59",
+    "text_color_basic": "#e5e5e5",
+    "text_color_accent": "#7cb668",
+    "text_color_note": "#a3a3a3",
+    "text_color_discount": "#22c55e",
+    "page_bg_color": "#121212",
+    "card_bg_color": "#1a1a1a",
+    "input_bg_color": "#333333",
+    "border_color": "#4a7c59",
+    "background_type": "gradient"
+  },
+  "footer": {
+    "text": "© 2025 Holistic People. All rights reserved.",
+    "disclaimer": "These statements have not been evaluated by the Food and Drug Administration. These products are not intended to diagnose, treat, cure, or prevent any disease. Consult with a healthcare professional before starting any supplement program.",
+    "links": [
+      {"label": "Privacy Policy", "url": "/privacy-policy/"},
+      {"label": "Terms of Service", "url": "/terms-of-service/"},
+      {"label": "Contact Us", "url": "/contact/"},
+      {"label": "Shipping & Returns", "url": "/shipping-returns/"}
+    ]
+  }
+}
+
