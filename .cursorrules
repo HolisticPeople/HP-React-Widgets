@@ -2,12 +2,12 @@
 
 ## IMPORTANT: Funnel Creation System
 
-When asked to create, modify, or build funnels, you MUST use the **HP-React-Widgets AI Funnel API**, NOT the HP-Funnel-Bridge.
+When asked to create, modify, or build funnels, you MUST use the **HP-Abilities MCP Tools**, NOT the HP-Funnel-Bridge.
 
-### Correct System: HP-React-Widgets (hp-funnel CPT)
-- **REST API Base**: `/wp-json/hp-rw/v1/ai/`
+### Correct System: HP-Abilities (WordPress Abilities API)
+- **Primary Method**: HP-Abilities MCP Tools (registered via WordPress Abilities API)
+- **Fallback**: REST API at `/wp-json/hp-rw/v1/ai/`
 - **Post Type**: `hp-funnel` (WordPress Custom Post Type)
-- **Purpose**: Native WordPress funnels with modular shortcode sections
 - **MCP Server**: `woocommerce_mcp_staging` or `woocommerce_mcp_production`
 
 ### WRONG System: HP-Funnel-Bridge (DO NOT USE for funnel creation)
@@ -15,37 +15,70 @@ When asked to create, modify, or build funnels, you MUST use the **HP-React-Widg
 - It is NOT for creating new funnels
 - If you find yourself looking at "illumodine-boost-funnel" or similar Lovable projects, STOP
 
+## MCP Abilities for Funnel Operations (PREFERRED)
+
+Use these WordPress Abilities via MCP. They are exposed through the MCP Adapter plugin.
+
+### System & Schema
+| Ability | Purpose |
+|---------|---------|
+| `hp/funnels/explain-system` | Complete funnel system documentation |
+| `hp/funnels/schema` | JSON schema with AI generation hints |
+| `hp/funnels/styling-schema` | Styling presets and color palettes |
+
+### Funnel CRUD
+| Ability | Purpose |
+|---------|---------|
+| `hp/funnels/list` | List all funnels with metadata |
+| `hp/funnels/get` | Get complete funnel by slug |
+| `hp/funnels/create` | Create new funnel from JSON |
+| `hp/funnels/update` | Update existing funnel |
+| `hp/funnels/update-sections` | Update specific sections only |
+
+### Version Control
+| Ability | Purpose |
+|---------|---------|
+| `hp/funnels/versions/list` | List all versions of a funnel |
+| `hp/funnels/versions/create` | Create backup before changes |
+| `hp/funnels/versions/restore` | Restore to previous version |
+
+### Products & Protocol
+| Ability | Purpose |
+|---------|---------|
+| `hp/products/search` | Search products by category, name |
+| `hp/products/get` | Get product details including servings |
+| `hp/products/calculate-supply` | Calculate bottles needed for X days |
+| `hp/protocols/build-kit` | Build product kit from health protocol |
+
+### Economics
+| Ability | Purpose |
+|---------|---------|
+| `hp/economics/calculate` | Calculate offer profitability |
+| `hp/economics/validate` | Validate against economic guidelines |
+| `hp/economics/guidelines` | Get/set min profit rules |
+
 ## How to Create a Funnel
 
-### Step 1: Get System Documentation
-```
-GET /wp-json/hp-rw/v1/ai/system/explain
-```
-This returns complete documentation of the funnel CPT structure, sections, offer types, and styling.
+### Step 1: Understand the System
+Use ability: `hp/funnels/explain-system`
+Returns complete documentation of funnel structure, sections, offer types, and styling.
 
 ### Step 2: Get Schema with AI Hints
-```
-GET /wp-json/hp-rw/v1/ai/schema
-```
-This returns the JSON schema with AI generation hints for each section.
+Use ability: `hp/funnels/schema`
+Returns JSON schema with AI generation hints for each section.
 
 ### Step 3: Get Reference Funnel (Optional)
-```
-GET /wp-json/hp-rw/v1/ai/funnels
-GET /wp-json/hp-rw/v1/ai/funnels/{slug}
-```
-List existing funnels and get a complete funnel as a reference template.
+Use ability: `hp/funnels/list` then `hp/funnels/get` with slug
+Get an existing funnel as a reference template.
 
 ### Step 4: Search Products for the Kit
-```
-GET /wp-json/hp-rw/v1/ai/products?category=supplements
-GET /wp-json/hp-rw/v1/ai/products/{sku}
-```
+Use ability: `hp/products/search` with category filter
+Use ability: `hp/products/get` with SKU for details
 
 ### Step 5: Build Kit from Protocol
-```
-POST /wp-json/hp-rw/v1/ai/protocols/build-kit
-Body: {
+Use ability: `hp/protocols/build-kit` with:
+```json
+{
   "supplements": [
     {"sku": "PRODUCT-SKU", "servings_per_day": 3}
   ],
@@ -54,44 +87,43 @@ Body: {
 ```
 
 ### Step 6: Validate Economics
-```
-POST /wp-json/hp-rw/v1/ai/economics/validate-offer
-```
+Use ability: `hp/economics/validate` with offer details
+Ensures minimum profit margins are met.
 
-### Step 7: Create the Funnel
-```
-POST /wp-json/hp-rw/v1/ai/funnels
-Body: { complete funnel JSON conforming to hp-funnel/v1 schema }
-```
+### Step 7: Create Backup (for existing funnels)
+Use ability: `hp/funnels/versions/create` before making changes
 
-## Available Endpoints
+### Step 8: Create/Update the Funnel
+Use ability: `hp/funnels/create` or `hp/funnels/update`
+Pass complete funnel JSON conforming to hp-funnel/v1 schema.
+
+## REST API Fallback
+
+If MCP abilities are not available, use REST endpoints at `/wp-json/hp-rw/v1/ai/`:
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
 | `/ai/system/explain` | GET | Complete system documentation |
 | `/ai/schema` | GET | JSON schema with AI hints |
-| `/ai/styling/schema` | GET | Styling presets and color palettes |
 | `/ai/funnels` | GET/POST | List or create funnels |
-| `/ai/funnels/{slug}` | GET/PUT/DELETE | CRUD operations on specific funnel |
+| `/ai/funnels/{slug}` | GET/PUT/DELETE | CRUD on specific funnel |
 | `/ai/funnels/{slug}/versions` | GET/POST | Version control |
 | `/ai/products` | GET | Search products |
-| `/ai/products/{sku}` | GET | Get product details |
-| `/ai/products/calculate-supply` | POST | Calculate supply for protocol |
 | `/ai/protocols/build-kit` | POST | Build kit from protocol |
-| `/ai/economics/calculate` | POST | Calculate profitability |
 | `/ai/economics/validate-offer` | POST | Validate offer economics |
-| `/ai/economics/guidelines` | GET/PUT | Economic guidelines config |
 
 ## Authentication
 
-All AI endpoints require `manage_woocommerce` capability. Use the WooCommerce MCP server which handles authentication automatically:
+- **MCP Abilities**: Automatically authenticated via MCP Adapter
+- **REST API**: Requires `manage_woocommerce` capability
+
+Use MCP servers:
 - Staging: `woocommerce_mcp_staging`
 - Production: `woocommerce_mcp_production`
 
 ## Local Documentation
 
-Full documentation is available at:
-- `HP-React-Widgets/docs/AI_FUNNEL_CREATION.md`
+Full documentation: `HP-React-Widgets/docs/AI_FUNNEL_CREATION.md`
 
 ## Decision Points
 
@@ -104,3 +136,16 @@ When building funnels, present choices to the admin for:
 
 Do NOT make autonomous decisions on these points.
 
+## Architecture
+
+```
+Agent → MCP Protocol → MCP Adapter Plugin → WordPress Abilities API → HP-Abilities Plugin → HP-React-Widgets Services
+```
+
+HP-Abilities wraps calls to HP-React-Widgets services:
+- FunnelSystemExplainer
+- FunnelSchema
+- ProductCatalogService
+- ProtocolKitBuilder
+- EconomicsService
+- FunnelVersionControl
