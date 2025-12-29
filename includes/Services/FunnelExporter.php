@@ -194,12 +194,20 @@ class FunnelExporter
                 'offer_price' => isset($o['offer_price']) && $o['offer_price'] !== '' ? (float) $o['offer_price'] : null,
             ];
 
+            // Get products from products_data JSON or fallbacks
+            $products = [];
+            $productsJson = $o['products_data'] ?? '';
+            if (!empty($productsJson)) {
+                $products = json_decode($productsJson, true);
+            }
+
             if ($offerType === 'single') {
-                $offer['product_sku'] = $o['single_product_sku'] ?? '';
-                $offer['quantity'] = (int) ($o['single_product_qty'] ?? 1);
+                $product = !empty($products) ? $products[0] : null;
+                $offer['product_sku'] = $product['sku'] ?? $o['single_product_sku'] ?? '';
+                $offer['quantity'] = (int) ($product['qty'] ?? $o['single_product_qty'] ?? 1);
             } elseif ($offerType === 'fixed_bundle') {
                 $offer['bundle_items'] = [];
-                $items = $o['bundle_items'] ?? [];
+                $items = !empty($products) ? $products : ($o['bundle_items'] ?? []);
                 foreach ($items as $item) {
                     if (!empty($item['sku'])) {
                         $offer['bundle_items'][] = [
@@ -210,7 +218,7 @@ class FunnelExporter
                 }
             } elseif ($offerType === 'customizable_kit') {
                 $offer['kit_products'] = [];
-                $items = $o['kit_products'] ?? [];
+                $items = !empty($products) ? $products : ($o['kit_products'] ?? []);
                 foreach ($items as $item) {
                     if (!empty($item['sku'])) {
                         $offer['kit_products'][] = [

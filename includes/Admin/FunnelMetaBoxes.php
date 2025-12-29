@@ -130,8 +130,8 @@ class FunnelMetaBoxes
      */
     public static function renderEconomicsMetaBox(\WP_Post $post): void
     {
-        $funnelData = FunnelExporter::exportById($post->ID);
-        $offers = $funnelData['offers'] ?? [];
+        $config = \HP_RW\Services\FunnelConfigLoader::get($post->ID);
+        $offers = $config['offers'] ?? [];
         $guidelines = EconomicsService::getGuidelines();
         ?>
         <div class="hp-economics-metabox">

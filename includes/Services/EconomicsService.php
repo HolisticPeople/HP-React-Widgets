@@ -264,9 +264,14 @@ class EconomicsService
         $discountValue = (float) ($offer['discount_value'] ?? $offer['discountValue'] ?? 0);
         
         $proposedPrice = $retailTotal;
+        
+        // Priority: 1) calculatedPrice (pre-enriched), 2) offerPrice/offer_price (explicit), 3) discount-based
+        $calculatedPrice = $offer['calculatedPrice'] ?? null;
         $offerPrice = isset($offer['offer_price']) ? $offer['offer_price'] : ($offer['offerPrice'] ?? null);
 
-        if ($offerPrice !== null && $offerPrice !== '') {
+        if ($calculatedPrice !== null && $calculatedPrice !== '') {
+            $proposedPrice = (float) $calculatedPrice;
+        } elseif ($offerPrice !== null && $offerPrice !== '') {
             $proposedPrice = (float) $offerPrice;
         } elseif ($discountType === 'percent' && $discountValue > 0) {
             $proposedPrice = $retailTotal * (1 - $discountValue / 100);
