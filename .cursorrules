@@ -22,61 +22,61 @@ Use these WordPress Abilities via MCP. They are exposed through the MCP Adapter 
 ### System & Schema
 | Ability | Purpose |
 |---------|---------|
-| `hp/funnels/explain-system` | Complete funnel system documentation |
-| `hp/funnels/schema` | JSON schema with AI generation hints |
-| `hp/funnels/styling-schema` | Styling presets and color palettes |
+| `hp-funnels/explain-system` | Complete funnel system documentation |
+| `hp-funnels/schema` | JSON schema with AI generation hints |
+| `hp-funnels/styling-schema` | Styling presets and color palettes |
 
 ### Funnel CRUD
 | Ability | Purpose |
 |---------|---------|
-| `hp/funnels/list` | List all funnels with metadata |
-| `hp/funnels/get` | Get complete funnel by slug |
-| `hp/funnels/create` | Create new funnel from JSON |
-| `hp/funnels/update` | Update existing funnel |
-| `hp/funnels/update-sections` | Update specific sections only |
+| `hp-funnels/list` | List all funnels with metadata |
+| `hp-funnels/get` | Get complete funnel by slug |
+| `hp-funnels/create` | Create new funnel from JSON |
+| `hp-funnels/update` | Update existing funnel |
+| `hp-funnels/update-sections` | Update specific sections only |
 
 ### Version Control
 | Ability | Purpose |
 |---------|---------|
-| `hp/funnels/versions/list` | List all versions of a funnel |
-| `hp/funnels/versions/create` | Create backup before changes |
-| `hp/funnels/versions/restore` | Restore to previous version |
+| `hp-funnels/versions-list` | List all versions of a funnel |
+| `hp-funnels/versions-create` | Create backup before changes |
+| `hp-funnels/versions-restore` | Restore to previous version |
 
 ### Products & Protocol
 | Ability | Purpose |
 |---------|---------|
-| `hp/products/search` | Search products by category, name |
-| `hp/products/get` | Get product details including servings |
-| `hp/products/calculate-supply` | Calculate bottles needed for X days |
-| `hp/protocols/build-kit` | Build product kit from health protocol |
+| `hp-products/search` | Search products by category, name |
+| `hp-products/get` | Get product details including servings |
+| `hp-products/calculate-supply` | Calculate bottles needed for X days |
+| `hp-protocols/build-kit` | Build product kit from health protocol |
 
 ### Economics
 | Ability | Purpose |
 |---------|---------|
-| `hp/economics/calculate` | Calculate offer profitability |
-| `hp/economics/validate` | Validate against economic guidelines |
-| `hp/economics/guidelines` | Get/set min profit rules |
+| `hp-economics/calculate` | Calculate offer profitability |
+| `hp-economics/validate` | Validate against economic guidelines |
+| `hp-economics/guidelines` | Get/set min profit rules |
 
 ## How to Create a Funnel
 
 ### Step 1: Understand the System
-Use ability: `hp/funnels/explain-system`
+Use ability: `hp-funnels/explain-system`
 Returns complete documentation of funnel structure, sections, offer types, and styling.
 
 ### Step 2: Get Schema with AI Hints
-Use ability: `hp/funnels/schema`
+Use ability: `hp-funnels/schema`
 Returns JSON schema with AI generation hints for each section.
 
 ### Step 3: Get Reference Funnel (Optional)
-Use ability: `hp/funnels/list` then `hp/funnels/get` with slug
+Use ability: `hp-funnels/list` then `hp-funnels/get` with slug
 Get an existing funnel as a reference template.
 
 ### Step 4: Search Products for the Kit
-Use ability: `hp/products/search` with category filter
-Use ability: `hp/products/get` with SKU for details
+Use ability: `hp-products/search` with category filter
+Use ability: `hp-products/get` with SKU for details
 
 ### Step 5: Build Kit from Protocol
-Use ability: `hp/protocols/build-kit` with:
+Use ability: `hp-protocols/build-kit` with:
 ```json
 {
   "supplements": [
@@ -87,14 +87,14 @@ Use ability: `hp/protocols/build-kit` with:
 ```
 
 ### Step 6: Validate Economics
-Use ability: `hp/economics/validate` with offer details
+Use ability: `hp-economics/validate` with offer details
 Ensures minimum profit margins are met.
 
 ### Step 7: Create Backup (for existing funnels)
-Use ability: `hp/funnels/versions/create` before making changes
+Use ability: `hp-funnels/versions-create` before making changes
 
 ### Step 8: Create/Update the Funnel
-Use ability: `hp/funnels/create` or `hp/funnels/update`
+Use ability: `hp-funnels/create` or `hp-funnels/update`
 Pass complete funnel JSON conforming to hp-funnel/v1 schema.
 
 ## REST API Fallback
