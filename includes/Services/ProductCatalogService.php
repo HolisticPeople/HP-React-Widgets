@@ -335,15 +335,21 @@ class ProductCatalogService
      */
     private static function getProductCost(\WC_Product $product): float
     {
+        // 1) Primary: Custom HP field
         $value = $product->get_meta(self::META_PRODUCT_COST);
         
-        // Fallback to ACF field if available
-        if (empty($value) && function_exists('get_field')) {
+        // 2) Fallback: EAO / Cost of Goods Sold plugin key
+        if (empty($value) || !is_numeric($value)) {
+            $value = $product->get_meta('_cogs_total_value');
+        }
+
+        // 3) Fallback: ACF field if available
+        if ((empty($value) || !is_numeric($value)) && function_exists('get_field')) {
             $value = get_field('product_cost', $product->get_id());
         }
         
-        // Fallback to WooCommerce Cost of Goods if available
-        if (empty($value)) {
+        // 4) Fallback: WooCommerce Cost of Goods plugin
+        if (empty($value) || !is_numeric($value)) {
             $value = $product->get_meta('_wc_cog_cost');
         }
         

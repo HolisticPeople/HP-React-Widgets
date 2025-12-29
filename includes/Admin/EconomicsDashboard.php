@@ -113,12 +113,24 @@ class EconomicsDashboard
 
                 if (!$offerAnalysis['passes_guidelines']) {
                     $funnelData['status'] = 'warning';
-                    $funnelData['warnings'][] = sprintf(
-                        __('Offer "%s" has margin %.1f%% (min: %.1f%%)', 'hp-react-widgets'),
-                        $offerAnalysis['name'],
-                        $offerAnalysis['margin_percent'],
-                        $guidelines['profit_requirements']['min_profit_percent']
-                    );
+                    
+                    if (!$offerAnalysis['passes_margin']) {
+                        $funnelData['warnings'][] = sprintf(
+                            __('Offer "%s" fails margin: %.1f%% (min: %.1f%%)', 'hp-react-widgets'),
+                            $offerAnalysis['name'],
+                            $offerAnalysis['margin_percent'],
+                            $guidelines['profit_requirements']['min_profit_percent']
+                        );
+                    }
+                    
+                    if (!$offerAnalysis['passes_profit']) {
+                        $funnelData['warnings'][] = sprintf(
+                            __('Offer "%s" fails profit: $%s (min: $%s)', 'hp-react-widgets'),
+                            $offerAnalysis['name'],
+                            number_format($offerAnalysis['profit'], 2),
+                            number_format($guidelines['profit_requirements']['min_profit_dollars'], 2)
+                        );
+                    }
                 }
             }
 
@@ -563,7 +575,7 @@ class EconomicsDashboard
             
             .hp-econ-discount {
                 display: inline-block;
-                background: #dc2626;
+                background: #3b82f6;
                 color: #fff;
                 padding: 2px 6px;
                 border-radius: 3px;
