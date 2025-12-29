@@ -1,441 +1,389 @@
 # AI Funnel Creation Guide
 
-This document describes how AI agents can create, modify, and manage sales funnels in the HP-React-Widgets system.
+This document provides comprehensive documentation for AI agents creating and managing HP Funnels.
 
 ## Overview
 
-The AI Funnel Creation system enables AI agents to:
-1. Understand the complete funnel architecture
-2. Build product kits from health protocols
-3. Generate marketing content from articles
-4. Create color palettes from product inspiration
-5. Validate offers against economic guidelines
-6. Manage funnel versions with backup/restore
+HP Funnels are custom post types (`hp-funnel`) that define complete sales funnels with modular sections, product offers, and integrated checkout. Each funnel is a self-contained landing page with styling, content sections, offers, and a Stripe-powered checkout flow.
 
-## API Endpoints
+## REST API Endpoints
 
-All endpoints are under the namespace `wp-json/hp-rw/v1/ai/`.
+All AI-related endpoints are prefixed with `/wp-json/hp-rw/v1/ai/`.
 
-### System Understanding
+### System & Schema
 
-#### GET `/system/explain`
-Returns comprehensive documentation of the funnel CPT structure, sections, offer types, styling, and checkout flow.
-
-```json
-{
-  "overview": "HP Funnels are custom post types...",
-  "cpt_structure": { ... },
-  "sections": { ... },
-  "offer_types": { ... },
-  "styling": { ... },
-  "checkout_flow": { ... }
-}
-```
-
-#### GET `/schema`
-Returns the complete funnel JSON schema with AI generation hints.
-
-```json
-{
-  "version": "hp-funnel/v1",
-  "schema": { ... },
-  "field_descriptions": { ... },
-  "example": { ... },
-  "ai_generation_hints": { ... },
-  "content_guidelines": { ... }
-}
-```
-
-#### GET `/styling/schema`
-Returns styling schema with color palettes and theme presets.
-
-```json
-{
-  "css_custom_properties": { ... },
-  "color_palette_structure": { ... },
-  "theme_presets": { ... },
-  "generation_guidelines": { ... }
-}
-```
-
-### Product Catalog
-
-#### GET `/products`
-Search products with filters.
-
-Query parameters:
-- `search` - Search term
-- `category` - Category slug
-- `sku` - Exact SKU match
-
-#### GET `/products/{sku}`
-Get detailed product information including servings, costs, and economics.
-
-#### POST `/products/calculate-supply`
-Calculate how many bottles needed for X days.
-
-```json
-{
-  "sku": "ILL-SMALL",
-  "days": 90,
-  "servings_per_day": 3
-}
-```
-
-### Protocol Kit Builder
-
-#### POST `/protocols/build-kit`
-Build a product kit from a health protocol.
-
-```json
-{
-  "protocol": {
-    "name": "Thyroid Support Protocol",
-    "duration_days": 90,
-    "supplements": [
-      {
-        "name": "Nascent Iodine",
-        "daily_servings": 3,
-        "preferred_sku": "ILL-SMALL"
-      },
-      {
-        "name": "Selenium",
-        "daily_servings": 1
-      }
-    ]
-  },
-  "economic_constraints": {
-    "min_margin_percent": 10,
-    "target_price_point": 150
-  }
-}
-```
-
-Response includes decision points for product selection and pricing.
-
-### Economics
-
-#### POST `/economics/calculate`
-Calculate profitability for a set of products.
-
-```json
-{
-  "items": [
-    { "sku": "ILL-SMALL", "qty": 3, "discount_percent": 15 }
-  ],
-  "offer_price": 99.99,
-  "shipping_scenario": "domestic"
-}
-```
-
-#### POST `/economics/validate-offer`
-Validate an offer against economic guidelines.
-
-```json
-{
-  "offer": {
-    "type": "fixed_bundle",
-    "bundle_items": [
-      { "sku": "ILL-SMALL", "qty": 3 }
-    ],
-    "discount_type": "percent",
-    "discount_value": 20
-  }
-}
-```
-
-#### GET `/economics/shipping-strategy`
-Get shipping cost and subsidy recommendations.
-
-Query parameters:
-- `order_total` - Order total in dollars
-- `weight_oz` - Total weight in ounces
-- `destination` - `domestic` or `international`
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/ai/system/explain` | GET | Complete system documentation including sections, offer types, styling |
+| `/ai/schema` | GET | JSON schema with AI generation hints |
+| `/ai/styling/schema` | GET | Styling-specific schema with theme presets |
 
 ### Funnel CRUD
 
-#### GET `/funnels`
-List all funnels with summary data.
-
-#### GET `/funnels/{slug}`
-Get complete funnel data by slug.
-
-#### POST `/funnels`
-Create a new funnel. Requires admin permission.
-
-```json
-{
-  "funnel": {
-    "name": "New Funnel",
-    "slug": "new-funnel"
-  },
-  "hero": { ... },
-  "offers": [ ... ],
-  "styling": { ... }
-}
-```
-
-#### PUT `/funnels/{slug}`
-Update an existing funnel.
-
-#### DELETE `/funnels/{slug}`
-Delete a funnel.
-
-#### GET `/funnels/{slug}/sections`
-Get all section data for a funnel.
-
-#### GET `/funnels/{slug}/section/{section}`
-Get a specific section (hero, benefits, offers, etc.).
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/ai/funnels` | GET | List all funnels with metadata |
+| `/ai/funnels` | POST | Create new funnel |
+| `/ai/funnels/{slug}` | GET | Get complete funnel JSON |
+| `/ai/funnels/{slug}` | PUT | Update funnel |
+| `/ai/funnels/{slug}` | DELETE | Delete funnel |
+| `/ai/funnels/{slug}/sections` | POST | Update specific sections |
+| `/ai/funnels/{slug}/section/{name}` | GET | Get specific section data |
 
 ### Version Control
 
-#### GET `/funnels/{slug}/versions`
-List all saved versions of a funnel.
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/ai/funnels/{slug}/versions` | GET | List all versions |
+| `/ai/funnels/{slug}/versions` | POST | Create backup/version |
+| `/ai/funnels/{slug}/versions/{id}` | GET | Get version snapshot |
+| `/ai/funnels/{slug}/versions/{id}/restore` | POST | Restore version |
+| `/ai/funnels/{slug}/versions/diff` | GET | Compare two versions |
 
-#### POST `/funnels/{slug}/versions`
-Create a new version backup.
+### Products & Economics
 
-```json
-{
-  "description": "Before AI modifications",
-  "created_by": "ai_agent"
-}
-```
-
-#### GET `/funnels/{slug}/versions/{id}`
-Get a specific version's data.
-
-#### POST `/funnels/{slug}/versions/{id}/restore`
-Restore a funnel to a previous version.
-
-```json
-{
-  "backup_current": true
-}
-```
-
-#### GET `/funnels/{slug}/versions/diff`
-Compare two versions.
-
-Query parameters:
-- `from` - Source version ID
-- `to` - Target version ID
-
-## Decision Points
-
-The AI system uses decision points to interact with administrators during funnel creation. Decision points pause the AI workflow and present choices to the user.
-
-### Decision Point Types
-
-1. **single_choice** - Select one option from a list
-2. **multiple_choice** - Select multiple options
-3. **confirmation** - Approve/reject a proposal
-4. **input** - Free-form text input
-5. **range** - Numeric slider selection
-6. **review** - Review and optionally edit complex data
-
-### Decision Point Structure
-
-```json
-{
-  "decision_point": true,
-  "type": "single_choice",
-  "id": "pricing_strategy",
-  "title": "Select Pricing Strategy",
-  "description": "Choose the pricing approach for this offer:",
-  "options": [
-    {
-      "value": "aggressive",
-      "label": "Aggressive (25% off)",
-      "details": { "margin": "15%", "profit": "$12" }
-    },
-    {
-      "value": "moderate",
-      "label": "Moderate (15% off)",
-      "details": { "margin": "25%", "profit": "$20" },
-      "recommended": true
-    }
-  ],
-  "recommendation": "moderate",
-  "context": {
-    "retail_total": 79.99,
-    "cost_total": 32.00
-  },
-  "awaiting_response": true
-}
-```
-
-### Common Decision Points
-
-1. **Product Selection** - Which products to include in a kit
-2. **Pricing Strategy** - Discount level and pricing approach
-3. **Color Palette** - Visual theme selection
-4. **Offer Type** - Single, bundle, or customizable kit
-5. **Supply Duration** - 30, 60, 90, or 180 days
-6. **Content Review** - Review AI-generated marketing content
-7. **Economics Validation** - Approve offers meeting guidelines
-8. **Version Backup** - Confirm backup before modifications
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/ai/products` | GET | Search products with filters |
+| `/ai/products/{sku}` | GET | Get product details with economics |
+| `/ai/products/calculate-supply` | POST | Calculate supply needs for protocol |
+| `/ai/products/categories` | GET | Get product categories |
+| `/ai/protocols/build-kit` | POST | Build kit from protocol definition |
+| `/ai/economics/calculate` | POST | Calculate offer profitability |
+| `/ai/economics/validate-offer` | POST | Validate offer against guidelines |
+| `/ai/economics/guidelines` | GET/PUT | Get/update economic guidelines |
+| `/ai/economics/shipping-strategy` | POST | Get shipping strategy recommendation |
 
 ## Workflow Examples
 
-### Example 1: Create Funnel from Protocol
+### 1. Creating a New Funnel from Scratch
 
 ```
-User: Create a funnel for Dr. Cousens' thyroid support protocol
-
-AI Agent Steps:
-1. GET /system/explain - Understand funnel architecture
-2. GET /schema - Get content structure
-3. POST /protocols/build-kit - Build kit from protocol
-   → Decision Point: Product Selection
-   
-User: Select products A, B, C
-
-4. POST /economics/validate-offer - Validate economics
-   → Decision Point: Pricing Strategy (if margin too low)
-   
-User: Choose moderate pricing
-
-5. GET /styling/schema - Get color options
-   → Decision Point: Color Palette
-   
-User: Choose Dark Gold theme
-
-6. POST /funnels - Create funnel with all data
-7. POST /funnels/{slug}/versions - Create initial backup
+1. GET /ai/system/explain → Understand funnel structure
+2. GET /ai/schema → Get schema with AI generation hints
+3. GET /ai/products?category=supplements → Find available products
+4. POST /ai/economics/validate-offer → Validate pricing before creation
+5. POST /ai/funnels → Create the funnel with validated data
 ```
 
-### Example 2: Derive Content from Article
+### 2. Creating a Funnel from a Protocol
 
 ```
-User: Create a funnel based on this article about iodine benefits
-
-AI Agent Steps:
-1. Parse article for key information
-2. GET /schema - Get AI generation hints
-3. Generate content following guidelines:
-   - hero.title from article main benefit
-   - benefits.items from key points
-   - science.sections from research data
-   - faq.items from common questions
+1. POST /ai/protocols/build-kit with protocol definition:
+   {
+     "supplements": [
+       {"sku": "ILL-LARGE", "servings_per_day": 3},
+       {"sku": "SEL-200MCG", "servings_per_day": 1}
+     ],
+     "duration_days": 90
+   }
    
-4. → Decision Point: Content Review
-   Present generated content for each section
-
-User: Approve hero, edit benefits, regenerate FAQ
-
-5. Apply edits, regenerate as requested
-6. POST /funnels - Create with approved content
+2. Review kit suggestions and economic analysis
+3. POST /ai/funnels with complete funnel data including offers
 ```
 
-### Example 3: Modify Existing Funnel
+### 3. Updating an Existing Funnel
 
 ```
-User: Update the illumodine funnel with a new pricing strategy
-
-AI Agent Steps:
-1. GET /funnels/illumodine - Get current funnel
-2. POST /funnels/illumodine/versions - Create backup
-   → Decision Point: Version Backup Confirmation
-   
-User: Confirm backup
-
-3. POST /economics/calculate - Calculate new pricing options
-   → Decision Point: Pricing Strategy
-   
-User: Select new pricing
-
-4. PUT /funnels/illumodine - Update funnel
-5. Verify changes applied correctly
+1. GET /ai/funnels/{slug} → Get current funnel state
+2. POST /ai/funnels/{slug}/versions → Create backup before changes
+3. POST /ai/funnels/{slug}/sections → Update specific sections
+4. GET /ai/funnels/{slug}/versions/diff?from=v1&to=current → Review changes
 ```
+
+### 4. Using Reference Funnel
+
+```
+1. GET /ai/funnels → List available funnels
+2. GET /ai/funnels/illumodine → Get reference funnel as template
+3. Modify template for new product
+4. POST /ai/funnels → Create new funnel based on template
+```
+
+## Decision Points
+
+AI agents should present choices at key decision points rather than making autonomous decisions. This keeps the admin in control while leveraging AI for speed and suggestions.
+
+### Offer Structure Decisions
+
+**Kit Type:**
+- `fixed_bundle` - Best for protocol kits where products are pre-determined
+- `customizable_kit` - Best for flexible bundles where customer picks products
+- `tiered_singles` - Best for simple product offerings at different quantities
+
+**Discount Strategy:**
+- `percent_off` - Easier to communicate ("Save 20%")
+- `fixed_discount` - Better for high-value items ("$50 off")
+- `tiered_pricing` - Volume-based discounts
+
+**Featured Offer:**
+- Choose the offer with the best margin that still provides customer value
+- Use clear badges like "BEST VALUE" or "MOST POPULAR"
+
+### Content Decisions
+
+**Headline Style:**
+- `benefit-focused` - "Transform Your Health Today"
+- `problem-focused` - "Tired of Low Energy?"
+- `curiosity-driven` - "The Secret to Optimal Thyroid Function"
+
+**Tone:**
+- `professional` - Formal, authoritative
+- `conversational` - Friendly, approachable
+- `scientific` - Data-driven, technical
+- `urgent` - Limited time, scarcity
+
+**Sections to Include:**
+- `minimal` - header, hero, products, footer
+- `standard` - + benefits, testimonials, faq
+- `comprehensive` - All sections including science, authority, features
+
+### Styling Decisions
+
+**Theme Direction:**
+- `dark` - Premium feel, recommended for health products
+- `light` - Clean, professional
+- `match_product_branding` - Extract colors from product labels
+
+**Accent Color:**
+- Extract from product label for brand consistency
+- Use theme presets as starting point
+- Ensure sufficient contrast with background
 
 ## Economic Guidelines
 
-The system enforces configurable economic guidelines:
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `min_profit_percent` | 10% | Minimum profit margin |
-| `min_profit_dollars` | 10 | Minimum absolute profit |
-| `apply_rule` | either | Pass if either threshold met |
-| `free_shipping_threshold` | 100 | Free domestic shipping above |
-| `international_subsidy_percent` | 50 | % of international shipping subsidized |
-
-AI agents should:
-1. Calculate economics before finalizing offers
-2. Present warnings for offers below thresholds
-3. Suggest pricing adjustments to meet guidelines
-4. Consider shipping costs in profitability calculations
-
-## Best Practices
-
-### For AI Agents
-
-1. **Always create backups** before modifying existing funnels
-2. **Present decision points** for significant choices rather than deciding autonomously
-3. **Validate economics** before presenting final offer configurations
-4. **Use reference funnels** to understand existing patterns
-5. **Follow content guidelines** to avoid compliance issues
-6. **Include context** in decision points to help users make informed choices
-
-### Content Guidelines
-
-1. Avoid FDA-prohibited medical claims
-2. Use benefit-focused language ("supports" not "cures")
-3. Include required disclaimers
-4. Follow brand voice guidelines
-5. Maintain accessibility standards
-
-### Version Control
-
-1. Create backups before any AI modifications
-2. Use descriptive version names
-3. Keep versions for at least 30 days
-4. Compare versions before restoring
-
-## Error Handling
-
-API responses include error information:
+All offers should meet these configurable guidelines:
 
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "invalid_offer",
-    "message": "Offer profit margin (5%) is below minimum (10%)",
-    "suggestions": [
-      {
-        "action": "increase_price",
-        "message": "Increase price to $85 for 12% margin"
-      }
+  "min_margin_percent": 10,
+  "min_profit_dollars": 50,
+  "pricing_strategy": "value_based",
+  "free_shipping_threshold_us": 100
+}
+```
+
+### Shipping Strategy
+
+**Domestic (US):**
+- Free shipping for orders over $100
+- Below threshold: Customer pays actual rate
+
+**International:**
+- Tiered subsidy based on order profitability:
+  - Profit $100+: 75% subsidy
+  - Profit $50-99: 50% subsidy
+  - Profit $25-49: 25% subsidy
+  - Profit <$25: No subsidy
+
+## Content Guidelines
+
+### FDA Compliance
+
+**Safe Language:**
+- "Supports healthy [function]"
+- "May help with [wellness goal]"
+- "Promotes [positive state]"
+
+**Avoid:**
+- "Cures [condition]"
+- "Treats [disease]"
+- "Prevents [illness]"
+- "Guaranteed results"
+
+### Required Disclaimer
+
+All supplement funnels must include:
+> These statements have not been evaluated by the FDA. This product is not intended to diagnose, treat, cure or prevent any disease.
+
+### Section Content Guidelines
+
+**Hero Title:**
+- 3-8 words
+- Action-oriented, benefit-focused
+- Examples: "Transform Your Health Today", "Unlock Your Natural Energy"
+
+**Benefits:**
+- 6-12 items
+- 5-15 words each
+- Specific outcomes, not generic claims
+
+**Testimonials:**
+- 3-6 testimonials
+- Must be real (never generate fake testimonials)
+- Use placeholders if none available
+
+**FAQ:**
+- 4-8 questions
+- Address common objections
+- Include shipping, returns, usage questions
+
+## Theme Presets
+
+### Dark Gold (Default)
+```json
+{
+  "accent_color": "#eab308",
+  "page_bg_color": "#121212",
+  "card_bg_color": "#1a1a1a",
+  "text_color_basic": "#e5e5e5"
+}
+```
+
+### Dark Purple
+```json
+{
+  "accent_color": "#7c3aed",
+  "page_bg_color": "#0f0f1a",
+  "card_bg_color": "#1a1a2e",
+  "text_color_basic": "#e5e5e5"
+}
+```
+
+### Dark Green
+```json
+{
+  "accent_color": "#22c55e",
+  "page_bg_color": "#0f1a0f",
+  "card_bg_color": "#1a2e1a",
+  "text_color_basic": "#e5e5e5"
+}
+```
+
+### Light Blue
+```json
+{
+  "accent_color": "#3b82f6",
+  "page_bg_color": "#f8fafc",
+  "card_bg_color": "#ffffff",
+  "text_color_basic": "#1e293b"
+}
+```
+
+## Example Funnel JSON
+
+```json
+{
+  "$schema": "hp-funnel/v1",
+  "funnel": {
+    "name": "Illumodine",
+    "slug": "illumodine",
+    "status": "active"
+  },
+  "hero": {
+    "title": "Transform Your Health",
+    "subtitle": "With Nascent Iodine",
+    "tagline": "The purest form of iodine for optimal thyroid support",
+    "cta_text": "Get Your Special Offer Now"
+  },
+  "benefits": {
+    "title": "Why Choose Illumodine?",
+    "items": [
+      {"text": "Supports healthy thyroid function", "icon": "check"},
+      {"text": "Boosts natural energy levels", "icon": "check"},
+      {"text": "100% pure and vegan formula", "icon": "shield"}
     ]
+  },
+  "offers": [
+    {
+      "id": "offer-small",
+      "name": "Small Bottle (0.5 oz)",
+      "type": "single",
+      "product_sku": "ILL-SMALL",
+      "quantity": 1,
+      "discount_type": "none"
+    },
+    {
+      "id": "offer-best-value",
+      "name": "90-Day Supply Kit",
+      "type": "fixed_bundle",
+      "badge": "BEST VALUE",
+      "is_featured": true,
+      "discount_label": "Save 20%",
+      "discount_type": "percent",
+      "discount_value": 20,
+      "bundle_items": [
+        {"sku": "ILL-LARGE", "qty": 2},
+        {"sku": "SEL-200MCG", "qty": 1}
+      ]
+    }
+  ],
+  "styling": {
+    "accent_color": "#eab308",
+    "page_bg_color": "#121212",
+    "text_color_basic": "#e5e5e5"
+  },
+  "footer": {
+    "disclaimer": "These statements have not been evaluated by the FDA..."
   }
 }
 ```
 
-AI agents should:
-1. Check `success` field in responses
-2. Present errors clearly to users
-3. Offer suggestions when available
-4. Log errors for debugging
+## Best Practices
 
-## Appendix: Funnel JSON Structure
+### Content
+- Keep hero title under 8 words
+- Use specific benefit statements, not generic claims
+- Include social proof (testimonials) for higher conversion
+- Address top 4-6 objections in FAQ
+- Never generate fake testimonials
 
-See `GET /schema` for the complete schema. Key sections:
+### Offers
+- Always have at least 2 offers for comparison effect
+- Feature the best-value offer (not necessarily cheapest)
+- Use clear discount badges
+- Ensure all offers meet minimum profit margins
 
-- `funnel` - Core identity (name, slug, status)
-- `header` - Logo, navigation
-- `hero` - Main headline, image, CTA
-- `benefits` - Benefit list with icons
-- `offers` - Product offers (single, bundle, kit)
-- `features` - Feature cards
-- `authority` - Expert bio and credentials
-- `science` - Scientific information
-- `testimonials` - Customer reviews
-- `faq` - FAQ accordion
-- `cta` - Secondary call-to-action
-- `checkout` - Checkout configuration
-- `thankyou` - Thank you page
-- `styling` - Colors and visual theme
-- `footer` - Footer content
+### Styling
+- Match funnel colors to product branding
+- Dark themes convert better for premium/health products
+- Ensure CTA buttons have high contrast
+- Use consistent styling across all sections
 
+### Version Control
+- Create backup before any AI modifications
+- Use descriptive version notes
+- Keep last 10 versions for rollback capability
+
+## Admin UI Integration
+
+### WordPress Admin Pages
+
+1. **HP Funnels List** (`/wp-admin/edit.php?post_type=hp-funnel`)
+   - Shows all funnels with Economics, Versions, Last Modified columns
+   
+2. **Funnel Edit Page**
+   - Version History meta box - Quick access to versions
+   - Economics Summary meta box - Profit/margin at a glance
+   - AI Activity meta box - Recent AI actions on this funnel
+
+3. **AI Activity Log** (`/wp-admin/edit.php?post_type=hp-funnel&page=hp-funnel-ai-activity`)
+   - All AI actions across all funnels
+   
+4. **Economics Dashboard** (`/wp-admin/edit.php?post_type=hp-funnel&page=hp-funnel-economics`)
+   - Profitability overview for all funnels
+   
+5. **AI Settings** (`/wp-admin/admin.php?page=hp-rw-ai-settings`)
+   - Configure economic guidelines, shipping rules, version settings
+
+## Troubleshooting
+
+### Common Issues
+
+**"Funnel not found" error:**
+- Check that the slug is correct and lowercase
+- Verify the funnel is published (not draft)
+
+**"Validation failed" error:**
+- Use `/ai/schema` to verify JSON structure
+- Ensure required fields (funnel.name, funnel.slug) are present
+- Check offer types have required fields
+
+**Economics validation failing:**
+- Check current guidelines with `GET /ai/economics/guidelines`
+- Verify product costs are set in WooCommerce
+- Consider adjusting pricing or guidelines
+
+**Version restore failed:**
+- Check that version ID exists
+- Ensure backup option is enabled in settings

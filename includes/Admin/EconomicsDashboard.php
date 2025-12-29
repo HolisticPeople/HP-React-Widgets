@@ -2,7 +2,8 @@
 namespace HP_RW\Admin;
 
 use HP_RW\Services\EconomicsService;
-use HP_RW\Services\FunnelExporter;
+use HP_RW\Services\FunnelConfigLoader;
+use HP_RW\Plugin;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -10,15 +11,17 @@ if (!defined('ABSPATH')) {
 
 /**
  * Economics Dashboard admin page.
+ * Provides overview of profitability across all funnels and their offers.
  */
 class EconomicsDashboard
 {
     /**
-     * Initialize the dashboard.
+     * Initialize the economics dashboard.
      */
     public static function init(): void
     {
         add_action('admin_menu', [self::class, 'addAdminMenu']);
+        add_action('admin_enqueue_scripts', [self::class, 'enqueueAssets']);
     }
 
     /**
@@ -28,7 +31,7 @@ class EconomicsDashboard
     {
         add_submenu_page(
             'edit.php?post_type=hp-funnel',
-            __('Economics', 'hp-react-widgets'),
+            __('Economics Dashboard', 'hp-react-widgets'),
             __('Economics', 'hp-react-widgets'),
             'manage_woocommerce',
             'hp-funnel-economics',
@@ -37,280 +40,544 @@ class EconomicsDashboard
     }
 
     /**
-     * Render the dashboard page.
+     * Enqueue assets for the dashboard.
+     */
+    public static function enqueueAssets(string $hook): void
+    {
+        if ($hook !== 'hp-funnel_page_hp-funnel-economics') {
+            return;
+        }
+
+        wp_enqueue_style(
+            'hp-economics-dashboard',
+            plugins_url('assets/css/economics-dashboard.css', dirname(__DIR__, 2) . '/hp-react-widgets.php'),
+            [],
+            HP_RW_VERSION
+        );
+    }
+
+    /**
+     * Get all funnels with their economics data.
+     */
+    private static function getFunnelEconomics(): array
+    {
+        $funnels = get_posts([
+            'post_type' => Plugin::FUNNEL_POST_TYPE,
+            'posts_per_page' => -1,
+            'post_status' => 'publish',
+        ]);
+
+        $results = [];
+        $guidelines = EconomicsService::getGuidelines();
+
+        foreach ($funnels as $funnel) {
+            $config = FunnelConfigLoader::load($funnel->ID);
+            if (!$config) {
+                continue;
+            }
+
+            $funnelData = [
+                'id' => $funnel->ID,
+                'title' => $funnel->post_title,
+                'slug' => get_field('funnel_slug', $funnel->ID) ?: $funnel->post_name,
+                'status' => 'healthy',
+                'offers' => [],
+                'total_products' => 0,
+                'avg_margin' => 0,
+                'warnings' => [],
+            ];
+
+            // Extract offers from checkout section
+            $checkout = $config['checkout'] ?? [];
+            $products = $checkout['products'] ?? [];
+
+            $totalMargin = 0;
+            $offerCount = 0;
+
+            foreach ($products as $product) {
+                $offerAnalysis = self::analyzeOffer($product, $guidelines);
+                $funnelData['offers'][] = $offerAnalysis;
+                $funnelData['total_products'] += count($product['products'] ?? [1]);
+
+                if (isset($offerAnalysis['margin_percent'])) {
+                    $totalMargin += $offerAnalysis['margin_percent'];
+                    $offerCount++;
+                }
+
+                if (!$offerAnalysis['passes_guidelines']) {
+                    $funnelData['status'] = 'warning';
+                    $funnelData['warnings'][] = sprintf(
+                        __('Offer "%s" has margin %.1f%% (min: %.1f%%)', 'hp-react-widgets'),
+                        $offerAnalysis['name'],
+                        $offerAnalysis['margin_percent'],
+                        $guidelines['min_margin_percent']
+                    );
+                }
+            }
+
+            $funnelData['avg_margin'] = $offerCount > 0 ? $totalMargin / $offerCount : 0;
+            $results[] = $funnelData;
+        }
+
+        return $results;
+    }
+
+    /**
+     * Analyze a single offer for economics.
+     */
+    private static function analyzeOffer(array $offer, array $guidelines): array
+    {
+        $offerType = $offer['offer_type'] ?? 'single';
+        $price = floatval($offer['price'] ?? 0);
+        $originalPrice = floatval($offer['original_price'] ?? $price);
+        $name = $offer['name'] ?? __('Unnamed Offer', 'hp-react-widgets');
+
+        // Calculate cost
+        $totalCost = 0;
+        $items = [];
+
+        if ($offerType === 'single') {
+            $sku = $offer['sku'] ?? '';
+            $qty = intval($offer['quantity'] ?? 1);
+            $cost = EconomicsService::getProductCost($sku);
+            $totalCost = $cost * $qty;
+            $items[] = ['sku' => $sku, 'quantity' => $qty, 'cost' => $cost];
+        } elseif ($offerType === 'bundle' || $offerType === 'fixed_bundle') {
+            $bundleProducts = $offer['products'] ?? [];
+            foreach ($bundleProducts as $bundleItem) {
+                $sku = $bundleItem['sku'] ?? '';
+                $qty = intval($bundleItem['quantity'] ?? 1);
+                $cost = EconomicsService::getProductCost($sku);
+                $totalCost += $cost * $qty;
+                $items[] = ['sku' => $sku, 'quantity' => $qty, 'cost' => $cost];
+            }
+        }
+
+        $profit = $price - $totalCost;
+        $marginPercent = $price > 0 ? ($profit / $price) * 100 : 0;
+        
+        $passesMargin = $marginPercent >= $guidelines['min_margin_percent'];
+        $passesProfit = $profit >= $guidelines['min_profit_dollars'];
+        $passesGuidelines = $passesMargin && $passesProfit;
+
+        return [
+            'name' => $name,
+            'type' => $offerType,
+            'price' => $price,
+            'original_price' => $originalPrice,
+            'discount_percent' => $originalPrice > 0 ? (($originalPrice - $price) / $originalPrice) * 100 : 0,
+            'total_cost' => $totalCost,
+            'profit' => $profit,
+            'margin_percent' => $marginPercent,
+            'passes_margin' => $passesMargin,
+            'passes_profit' => $passesProfit,
+            'passes_guidelines' => $passesGuidelines,
+            'items' => $items,
+        ];
+    }
+
+    /**
+     * Get summary statistics.
+     */
+    private static function getSummaryStats(array $funnelsData): array
+    {
+        $totalFunnels = count($funnelsData);
+        $healthyFunnels = 0;
+        $warningFunnels = 0;
+        $totalOffers = 0;
+        $passingOffers = 0;
+        $totalProfit = 0;
+        $totalRevenue = 0;
+
+        foreach ($funnelsData as $funnel) {
+            if ($funnel['status'] === 'healthy') {
+                $healthyFunnels++;
+            } else {
+                $warningFunnels++;
+            }
+
+            foreach ($funnel['offers'] as $offer) {
+                $totalOffers++;
+                if ($offer['passes_guidelines']) {
+                    $passingOffers++;
+                }
+                $totalProfit += $offer['profit'];
+                $totalRevenue += $offer['price'];
+            }
+        }
+
+        return [
+            'total_funnels' => $totalFunnels,
+            'healthy_funnels' => $healthyFunnels,
+            'warning_funnels' => $warningFunnels,
+            'total_offers' => $totalOffers,
+            'passing_offers' => $passingOffers,
+            'failing_offers' => $totalOffers - $passingOffers,
+            'avg_margin' => $totalRevenue > 0 ? ($totalProfit / $totalRevenue) * 100 : 0,
+            'total_potential_profit' => $totalProfit,
+        ];
+    }
+
+    /**
+     * Render the economics dashboard page.
      */
     public static function renderPage(): void
     {
-        $analysis = self::analyzeFunnelEconomics();
         $guidelines = EconomicsService::getGuidelines();
+        $funnelsData = self::getFunnelEconomics();
+        $stats = self::getSummaryStats($funnelsData);
         ?>
-        <div class="wrap">
-            <h1><?php esc_html_e('Funnel Economics Dashboard', 'hp-react-widgets'); ?></h1>
+        <div class="wrap hp-economics-dashboard">
+            <h1><?php esc_html_e('Economics Dashboard', 'hp-react-widgets'); ?></h1>
             
-            <!-- Overview Cards -->
-            <div class="hp-econ-cards">
-                <div class="hp-econ-card">
-                    <div class="hp-econ-card-value"><?php echo esc_html($analysis['total_funnels']); ?></div>
-                    <div class="hp-econ-card-label"><?php esc_html_e('Total Funnels', 'hp-react-widgets'); ?></div>
-                </div>
-                <div class="hp-econ-card">
-                    <div class="hp-econ-card-value"><?php echo esc_html(round($analysis['avg_margin'], 1)); ?>%</div>
-                    <div class="hp-econ-card-label"><?php esc_html_e('Average Margin', 'hp-react-widgets'); ?></div>
-                </div>
-                <div class="hp-econ-card <?php echo $analysis['offers_below_threshold'] > 0 ? 'hp-econ-card-warning' : 'hp-econ-card-success'; ?>">
-                    <div class="hp-econ-card-value"><?php echo esc_html($analysis['offers_below_threshold']); ?></div>
-                    <div class="hp-econ-card-label"><?php esc_html_e('Offers Below Threshold', 'hp-react-widgets'); ?></div>
-                </div>
-                <div class="hp-econ-card">
-                    <div class="hp-econ-card-value"><?php echo esc_html($analysis['total_offers']); ?></div>
-                    <div class="hp-econ-card-label"><?php esc_html_e('Total Offers', 'hp-react-widgets'); ?></div>
-                </div>
-            </div>
+            <p class="description">
+                <?php esc_html_e('Overview of profitability across all funnels and offers.', 'hp-react-widgets'); ?>
+            </p>
 
             <!-- Current Guidelines -->
-            <div class="hp-econ-section">
-                <h2><?php esc_html_e('Current Guidelines', 'hp-react-widgets'); ?></h2>
-                <p>
-                    <?php esc_html_e('Minimum Profit:', 'hp-react-widgets'); ?>
-                    <strong>
-                        <?php echo esc_html($guidelines['profit_requirements']['min_profit_percent']); ?>%
-                        <?php esc_html_e('or', 'hp-react-widgets'); ?>
-                        $<?php echo esc_html($guidelines['profit_requirements']['min_profit_dollars']); ?>
-                    </strong>
-                    (<?php echo esc_html($guidelines['profit_requirements']['apply_rule']); ?>)
-                    <a href="<?php echo esc_url(admin_url('edit.php?post_type=hp-funnel&page=hp-funnel-ai-settings')); ?>" class="button button-small" style="margin-left: 10px;">
-                        <?php esc_html_e('Edit Guidelines', 'hp-react-widgets'); ?>
-                    </a>
-                </p>
+            <div class="hp-econ-card hp-econ-guidelines">
+                <h3><?php esc_html_e('Current Guidelines', 'hp-react-widgets'); ?></h3>
+                <div class="hp-econ-guidelines-grid">
+                    <div class="hp-econ-guideline">
+                        <span class="label"><?php esc_html_e('Min Margin', 'hp-react-widgets'); ?></span>
+                        <span class="value"><?php echo esc_html($guidelines['min_margin_percent']); ?>%</span>
+                    </div>
+                    <div class="hp-econ-guideline">
+                        <span class="label"><?php esc_html_e('Min Profit', 'hp-react-widgets'); ?></span>
+                        <span class="value">$<?php echo esc_html(number_format($guidelines['min_profit_dollars'], 2)); ?></span>
+                    </div>
+                    <div class="hp-econ-guideline">
+                        <span class="label"><?php esc_html_e('Free Shipping (US)', 'hp-react-widgets'); ?></span>
+                        <span class="value">$<?php echo esc_html($guidelines['free_shipping_threshold_us']); ?>+</span>
+                    </div>
+                </div>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=hp-rw-ai-settings')); ?>" class="button">
+                    <?php esc_html_e('Edit Guidelines', 'hp-react-widgets'); ?>
+                </a>
             </div>
 
-            <?php if (!empty($analysis['failing_offers'])): ?>
-            <!-- Failing Offers -->
-            <div class="hp-econ-section">
-                <h2><?php esc_html_e('Offers Below Threshold', 'hp-react-widgets'); ?></h2>
-                <p class="description"><?php esc_html_e('These offers do not meet the minimum profit guidelines:', 'hp-react-widgets'); ?></p>
-                
-                <table class="wp-list-table widefat fixed striped">
-                    <thead>
-                        <tr>
-                            <th><?php esc_html_e('Funnel', 'hp-react-widgets'); ?></th>
-                            <th><?php esc_html_e('Offer', 'hp-react-widgets'); ?></th>
-                            <th><?php esc_html_e('Margin', 'hp-react-widgets'); ?></th>
-                            <th><?php esc_html_e('Profit', 'hp-react-widgets'); ?></th>
-                            <th><?php esc_html_e('Issue', 'hp-react-widgets'); ?></th>
-                            <th><?php esc_html_e('Suggestion', 'hp-react-widgets'); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($analysis['failing_offers'] as $offer): ?>
-                            <tr>
-                                <td>
-                                    <a href="<?php echo esc_url(admin_url('post.php?post=' . $offer['funnel_id'] . '&action=edit')); ?>">
-                                        <?php echo esc_html($offer['funnel_name']); ?>
-                                    </a>
-                                </td>
-                                <td><?php echo esc_html($offer['offer_name']); ?></td>
-                                <td>
-                                    <span style="color: #d63638; font-weight: 600;">
-                                        <?php echo esc_html(round($offer['margin_percent'], 1)); ?>%
-                                    </span>
-                                </td>
-                                <td>
-                                    <span style="color: #d63638;">
-                                        $<?php echo esc_html(round($offer['profit_dollars'], 2)); ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <?php 
-                                    $issues = [];
-                                    if ($offer['margin_percent'] < $guidelines['profit_requirements']['min_profit_percent']) {
-                                        $issues[] = sprintf(__('Below %d%% margin', 'hp-react-widgets'), $guidelines['profit_requirements']['min_profit_percent']);
-                                    }
-                                    if ($offer['profit_dollars'] < $guidelines['profit_requirements']['min_profit_dollars']) {
-                                        $issues[] = sprintf(__('Below $%d profit', 'hp-react-widgets'), $guidelines['profit_requirements']['min_profit_dollars']);
-                                    }
-                                    echo esc_html(implode(', ', $issues));
-                                    ?>
-                                </td>
-                                <td>
-                                    <?php if (!empty($offer['suggestion'])): ?>
-                                        <?php echo esc_html($offer['suggestion']); ?>
-                                    <?php else: ?>
-                                        <?php esc_html_e('Increase price or reduce discount', 'hp-react-widgets'); ?>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+            <!-- Summary Stats -->
+            <div class="hp-econ-stats-grid">
+                <div class="hp-econ-stat-card">
+                    <span class="hp-econ-stat-value"><?php echo esc_html($stats['total_funnels']); ?></span>
+                    <span class="hp-econ-stat-label"><?php esc_html_e('Total Funnels', 'hp-react-widgets'); ?></span>
+                </div>
+                <div class="hp-econ-stat-card <?php echo $stats['healthy_funnels'] === $stats['total_funnels'] ? 'success' : ''; ?>">
+                    <span class="hp-econ-stat-value"><?php echo esc_html($stats['healthy_funnels']); ?></span>
+                    <span class="hp-econ-stat-label"><?php esc_html_e('Healthy Funnels', 'hp-react-widgets'); ?></span>
+                </div>
+                <div class="hp-econ-stat-card <?php echo $stats['warning_funnels'] > 0 ? 'warning' : ''; ?>">
+                    <span class="hp-econ-stat-value"><?php echo esc_html($stats['warning_funnels']); ?></span>
+                    <span class="hp-econ-stat-label"><?php esc_html_e('Need Attention', 'hp-react-widgets'); ?></span>
+                </div>
+                <div class="hp-econ-stat-card">
+                    <span class="hp-econ-stat-value"><?php echo esc_html($stats['total_offers']); ?></span>
+                    <span class="hp-econ-stat-label"><?php esc_html_e('Total Offers', 'hp-react-widgets'); ?></span>
+                </div>
+                <div class="hp-econ-stat-card <?php echo $stats['failing_offers'] > 0 ? 'warning' : 'success'; ?>">
+                    <span class="hp-econ-stat-value"><?php echo esc_html($stats['passing_offers']); ?>/<?php echo esc_html($stats['total_offers']); ?></span>
+                    <span class="hp-econ-stat-label"><?php esc_html_e('Passing Guidelines', 'hp-react-widgets'); ?></span>
+                </div>
+                <div class="hp-econ-stat-card">
+                    <span class="hp-econ-stat-value"><?php echo esc_html(number_format($stats['avg_margin'], 1)); ?>%</span>
+                    <span class="hp-econ-stat-label"><?php esc_html_e('Avg Margin', 'hp-react-widgets'); ?></span>
+                </div>
             </div>
+
+            <!-- Funnel Details -->
+            <h2><?php esc_html_e('Funnel Economics', 'hp-react-widgets'); ?></h2>
+
+            <?php if (empty($funnelsData)): ?>
+                <div class="notice notice-info">
+                    <p><?php esc_html_e('No published funnels found. Create a funnel to see economics data.', 'hp-react-widgets'); ?></p>
+                </div>
+            <?php else: ?>
+                <?php foreach ($funnelsData as $funnel): ?>
+                    <div class="hp-econ-funnel-card <?php echo esc_attr($funnel['status']); ?>">
+                        <div class="hp-econ-funnel-header">
+                            <h3>
+                                <span class="hp-econ-status-indicator"></span>
+                                <?php echo esc_html($funnel['title']); ?>
+                                <code><?php echo esc_html($funnel['slug']); ?></code>
+                            </h3>
+                            <div class="hp-econ-funnel-meta">
+                                <span class="hp-econ-avg-margin">
+                                    <?php esc_html_e('Avg Margin:', 'hp-react-widgets'); ?>
+                                    <strong><?php echo esc_html(number_format($funnel['avg_margin'], 1)); ?>%</strong>
+                                </span>
+                                <a href="<?php echo esc_url(admin_url('post.php?post=' . $funnel['id'] . '&action=edit')); ?>" class="button button-small">
+                                    <?php esc_html_e('Edit Funnel', 'hp-react-widgets'); ?>
+                                </a>
+                            </div>
+                        </div>
+
+                        <?php if (!empty($funnel['warnings'])): ?>
+                            <div class="hp-econ-warnings">
+                                <?php foreach ($funnel['warnings'] as $warning): ?>
+                                    <div class="hp-econ-warning">⚠️ <?php echo esc_html($warning); ?></div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if (!empty($funnel['offers'])): ?>
+                            <table class="hp-econ-offers-table">
+                                <thead>
+                                    <tr>
+                                        <th><?php esc_html_e('Offer', 'hp-react-widgets'); ?></th>
+                                        <th><?php esc_html_e('Type', 'hp-react-widgets'); ?></th>
+                                        <th><?php esc_html_e('Price', 'hp-react-widgets'); ?></th>
+                                        <th><?php esc_html_e('Cost', 'hp-react-widgets'); ?></th>
+                                        <th><?php esc_html_e('Profit', 'hp-react-widgets'); ?></th>
+                                        <th><?php esc_html_e('Margin', 'hp-react-widgets'); ?></th>
+                                        <th><?php esc_html_e('Status', 'hp-react-widgets'); ?></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($funnel['offers'] as $offer): ?>
+                                        <tr class="<?php echo $offer['passes_guidelines'] ? 'passing' : 'failing'; ?>">
+                                            <td>
+                                                <strong><?php echo esc_html($offer['name']); ?></strong>
+                                                <?php if ($offer['discount_percent'] > 0): ?>
+                                                    <span class="hp-econ-discount">
+                                                        -<?php echo esc_html(number_format($offer['discount_percent'], 0)); ?>%
+                                                    </span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><span class="hp-econ-type-badge"><?php echo esc_html(ucwords(str_replace('_', ' ', $offer['type']))); ?></span></td>
+                                            <td>$<?php echo esc_html(number_format($offer['price'], 2)); ?></td>
+                                            <td>$<?php echo esc_html(number_format($offer['total_cost'], 2)); ?></td>
+                                            <td class="<?php echo $offer['profit'] >= 0 ? 'positive' : 'negative'; ?>">
+                                                $<?php echo esc_html(number_format($offer['profit'], 2)); ?>
+                                            </td>
+                                            <td class="<?php echo $offer['passes_margin'] ? 'positive' : 'negative'; ?>">
+                                                <?php echo esc_html(number_format($offer['margin_percent'], 1)); ?>%
+                                            </td>
+                                            <td>
+                                                <?php if ($offer['passes_guidelines']): ?>
+                                                    <span class="hp-econ-status-pass">✓ <?php esc_html_e('Pass', 'hp-react-widgets'); ?></span>
+                                                <?php else: ?>
+                                                    <span class="hp-econ-status-fail">✗ <?php esc_html_e('Fail', 'hp-react-widgets'); ?></span>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        <?php else: ?>
+                            <p class="hp-econ-no-offers"><?php esc_html_e('No offers configured in this funnel.', 'hp-react-widgets'); ?></p>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
             <?php endif; ?>
-
-            <!-- All Funnels Economics -->
-            <div class="hp-econ-section">
-                <h2><?php esc_html_e('All Funnel Economics', 'hp-react-widgets'); ?></h2>
-                
-                <table class="wp-list-table widefat fixed striped">
-                    <thead>
-                        <tr>
-                            <th><?php esc_html_e('Funnel', 'hp-react-widgets'); ?></th>
-                            <th><?php esc_html_e('Offers', 'hp-react-widgets'); ?></th>
-                            <th><?php esc_html_e('Avg Margin', 'hp-react-widgets'); ?></th>
-                            <th><?php esc_html_e('Total Retail', 'hp-react-widgets'); ?></th>
-                            <th><?php esc_html_e('Status', 'hp-react-widgets'); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($analysis['funnels'] as $funnel): ?>
-                            <tr>
-                                <td>
-                                    <a href="<?php echo esc_url(admin_url('post.php?post=' . $funnel['id'] . '&action=edit')); ?>">
-                                        <?php echo esc_html($funnel['name']); ?>
-                                    </a>
-                                </td>
-                                <td><?php echo esc_html($funnel['offer_count']); ?></td>
-                                <td>
-                                    <span style="color: <?php echo $funnel['avg_margin'] >= $guidelines['profit_requirements']['min_profit_percent'] ? '#00a32a' : '#d63638'; ?>; font-weight: 600;">
-                                        <?php echo esc_html(round($funnel['avg_margin'], 1)); ?>%
-                                    </span>
-                                </td>
-                                <td>$<?php echo esc_html(number_format($funnel['total_retail'], 2)); ?></td>
-                                <td>
-                                    <?php if ($funnel['all_valid']): ?>
-                                        <span style="color: #00a32a;">✓ <?php esc_html_e('All pass', 'hp-react-widgets'); ?></span>
-                                    <?php else: ?>
-                                        <span style="color: #d63638;">⚠️ <?php echo esc_html(sprintf(__('%d failing', 'hp-react-widgets'), $funnel['failing_count'])); ?></span>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
         </div>
-        
+
         <style>
-            .hp-econ-cards {
-                display: flex;
-                gap: 20px;
-                margin: 20px 0;
-            }
+            .hp-economics-dashboard { max-width: 1200px; }
+            
             .hp-econ-card {
                 background: #fff;
-                padding: 20px;
-                border: 1px solid #ddd;
+                border: 1px solid #c3c4c7;
                 border-radius: 4px;
-                min-width: 150px;
-                text-align: center;
+                padding: 20px;
+                margin-bottom: 20px;
             }
-            .hp-econ-card-warning {
-                border-color: #d63638;
-                background: #fff5f5;
+            
+            .hp-econ-card h3 { margin-top: 0; }
+            
+            .hp-econ-guidelines-grid {
+                display: flex;
+                gap: 30px;
+                margin-bottom: 15px;
             }
-            .hp-econ-card-success {
-                border-color: #00a32a;
-                background: #f0fff0;
+            
+            .hp-econ-guideline {
+                display: flex;
+                flex-direction: column;
             }
-            .hp-econ-card-value {
-                font-size: 32px;
+            
+            .hp-econ-guideline .label {
+                font-size: 12px;
+                color: #666;
+                text-transform: uppercase;
+            }
+            
+            .hp-econ-guideline .value {
+                font-size: 24px;
                 font-weight: 600;
                 color: #1d2327;
             }
-            .hp-econ-card-label {
+            
+            .hp-econ-stats-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 15px;
+                margin-bottom: 30px;
+            }
+            
+            .hp-econ-stat-card {
+                background: #fff;
+                border: 1px solid #c3c4c7;
+                border-radius: 4px;
+                padding: 20px;
+                text-align: center;
+            }
+            
+            .hp-econ-stat-card.success {
+                border-color: #00a32a;
+                background: #f0fff4;
+            }
+            
+            .hp-econ-stat-card.warning {
+                border-color: #dba617;
+                background: #fffbeb;
+            }
+            
+            .hp-econ-stat-value {
+                display: block;
+                font-size: 28px;
+                font-weight: 700;
+                color: #1d2327;
+            }
+            
+            .hp-econ-stat-label {
+                display: block;
+                font-size: 12px;
                 color: #666;
+                text-transform: uppercase;
                 margin-top: 5px;
             }
-            .hp-econ-section {
+            
+            .hp-econ-funnel-card {
                 background: #fff;
-                padding: 20px;
-                border: 1px solid #ddd;
+                border: 1px solid #c3c4c7;
                 border-radius: 4px;
-                margin: 20px 0;
+                margin-bottom: 20px;
+                overflow: hidden;
             }
-            .hp-econ-section h2 {
-                margin-top: 0;
+            
+            .hp-econ-funnel-card.warning {
+                border-color: #dba617;
+            }
+            
+            .hp-econ-funnel-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 15px 20px;
+                background: #f6f7f7;
+                border-bottom: 1px solid #c3c4c7;
+            }
+            
+            .hp-econ-funnel-header h3 {
+                margin: 0;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            
+            .hp-econ-funnel-header code {
+                font-size: 12px;
+                background: #e0e0e0;
+                padding: 2px 8px;
+                border-radius: 3px;
+            }
+            
+            .hp-econ-status-indicator {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                background: #00a32a;
+            }
+            
+            .hp-econ-funnel-card.warning .hp-econ-status-indicator {
+                background: #dba617;
+            }
+            
+            .hp-econ-funnel-meta {
+                display: flex;
+                align-items: center;
+                gap: 15px;
+            }
+            
+            .hp-econ-warnings {
+                padding: 10px 20px;
+                background: #fffbeb;
+                border-bottom: 1px solid #dba617;
+            }
+            
+            .hp-econ-warning {
+                color: #92400e;
+                font-size: 13px;
+                padding: 5px 0;
+            }
+            
+            .hp-econ-offers-table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            
+            .hp-econ-offers-table th,
+            .hp-econ-offers-table td {
+                padding: 12px 20px;
+                text-align: left;
+                border-bottom: 1px solid #e0e0e0;
+            }
+            
+            .hp-econ-offers-table th {
+                background: #f9f9f9;
+                font-weight: 600;
+                font-size: 12px;
+                text-transform: uppercase;
+                color: #666;
+            }
+            
+            .hp-econ-offers-table tr.failing {
+                background: #fff5f5;
+            }
+            
+            .hp-econ-offers-table tr.passing:hover,
+            .hp-econ-offers-table tr.failing:hover {
+                background: #f0f6fc;
+            }
+            
+            .hp-econ-discount {
+                display: inline-block;
+                background: #dc2626;
+                color: #fff;
+                padding: 2px 6px;
+                border-radius: 3px;
+                font-size: 11px;
+                margin-left: 5px;
+            }
+            
+            .hp-econ-type-badge {
+                display: inline-block;
+                background: #e0e7ff;
+                color: #3730a3;
+                padding: 3px 8px;
+                border-radius: 3px;
+                font-size: 11px;
+            }
+            
+            .hp-econ-offers-table .positive { color: #00a32a; }
+            .hp-econ-offers-table .negative { color: #dc2626; }
+            
+            .hp-econ-status-pass {
+                color: #00a32a;
+                font-weight: 600;
+            }
+            
+            .hp-econ-status-fail {
+                color: #dc2626;
+                font-weight: 600;
+            }
+            
+            .hp-econ-no-offers {
+                padding: 20px;
+                color: #666;
+                font-style: italic;
             }
         </style>
         <?php
     }
-
-    /**
-     * Analyze economics across all funnels.
-     */
-    private static function analyzeFunnelEconomics(): array
-    {
-        $posts = get_posts([
-            'post_type' => 'hp-funnel',
-            'post_status' => ['publish', 'draft'],
-            'posts_per_page' => -1,
-        ]);
-
-        $funnels = [];
-        $allMargins = [];
-        $totalOffers = 0;
-        $failingOffers = [];
-        $offersBelowThreshold = 0;
-
-        foreach ($posts as $post) {
-            $funnelData = FunnelExporter::exportById($post->ID);
-            $offers = $funnelData['offers'] ?? [];
-            
-            $funnelMargins = [];
-            $funnelRetail = 0;
-            $funnelFailingCount = 0;
-            
-            foreach ($offers as $offer) {
-                $validation = EconomicsService::validateOffer($offer);
-                $margin = $validation['economics']['profit']['profit_margin_percent'] ?? 0;
-                $profit = $validation['economics']['profit']['gross_profit'] ?? 0;
-                $retail = $validation['economics']['retail_total'] ?? 0;
-                $valid = $validation['valid'] ?? false;
-                
-                $funnelMargins[] = $margin;
-                $allMargins[] = $margin;
-                $funnelRetail += $retail;
-                $totalOffers++;
-                
-                if (!$valid) {
-                    $funnelFailingCount++;
-                    $offersBelowThreshold++;
-                    
-                    $suggestion = '';
-                    if (!empty($validation['suggestions'])) {
-                        $suggestion = $validation['suggestions'][0]['message'] ?? '';
-                    }
-                    
-                    $failingOffers[] = [
-                        'funnel_id' => $post->ID,
-                        'funnel_name' => $post->post_title,
-                        'offer_id' => $offer['id'] ?? '',
-                        'offer_name' => $offer['name'] ?? 'Unnamed',
-                        'margin_percent' => $margin,
-                        'profit_dollars' => $profit,
-                        'suggestion' => $suggestion,
-                    ];
-                }
-            }
-            
-            $funnels[] = [
-                'id' => $post->ID,
-                'name' => $post->post_title,
-                'offer_count' => count($offers),
-                'avg_margin' => count($funnelMargins) > 0 ? array_sum($funnelMargins) / count($funnelMargins) : 0,
-                'total_retail' => $funnelRetail,
-                'all_valid' => $funnelFailingCount === 0,
-                'failing_count' => $funnelFailingCount,
-            ];
-        }
-
-        return [
-            'total_funnels' => count($posts),
-            'total_offers' => $totalOffers,
-            'avg_margin' => count($allMargins) > 0 ? array_sum($allMargins) / count($allMargins) : 0,
-            'offers_below_threshold' => $offersBelowThreshold,
-            'failing_offers' => $failingOffers,
-            'funnels' => $funnels,
-        ];
-    }
 }
-
