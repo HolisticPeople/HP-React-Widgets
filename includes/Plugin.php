@@ -220,7 +220,7 @@ class Plugin
         Admin\FunnelStylingFields::init();
         
         // Initialize Testimonials display settings
-        Admin\FunnelTestimonialsFields::init();
+        // Admin\FunnelTestimonialsFields::init();
 
         // Enqueue admin scripts for funnel editing
         add_action('admin_enqueue_scripts', [self::class, 'enqueueAdminScripts']);
