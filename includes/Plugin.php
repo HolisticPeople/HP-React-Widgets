@@ -259,6 +259,12 @@ class Plugin
         Admin\AiActivityLog::init();
         Admin\EconomicsDashboard::init();
 
+        // Initialize SEO & Tracking components (Smart Bridge).
+        Admin\FunnelSeoFields::init();
+        Admin\SeoTrackingSettings::init();
+        Admin\FunnelTestingMetabox::init();
+        Services\FunnelSeoService::init();
+
         // Register shortcodes based on current settings.
         $shortcodeRegistry = new ShortcodeRegistry($assetLoader);
         $shortcodeRegistry->register();
