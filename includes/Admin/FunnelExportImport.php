@@ -48,11 +48,34 @@ class FunnelExportImport
     }
 
     /**
+     * Message to pass via redirect URL.
+     */
+    private static ?array $redirectMessage = null;
+
+    /**
      * Store a message for display after redirect.
      */
     private static function storeMessage(string $text, string $type = 'success'): void
     {
-        set_transient(self::MESSAGE_TRANSIENT, ['text' => $text, 'type' => $type], 60);
+        // Store in static var - will be encoded in redirect URL
+        self::$redirectMessage = ['text' => $text, 'type' => $type];
+    }
+
+    /**
+     * Get the redirect URL with message encoded.
+     */
+    private static function getRedirectUrl(): string
+    {
+        $url = admin_url('edit.php?post_type=hp-funnel&page=hp-funnel-export-import');
+        
+        if (self::$redirectMessage) {
+            $url = add_query_arg([
+                'import_msg' => urlencode(self::$redirectMessage['text']),
+                'import_type' => self::$redirectMessage['type'],
+            ], $url);
+        }
+        
+        return $url;
     }
 
     /**
@@ -92,8 +115,8 @@ class FunnelExportImport
             } else {
                 self::storeMessage(__('Security verification failed. Please refresh and try again.', 'hp-react-widgets'), 'error');
             }
-            // Redirect to prevent form resubmission
-            wp_safe_redirect(admin_url('edit.php?post_type=hp-funnel&page=hp-funnel-export-import&imported=1'));
+            // Redirect with message in URL
+            wp_safe_redirect(self::getRedirectUrl());
             exit;
         }
 
@@ -105,8 +128,8 @@ class FunnelExportImport
             } else {
                 self::storeMessage(__('Security verification failed. Please refresh and try again.', 'hp-react-widgets'), 'error');
             }
-            // Redirect to prevent form resubmission
-            wp_safe_redirect(admin_url('edit.php?post_type=hp-funnel&page=hp-funnel-export-import&imported=1'));
+            // Redirect with message in URL
+            wp_safe_redirect(self::getRedirectUrl());
             exit;
         }
     }
@@ -282,14 +305,14 @@ class FunnelExportImport
         $funnels = FunnelConfigLoader::getAllPosts();
         $schemaUrl = rest_url('hp-rw/v1/funnels/schema');
         
-        // Display any stored messages (immune to admin notice hiding plugins)
-        $message = get_transient(self::MESSAGE_TRANSIENT);
-        if ($message) {
-            delete_transient(self::MESSAGE_TRANSIENT);
+        // Display message from URL (immune to object cache and admin notice hiding plugins)
+        $message = null;
+        if (isset($_GET['import_msg']) && isset($_GET['import_type'])) {
+            $message = [
+                'text' => sanitize_text_field(urldecode($_GET['import_msg'])),
+                'type' => sanitize_key($_GET['import_type']),
+            ];
         }
-        
-        // Check if import was attempted but no message (debug)
-        $importAttempted = isset($_GET['imported']);
         ?>
         <div class="wrap">
             <h1><?php echo esc_html__('Funnel Export / Import', 'hp-react-widgets'); ?></h1>
@@ -298,12 +321,7 @@ class FunnelExportImport
             <?php if ($message): ?>
                 <div class="hp-import-message" style="padding: 12px 15px; margin: 15px 0; border-left: 4px solid <?php echo $message['type'] === 'success' ? '#00a32a' : ($message['type'] === 'error' ? '#d63638' : '#dba617'); ?>; background: <?php echo $message['type'] === 'success' ? '#edfaef' : ($message['type'] === 'error' ? '#fcf0f1' : '#fcf9e8'); ?>; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
                     <strong><?php echo $message['type'] === 'success' ? '✓' : ($message['type'] === 'error' ? '✗' : '!'); ?></strong>
-                    <?php echo wp_kses_post($message['text']); ?>
-                </div>
-            <?php elseif ($importAttempted): ?>
-                <div class="hp-import-message" style="padding: 12px 15px; margin: 15px 0; border-left: 4px solid #dba617; background: #fcf9e8; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
-                    <strong>!</strong> Import was attempted. Check the funnel list to see if it was created.
-                    <br><small>Debug: Transient message was not found. This could mean the import succeeded but the message expired, or object caching cleared it.</small>
+                    <?php echo esc_html($message['text']); ?>
                 </div>
             <?php endif; ?>
 
