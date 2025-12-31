@@ -19,12 +19,46 @@ if (!defined('ABSPATH')) {
 class FunnelExportImport
 {
     /**
+     * Transient key for import messages.
+     */
+    private const MESSAGE_TRANSIENT = 'hp_funnel_import_message';
+
+    /**
      * Initialize the export/import page.
      */
     public static function init(): void
     {
         add_action('admin_menu', [self::class, 'addSubmenuPage']);
         add_action('admin_init', [self::class, 'handleActions']);
+        add_action('admin_notices', [self::class, 'displayImportNotices']);
+    }
+
+    /**
+     * Display import notices from transient.
+     */
+    public static function displayImportNotices(): void
+    {
+        // Only show on our page
+        $screen = get_current_screen();
+        if (!$screen || strpos($screen->id, 'hp-funnel-export-import') === false) {
+            return;
+        }
+
+        $message = get_transient(self::MESSAGE_TRANSIENT);
+        if ($message) {
+            delete_transient(self::MESSAGE_TRANSIENT);
+            $type = $message['type'] ?? 'info';
+            $text = $message['text'] ?? '';
+            echo '<div class="notice notice-' . esc_attr($type) . ' is-dismissible"><p>' . wp_kses_post($text) . '</p></div>';
+        }
+    }
+
+    /**
+     * Store a message for display after redirect.
+     */
+    private static function storeMessage(string $text, string $type = 'success'): void
+    {
+        set_transient(self::MESSAGE_TRANSIENT, ['text' => $text, 'type' => $type], 60);
     }
 
     /**
@@ -56,19 +90,18 @@ class FunnelExportImport
             self::handleExport();
         }
 
-        // Handle import - check what's happening
+        // Handle file import
         if (isset($_POST['hp_funnel_import'])) {
             $nonce = $_POST['_wpnonce'] ?? '';
             if (wp_verify_nonce($nonce, 'hp_funnel_import')) {
                 self::handleImport();
             } else {
-                add_settings_error(
-                    'hp_funnel_import',
-                    'nonce_error',
-                    __('Security verification failed. Please try again.', 'hp-react-widgets'),
-                    'error'
-                );
+                self::storeMessage(__('Security verification failed. Please refresh and try again.', 'hp-react-widgets'), 'error');
+                add_settings_error('hp_funnel_import', 'nonce_error', __('Security verification failed.', 'hp-react-widgets'), 'error');
             }
+            // Redirect to prevent form resubmission
+            wp_safe_redirect(add_query_arg('import_attempted', '1', wp_get_referer() ?: admin_url('edit.php?post_type=hp-funnel&page=hp-funnel-export-import')));
+            exit;
         }
 
         // Handle JSON text import
@@ -77,13 +110,12 @@ class FunnelExportImport
             if (wp_verify_nonce($nonce, 'hp_funnel_import_json')) {
                 self::handleJsonImport();
             } else {
-                add_settings_error(
-                    'hp_funnel_import',
-                    'nonce_error',
-                    __('Security verification failed. Please try again.', 'hp-react-widgets'),
-                    'error'
-                );
+                self::storeMessage(__('Security verification failed. Please refresh and try again.', 'hp-react-widgets'), 'error');
+                add_settings_error('hp_funnel_import', 'nonce_error', __('Security verification failed.', 'hp-react-widgets'), 'error');
             }
+            // Redirect to prevent form resubmission
+            wp_safe_redirect(add_query_arg('import_attempted', '1', wp_get_referer() ?: admin_url('edit.php?post_type=hp-funnel&page=hp-funnel-export-import')));
+            exit;
         }
     }
 
@@ -133,12 +165,7 @@ class FunnelExportImport
     private static function handleImport(): void
     {
         if (!isset($_FILES['import_file'])) {
-            add_settings_error(
-                'hp_funnel_import',
-                'no_file',
-                __('No file was uploaded. Please select a file and try again.', 'hp-react-widgets'),
-                'error'
-            );
+            self::storeMessage(__('No file was uploaded. Please select a file and try again.', 'hp-react-widgets'), 'error');
             return;
         }
 
@@ -155,23 +182,13 @@ class FunnelExportImport
             $errorCode = $_FILES['import_file']['error'];
             $errorMsg = $errorMessages[$errorCode] ?? "Unknown error (code: {$errorCode})";
             
-            add_settings_error(
-                'hp_funnel_import',
-                'upload_error',
-                sprintf(__('File upload failed: %s', 'hp-react-widgets'), $errorMsg),
-                'error'
-            );
+            self::storeMessage(sprintf(__('File upload failed: %s', 'hp-react-widgets'), $errorMsg), 'error');
             return;
         }
 
         $fileContent = file_get_contents($_FILES['import_file']['tmp_name']);
         if (empty($fileContent)) {
-            add_settings_error(
-                'hp_funnel_import',
-                'empty_file',
-                __('The uploaded file is empty.', 'hp-react-widgets'),
-                'error'
-            );
+            self::storeMessage(__('The uploaded file is empty.', 'hp-react-widgets'), 'error');
             return;
         }
 
@@ -184,12 +201,7 @@ class FunnelExportImport
     private static function handleJsonImport(): void
     {
         if (empty($_POST['json_content'])) {
-            add_settings_error(
-                'hp_funnel_import',
-                'empty_json',
-                __('No JSON content provided.', 'hp-react-widgets'),
-                'error'
-            );
+            self::storeMessage(__('No JSON content provided.', 'hp-react-widgets'), 'error');
             return;
         }
 
@@ -204,12 +216,7 @@ class FunnelExportImport
         $data = json_decode($jsonContent, true);
 
         if (!$data || json_last_error() !== JSON_ERROR_NONE) {
-            add_settings_error(
-                'hp_funnel_import',
-                'parse_error',
-                __('Invalid JSON: ', 'hp-react-widgets') . json_last_error_msg(),
-                'error'
-            );
+            self::storeMessage(__('Invalid JSON: ', 'hp-react-widgets') . json_last_error_msg(), 'error');
             return;
         }
 
@@ -255,9 +262,9 @@ class FunnelExportImport
 
             if (!empty($errors)) {
                 $message .= ' ' . __('Errors:', 'hp-react-widgets') . ' ' . implode('; ', $errors);
-                add_settings_error('hp_funnel_import', 'import_partial', $message, 'warning');
+                self::storeMessage($message, 'warning');
             } else {
-                add_settings_error('hp_funnel_import', 'import_success', $message, 'success');
+                self::storeMessage($message, 'success');
             }
         } else {
             // Single funnel import
@@ -268,14 +275,9 @@ class FunnelExportImport
                 if (!empty($result['edit_url'])) {
                     $message .= ' <a href="' . esc_url($result['edit_url']) . '">' . __('Edit funnel', 'hp-react-widgets') . '</a>';
                 }
-                add_settings_error('hp_funnel_import', 'import_success', $message, 'success');
+                self::storeMessage($message, 'success');
             } else {
-                add_settings_error(
-                    'hp_funnel_import',
-                    'import_error',
-                    $result['error'] ?? __('Import failed.', 'hp-react-widgets'),
-                    'error'
-                );
+                self::storeMessage($result['error'] ?? __('Import failed.', 'hp-react-widgets'), 'error');
             }
         }
     }
