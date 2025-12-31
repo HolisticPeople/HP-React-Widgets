@@ -1,0 +1,262 @@
+{
+    "$schema": "hp-funnel/v1",
+    "funnel": {
+        "name": "3-Week Liver & Gallbladder Cleanse",
+        "slug": "liver-detox-protocol",
+        "status": "active",
+        "stripe_mode": "test"
+    },
+    "header": {
+        "logo": "",
+        "logo_link": "",
+        "sticky": true,
+        "transparent": true,
+        "nav_items": []
+    },
+    "hero": {
+        "title": "Revitalize Your Health with the Ultimate 3-Week Liver Cleanse",
+        "subtitle": "Eliminate toxins, boost energy, and restore your body's first line of defense with our science-backed natural protocol.",
+        "tagline": "A science-backed protocol for profound systemic detoxification.",
+        "description": "Your liver filters one-fourth of your total blood volume every minute. When it's sluggish, your entire body suffers. Our 3-week protocol is designed to eliminate 'toxic sludge' and restore peak organ function.",
+        "image": "",
+        "logo": "",
+        "logo_link": "",
+        "cta_text": "Start Your Cleanse Today"
+    },
+    "benefits": {
+        "title": "Why Your Liver Needs This Cleanse",
+        "items": [
+            {
+                "text": "Eliminates accumulated fatty toxic sludge from the liver and gallbladder.",
+                "icon": "shield"
+            },
+            {
+                "text": "Filters environmental carcinogens and toxins from your bloodstream.",
+                "icon": "check"
+            },
+            {
+                "text": "Regulates and maintains healthy blood sugar and cholesterol levels.",
+                "icon": "check"
+            },
+            {
+                "text": "Boosts natural energy levels by reducing metabolic exhaustion.",
+                "icon": "star"
+            },
+            {
+                "text": "Improves lymphatic circulation and nutrient assimilation.",
+                "icon": "heart"
+            },
+            {
+                "text": "100% natural protocol using high-bioavailability nutrients.",
+                "icon": "check"
+            }
+        ]
+    },
+    "offers": [
+        {
+            "name": "Complete 3-Week Cleanse Kit",
+            "type": "fixed_bundle",
+            "description": "Everything you need for the full 3-week protocol including the preparation phase and the final flush.",
+            "image": "",
+            "badge": "BEST VALUE",
+            "discount_type": "none",
+            "discount_value": 0,
+            "offer_price": 146.8,
+            "bundle_items": [
+                {
+                    "sku": "PRLabS-02355",
+                    "qty": 1
+                },
+                {
+                    "sku": "PRLabS-02411",
+                    "qty": 1
+                },
+                {
+                    "sku": "PRLabD-02470",
+                    "qty": 1
+                },
+                {
+                    "sku": "PRLabS-01505",
+                    "qty": 1
+                },
+                {
+                    "sku": "PRLabD-04520",
+                    "qty": 1
+                },
+                {
+                    "sku": "PRLabD-02447",
+                    "qty": 1
+                },
+                {
+                    "sku": "WWB-RCP-Tea125",
+                    "qty": 1
+                }
+            ]
+        },
+        {
+            "name": "Build Your Own Cleanse",
+            "type": "customizable_kit",
+            "description": "Need to restock specific protocol items? Customize your kit here.",
+            "image": "",
+            "badge": "CUSTOMIZE",
+            "discount_type": "none",
+            "discount_value": 0,
+            "offer_price": 0,
+            "kit_products": [
+                {
+                    "sku": "PRLabS-02355",
+                    "qty": 0,
+                    "role": "optional"
+                },
+                {
+                    "sku": "PRLabD-02470",
+                    "qty": 0,
+                    "role": "optional"
+                },
+                {
+                    "sku": "PRLabS-02411",
+                    "qty": 0,
+                    "role": "optional"
+                },
+                {
+                    "sku": "WWB-RCP-Tea125",
+                    "qty": 0,
+                    "role": "optional"
+                }
+            ]
+        }
+    ],
+    "features": {
+        "title": "Protocol Essentials",
+        "subtitle": "Clinically-formulated nutrients for maximum detoxification.",
+        "items": [
+            {
+                "icon": "leaf",
+                "title": "Liver-ND & Gallbladder-ND",
+                "description": "Probiotic-fermented formulas for superior absorption and systemic support."
+            },
+            {
+                "icon": "shield",
+                "title": "Castor Oil Packs",
+                "description": "Speed the removal of toxins surrounding cells and improve lymphatic flow."
+            },
+            {
+                "icon": "bolt",
+                "title": "The 7th Day Flush",
+                "description": "A precise sequence of nutrients to safely eliminate gallstones and sludge."
+            }
+        ]
+    },
+    "authority": {
+        "title": "Meet Dr. Gabriel Cousens",
+        "subtitle": "",
+        "name": "Dr. Gabriel Cousens, M.D.",
+        "credentials": "MD, MD(H), DD, Diplomat of the American Board of Integrative Holistic Medicine",
+        "image": "https://holisticpeople.com/wp-content/uploads/dr-cousens-BRYuwd16.png",
+        "bio": "<p>Dr. Gabriel Cousens is a world-renowned holistic physician and the founder of the Tree of Life Rejuvenation Center. With over 40 years of experience, he has supervised thousands through detoxification protocols, claiming the liver/gallbladder flush is the &#8216;single greatest practice for improving health.&#8217;</p>\n",
+        "quotes": [
+            {
+                "text": "The liver is our defensive shield. When it becomes exhausted, our entire health is compromised."
+            },
+            {
+                "text": "A periodic liver cleanse is necessary for the elimination of old, accumulated fatty toxic sludge."
+            }
+        ],
+        "quote_categories": [],
+        "article_link": null
+    },
+    "testimonials": {
+        "title": "What Our Customers Say",
+        "subtitle": "",
+        "items": []
+    },
+    "faq": {
+        "title": "Cleanse Questions",
+        "items": [
+            {
+                "question": "Is this cleanse safe?",
+                "answer": "<p>Yes, our protocol uses all-natural, food-grade nutrients and has been supervised by Dr. Cousens for over 25 years with thousands of successful cases.</p>\n"
+            },
+            {
+                "question": "Will I see results immediately?",
+                "answer": "<p>Many users report dramatic energy shifts overnight following the Day 7 flush, often passing visible gallstones.</p>\n"
+            },
+            {
+                "question": "Can I eat while on the cleanse?",
+                "answer": "<p>Yes, we recommend a diet of 80-90% raw, organic foods during the first two weeks to support the detoxification process.</p>\n"
+            }
+        ]
+    },
+    "cta": {
+        "title": "Ready to Get Started?",
+        "subtitle": "",
+        "button_text": "Order Now",
+        "button_url": ""
+    },
+    "checkout": {
+        "url": "https://holisticpeople.com/express-shop/liver-detox-protocol/checkout/",
+        "free_shipping_countries": "US",
+        "global_discount_percent": 0,
+        "enable_points_redemption": true,
+        "show_order_summary": true
+    },
+    "thankyou": {
+        "url": "https://holisticpeople.com/express-shop/liver-detox-protocol/thank-you/",
+        "headline": "Your Cleanse Journey Begins!",
+        "message": "Check your email for the detailed PDF protocol instructions.",
+        "show_upsell": false,
+        "upsell": null
+    },
+    "styling": {
+        "accent_color": "#10b981",
+        "text_color_basic": "#e5e5e5",
+        "text_color_accent": "#34d399",
+        "text_color_note": "#a3a3a3",
+        "text_color_discount": "#22c55e",
+        "page_bg_color": "#0a0f0d",
+        "card_bg_color": "#111816",
+        "input_bg_color": "#333333",
+        "border_color": "#065f46",
+        "background_type": "solid",
+        "background_image": "",
+        "custom_css": ""
+    },
+    "footer": {
+        "text": "",
+        "disclaimer": "These statements have not been evaluated by the FDA. This product is not intended to diagnose, treat, cure or prevent any disease.",
+        "links": [
+            {
+                "label": "Privacy Policy",
+                "url": "https://holisticpeople.com/privacy-policy/"
+            },
+            {
+                "label": "Terms of Service",
+                "url": "https://holisticpeople.com/terms-of-service/"
+            }
+        ]
+    },
+    "science": {
+        "title": "The Science of the Cleanse",
+        "subtitle": "How the 3-week protocol works within your biology.",
+        "sections": [
+            {
+                "title": "Weeks 1-2: Preparation",
+                "description": "Softening the 'sludge' and opening detoxification pathways.",
+                "bullets": [
+                    "BiliVen and HepatoVen support liver cell regeneration.\r",
+                    "Chanca Piedra tea helps break down calcium-based deposits.\r",
+                    "Castor oil packs stimulate lymphatic drainage."
+                ]
+            },
+            {
+                "title": "Week 3: The Flush",
+                "description": "The active elimination phase culminating in Day 7.",
+                "bullets": [
+                    "Increased dosage of Gallbladder support.\r",
+                    "Elimination of fats to build 'bile pressure'.\r",
+                    "The Olive Oil and Citrus flush to safely eject stones."
+                ]
+            }
+        ]
+    }
+}

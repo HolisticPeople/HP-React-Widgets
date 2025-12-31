@@ -56,14 +56,34 @@ class FunnelExportImport
             self::handleExport();
         }
 
-        // Handle import
-        if (isset($_POST['hp_funnel_import']) && wp_verify_nonce($_POST['_wpnonce'] ?? '', 'hp_funnel_import')) {
-            self::handleImport();
+        // Handle import - check what's happening
+        if (isset($_POST['hp_funnel_import'])) {
+            $nonce = $_POST['_wpnonce'] ?? '';
+            if (wp_verify_nonce($nonce, 'hp_funnel_import')) {
+                self::handleImport();
+            } else {
+                add_settings_error(
+                    'hp_funnel_import',
+                    'nonce_error',
+                    __('Security verification failed. Please try again.', 'hp-react-widgets'),
+                    'error'
+                );
+            }
         }
 
         // Handle JSON text import
-        if (isset($_POST['hp_funnel_import_json']) && wp_verify_nonce($_POST['_wpnonce'] ?? '', 'hp_funnel_import_json')) {
-            self::handleJsonImport();
+        if (isset($_POST['hp_funnel_import_json'])) {
+            $nonce = $_POST['_wpnonce'] ?? '';
+            if (wp_verify_nonce($nonce, 'hp_funnel_import_json')) {
+                self::handleJsonImport();
+            } else {
+                add_settings_error(
+                    'hp_funnel_import',
+                    'nonce_error',
+                    __('Security verification failed. Please try again.', 'hp-react-widgets'),
+                    'error'
+                );
+            }
         }
     }
 
@@ -112,17 +132,49 @@ class FunnelExportImport
      */
     private static function handleImport(): void
     {
-        if (!isset($_FILES['import_file']) || $_FILES['import_file']['error'] !== UPLOAD_ERR_OK) {
+        if (!isset($_FILES['import_file'])) {
+            add_settings_error(
+                'hp_funnel_import',
+                'no_file',
+                __('No file was uploaded. Please select a file and try again.', 'hp-react-widgets'),
+                'error'
+            );
+            return;
+        }
+
+        if ($_FILES['import_file']['error'] !== UPLOAD_ERR_OK) {
+            $errorMessages = [
+                UPLOAD_ERR_INI_SIZE => 'File exceeds server upload limit.',
+                UPLOAD_ERR_FORM_SIZE => 'File exceeds form upload limit.',
+                UPLOAD_ERR_PARTIAL => 'File was only partially uploaded.',
+                UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
+                UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder.',
+                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+                UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the upload.',
+            ];
+            $errorCode = $_FILES['import_file']['error'];
+            $errorMsg = $errorMessages[$errorCode] ?? "Unknown error (code: {$errorCode})";
+            
             add_settings_error(
                 'hp_funnel_import',
                 'upload_error',
-                __('File upload failed. Please try again.', 'hp-react-widgets'),
+                sprintf(__('File upload failed: %s', 'hp-react-widgets'), $errorMsg),
                 'error'
             );
             return;
         }
 
         $fileContent = file_get_contents($_FILES['import_file']['tmp_name']);
+        if (empty($fileContent)) {
+            add_settings_error(
+                'hp_funnel_import',
+                'empty_file',
+                __('The uploaded file is empty.', 'hp-react-widgets'),
+                'error'
+            );
+            return;
+        }
+
         self::processImport($fileContent);
     }
 
