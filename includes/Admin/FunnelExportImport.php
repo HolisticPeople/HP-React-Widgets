@@ -38,12 +38,6 @@ class FunnelExportImport
      */
     public static function displayImportNotices(): void
     {
-        // Only show on our page
-        $screen = get_current_screen();
-        if (!$screen || strpos($screen->id, 'hp-funnel-export-import') === false) {
-            return;
-        }
-
         $message = get_transient(self::MESSAGE_TRANSIENT);
         if ($message) {
             delete_transient(self::MESSAGE_TRANSIENT);
@@ -92,29 +86,27 @@ class FunnelExportImport
 
         // Handle file import
         if (isset($_POST['hp_funnel_import'])) {
-            $nonce = $_POST['_wpnonce'] ?? '';
+            $nonce = $_POST['_wpnonce_file'] ?? '';
             if (wp_verify_nonce($nonce, 'hp_funnel_import')) {
                 self::handleImport();
             } else {
                 self::storeMessage(__('Security verification failed. Please refresh and try again.', 'hp-react-widgets'), 'error');
-                add_settings_error('hp_funnel_import', 'nonce_error', __('Security verification failed.', 'hp-react-widgets'), 'error');
             }
             // Redirect to prevent form resubmission
-            wp_safe_redirect(add_query_arg('import_attempted', '1', wp_get_referer() ?: admin_url('edit.php?post_type=hp-funnel&page=hp-funnel-export-import')));
+            wp_safe_redirect(admin_url('edit.php?post_type=hp-funnel&page=hp-funnel-export-import&imported=1'));
             exit;
         }
 
         // Handle JSON text import
         if (isset($_POST['hp_funnel_import_json'])) {
-            $nonce = $_POST['_wpnonce'] ?? '';
+            $nonce = $_POST['_wpnonce_json'] ?? '';
             if (wp_verify_nonce($nonce, 'hp_funnel_import_json')) {
                 self::handleJsonImport();
             } else {
                 self::storeMessage(__('Security verification failed. Please refresh and try again.', 'hp-react-widgets'), 'error');
-                add_settings_error('hp_funnel_import', 'nonce_error', __('Security verification failed.', 'hp-react-widgets'), 'error');
             }
             // Redirect to prevent form resubmission
-            wp_safe_redirect(add_query_arg('import_attempted', '1', wp_get_referer() ?: admin_url('edit.php?post_type=hp-funnel&page=hp-funnel-export-import')));
+            wp_safe_redirect(admin_url('edit.php?post_type=hp-funnel&page=hp-funnel-export-import&imported=1'));
             exit;
         }
     }
@@ -364,7 +356,7 @@ class FunnelExportImport
                     <!-- File Upload -->
                     <h3 style="margin-top: 0;"><?php echo esc_html__('From File', 'hp-react-widgets'); ?></h3>
                     <form method="post" enctype="multipart/form-data">
-                        <?php wp_nonce_field('hp_funnel_import'); ?>
+                        <?php wp_nonce_field('hp_funnel_import', '_wpnonce_file'); ?>
                         
                         <p>
                             <input type="file" name="import_file" accept=".json" required>
@@ -398,7 +390,7 @@ class FunnelExportImport
                     <!-- JSON Paste -->
                     <h3><?php echo esc_html__('From JSON', 'hp-react-widgets'); ?></h3>
                     <form method="post">
-                        <?php wp_nonce_field('hp_funnel_import_json'); ?>
+                        <?php wp_nonce_field('hp_funnel_import_json', '_wpnonce_json'); ?>
                         
                         <p>
                             <textarea name="json_content" rows="8" style="width: 100%; font-family: monospace; font-size: 12px;" placeholder='{"funnel": {"name": "My Funnel", "slug": "my-funnel"}, ...}'></textarea>
