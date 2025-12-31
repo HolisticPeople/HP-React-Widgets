@@ -1,0 +1,68 @@
+{
+    "ID": 0,
+    "key": "group_hero_title_size",
+    "title": "Hero Title Settings",
+    "fields": [
+        {
+            "ID": 0,
+            "key": "field_hero_title_size",
+            "label": "Title Size",
+            "name": "hero_title_size",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "select",
+            "value": null,
+            "menu_order": 0,
+            "instructions": "Controls the display size of the hero title text",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": false,
+            "parent": "group_hero_title_size",
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "choices": {
+                "sm": "Small (3xl → 4xl)",
+                "md": "Medium (4xl → 5xl)",
+                "lg": "Large (5xl → 6xl)",
+                "xl": "Extra Large (6xl → 7xl) - Default",
+                "2xl": "2X Large (7xl → 8xl)"
+            },
+            "default_value": "xl",
+            "allow_null": 0,
+            "multiple": 0,
+            "ui": 1,
+            "return_format": "value",
+            "_name": "hero_title_size",
+            "_valid": 1,
+            "ajax": 0,
+            "placeholder": "",
+            "create_options": 0,
+            "save_options": 0
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "hp-funnel"
+            }
+        ]
+    ],
+    "menu_order": 5,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": [],
+    "active": true,
+    "description": "",
+    "show_in_rest": false,
+    "display_title": "",
+    "local": "php",
+    "_valid": true
+}

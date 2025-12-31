@@ -1,0 +1,62 @@
+{
+    "ID": 124220,
+    "key": "group_68e7a88208220",
+    "title": "Product Categories",
+    "fields": [
+        {
+            "ID": 124221,
+            "key": "field_68e7a883995b1",
+            "label": "Product Category Grid4 Image",
+            "name": "product_category_grid4img",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "image",
+            "value": null,
+            "menu_order": 0,
+            "instructions": "",
+            "required": 0,
+            "id": "",
+            "class": "",
+            "conditional_logic": 0,
+            "parent": 124220,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "return_format": "id",
+            "library": "all",
+            "min_width": "",
+            "min_height": "",
+            "min_size": "",
+            "max_width": "",
+            "max_height": "",
+            "max_size": "",
+            "mime_types": "",
+            "allow_in_bindings": 0,
+            "preview_size": "woocommerce_thumbnail",
+            "_name": "product_category_grid4img",
+            "_valid": 1
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "taxonomy",
+                "operator": "==",
+                "value": "product_cat"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "",
+    "show_in_rest": 0,
+    "display_title": "",
+    "_valid": true
+}

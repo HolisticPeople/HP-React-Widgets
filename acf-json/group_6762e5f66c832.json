@@ -1,0 +1,57 @@
+{
+    "ID": 110892,
+    "key": "group_6762e5f66c832",
+    "title": "Orders fields",
+    "fields": [
+        {
+            "ID": 110895,
+            "key": "field_6762e5f7293da",
+            "label": "Legacy Order Number",
+            "name": "legacy_order_number",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "text",
+            "value": null,
+            "menu_order": 0,
+            "instructions": "",
+            "required": 0,
+            "id": "",
+            "class": "",
+            "conditional_logic": 0,
+            "parent": 110892,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "allow_in_bindings": 0,
+            "placeholder": "",
+            "prepend": "",
+            "append": "",
+            "_name": "legacy_order_number",
+            "_valid": 1
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "shop_order"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "",
+    "show_in_rest": 0,
+    "display_title": "",
+    "_valid": true
+}

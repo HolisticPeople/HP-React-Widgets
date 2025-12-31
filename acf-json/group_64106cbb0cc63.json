@@ -1,0 +1,110 @@
+{
+    "ID": 43763,
+    "key": "group_64106cbb0cc63",
+    "title": "Users ACF",
+    "fields": [
+        {
+            "ID": 43764,
+            "key": "field_64106cbbcc25d",
+            "label": "Facebook Page URL",
+            "name": "facebook_page_url",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "url",
+            "value": null,
+            "menu_order": 0,
+            "instructions": "",
+            "required": 0,
+            "id": "",
+            "class": "",
+            "conditional_logic": 0,
+            "parent": 43763,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "placeholder": "",
+            "_name": "facebook_page_url",
+            "_valid": 1
+        },
+        {
+            "ID": 43766,
+            "key": "field_64106db2cc25f",
+            "label": "Referred by email M1",
+            "name": "referred_by_email",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "email",
+            "value": null,
+            "menu_order": 1,
+            "instructions": "",
+            "required": 0,
+            "id": "",
+            "class": "",
+            "conditional_logic": 0,
+            "parent": 43763,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": "",
+            "_name": "referred_by_email",
+            "_valid": 1
+        },
+        {
+            "ID": 43765,
+            "key": "field_64106ce7cc25e",
+            "label": "M1 Affiliate Username",
+            "name": "m1_affiliate_username",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "text",
+            "value": null,
+            "menu_order": 2,
+            "instructions": "",
+            "required": 0,
+            "id": "",
+            "class": "",
+            "conditional_logic": 0,
+            "parent": 43763,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": "",
+            "_name": "m1_affiliate_username",
+            "_valid": 1
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "import_users"
+            }
+        ]
+    ],
+    "menu_order": 100,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "ACF for users",
+    "show_in_rest": 0,
+    "display_title": "",
+    "_valid": true
+}

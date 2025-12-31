@@ -1,0 +1,138 @@
+{
+    "ID": 52,
+    "key": "group_606352060de90",
+    "title": "HPSP Product - Admin ACF",
+    "fields": [
+        {
+            "ID": 57,
+            "key": "field_60635249351af",
+            "label": "Product Type HP",
+            "name": "product_type_hp",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "select",
+            "value": null,
+            "menu_order": 0,
+            "instructions": "",
+            "required": 0,
+            "id": "",
+            "class": "",
+            "conditional_logic": 0,
+            "parent": 52,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "choices": {
+                "supplement_type": "supplement_type",
+                "wellness_type": "wellness_type",
+                "appliance_type": "appliance_type",
+                "book_type": "book_type",
+                "credit_certificate_type": "credit_certificate_type",
+                "kit_type": "kit_type"
+            },
+            "default_value": false,
+            "return_format": "value",
+            "multiple": 0,
+            "allow_null": 0,
+            "allow_in_bindings": 1,
+            "ui": 0,
+            "ajax": 0,
+            "placeholder": "",
+            "_name": "product_type_hp",
+            "_valid": 1,
+            "create_options": 0,
+            "save_options": 0
+        },
+        {
+            "ID": 56,
+            "key": "field_6063527c351b0",
+            "label": "Site Catalog",
+            "name": "site_catalog",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "select",
+            "value": null,
+            "menu_order": 1,
+            "instructions": "",
+            "required": 0,
+            "id": "",
+            "class": "",
+            "conditional_logic": 0,
+            "parent": 52,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "choices": {
+                "DCG_catalog": "DCG_catalog",
+                "HP_catalog": "HP_catalog",
+                "Vimergy_catalog": "Vimergy_catalog"
+            },
+            "default_value": [],
+            "return_format": "value",
+            "multiple": 1,
+            "allow_null": 0,
+            "allow_in_bindings": 1,
+            "ui": 0,
+            "ajax": 0,
+            "placeholder": "",
+            "create_options": 0,
+            "save_options": 0,
+            "_name": "site_catalog",
+            "_valid": 1
+        },
+        {
+            "ID": 53,
+            "key": "field_60635e46ec688",
+            "label": "Mfr. SKU ACF",
+            "name": "sku_mfr",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "text",
+            "value": null,
+            "menu_order": 2,
+            "instructions": "",
+            "required": 0,
+            "id": "",
+            "class": "",
+            "conditional_logic": 0,
+            "parent": 52,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "allow_in_bindings": 1,
+            "placeholder": "",
+            "prepend": "",
+            "append": "",
+            "_name": "sku_mfr",
+            "_valid": 1
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "product"
+            }
+        ]
+    ],
+    "menu_order": 30,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "Product admin data",
+    "show_in_rest": 0,
+    "display_title": "",
+    "_valid": true
+}

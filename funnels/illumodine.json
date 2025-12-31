@@ -1,0 +1,427 @@
+{
+    "$schema": "hp-funnel/v1",
+    "funnel": {
+        "name": "Illumodine Express",
+        "slug": "illumodine",
+        "status": "active",
+        "stripe_mode": "test"
+    },
+    "header": {
+        "logo": "",
+        "logo_link": "https://holisticpeople.com",
+        "sticky": true,
+        "transparent": true,
+        "nav_items": []
+    },
+    "hero": {
+        "title": "ILLUMODINE™",
+        "subtitle": "The best Iodine supplement!",
+        "tagline": "Pure, High-Potency Iodine Supplement",
+        "description": "The most bioavailable iodine supplement on Earth – charged with True Scalar Energy™ for maximum effectiveness",
+        "image": "https://env-holisticpeoplecom-hpdevplus.kinsta.cloud/wp-content/uploads/Illum2.png",
+        "logo": "",
+        "logo_link": "",
+        "cta_text": "Get Your Special Offer Now"
+    },
+    "benefits": {
+        "title": "Why ILLUMODINE™?",
+        "items": [
+            {
+                "text": "Powerful antioxidant – 3,000x more effective than normal tissue at absorbing radiation",
+                "icon": "check"
+            },
+            {
+                "text": "Anti-bacterial, anti-viral, anti-fungal, and anti-parasitic properties",
+                "icon": "check"
+            },
+            {
+                "text": "Supports brain function and mental clarity",
+                "icon": "check"
+            },
+            {
+                "text": "Enhances mood and reduces anxiety and depression",
+                "icon": "check"
+            },
+            {
+                "text": "Supports thyroid health and hormone balance",
+                "icon": "check"
+            },
+            {
+                "text": "Promotes detoxification of heavy metals (fluoride, mercury, lead, aluminum)",
+                "icon": "check"
+            },
+            {
+                "text": "Provides cellular and DNA protection",
+                "icon": "check"
+            },
+            {
+                "text": "Supports energy production at the mitochondrial level",
+                "icon": "check"
+            },
+            {
+                "text": "Anti-inflammatory and anti-allergenic benefits",
+                "icon": "check"
+            },
+            {
+                "text": "Helps eliminate mutated cells through healthy apoptosis",
+                "icon": "check"
+            },
+            {
+                "text": "Supports serotonin production for well-being",
+                "icon": "check"
+            },
+            {
+                "text": "Activates and protects the pineal gland",
+                "icon": "check"
+            }
+        ]
+    },
+    "offers": [
+        {
+            "name": "Starter size",
+            "type": "single",
+            "description": "Free shipping in the US!",
+            "image": "",
+            "badge": "Best seller!",
+            "discount_type": "none",
+            "discount_value": 0,
+            "offer_price": 29,
+            "product_sku": "HG-Illum05",
+            "quantity": 1
+        },
+        {
+            "name": "Value pack",
+            "type": "fixed_bundle",
+            "description": "",
+            "image": "https://env-holisticpeoplecom-hpdevplus.kinsta.cloud/wp-content/uploads/best-iodine-illumodine-supplement-grid4.png",
+            "badge": "Best Value",
+            "discount_type": "none",
+            "discount_value": 0,
+            "offer_price": 114,
+            "bundle_items": [
+                {
+                    "sku": "HG-Illum05",
+                    "qty": 1
+                },
+                {
+                    "sku": "HG-Illum2",
+                    "qty": 1
+                }
+            ]
+        },
+        {
+            "name": "Deep work",
+            "type": "customizable_kit",
+            "description": "",
+            "image": "",
+            "badge": "Only now!",
+            "discount_type": "none",
+            "discount_value": 0,
+            "offer_price": 145,
+            "kit_products": [
+                {
+                    "sku": "HG-Illum05",
+                    "qty": 2,
+                    "role": "must"
+                },
+                {
+                    "sku": "HG-Illum2",
+                    "qty": 1,
+                    "role": "must"
+                },
+                {
+                    "sku": "HG-RadNeut1",
+                    "qty": 1,
+                    "role": "optional"
+                }
+            ]
+        }
+    ],
+    "features": {
+        "title": "What Makes ILLUMODINE™ Superior?",
+        "subtitle": "",
+        "items": [
+            {
+                "icon": "star",
+                "title": "100% Bioactive Iodine (I⁻)",
+                "description": "ILLUMODINE™ contains singlet iodine atoms in their most bioavailable form, ensuring maximum absorption and effectiveness."
+            },
+            {
+                "icon": "bolt",
+                "title": "True Scalar Energy™ Charged",
+                "description": "Through a proprietary process using beyond-quantum science, ILLUMODINE™ is charged with the highest frequency available to humanity, dramatically enhancing its bioavailability and effectiveness."
+            },
+            {
+                "icon": "shield",
+                "title": "Extreme Purity",
+                "description": "Made with scalar-charged 200 proof, non-GMO grain alcohol and singlet iodine atoms – nothing else. No additives, no fillers, just pure potency."
+            },
+            {
+                "icon": "heart",
+                "title": "Developed by Dr. Gabriel Cousens",
+                "description": "With decades of research and hundreds of patients studied since 2011, Dr. Cousens has perfected this formulation for optimal brain function and whole-body health."
+            }
+        ]
+    },
+    "authority": {
+        "title": "Meet Dr. Gabriel Cousens",
+        "subtitle": "The Creator of ILLUMODINE™",
+        "name": "Dr. Gabriel Cousens",
+        "credentials": "MD, MD(H), DD, Diplomat of the American Board of Integrative Holistic Medicine",
+        "image": "https://env-holisticpeoplecom-hpdevplus.kinsta.cloud/wp-content/uploads/dr-cousens-BRYuwd16.png",
+        "bio": "",
+        "quotes": [
+            {
+                "text": "Iodine is one of the most important minerals for optimal health and is severely lacking in the modern diet."
+            },
+            {
+                "text": "Illumodine represents the highest quality nascent iodine available, formulated for maximum bioavailability and effectiveness."
+            },
+            {
+                "text": "In my 40+ years of clinical practice, I've seen the profound impact that proper iodine supplementation can have on overall health and vitality."
+            }
+        ],
+        "quote_categories": [
+            {
+                "title": "On Detoxification & Purity",
+                "quotes": [
+                    "Forces out fluoride from the pineal gland... uncalcifies the pineal gland.\r",
+                    "Forces out bromine, chloride, lead, mercury, and cadmium.\r",
+                    "Clear[s] the pineal gland... opening it up."
+                ]
+            },
+            {
+                "title": "On Superior Absorption",
+                "quotes": [
+                    "Far more active... better absorbed, better utilized.\r",
+                    "ILLUMODINE is in the I-minus form... activated in that way."
+                ]
+            },
+            {
+                "title": "On General Wellness",
+                "quotes": [
+                    "The general mineral for optimal health.\r",
+                    "The most important mineral besides oxygen for overall function.\r",
+                    "A big player in adrenals, lungs, breast, skin [and] estrogen regulation.\r",
+                    "The universal health mineral."
+                ]
+            },
+            {
+                "title": "On Spiritual Connection",
+                "quotes": [
+                    "Connected with the opening up of the fifth chakra.\r",
+                    "Helps open up... the upper chakras."
+                ]
+            }
+        ],
+        "article_link": {
+            "text": "Read Full Article About Iodine",
+            "url": "https://env-holisticpeoplecom-hpdevplus.kinsta.cloud/iodine-article/"
+        }
+    },
+    "testimonials": {
+        "title": "What Our Customers Say",
+        "subtitle": "Real results from real people",
+        "items": [
+            {
+                "name": "Dorothy",
+                "role": "Verified Buyer by Yotpo",
+                "title": "",
+                "quote": "I was pretty sure I was struggling with some thyroid issues prior to trying this but was also interested in the detoxifying effects Dr Cousens spoke about regarding this supplement. Within just over a week, my chronic fatigue and pain diminished by around 40%. I haven't felt this clear, comfortable, and energetic in years. Very thrilled so far. Thank you!",
+                "image": "",
+                "rating": 5
+            },
+            {
+                "name": "Jennifer L.",
+                "role": "Verified Buyer by Yotpo",
+                "title": "",
+                "quote": "Excellent Iodine supplement that does more than just provide the body with iodine. A great product for daily use and during a detox fast.",
+                "image": "",
+                "rating": 5
+            },
+            {
+                "name": "Giselle M.",
+                "role": "Verified Buyer by Yotpo",
+                "title": "",
+                "quote": "Excellent product, despite a compromised immune system I have only gotten sick once in more than a decade.",
+                "image": "",
+                "rating": 5
+            },
+            {
+                "name": "Chris G.",
+                "role": "Verified Buyer by Yotpo",
+                "title": "",
+                "quote": "I take it daily (1-2 drops). I would not want to be without it. One of the most impactful and multifaceted elements you can take. Helps me energize when I take it during the day and helps me get back to sleep when I take it at night when I get up.",
+                "image": "",
+                "rating": 5
+            },
+            {
+                "name": "Laura H.",
+                "role": "Verified Buyer by Yotpo",
+                "title": "",
+                "quote": "I take this every day it's so helpful to my mental health, among other things.",
+                "image": "",
+                "rating": 5
+            },
+            {
+                "name": "Mira B.",
+                "role": "Verified Buyer by Yotpo",
+                "title": "",
+                "quote": "Best ever Iodine supplement I have ever tried.",
+                "image": "",
+                "rating": 5
+            },
+            {
+                "name": "Patricia M.",
+                "role": "Verified Buyer by Yotpo",
+                "title": "",
+                "quote": "Very pleased with the product. When I read the instructions, I made up a calendar to begin the titering. Today I'm happy to say, I'm enjoying a brighter mind, retaining information and not struggling to carry on a conversation after 4 p.m. On December 17th, I'll go to the maintenance dose. Thank you!",
+                "image": "",
+                "rating": 5
+            },
+            {
+                "name": "Vikentiy M.",
+                "role": "Verified Buyer by Yotpo",
+                "title": "",
+                "quote": "The best and highly-potent iodine I have encountered. Massive detox effect that boosts clarity and mental and other capabilities.",
+                "image": "",
+                "rating": 5
+            },
+            {
+                "name": "Judy B.",
+                "role": "Verified Buyer by Yotpo",
+                "title": "",
+                "quote": "This is a daily must for us! If we could only take one thing, it'd be ILLUMODINE.",
+                "image": "",
+                "rating": 5
+            },
+            {
+                "name": "Vivianne N.",
+                "role": "Verified Buyer by Yotpo",
+                "title": "",
+                "quote": "Amazing supplement! Something I will take for the rest of my life!",
+                "image": "",
+                "rating": 5
+            },
+            {
+                "name": "Stella A.",
+                "role": "Verified Buyer by Yotpo",
+                "title": "",
+                "quote": "This is an excellent product. My annual health test for iodine has now been perfect for several years.",
+                "image": "",
+                "rating": 5
+            },
+            {
+                "name": "Stephanie B.",
+                "role": "Verified Buyer by Yotpo",
+                "title": "",
+                "quote": "Dr Cousens iodine is potent! I definitely feel better when I take it!",
+                "image": "",
+                "rating": 5
+            }
+        ]
+    },
+    "faq": {
+        "title": "Frequently Asked Questions",
+        "items": [
+            {
+                "question": "What is nascent iodine and how is it different from other iodine supplements?",
+                "answer": "<p>Nascent iodine is iodine in its atomic form (I⁻) rather than its molecular form (I₂). This atomic state is achieved through a unique electromagnetic process that breaks the molecular bonds.</p>\n<p>Because it is in atomic form, nascent iodine is recognized by the body as the same iodine produced by the thyroid gland, allowing for superior absorption and utilization compared to other forms of iodine supplements like potassium iodide or Lugol&#8217;s solution.</p>\n"
+            },
+            {
+                "question": "How should I take ILLUMODINE™?",
+                "answer": "<p>For general health maintenance, take 1-3 drops in water or juice on an empty stomach, preferably in the morning. Hold under the tongue for 30 seconds before swallowing for best absorption.</p>\n<p>For therapeutic purposes, consult with your healthcare provider for personalized dosing. Some protocols call for higher doses, but these should always be supervised by a qualified practitioner.</p>\n"
+            },
+            {
+                "question": "Is ILLUMODINE™ safe for everyone?",
+                "answer": "<p>ILLUMODINE™ is generally safe for most adults. However, if you have a thyroid condition (hyperthyroidism, Hashimoto&#8217;s, Graves&#8217; disease), are pregnant or nursing, or are taking thyroid medications, please consult with your healthcare provider before use.</p>\n<p>Those with a known allergy to iodine should not use this product. If you experience any adverse reactions, discontinue use and consult your healthcare provider.</p>\n"
+            },
+            {
+                "question": "How long does one bottle last?",
+                "answer": "<p>Each small bottle (0.5 oz) contains approximately 150 drops, lasting about 50 days at the standard maintenance dose of 3 drops per day.</p>\n<p>The large bottle (2 oz) contains approximately 600 drops, lasting about 6-7 months at the maintenance dose. The Value Pack offers significant savings for long-term use.</p>\n"
+            },
+            {
+                "question": "What is your return policy?",
+                "answer": "<p>We offer a 60-day money-back guarantee. If you are not completely satisfied with your purchase for any reason, simply contact our customer service team for a full refund, no questions asked.</p>\n<p>We stand behind the quality of our products and want you to feel confident in your purchase.</p>\n"
+            }
+        ]
+    },
+    "cta": {
+        "title": "Limited Time Special Offer",
+        "subtitle": "Experience the transformative power of ILLUMODINE™ with our exclusive offers",
+        "button_text": "Claim Your Special Offer Now",
+        "button_url": ""
+    },
+    "checkout": {
+        "url": "https://env-holisticpeoplecom-hpdevplus.kinsta.cloud/funnels/illumodine/checkout/",
+        "free_shipping_countries": "US",
+        "global_discount_percent": 0,
+        "enable_points_redemption": true,
+        "show_order_summary": true
+    },
+    "thankyou": {
+        "url": "https://env-holisticpeoplecom-hpdevplus.kinsta.cloud/funnels/illumodine/thank-you/",
+        "headline": "Thank You for Your Order!",
+        "message": "Your order has been received and is being processed. You will receive a confirmation email shortly with your order details and tracking information.",
+        "show_upsell": false,
+        "upsell": null
+    },
+    "styling": {
+        "accent_color": "#eab308",
+        "text_color_basic": "#e5e5e5",
+        "text_color_accent": "#eab308",
+        "text_color_note": "#a3a3a3",
+        "text_color_discount": "#22c55e",
+        "page_bg_color": "#130b21",
+        "card_bg_color": "#1c112e",
+        "input_bg_color": "#333333",
+        "border_color": "#7c3aed",
+        "background_type": "solid",
+        "background_image": "",
+        "custom_css": ""
+    },
+    "footer": {
+        "text": "© 2024 HolisticPeople.com - Manufactured for Dr. Gabriel Cousens",
+        "disclaimer": "These statements have not been evaluated by the FDA. This product is not intended to diagnose, treat, cure or prevent any disease.",
+        "links": [
+            {
+                "label": "Privacy Policy",
+                "url": "https://env-holisticpeoplecom-hpdevplus.kinsta.cloud/privacy-policy/"
+            },
+            {
+                "label": "Terms of Service",
+                "url": "https://env-holisticpeoplecom-hpdevplus.kinsta.cloud/terms/"
+            },
+            {
+                "label": "Contact Us",
+                "url": "https://env-holisticpeoplecom-hpdevplus.kinsta.cloud/contact/"
+            }
+        ]
+    },
+    "science": {
+        "title": "The Science Behind ILLUMODINE™",
+        "subtitle": "",
+        "sections": [
+            {
+                "title": "Brain Function & Mental Clarity",
+                "description": "Iodine sufficiency activates mitochondria to produce 18 times more brain cell energy. A healthy brain cell contains up to 5,000 mitochondria, while iodine-deficient cells have only 200-300.",
+                "bullets": [
+                    "Up to 13.5 points higher IQ in children of iodine-sufficient mothers\r",
+                    "Up to 9 points higher IQ in iodine-sufficient preschool children\r",
+                    "Amelioration of depression and anxiety\r",
+                    "Enhanced clarity of mind and consciousness"
+                ]
+            },
+            {
+                "title": "Cellular Protection & Detoxification",
+                "description": "Active Iodine (I⁻) absorbs 3,000 times more ionizing radiation than normal tissue, protecting DNA from radiation damage at the cellular membrane level.",
+                "bullets": [
+                    "Powerful antioxidant and radioprotection\r",
+                    "Eliminates fluoride from the pineal gland\r",
+                    "Helps remove mercury, lead, aluminum, and cadmium\r",
+                    "Supports DNA repair and healthy apoptosis"
+                ]
+            }
+        ]
+    }
+}

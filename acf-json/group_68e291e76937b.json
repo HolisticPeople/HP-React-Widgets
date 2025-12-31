@@ -1,0 +1,62 @@
+{
+    "ID": 124108,
+    "key": "group_68e291e76937b",
+    "title": "Product Tags",
+    "fields": [
+        {
+            "ID": 124109,
+            "key": "field_68e291e8431d6",
+            "label": "Product Tag Grid4 Image",
+            "name": "product_tag_grid4img",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "image",
+            "value": null,
+            "menu_order": 0,
+            "instructions": "",
+            "required": 0,
+            "id": "",
+            "class": "",
+            "conditional_logic": 0,
+            "parent": 124108,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "return_format": "id",
+            "library": "all",
+            "min_width": "",
+            "min_height": "",
+            "min_size": "",
+            "max_width": "",
+            "max_height": "",
+            "max_size": "",
+            "mime_types": "",
+            "allow_in_bindings": 1,
+            "preview_size": "woocommerce_thumbnail",
+            "_name": "product_tag_grid4img",
+            "_valid": 1
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "taxonomy",
+                "operator": "==",
+                "value": "product_tag"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "adding fields to woo product tags",
+    "show_in_rest": 0,
+    "display_title": "",
+    "_valid": true
+}

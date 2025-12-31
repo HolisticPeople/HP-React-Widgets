@@ -1,0 +1,61 @@
+{
+    "ID": 0,
+    "key": "group_product_funnel_canonical",
+    "title": "Funnel SEO",
+    "fields": [
+        {
+            "ID": 0,
+            "key": "field_product_funnel_override",
+            "label": "Canonical Funnel Override",
+            "name": "product_funnel_override",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "post_object",
+            "value": null,
+            "menu_order": 0,
+            "instructions": "If set, this product's canonical URL will point to the selected funnel. Use for Type-1 (single product) funnels.",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": false,
+            "parent": "group_product_funnel_canonical",
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "post_type": [
+                "hp-funnel"
+            ],
+            "allow_null": 1,
+            "return_format": "id",
+            "_name": "product_funnel_override",
+            "_valid": 1,
+            "taxonomy": [],
+            "multiple": 0,
+            "ui": 1,
+            "bidirectional_target": []
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "product"
+            }
+        ]
+    ],
+    "menu_order": 100,
+    "position": "side",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": [],
+    "active": true,
+    "description": "",
+    "show_in_rest": false,
+    "display_title": "",
+    "local": "php",
+    "_valid": true
+}
