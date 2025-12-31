@@ -281,9 +281,22 @@ class FunnelExportImport
     {
         $funnels = FunnelConfigLoader::getAllPosts();
         $schemaUrl = rest_url('hp-rw/v1/funnels/schema');
+        
+        // Display any stored messages (immune to admin notice hiding plugins)
+        $message = get_transient(self::MESSAGE_TRANSIENT);
+        if ($message) {
+            delete_transient(self::MESSAGE_TRANSIENT);
+        }
         ?>
         <div class="wrap">
             <h1><?php echo esc_html__('Funnel Export / Import', 'hp-react-widgets'); ?></h1>
+
+            <?php if ($message): ?>
+                <div class="hp-import-message" style="padding: 12px 15px; margin: 15px 0; border-left: 4px solid <?php echo $message['type'] === 'success' ? '#00a32a' : ($message['type'] === 'error' ? '#d63638' : '#dba617'); ?>; background: <?php echo $message['type'] === 'success' ? '#edfaef' : ($message['type'] === 'error' ? '#fcf0f1' : '#fcf9e8'); ?>; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
+                    <strong><?php echo $message['type'] === 'success' ? '✓' : ($message['type'] === 'error' ? '✗' : '!'); ?></strong>
+                    <?php echo wp_kses_post($message['text']); ?>
+                </div>
+            <?php endif; ?>
 
             <?php settings_errors('hp_funnel_import'); ?>
 
