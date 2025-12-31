@@ -221,6 +221,9 @@ class Plugin
         
         // Initialize Testimonials display settings
         // Admin\FunnelTestimonialsFields::init();
+        
+        // Setup ACF Local JSON sync for version control
+        self::setupAcfLocalJson();
 
         // Enqueue admin scripts for funnel editing
         add_action('admin_enqueue_scripts', [self::class, 'enqueueAdminScripts']);
@@ -939,5 +942,48 @@ class Plugin
     public static function set_shortcode_descriptions(array $descriptions): void
     {
         update_option(self::OPTION_SHORTCODE_DESCRIPTIONS, $descriptions);
+    }
+
+    /**
+     * Setup ACF Local JSON for version-controlled field group sync.
+     * 
+     * This allows ACF field groups to be saved as JSON files in the plugin,
+     * enabling deployment via Git across environments.
+     */
+    private static function setupAcfLocalJson(): void
+    {
+        // Tell ACF where to save JSON files (when editing in WP Admin)
+        add_filter('acf/settings/save_json', [self::class, 'acfJsonSavePoint']);
+        
+        // Tell ACF where to load JSON files from (for deployment)
+        add_filter('acf/settings/load_json', [self::class, 'acfJsonLoadPoints']);
+    }
+
+    /**
+     * Set the save point for ACF JSON files.
+     *
+     * @param string $path Default ACF save path.
+     * @return string Plugin's acf-json folder path.
+     */
+    public static function acfJsonSavePoint(string $path): string
+    {
+        return HP_RW_PATH . 'acf-json';
+    }
+
+    /**
+     * Add plugin's acf-json folder to ACF load paths.
+     *
+     * @param array $paths Existing ACF load paths.
+     * @return array Modified paths including plugin's folder.
+     */
+    public static function acfJsonLoadPoints(array $paths): array
+    {
+        // Remove the default path (optional - keeps only plugin-managed fields)
+        // unset($paths[0]);
+        
+        // Add our plugin's acf-json folder
+        $paths[] = HP_RW_PATH . 'acf-json';
+        
+        return $paths;
     }
 }
