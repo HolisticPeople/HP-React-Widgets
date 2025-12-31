@@ -180,10 +180,17 @@ class FunnelExporter
     {
         $offers = get_field('funnel_offers', $postId) ?: [];
         $result = [];
+        $offerIndex = 0;
 
         foreach ($offers as $o) {
+            $offerIndex++;
             $offerType = $o['offer_type'] ?? 'single';
+            
+            // Generate offer ID from stored value or create one
+            $offerId = $o['offer_id'] ?? ('offer-' . $offerIndex);
+            
             $offer = [
+                'id' => $offerId,
                 'name' => $o['offer_name'] ?? '',
                 'type' => $offerType,
                 'description' => $o['offer_description'] ?? '',
