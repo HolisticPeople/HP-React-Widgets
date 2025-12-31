@@ -193,6 +193,9 @@ class Plugin
      */
     public static function init(): void
     {
+        // Register the HP Funnel custom post type (fallback if not registered by ACF Pro)
+        FunnelPostType::init();
+        
         // Schedule upgrade check for later (after WP is fully initialized)
         add_action('init', [self::class, 'checkForUpgrade'], 99);
 

@@ -29,3 +29,5 @@ echo "Discount Value: $discountValue\n";
 echo "Sale Price: $salePrice\n";
 echo "Calculated Sale Price (rounded): " . round($salePrice, 2) . "\n";
 
+
+
