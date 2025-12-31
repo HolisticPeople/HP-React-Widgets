@@ -287,14 +287,23 @@ class FunnelExportImport
         if ($message) {
             delete_transient(self::MESSAGE_TRANSIENT);
         }
+        
+        // Check if import was attempted but no message (debug)
+        $importAttempted = isset($_GET['imported']);
         ?>
         <div class="wrap">
             <h1><?php echo esc_html__('Funnel Export / Import', 'hp-react-widgets'); ?></h1>
+            <p style="color: #666; margin-top: -10px;">HP React Widgets v<?php echo esc_html(HP_RW_VERSION); ?></p>
 
             <?php if ($message): ?>
                 <div class="hp-import-message" style="padding: 12px 15px; margin: 15px 0; border-left: 4px solid <?php echo $message['type'] === 'success' ? '#00a32a' : ($message['type'] === 'error' ? '#d63638' : '#dba617'); ?>; background: <?php echo $message['type'] === 'success' ? '#edfaef' : ($message['type'] === 'error' ? '#fcf0f1' : '#fcf9e8'); ?>; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
                     <strong><?php echo $message['type'] === 'success' ? '✓' : ($message['type'] === 'error' ? '✗' : '!'); ?></strong>
                     <?php echo wp_kses_post($message['text']); ?>
+                </div>
+            <?php elseif ($importAttempted): ?>
+                <div class="hp-import-message" style="padding: 12px 15px; margin: 15px 0; border-left: 4px solid #dba617; background: #fcf9e8; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
+                    <strong>!</strong> Import was attempted. Check the funnel list to see if it was created.
+                    <br><small>Debug: Transient message was not found. This could mean the import succeeded but the message expired, or object caching cleared it.</small>
                 </div>
             <?php endif; ?>
 
