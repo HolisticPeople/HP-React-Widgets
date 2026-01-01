@@ -25,10 +25,11 @@ class FunnelListEnhancements
         add_filter('post_row_actions', [self::class, 'addRowActions'], 10, 2);
         add_action('admin_head', [self::class, 'addStyles']);
         add_action('admin_footer', [self::class, 'renderAuditModal']);
+        add_action('wp_ajax_hp_clear_funnel_cache', [self::class, 'ajaxClearCache']);
     }
 
     /**
-     * Add SEO Audit row action.
+     * Add SEO Audit and Clear Cache row actions.
      */
     public static function addRowActions(array $actions, \WP_Post $post): array
     {
@@ -36,14 +37,46 @@ class FunnelListEnhancements
             return $actions;
         }
 
+        $slug = get_field('funnel_slug', $post->ID) ?: $post->post_name;
+
         $actions['seo_audit'] = sprintf(
             '<a href="#" class="hp-run-seo-audit" data-post-id="%d" data-slug="%s">%s</a>',
             $post->ID,
-            get_field('funnel_slug', $post->ID) ?: $post->post_name,
+            $slug,
             __('SEO Audit', 'hp-react-widgets')
         );
 
+        $actions['clear_cache'] = sprintf(
+            '<a href="#" class="hp-clear-funnel-cache" data-post-id="%d" data-slug="%s" data-nonce="%s">%s</a>',
+            $post->ID,
+            $slug,
+            wp_create_nonce('hp_clear_cache_' . $post->ID),
+            __('Clear Cache', 'hp-react-widgets')
+        );
+
         return $actions;
+    }
+
+    /**
+     * AJAX handler to clear funnel cache.
+     */
+    public static function ajaxClearCache(): void
+    {
+        $postId = (int) ($_POST['post_id'] ?? 0);
+        $nonce = $_POST['nonce'] ?? '';
+
+        if (!$postId || !wp_verify_nonce($nonce, 'hp_clear_cache_' . $postId)) {
+            wp_send_json_error(['message' => 'Invalid request']);
+        }
+
+        if (!current_user_can('edit_post', $postId)) {
+            wp_send_json_error(['message' => 'Permission denied']);
+        }
+
+        // Clear the funnel cache
+        \HP_RW\Services\FunnelConfigLoader::clearCache($postId);
+
+        wp_send_json_success(['message' => 'Cache cleared successfully']);
     }
 
     /**
@@ -293,6 +326,43 @@ class FunnelListEnhancements
         </div>
         <script>
         jQuery(document).ready(function($) {
+            // Clear Cache handler
+            $('.hp-clear-funnel-cache').on('click', function(e) {
+                e.preventDefault();
+                var btn = $(this);
+                var postId = btn.data('post-id');
+                var slug = btn.data('slug');
+                var nonce = btn.data('nonce');
+                var originalText = btn.text();
+                
+                btn.text('Clearing...');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    method: 'POST',
+                    data: {
+                        action: 'hp_clear_funnel_cache',
+                        post_id: postId,
+                        nonce: nonce
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            btn.text('✓ Cleared!');
+                            setTimeout(function() { btn.text(originalText); }, 2000);
+                        } else {
+                            btn.text('Failed');
+                            alert('Clear cache failed: ' + (response.data?.message || 'Unknown error'));
+                            setTimeout(function() { btn.text(originalText); }, 2000);
+                        }
+                    },
+                    error: function() {
+                        btn.text('Error');
+                        setTimeout(function() { btn.text(originalText); }, 2000);
+                    }
+                });
+            });
+
+            // SEO Audit handler
             $('.hp-run-seo-audit').on('click', function(e) {
                 e.preventDefault();
                 var btn = $(this);
