@@ -163,11 +163,7 @@ class FunnelConfigLoader
         $cacheKey = self::CACHE_PREFIX . 'slug_' . $slug;
         $cached = get_transient($cacheKey);
         if ($cached !== false) {
-            // Ensure cached data is a clean array (prevents stdClass errors from old cache)
-            if (is_object($cached) || is_array($cached)) {
-                return json_decode(json_encode($cached), true);
-            }
-            return $cached;
+            return self::ensureArrayRecursive($cached);
         }
 
         // Find the funnel post
@@ -204,11 +200,7 @@ class FunnelConfigLoader
         $cacheKey = self::CACHE_PREFIX . 'id_' . $postId;
         $cached = get_transient($cacheKey);
         if ($cached !== false) {
-            // Ensure cached data is a clean array (prevents stdClass errors from old cache)
-            if (is_object($cached) || is_array($cached)) {
-                return json_decode(json_encode($cached), true);
-            }
-            return $cached;
+            return self::ensureArrayRecursive($cached);
         }
 
         $post = get_post($postId);

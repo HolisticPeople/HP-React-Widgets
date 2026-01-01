@@ -26,7 +26,7 @@ class FunnelSeoAuditor
             $data = $funnel;
         }
 
-        // Deep convert everything to arrays to handle nested stdClass objects (common with ACF/Transients)
+        // Deep convert everything to arrays to handle nested stdClass objects
         $data = self::ensureArrayRecursive($data);
 
         if (empty($data) || !is_array($data)) {
