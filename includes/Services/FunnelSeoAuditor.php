@@ -26,15 +26,15 @@ class FunnelSeoAuditor
             $data = $funnel;
         }
 
-        // Ensure data is an array (sometimes cache or external input might be an object)
-        if (is_object($data)) {
+        // Deep convert everything to arrays to handle nested stdClass objects (common with ACF/Transients)
+        if (!empty($data)) {
             $data = json_decode(json_encode($data), true);
         }
 
-        if (empty($data)) {
+        if (empty($data) || !is_array($data)) {
             return [
                 'status' => 'error',
-                'message' => 'No funnel data provided for audit.',
+                'message' => 'No valid funnel data provided for audit.',
             ];
         }
 

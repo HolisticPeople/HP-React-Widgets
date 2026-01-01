@@ -163,6 +163,10 @@ class FunnelConfigLoader
         $cacheKey = self::CACHE_PREFIX . 'slug_' . $slug;
         $cached = get_transient($cacheKey);
         if ($cached !== false) {
+            // Ensure cached data is a clean array (prevents stdClass errors from old cache)
+            if (is_object($cached) || is_array($cached)) {
+                return json_decode(json_encode($cached), true);
+            }
             return $cached;
         }
 
@@ -174,6 +178,9 @@ class FunnelConfigLoader
         }
 
         $config = self::loadFromPost($post);
+        
+        // Final safety check: deep convert to array to ensure no objects leak
+        $config = json_decode(json_encode($config), true);
         
         // Cache the result
         set_transient($cacheKey, $config, self::CACHE_TTL);
@@ -197,6 +204,10 @@ class FunnelConfigLoader
         $cacheKey = self::CACHE_PREFIX . 'id_' . $postId;
         $cached = get_transient($cacheKey);
         if ($cached !== false) {
+            // Ensure cached data is a clean array (prevents stdClass errors from old cache)
+            if (is_object($cached) || is_array($cached)) {
+                return json_decode(json_encode($cached), true);
+            }
             return $cached;
         }
 
@@ -206,6 +217,9 @@ class FunnelConfigLoader
         }
 
         $config = self::loadFromPost($post);
+        
+        // Final safety check: deep convert to array to ensure no objects leak
+        $config = json_decode(json_encode($config), true);
         
         // Cache the result
         set_transient($cacheKey, $config, self::CACHE_TTL);
