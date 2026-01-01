@@ -1130,6 +1130,13 @@ class FunnelConfigLoader
         if (function_exists('get_field')) {
             $value = get_field($fieldName, $postId);
             if ($value !== null && $value !== false && $value !== '') {
+                // Recursively convert objects to arrays (ACF can return objects in some cache configurations)
+                if (is_object($value) || is_array($value)) {
+                    $encoded = json_encode($value);
+                    if ($encoded !== false) {
+                        return json_decode($encoded, true);
+                    }
+                }
                 return $value;
             }
         }
