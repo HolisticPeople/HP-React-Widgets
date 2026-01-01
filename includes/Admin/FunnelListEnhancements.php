@@ -22,7 +22,28 @@ class FunnelListEnhancements
         add_filter('manage_hp-funnel_posts_columns', [self::class, 'addColumns'], 20);
         add_action('manage_hp-funnel_posts_custom_column', [self::class, 'renderColumn'], 10, 2);
         add_filter('display_post_states', [self::class, 'addAiPostState'], 10, 2);
+        add_filter('post_row_actions', [self::class, 'addRowActions'], 10, 2);
         add_action('admin_head', [self::class, 'addStyles']);
+        add_action('admin_footer', [self::class, 'renderAuditModal']);
+    }
+
+    /**
+     * Add SEO Audit row action.
+     */
+    public static function addRowActions(array $actions, \WP_Post $post): array
+    {
+        if ($post->post_type !== 'hp-funnel') {
+            return $actions;
+        }
+
+        $actions['seo_audit'] = sprintf(
+            '<a href="#" class="hp-run-seo-audit" data-post-id="%d" data-slug="%s">%s</a>',
+            $post->ID,
+            get_field('funnel_slug', $post->ID) ?: $post->post_name,
+            __('SEO Audit', 'hp-react-widgets')
+        );
+
+        return $actions;
     }
 
     /**
@@ -204,7 +225,7 @@ class FunnelListEnhancements
     public static function addStyles(): void
     {
         $screen = get_current_screen();
-        if (!$screen || $screen->id !== 'edit-hp-funnel') {
+        if (!$screen || $screen->post_type !== 'hp-funnel') {
             return;
         }
         ?>
@@ -234,7 +255,110 @@ class FunnelListEnhancements
             .hp-modified-by { margin-left: 3px; }
             .hp-modified-ai { cursor: help; }
             .hp-modified-admin { cursor: help; }
+
+            /* Audit Modal Styles */
+            #hp-seo-audit-modal { display: none; }
+            .hp-audit-report { padding: 15px; }
+            .hp-audit-section { margin-bottom: 20px; }
+            .hp-audit-section h3 { margin-top: 0; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+            .hp-audit-item { margin-bottom: 5px; padding-left: 20px; position: relative; }
+            .hp-audit-item:before { position: absolute; left: 0; }
+            .hp-audit-problem { color: #d63638; }
+            .hp-audit-problem:before { content: "●"; }
+            .hp-audit-improvement { color: #dba617; }
+            .hp-audit-improvement:before { content: "○"; }
+            .hp-audit-good { color: #00a32a; }
+            .hp-audit-good:before { content: "✓"; }
+            .hp-audit-score { font-size: 18px; font-weight: bold; margin-bottom: 15px; text-align: center; }
+            .hp-audit-status-good { color: #00a32a; }
+            .hp-audit-status-needs_improvement { color: #dba617; }
+            .hp-audit-status-poor { color: #d63638; }
         </style>
+        <script>
+        jQuery(document).ready(function($) {
+            $('.hp-run-seo-audit').on('click', function(e) {
+                e.preventDefault();
+                var btn = $(this);
+                var slug = btn.data('slug');
+                
+                btn.text('Auditing...');
+                
+                $.ajax({
+                    url: '/wp-json/hp-abilities/v1/funnels/' + slug + '/seo-audit',
+                    method: 'GET',
+                    beforeSend: function(xhr) {
+                        xhr.setRequestHeader('X-WP-Nonce', wpApiSettings.nonce);
+                    },
+                    success: function(response) {
+                        btn.text('SEO Audit');
+                        if (response.success && response.data) {
+                            showAuditReport(response.data);
+                        } else {
+                            alert('Audit failed: ' + (response.error || 'Unknown error'));
+                        }
+                    },
+                    error: function(xhr) {
+                        btn.text('SEO Audit');
+                        alert('Audit error: ' + xhr.statusText);
+                    }
+                });
+            });
+
+            function showAuditReport(report) {
+                var html = '<div class="hp-audit-report">';
+                html += '<div class="hp-audit-score hp-audit-status-' + report.status + '">';
+                html += 'Status: ' + report.status.replace("_", " ").toUpperCase();
+                html += ' (' + report.score.good + '/' + report.score.total + ' Good)';
+                html += '</div>';
+
+                if (report.problems.length > 0) {
+                    html += '<div class="hp-audit-section"><h3>Problems</h3>';
+                    report.problems.forEach(function(p) { html += '<div class="hp-audit-item hp-audit-problem">' + p + '</div>'; });
+                    html += '</div>';
+                }
+
+                if (report.improvements.length > 0) {
+                    html += '<div class="hp-audit-section"><h3>Improvements</h3>';
+                    report.improvements.forEach(function(i) { html += '<div class="hp-audit-item hp-audit-improvement">' + i + '</div>'; });
+                    html += '</div>';
+                }
+
+                if (report.good.length > 0) {
+                    html += '<div class="hp-audit-section"><h3>Good</h3>';
+                    report.good.forEach(function(g) { html += '<div class="hp-audit-item hp-audit-good">' + g + '</div>'; });
+                    html += '</div>';
+                }
+                html += '</div>';
+
+                // Use thickbox if available, otherwise simple alert
+                if (typeof tb_show === "function") {
+                    $('#hp-seo-audit-content').html(html);
+                    tb_show('SEO Audit Report: ' + report.focus_keyword, '#TB_inline?inlineId=hp-seo-audit-modal&width=600&height=500');
+                } else {
+                    // Fallback to a simpler display
+                    var win = window.open("", "SEO Audit", "width=600,height=600");
+                    win.document.write("<html><head><title>SEO Audit</title></head><body>" + html + "</body></html>");
+                }
+            }
+        });
+        </script>
+        <?php
+    }
+
+    /**
+     * Render audit modal container.
+     */
+    public static function renderAuditModal(): void
+    {
+        $screen = get_current_screen();
+        if (!$screen || $screen->post_type !== 'hp-funnel') {
+            return;
+        }
+        add_thickbox();
+        ?>
+        <div id="hp-seo-audit-modal" style="display:none;">
+            <div id="hp-seo-audit-content"></div>
+        </div>
         <?php
     }
 }
