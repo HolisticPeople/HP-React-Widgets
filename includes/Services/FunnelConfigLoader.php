@@ -1132,7 +1132,10 @@ class FunnelConfigLoader
             if ($value !== null && $value !== false && $value !== '') {
                 // Recursively convert objects to arrays (ACF can return objects in some cache configurations)
                 if (is_object($value) || is_array($value)) {
-                    return json_decode(json_encode($value), true);
+                    $encoded = json_encode($value);
+                    if ($encoded !== false) {
+                        return json_decode($encoded, true);
+                    }
                 }
                 return $value;
             }
