@@ -274,6 +274,23 @@ class FunnelListEnhancements
             .hp-audit-status-needs_improvement { color: #dba617; }
             .hp-audit-status-poor { color: #d63638; }
         </style>
+        <?php
+    }
+
+    /**
+     * Render audit modal container.
+     */
+    public static function renderAuditModal(): void
+    {
+        $screen = get_current_screen();
+        if (!$screen || $screen->post_type !== 'hp-funnel') {
+            return;
+        }
+        add_thickbox();
+        ?>
+        <div id="hp-seo-audit-modal" style="display:none;">
+            <div id="hp-seo-audit-content"></div>
+        </div>
         <script>
         jQuery(document).ready(function($) {
             $('.hp-run-seo-audit').on('click', function(e) {
@@ -342,23 +359,6 @@ class FunnelListEnhancements
             }
         });
         </script>
-        <?php
-    }
-
-    /**
-     * Render audit modal container.
-     */
-    public static function renderAuditModal(): void
-    {
-        $screen = get_current_screen();
-        if (!$screen || $screen->post_type !== 'hp-funnel') {
-            return;
-        }
-        add_thickbox();
-        ?>
-        <div id="hp-seo-audit-modal" style="display:none;">
-            <div id="hp-seo-audit-content"></div>
-        </div>
         <?php
     }
 }

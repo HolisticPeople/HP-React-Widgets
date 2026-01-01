@@ -406,137 +406,137 @@ class FunnelMetaBoxes
      */
     private static function getScripts(): string
     {
-        return '
+        return <<<'JS'
             jQuery(document).ready(function($) {
                 // Inline SEO Audit
-                $(".hp-run-seo-audit-inline").on("click", function() {
+                $('.hp-run-seo-audit-inline').on('click', function() {
                     var btn = $(this);
-                    var slug = btn.data("slug");
+                    var slug = btn.data('slug');
                     
-                    btn.prop("disabled", true).text("Auditing...");
+                    btn.prop('disabled', true).text('Auditing...');
                     
                     $.ajax({
-                        url: "/wp-json/hp-abilities/v1/funnels/" + slug + "/seo-audit",
-                        method: "GET",
+                        url: '/wp-json/hp-abilities/v1/funnels/' + slug + '/seo-audit',
+                        method: 'GET',
                         beforeSend: function(xhr) {
-                            xhr.setRequestHeader("X-WP-Nonce", wpApiSettings.nonce);
+                            xhr.setRequestHeader('X-WP-Nonce', wpApiSettings.nonce);
                         },
                         success: function(response) {
-                            btn.prop("disabled", false).text("Run SEO Audit");
+                            btn.prop('disabled', false).text('Run SEO Audit');
                             if (response.success && response.data) {
                                 renderAuditInline(response.data);
                             } else {
-                                alert("Audit failed: " + (response.error || "Unknown error"));
+                                alert('Audit failed: ' + (response.error || 'Unknown error'));
                             }
                         },
                         error: function() {
-                            btn.prop("disabled", false).text("Run SEO Audit");
-                            alert("Audit request failed.");
+                            btn.prop('disabled', false).text('Run SEO Audit');
+                            alert('Audit request failed.');
                         }
                     });
                 });
 
                 function renderAuditInline(report) {
-                    var preview = $("#hp-audit-results-preview");
-                    var badge = preview.find(".hp-audit-status-badge");
+                    var preview = $('#hp-audit-results-preview');
+                    var badge = preview.find('.hp-audit-status-badge');
                     
-                    badge.removeClass("hp-audit-status-good hp-audit-status-needs_improvement hp-audit-status-poor")
-                         .addClass("hp-audit-status-" + report.status)
-                         .text(report.status.replace("_", " ").toUpperCase() + " (" + report.score.good + "/" + report.score.total + ")");
+                    badge.removeClass('hp-audit-status-good hp-audit-status-needs_improvement hp-audit-status-poor')
+                         .addClass('hp-audit-status-' + report.status)
+                         .text(report.status.replace('_', ' ').toUpperCase() + ' (' + report.score.good + '/' + report.score.total + ')');
                     
                     preview.show();
 
                     // Generate full report HTML
-                    var html = "<div class=\"hp-audit-report\">";
+                    var html = "<div class='hp-audit-report'>";
                     if (report.problems.length > 0) {
-                        html += "<div class=\"hp-audit-section\"><h4>Problems</h4>";
-                        report.problems.forEach(function(p) { html += "<div class=\"hp-audit-item hp-audit-problem\">● " + p + "</div>"; });
+                        html += "<div class='hp-audit-section'><h4>Problems</h4>";
+                        report.problems.forEach(function(p) { html += "<div class='hp-audit-item hp-audit-problem'>● " + p + "</div>"; });
                         html += "</div>";
                     }
                     if (report.improvements.length > 0) {
-                        html += "<div class=\"hp-audit-section\"><h4>Improvements</h4>";
-                        report.improvements.forEach(function(i) { html += "<div class=\"hp-audit-item hp-audit-improvement\">○ " + i + "</div>"; });
+                        html += "<div class='hp-audit-section'><h4>Improvements</h4>";
+                        report.improvements.forEach(function(i) { html += "<div class='hp-audit-item hp-audit-improvement'>○ " + i + "</div>"; });
                         html += "</div>";
                     }
                     if (report.good.length > 0) {
-                        html += "<div class=\"hp-audit-section\"><h4>Good</h4>";
-                        report.good.forEach(function(g) { html += "<div class=\"hp-audit-item hp-audit-good\">✓ " + g + "</div>"; });
+                        html += "<div class='hp-audit-section'><h4>Good</h4>";
+                        report.good.forEach(function(g) { html += "<div class='hp-audit-item hp-audit-good'>✓ " + g + "</div>"; });
                         html += "</div>";
                     }
                     html += "</div>";
 
                     // If thickbox available, show it
-                    if (typeof tb_show === "function") {
-                        $("#hp-seo-audit-report-container").html(html);
-                        tb_show("SEO Audit Report", "#TB_inline?inlineId=hp-audit-modal-content&width=500&height=400");
+                    if (typeof tb_show === 'function') {
+                        $('#hp-seo-audit-report-container').html(html);
+                        tb_show('SEO Audit Report', '#TB_inline?inlineId=hp-audit-modal-content&width=500&height=400');
                     } else {
-                        alert("Audit Status: " + report.status);
+                        alert('Audit Status: ' + report.status);
                     }
                 }
 
                 // Create backup button
-                $(".hp-create-backup").on("click", function() {
+                $('.hp-create-backup').on('click', function() {
                     var btn = $(this);
-                    var funnelId = btn.data("funnel-id");
+                    var funnelId = btn.data('funnel-id');
                     
-                    btn.prop("disabled", true).text("Creating...");
+                    btn.prop('disabled', true).text('Creating...');
                     
                     $.ajax({
-                        url: "/wp-json/hp-rw/v1/ai/funnels/" + funnelId + "/versions",
-                        method: "POST",
+                        url: '/wp-json/hp-rw/v1/ai/funnels/' + funnelId + '/versions',
+                        method: 'POST',
                         beforeSend: function(xhr) {
-                            xhr.setRequestHeader("X-WP-Nonce", wpApiSettings.nonce);
+                            xhr.setRequestHeader('X-WP-Nonce', wpApiSettings.nonce);
                         },
                         data: JSON.stringify({
-                            description: "Manual backup from admin",
-                            created_by: "admin"
+                            description: 'Manual backup from admin',
+                            created_by: 'admin'
                         }),
-                        contentType: "application/json",
+                        contentType: 'application/json',
                         success: function(response) {
-                            alert("Backup created successfully!");
+                            alert('Backup created successfully!');
                             location.reload();
                         },
                         error: function() {
-                            alert("Failed to create backup.");
-                            btn.prop("disabled", false).text("Create Backup Now");
+                            alert('Failed to create backup.');
+                            btn.prop('disabled', false).text('Create Backup Now');
                         }
                     });
                 });
                 
                 // Restore version button
-                $(".hp-restore-version").on("click", function() {
+                $('.hp-restore-version').on('click', function() {
                     var btn = $(this);
-                    var versionId = btn.data("version-id");
-                    var funnelId = btn.data("funnel-id");
+                    var versionId = btn.data('version-id');
+                    var funnelId = btn.data('funnel-id');
                     
-                    if (!confirm("Restore to this version? Current state will be backed up first.")) {
+                    if (!confirm('Restore to this version? Current state will be backed up first.')) {
                         return;
                     }
                     
-                    btn.prop("disabled", true).text("Restoring...");
+                    btn.prop('disabled', true).text('Restoring...');
                     
                     $.ajax({
-                        url: "/wp-json/hp-rw/v1/ai/funnels/" + funnelId + "/versions/" + versionId + "/restore",
-                        method: "POST",
+                        url: '/wp-json/hp-rw/v1/ai/funnels/' + funnelId + '/versions/' + versionId + '/restore',
+                        method: 'POST',
                         beforeSend: function(xhr) {
-                            xhr.setRequestHeader("X-WP-Nonce", wpApiSettings.nonce);
+                            xhr.setRequestHeader('X-WP-Nonce', wpApiSettings.nonce);
                         },
                         data: JSON.stringify({
                             backup_current: true
                         }),
-                        contentType: "application/json",
+                        contentType: 'application/json',
                         success: function(response) {
-                            alert("Version restored successfully!");
+                            alert('Version restored successfully!');
                             location.reload();
                         },
                         error: function() {
-                            alert("Failed to restore version.");
-                            btn.prop("disabled", false).text("Restore");
+                            alert('Failed to restore version.');
+                            btn.prop('disabled', false).text('Restore');
                         }
                     });
                 });
             });
-        ';
+JS;
     }
 }
 
