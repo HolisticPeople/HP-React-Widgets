@@ -26,6 +26,11 @@ class FunnelSeoAuditor
             $data = $funnel;
         }
 
+        // Ensure data is an array (sometimes cache or external input might be an object)
+        if (is_object($data)) {
+            $data = json_decode(json_encode($data), true);
+        }
+
         if (empty($data)) {
             return [
                 'status' => 'error',
