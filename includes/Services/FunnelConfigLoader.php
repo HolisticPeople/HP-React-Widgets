@@ -180,7 +180,7 @@ class FunnelConfigLoader
         $config = self::loadFromPost($post);
         
         // Final safety check: deep convert to array to ensure no objects leak
-        $config = json_decode(json_encode($config), true);
+        $config = self::ensureArrayRecursive($config);
         
         // Cache the result
         set_transient($cacheKey, $config, self::CACHE_TTL);
@@ -219,7 +219,7 @@ class FunnelConfigLoader
         $config = self::loadFromPost($post);
         
         // Final safety check: deep convert to array to ensure no objects leak
-        $config = json_decode(json_encode($config), true);
+        $config = self::ensureArrayRecursive($config);
         
         // Cache the result
         set_transient($cacheKey, $config, self::CACHE_TTL);

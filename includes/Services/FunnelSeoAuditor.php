@@ -27,9 +27,7 @@ class FunnelSeoAuditor
         }
 
         // Deep convert everything to arrays to handle nested stdClass objects (common with ACF/Transients)
-        if (!empty($data)) {
-            $data = json_decode(json_encode($data), true);
-        }
+        $data = self::ensureArrayRecursive($data);
 
         if (empty($data) || !is_array($data)) {
             return [
@@ -275,6 +273,25 @@ class FunnelSeoAuditor
         if (!empty($data['hero']['image']) && empty($data['hero']['image_alt'])) {
             $suggestions['hero_image_alt'] = "Hero image for $kw protocol";
         }
+    }
+
+    /**
+     * Deeply convert objects to arrays.
+     * 
+     * @param mixed $value Value to convert
+     * @return mixed Converted value
+     */
+    private static function ensureArrayRecursive($value)
+    {
+        if (is_object($value)) {
+            $value = (array) $value;
+        }
+        if (is_array($value)) {
+            foreach ($value as $k => $v) {
+                $value[$k] = self::ensureArrayRecursive($v);
+            }
+        }
+        return $value;
     }
 
     /**
