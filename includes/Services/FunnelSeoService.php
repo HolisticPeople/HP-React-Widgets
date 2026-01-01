@@ -79,6 +79,9 @@ class FunnelSeoService
             add_filter('wpseo_opengraph_desc', [self::class, 'handleOpenGraphDesc']);
         }
 
+        // MODULE A.4: CONTENT ANALYSIS BRIDGE (Yoast Analyzer)
+        add_filter('wpseo_content_analysis_content', [self::class, 'bridgeFunnelContent'], 10, 2);
+
         // MODULE A.3: SEARCH BRIDGE (FiboSearch)
         if ($settings['enable_fibosearch']) {
             add_filter('dgwt/wcas/indexer/post_types', [self::class, 'registerFiboSearchPostType']);
@@ -989,5 +992,110 @@ class FunnelSeoService
 
         // Default: range
         return sprintf('%s%.2f – %s%.2f', $currency, $minPrice, $currency, $maxPrice);
+    }
+
+    /**
+     * Bridge funnel content to Yoast's content analyzer.
+     * 
+     * This combines all text-heavy ACF sections into a single HTML blob
+     * so Yoast can calculate Keyword Density and Readability scores.
+     * 
+     * @param string $content Existing content (usually empty for funnels)
+     * @param \WP_Post $post The funnel post object
+     * @return string Combined HTML content for analysis
+     */
+    public static function bridgeFunnelContent(string $content, \WP_Post $post): string
+    {
+        if ($post->post_type !== 'hp-funnel') {
+            return $content;
+        }
+
+        $postId = $post->ID;
+        $funnelContent = [];
+
+        // 1. Hero Section
+        $heroTitle = get_field('hero_title', $postId);
+        $heroSubtitle = get_field('hero_subtitle', $postId);
+        $heroDesc = get_field('hero_description', $postId);
+        if ($heroTitle) $funnelContent[] = "<h1>" . esc_html($heroTitle) . "</h1>";
+        if ($heroSubtitle) $funnelContent[] = "<h2>" . esc_html($heroSubtitle) . "</h2>";
+        if ($heroDesc) $funnelContent[] = "<div>" . wp_kses_post($heroDesc) . "</div>";
+
+        // 2. Benefits
+        $benefits = get_field('hero_benefits', $postId);
+        if (!empty($benefits) && is_array($benefits)) {
+            $funnelContent[] = "<h3>Benefits</h3><ul>";
+            foreach ($benefits as $b) {
+                $text = $b['benefit_text'] ?? '';
+                if ($text) $funnelContent[] = "<li>" . esc_html($text) . "</li>";
+            }
+            $funnelContent[] = "</ul>";
+        }
+
+        // 3. Features
+        $features = get_field('features_list', $postId);
+        if (!empty($features) && is_array($features)) {
+            $funnelContent[] = "<h3>Features</h3>";
+            foreach ($features as $f) {
+                $title = $f['feature_title'] ?? '';
+                $desc = $f['feature_description'] ?? '';
+                if ($title) $funnelContent[] = "<h4>" . esc_html($title) . "</h4>";
+                if ($desc) $funnelContent[] = "<div>" . wp_kses_post($desc) . "</div>";
+            }
+        }
+
+        // 4. Authority
+        $authBio = get_field('authority_bio', $postId);
+        if ($authBio) {
+            $funnelContent[] = "<h3>About the Expert</h3>";
+            $funnelContent[] = "<div>" . wp_kses_post($authBio) . "</div>";
+        }
+
+        // 5. Science
+        $science = get_field('science_sections', $postId);
+        if (!empty($science) && is_array($science)) {
+            $funnelContent[] = "<h3>The Science</h3>";
+            foreach ($science as $s) {
+                $title = $s['title'] ?? '';
+                $desc = $s['description'] ?? '';
+                if ($title) $funnelContent[] = "<h4>" . esc_html($title) . "</h4>";
+                if ($desc) $funnelContent[] = "<div>" . wp_kses_post($desc) . "</div>";
+            }
+        }
+
+        return implode("\n", $funnelContent) . "\n" . $content;
+    }
+
+    /**
+     * Programmatically set Yoast SEO metadata for a funnel.
+     * 
+     * @param int $postId Post ID
+     * @param array $seoData SEO metadata (focus_keyword, title, description, etc.)
+     */
+    public static function setSeoMeta(int $postId, array $seoData): void
+    {
+        if (empty($seoData)) {
+            return;
+        }
+
+        // Map focus keyword
+        if (!empty($seoData['focus_keyword'])) {
+            update_post_meta($postId, '_yoast_wpseo_focuskw', sanitize_text_field($seoData['focus_keyword']));
+        }
+
+        // Map SEO Title
+        if (!empty($seoData['meta_title'])) {
+            update_post_meta($postId, '_yoast_wpseo_title', sanitize_text_field($seoData['meta_title']));
+        }
+
+        // Map Meta Description
+        if (!empty($seoData['meta_description'])) {
+            update_post_meta($postId, '_yoast_wpseo_metadesc', sanitize_text_field($seoData['meta_description']));
+        }
+
+        // Map Cornerstone Content
+        if (isset($seoData['cornerstone_content'])) {
+            update_post_meta($postId, '_yoast_wpseo_is_cornerstone', $seoData['cornerstone_content'] ? '1' : '0');
+        }
     }
 }

@@ -151,6 +151,7 @@ class FunnelImporter
             self::importStyling($postId, $data['styling'] ?? []);
             self::importFooter($postId, $data['footer'] ?? []);
             self::importScience($postId, $data['science'] ?? []);
+            self::importSeo($postId, $data['seo'] ?? []);
 
             // Clear cache
             FunnelConfigLoader::clearCache($postId);
@@ -194,6 +195,7 @@ class FunnelImporter
                 'offer_badge' => $o['badge'] ?? '',
                 'offer_is_featured' => !empty($o['is_featured']),
                 'offer_image' => $o['image'] ?? '',
+                'offer_image_alt' => $o['image_alt'] ?? '',
                 'offer_discount_label' => $o['discount_label'] ?? '',
                 'offer_price' => $o['price'] ?? 0,
                 'offer_bonus_message' => $o['bonus_message'] ?? '',
@@ -369,8 +371,9 @@ class FunnelImporter
         self::setField($postId, 'hero_subtitle', $hero['subtitle'] ?? '');
         self::setField($postId, 'hero_tagline', $hero['tagline'] ?? '');
         self::setField($postId, 'hero_description', $hero['description'] ?? '');
-        self::setField($postId, 'hero_image', $hero['image'] ?? '');
-        self::setField($postId, 'hero_logo', $hero['logo'] ?? '');
+        self::setUrlField($postId, 'hero_image', $hero['image'] ?? '');
+        self::setField($postId, 'hero_image_alt', $hero['image_alt'] ?? '');
+        self::setUrlField($postId, 'hero_logo', $hero['logo'] ?? '');
         self::setUrlField($postId, 'hero_logo_link', $hero['logo_link'] ?? '');
         self::setField($postId, 'hero_cta_text', $hero['cta_text'] ?? 'Get Your Special Offer Now');
     }
@@ -463,6 +466,7 @@ class FunnelImporter
         self::setField($postId, 'authority_name', $authority['name'] ?? '');
         self::setField($postId, 'authority_credentials', $authority['credentials'] ?? '');
         self::setField($postId, 'authority_image', $authority['image'] ?? '');
+        self::setField($postId, 'authority_image_alt', $authority['image_alt'] ?? '');
         self::setField($postId, 'authority_bio', $authority['bio'] ?? '');
         
         // Simple quotes (flat list)
@@ -578,6 +582,15 @@ class FunnelImporter
         self::setField($postId, 'global_discount_percent', $checkout['global_discount_percent'] ?? 0);
         self::setField($postId, 'enable_points_redemption', $checkout['enable_points_redemption'] ?? true);
         self::setField($postId, 'show_order_summary', $checkout['show_order_summary'] ?? true);
+    }
+
+    /**
+     * Import SEO section (mapped to Yoast).
+     */
+    private static function importSeo(int $postId, array $seo): void
+    {
+        if (empty($seo)) return;
+        FunnelSeoService::setSeoMeta($postId, $seo);
     }
 
     /**

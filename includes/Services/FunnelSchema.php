@@ -40,6 +40,16 @@ class FunnelSchema
                         'stripe_mode' => ['type' => 'string', 'enum' => ['auto', 'live', 'test'], 'default' => 'auto'],
                     ],
                 ],
+                'seo' => [
+                    'type' => 'object',
+                    'description' => 'Yoast SEO metadata for the funnel',
+                    'properties' => [
+                        'focus_keyword' => ['type' => 'string', 'description' => 'Primary keyword for SEO analysis'],
+                        'meta_title' => ['type' => 'string', 'description' => 'Custom SEO title (optional)'],
+                        'meta_description' => ['type' => 'string', 'description' => 'Meta description for search results'],
+                        'cornerstone_content' => ['type' => 'boolean', 'default' => false, 'description' => 'Mark as cornerstone content'],
+                    ],
+                ],
                 'header' => [
                     'type' => 'object',
                     'description' => 'Header section with logo and navigation',
@@ -70,6 +80,7 @@ class FunnelSchema
                         'tagline' => ['type' => 'string', 'description' => 'Short tagline or value proposition'],
                         'description' => ['type' => 'string', 'description' => 'Longer description paragraph'],
                         'image' => ['type' => 'string', 'description' => 'URL to hero image'],
+                        'image_alt' => ['type' => 'string', 'description' => 'ALT text for the hero image (SEO critical)'],
                         'logo' => ['type' => 'string', 'description' => 'Override logo for hero section'],
                         'logo_link' => ['type' => 'string'],
                         'cta_text' => ['type' => 'string', 'description' => 'Call-to-action button text', 'default' => 'Get Your Special Offer Now'],
@@ -107,6 +118,7 @@ class FunnelSchema
                             'badge' => ['type' => 'string', 'description' => 'Badge text like "BEST VALUE" or "20% OFF"'],
                             'is_featured' => ['type' => 'boolean', 'default' => false, 'description' => 'Highlight this offer'],
                             'image' => ['type' => 'string', 'description' => 'Override image URL'],
+                            'image_alt' => ['type' => 'string', 'description' => 'ALT text for the product image (SEO critical)'],
                             'discount_label' => ['type' => 'string', 'description' => 'Marketing label shown to customer (e.g., "Save 25%")'],
                             'discount_type' => ['type' => 'string', 'enum' => ['none', 'percent', 'fixed'], 'default' => 'none'],
                             'discount_value' => ['type' => 'number', 'default' => 0, 'description' => 'Discount amount (% or $)'],
@@ -173,6 +185,7 @@ class FunnelSchema
                         'name' => ['type' => 'string', 'description' => 'Expert/authority name'],
                         'credentials' => ['type' => 'string', 'description' => 'Credentials and titles'],
                         'image' => ['type' => 'string', 'description' => 'Photo URL'],
+                        'image_alt' => ['type' => 'string', 'description' => 'ALT text for the authority image (SEO critical)'],
                         'bio' => ['type' => 'string', 'description' => 'Biography, can include HTML'],
                         'quotes' => [
                             'type' => 'array',

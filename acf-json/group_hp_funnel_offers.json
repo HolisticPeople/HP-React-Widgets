@@ -228,6 +228,36 @@
                     "parent_repeater": "field_funnel_offers"
                 },
                 {
+                    "ID": 197003,
+                    "key": "field_offer_image_alt",
+                    "label": "Offer Image ALT Text",
+                    "name": "offer_image_alt",
+                    "aria-label": "",
+                    "prefix": "acf",
+                    "type": "text",
+                    "value": null,
+                    "menu_order": 5.5,
+                    "instructions": "Describe the product image for SEO.",
+                    "required": false,
+                    "id": "",
+                    "class": "",
+                    "conditional_logic": false,
+                    "parent": "field_funnel_offers",
+                    "wrapper": {
+                        "width": "20",
+                        "class": "",
+                        "id": ""
+                    },
+                    "default_value": "",
+                    "placeholder": "",
+                    "prepend": "",
+                    "append": "",
+                    "maxlength": "",
+                    "_name": "offer_image_alt",
+                    "_valid": 1,
+                    "parent_repeater": "field_funnel_offers"
+                },
+                {
                     "ID": 0,
                     "key": "field_offer_price",
                     "label": "Offer Price",

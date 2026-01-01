@@ -576,6 +576,35 @@
             "_valid": 1
         },
         {
+            "ID": 125097001,
+            "key": "field_hero_image_alt",
+            "label": "Hero Image ALT Text",
+            "name": "hero_image_alt",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "text",
+            "value": null,
+            "menu_order": 15,
+            "instructions": "Describe the hero image for accessibility and SEO. Include focus keyword if natural.",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": false,
+            "parent": 125087,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": "",
+            "maxlength": "",
+            "_name": "hero_image_alt",
+            "_valid": 1
+        },
+        {
             "ID": 125098,
             "key": "field_hero_logo",
             "label": "Hero Logo (if different from header)",
@@ -1618,6 +1647,35 @@
             "max_size": 0,
             "mime_types": "",
             "_name": "authority_image",
+            "_valid": 1
+        },
+        {
+            "ID": 125191001,
+            "key": "field_authority_image_alt",
+            "label": "Authority Image ALT Text",
+            "name": "authority_image_alt",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "text",
+            "value": null,
+            "menu_order": 32.5,
+            "instructions": "Describe the authority photo for accessibility and SEO.",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": false,
+            "parent": 125087,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": "",
+            "maxlength": "",
+            "_name": "authority_image_alt",
             "_valid": 1
         },
         {
