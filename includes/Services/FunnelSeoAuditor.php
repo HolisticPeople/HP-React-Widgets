@@ -21,7 +21,7 @@ class FunnelSeoAuditor
     public static function audit($funnel): array
     {
         if (is_numeric($funnel)) {
-            $data = FunnelConfigLoader::loadById((int) $funnel);
+            $data = FunnelConfigLoader::getById((int) $funnel);
         } else {
             $data = $funnel;
         }

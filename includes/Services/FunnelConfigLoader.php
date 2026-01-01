@@ -352,6 +352,7 @@ class FunnelConfigLoader
                 'tagline'          => self::getFieldValue('hero_tagline', $postId, ''),
                 'description'      => self::getFieldValue('hero_description', $postId, ''),
                 'image'            => self::resolveImageUrl(self::getFieldValue('hero_image', $postId, '')),
+                'image_alt'        => self::getFieldValue('hero_image_alt', $postId, ''),
                 'logo'             => self::resolveImageUrl(self::getFieldValue('hero_logo', $postId, '')),
                 'logo_link'        => self::getFieldValue('hero_logo_link', $postId, home_url('/')),
                 'cta_text'         => self::getFieldValue('hero_cta_text', $postId, 'Get Your Special Offer Now'),
@@ -412,6 +413,7 @@ class FunnelConfigLoader
                 'name'            => self::getFieldValue('authority_name', $postId, ''),
                 'credentials'     => self::getFieldValue('authority_credentials', $postId, ''),
                 'image'           => self::resolveImageUrl(self::getFieldValue('authority_image', $postId, '')),
+                'image_alt'       => self::getFieldValue('authority_image_alt', $postId, ''),
                 'bio'             => self::getFieldValue('authority_bio', $postId, ''),
                 'quotes'          => self::extractQuotes(self::getFieldValue('authority_quotes', $postId, [])),
                 'quoteCategories' => self::extractQuoteCategories(self::getFieldValue('authority_quote_categories', $postId, [])),
@@ -446,6 +448,14 @@ class FunnelConfigLoader
                 'title'    => self::getFieldValue('science_title', $postId, 'The Science Behind Our Product'),
                 'subtitle' => self::getFieldValue('science_subtitle', $postId, ''),
                 'sections' => self::extractScienceSections(self::getFieldValue('science_sections', $postId, [])),
+            ],
+            
+            // SEO metadata (primarily for AI agents and deep audits)
+            'seo' => [
+                'focus_keyword'      => self::getFieldValue('seo_focus_keyword', $postId, ''),
+                'meta_title'         => self::getFieldValue('seo_meta_title', $postId, ''),
+                'meta_description'   => self::getFieldValue('seo_meta_description', $postId, ''),
+                'cornerstone_content' => (bool) self::getFieldValue('seo_cornerstone_content', $postId, false),
             ],
         ];
 
@@ -747,6 +757,7 @@ class FunnelConfigLoader
                 'bonusMessage'  => $row['offer_bonus_message'] ?? '',
                 'isFeatured'    => !empty($row['offer_is_featured']),
                 'image'         => self::resolveImageUrl($row['offer_image'] ?? null),
+                'image_alt'     => $row['offer_image_alt'] ?? '',
                 'discountLabel' => $row['offer_discount_label'] ?? '',
                 'discountType'  => $row['offer_discount_type'] ?? 'none',
                 'discountValue' => (float) ($row['offer_discount_value'] ?? 0),
