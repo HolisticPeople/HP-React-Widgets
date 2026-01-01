@@ -1144,14 +1144,7 @@ class FunnelConfigLoader
         if (function_exists('get_field')) {
             $value = get_field($fieldName, $postId);
             if ($value !== null && $value !== false && $value !== '') {
-                // Recursively convert objects to arrays (ACF can return objects in some cache configurations)
-                if (is_object($value) || is_array($value)) {
-                    $encoded = json_encode($value);
-                    if ($encoded !== false) {
-                        return json_decode($encoded, true);
-                    }
-                }
-                return $value;
+                return self::ensureArrayRecursive($value);
             }
         }
 
@@ -1161,14 +1154,31 @@ class FunnelConfigLoader
             // Handle serialized arrays
             if (is_string($metaValue) && strpos($metaValue, 'a:') === 0) {
                 $unserialized = maybe_unserialize($metaValue);
-                if (is_array($unserialized)) {
-                    return $unserialized;
-                }
+                return self::ensureArrayRecursive($unserialized);
             }
-            return $metaValue;
+            return self::ensureArrayRecursive($metaValue);
         }
 
         return $default;
+    }
+
+    /**
+     * Deeply convert objects to arrays.
+     * 
+     * @param mixed $value Value to convert
+     * @return mixed Converted value
+     */
+    private static function ensureArrayRecursive($value)
+    {
+        if (is_object($value)) {
+            $value = (array) $value;
+        }
+        if (is_array($value)) {
+            foreach ($value as $k => $v) {
+                $value[$k] = self::ensureArrayRecursive($v);
+            }
+        }
+        return $value;
     }
 
     /**
