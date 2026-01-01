@@ -64,6 +64,43 @@ class FunnelMetaBoxes
             'side',
             'default'
         );
+
+        add_meta_box(
+            'hp-funnel-seo-audit',
+            __('SEO Audit', 'hp-react-widgets'),
+            [self::class, 'renderSeoAuditMetaBox'],
+            'hp-funnel',
+            'side',
+            'default'
+        );
+    }
+
+    /**
+     * Render SEO Audit meta box.
+     */
+    public static function renderSeoAuditMetaBox(\WP_Post $post): void
+    {
+        $slug = get_field('funnel_slug', $post->ID) ?: $post->post_name;
+        ?>
+        <div class="hp-seo-audit-metabox">
+            <p class="description"><?php esc_html_e('Run a deep audit of your funnel content against SEO and Readability standards.', 'hp-react-widgets'); ?></p>
+            
+            <div id="hp-audit-results-preview" style="display:none; margin-bottom: 10px;">
+                <div class="hp-audit-status-badge" style="padding: 5px; border-radius: 3px; font-weight: bold; text-align: center;"></div>
+            </div>
+
+            <button type="button" 
+                    class="button button-primary hp-run-seo-audit-inline" 
+                    data-slug="<?php echo esc_attr($slug); ?>"
+                    style="width: 100%;">
+                <?php esc_html_e('Run SEO Audit', 'hp-react-widgets'); ?>
+            </button>
+
+            <div id="hp-audit-modal-content" style="display:none;">
+                <div id="hp-seo-audit-report-container"></div>
+            </div>
+        </div>
+        <?php
     }
 
     /**
@@ -349,6 +386,18 @@ class FunnelMetaBoxes
                 font-size: 10px;
                 color: #999;
             }
+
+            /* Audit Styles */
+            .hp-audit-status-good { background: #d1fae5; color: #065f46; }
+            .hp-audit-status-needs_improvement { background: #fef3c7; color: #92400e; }
+            .hp-audit-status-poor { background: #fee2e2; color: #991b1b; }
+            
+            .hp-audit-report { padding: 10px; }
+            .hp-audit-section h4 { margin: 15px 0 5px; border-bottom: 1px solid #eee; }
+            .hp-audit-item { margin-bottom: 4px; font-size: 13px; }
+            .hp-audit-problem { color: #d63638; }
+            .hp-audit-improvement { color: #92400e; }
+            .hp-audit-good { color: #00a32a; }
         ';
     }
 
@@ -359,6 +408,72 @@ class FunnelMetaBoxes
     {
         return "
             jQuery(document).ready(function($) {
+                // Inline SEO Audit
+                $('.hp-run-seo-audit-inline').on('click', function() {
+                    var btn = $(this);
+                    var slug = btn.data('slug');
+                    
+                    btn.prop('disabled', true).text('Auditing...');
+                    
+                    $.ajax({
+                        url: '/wp-json/hp-abilities/v1/funnels/' + slug + '/seo-audit',
+                        method: 'GET',
+                        beforeSend: function(xhr) {
+                            xhr.setRequestHeader('X-WP-Nonce', wpApiSettings.nonce);
+                        },
+                        success: function(response) {
+                            btn.prop('disabled', false).text('Run SEO Audit');
+                            if (response.success && response.data) {
+                                renderAuditInline(response.data);
+                            } else {
+                                alert('Audit failed: ' + (response.error || 'Unknown error'));
+                            }
+                        },
+                        error: function() {
+                            btn.prop('disabled', false).text('Run SEO Audit');
+                            alert('Audit request failed.');
+                        }
+                    });
+                });
+
+                function renderAuditInline(report) {
+                    var preview = $('#hp-audit-results-preview');
+                    var badge = preview.find('.hp-audit-status-badge');
+                    
+                    badge.removeClass('hp-audit-status-good hp-audit-status-needs_improvement hp-audit-status-poor')
+                         .addClass('hp-audit-status-' + report.status)
+                         .text(report.status.replace('_', ' ').toUpperCase() + ' (' + report.score.good + '/' + report.score.total + ')');
+                    
+                    preview.show();
+
+                    // Generate full report HTML
+                    var html = "<div class='hp-audit-report'>";
+                    if (report.problems.length > 0) {
+                        html += "<div class='hp-audit-section'><h4>Problems</h4>";
+                        report.problems.forEach(function(p) { html += "<div class='hp-audit-item hp-audit-problem'>● " + p + "</div>"; });
+                        html += "</div>";
+                    }
+                    if (report.improvements.length > 0) {
+                        html += "<div class='hp-audit-section'><h4>Improvements</h4>";
+                        report.improvements.forEach(function(i) { html += "<div class='hp-audit-item hp-audit-improvement'>○ " + i + "</div>"; });
+                        html += "</div>";
+                    }
+                    if (report.good.length > 0) {
+                        html += "<div class='hp-audit-section'><h4>Good</h4>";
+                        report.good.forEach(function(g) { html += "<div class='hp-audit-item hp-audit-good'>✓ " + g + "</div>"; });
+                        html += "</div>";
+                    }
+                    html += "</div>";
+
+                    // If thickbox available, show it
+                    if (typeof tb_show === 'function') {
+                        $('#hp-seo-audit-report-container').html(html);
+                        tb_show('SEO Audit Report', '#TB_inline?inlineId=hp-audit-modal-content&width=500&height=400');
+                    } else {
+                        alert('Audit Status: ' + report.status);
+                    }
+                }
+
                 // Create backup button
                 $('.hp-create-backup').on('click', function() {
                     var btn = $(this);
