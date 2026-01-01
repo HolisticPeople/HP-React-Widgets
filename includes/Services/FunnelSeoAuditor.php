@@ -37,6 +37,7 @@ class FunnelSeoAuditor
         $problems = [];
         $improvements = [];
         $good = [];
+        $suggestions = [];
 
         // 1. Keyword Analysis
         self::analyzeKeywords($data, $focusKeyword, $problems, $improvements, $good);
@@ -49,6 +50,9 @@ class FunnelSeoAuditor
 
         // 4. Readability Analysis
         self::analyzeReadability($data, $problems, $improvements, $good);
+
+        // 5. Generate Suggestions for missing fields
+        self::generateSuggestions($data, $focusKeyword, $suggestions);
 
         $score = count($good);
         $total = count($problems) + count($improvements) + count($good);
@@ -71,6 +75,7 @@ class FunnelSeoAuditor
             'problems' => $problems,
             'improvements' => $improvements,
             'good' => $good,
+            'suggestions' => $suggestions,
             'focus_keyword' => $focusKeyword,
         ];
     }
@@ -222,6 +227,48 @@ class FunnelSeoAuditor
             $good[] = "Subheadings are used properly.";
         } else {
             $improvements[] = "No subheadings found (H2-H4). Break up long text with subheadings.";
+        }
+    }
+
+    /**
+     * Generate helpful suggestions for missing or poor SEO fields.
+     */
+    private static function generateSuggestions(array $data, string $kw, array &$suggestions): void
+    {
+        // 1. Suggest Focus Keyword
+        if (empty($kw)) {
+            $seed = $data['name'] ?? $data['funnel']['name'] ?? $data['hero']['title'] ?? '';
+            if ($seed) {
+                // Take first 2-3 words of title as keyword seed
+                $words = explode(' ', strip_tags($seed));
+                $suggestions['focus_keyword'] = implode(' ', array_slice($words, 0, 3));
+            }
+        }
+
+        $kw = $kw ?: ($suggestions['focus_keyword'] ?? 'Product');
+
+        // 2. Suggest Meta Title
+        if (empty($data['seo']['meta_title'])) {
+            $suggestions['meta_title'] = "$kw | Holistic People Wellness";
+        }
+
+        // 3. Suggest Meta Description
+        if (empty($data['seo']['meta_description'])) {
+            $content = self::gatherAllContent($data);
+            $text = strip_tags($content);
+            $excerpt = wp_trim_words($text, 25, '...');
+            
+            // Try to prepend keyword if not present
+            if (strpos(strtolower($excerpt), strtolower($kw)) === false) {
+                $excerpt = "$kw: " . $excerpt;
+            }
+            $suggestions['meta_description'] = $excerpt;
+        }
+
+        // 4. Suggest Image ALTs
+        $images = [];
+        if (!empty($data['hero']['image']) && empty($data['hero']['image_alt'])) {
+            $suggestions['hero_image_alt'] = "Hero image for $kw protocol";
         }
     }
 

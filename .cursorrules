@@ -66,6 +66,8 @@ Use these WordPress Abilities via MCP. They are exposed through the MCP Adapter 
 | `hp-economics/calculate` | Calculate offer profitability |
 | `hp-economics/validate` | Validate against economic guidelines |
 | `hp-economics/guidelines` | Get/set min profit rules |
+| `hp-funnels/seo-audit` | Run SEO audit with suggestions |
+| `hp-funnels/apply-seo-fixes` | Bulk apply SEO fixes to funnel |
 
 ## How to Create a Funnel
 
@@ -106,6 +108,29 @@ Use ability: `hp-funnels/versions-create` before making changes
 ### Step 8: Create/Update the Funnel
 Use ability: `hp-funnels/create` or `hp-funnels/update`
 Pass complete funnel JSON conforming to hp-funnel/v1 schema.
+
+## How to Audit & Fix a Funnel
+
+### Step 1: Run SEO Audit
+Use ability: `hp-funnels/seo-audit` with the funnel slug.
+The report will include `problems`, `improvements`, and **`suggestions`**.
+
+### Step 2: Review Suggestions
+Analyze the `suggestions` field. It contains AI-generated values for missing Focus Keywords, Meta Titles, Descriptions, and Image ALTs.
+
+### Step 3: Apply Fixes
+Use ability: `hp-funnels/apply-seo-fixes`. 
+Pass the `fixes` object containing the values you want to update.
+- **Backups**: A version backup is created automatically.
+- **Cache**: Funnel cache is cleared automatically.
+- **Atomic**: Multiple fields are updated in one call.
+
+## Troubleshooting MCP
+
+If you receive a "Tool not found" (404) error:
+1. **Verify Registration**: Run `wp eval "echo json_encode(array_keys(wp_get_abilities()));"` via SSH to see if the ability is registered in WordPress.
+2. **Schema Validation**: 404s often mean the MCP Adapter rejected the tool due to an invalid schema. Ensure all `properties` are `(object)[]` and types are strictly defined.
+3. **Reset Proxy**: If using a local proxy, ensure it is restarted after adding new abilities.
 
 ## REST API Fallback
 
