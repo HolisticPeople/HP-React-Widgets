@@ -88,7 +88,7 @@ class FunnelSeoAuditor
         $kw = strtolower($kw);
 
         // SEO Title
-        $metaTitle = $data['seo']['meta_title'] ?? $data['funnel']['name'] ?? '';
+        $metaTitle = $data['seo']['meta_title'] ?? $data['name'] ?? $data['funnel']['name'] ?? '';
         if (strpos(strtolower($metaTitle), $kw) === false) {
             $problems[] = "Focus keyword not found in SEO Title.";
         } else {
@@ -106,7 +106,7 @@ class FunnelSeoAuditor
         }
 
         // Slug
-        $slug = $data['funnel']['slug'] ?? '';
+        $slug = $data['slug'] ?? $data['funnel']['slug'] ?? '';
         if (strpos(strtolower(str_replace('-', ' ', $slug)), $kw) === false) {
             $improvements[] = "Focus keyword (or parts of it) not found in URL slug.";
         } else {
