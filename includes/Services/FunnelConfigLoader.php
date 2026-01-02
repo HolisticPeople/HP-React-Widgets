@@ -246,6 +246,105 @@ class FunnelConfigLoader
     }
 
     /**
+     * Update a funnel with new data.
+     *
+     * @param string $slug Funnel slug to update
+     * @param array $data Funnel data to import
+     * @return array|\WP_Error Result with post_id and slug, or WP_Error on failure
+     */
+    public static function updateFunnel(string $slug, array $data): array|\WP_Error
+    {
+        $post = self::findPostBySlug($slug);
+        if (!$post) {
+            return new \WP_Error('not_found', "Funnel with slug '$slug' not found");
+        }
+
+        // Auto-backup before update
+        if (class_exists('\HP_RW\Services\FunnelVersionControl')) {
+            $settings = FunnelVersionControl::getSettings();
+            if (!empty($settings['auto_backup_on_update'])) {
+                FunnelVersionControl::createVersion($post->ID, 'Before AI update', 'ai_agent');
+            }
+        }
+
+        // Import as update
+        $result = FunnelImporter::importFunnel($data, 'update', $post->ID);
+
+        if (!$result['success']) {
+            return new \WP_Error('import_failed', $result['message'] ?? 'Failed to import funnel');
+        }
+
+        // Log AI activity
+        if (class_exists('\HP_RW\Services\FunnelVersionControl')) {
+            FunnelVersionControl::logAiActivity($post->ID, 'funnel_updated', 'Updated via Abilities API');
+        }
+
+        // Clear cache
+        self::clearCache($post->ID);
+
+        return [
+            'success' => true,
+            'post_id' => $post->ID,
+            'slug' => $slug,
+        ];
+    }
+
+    /**
+     * Update specific sections of a funnel.
+     *
+     * @param string $slug Funnel slug to update
+     * @param array $sections Map of section name => section data
+     * @return array|\WP_Error Result with updated_sections, or WP_Error on failure
+     */
+    public static function updateSections(string $slug, array $sections): array|\WP_Error
+    {
+        $post = self::findPostBySlug($slug);
+        if (!$post) {
+            return new \WP_Error('not_found', "Funnel with slug '$slug' not found");
+        }
+
+        // Get current funnel data
+        $currentData = FunnelExporter::exportFunnel($post->ID);
+        if (!$currentData) {
+            return new \WP_Error('export_failed', 'Failed to load current funnel data');
+        }
+
+        // Auto-backup before update
+        if (class_exists('\HP_RW\Services\FunnelVersionControl')) {
+            $settings = FunnelVersionControl::getSettings();
+            if (!empty($settings['auto_backup_on_update'])) {
+                $changedSections = array_keys($sections);
+                FunnelVersionControl::createVersion($post->ID, 'Before updating: ' . implode(', ', $changedSections), 'ai_agent');
+            }
+        }
+
+        // Merge sections
+        foreach ($sections as $section => $sectionData) {
+            $currentData[$section] = $sectionData;
+        }
+
+        // Import merged data
+        $result = FunnelImporter::importFunnel($currentData, 'update', $post->ID);
+
+        if (!$result['success']) {
+            return new \WP_Error('import_failed', $result['message'] ?? 'Failed to import funnel');
+        }
+
+        // Log AI activity
+        if (class_exists('\HP_RW\Services\FunnelVersionControl')) {
+            FunnelVersionControl::logAiActivity($post->ID, 'sections_updated', 'Updated sections: ' . implode(', ', array_keys($sections)));
+        }
+
+        // Clear cache
+        self::clearCache($post->ID);
+
+        return [
+            'success' => true,
+            'updated_sections' => array_keys($sections),
+        ];
+    }
+
+    /**
      * Find a funnel post by slug.
      * 
      * Uses the ACF funnel_slug field as the SINGLE SOURCE OF TRUTH.

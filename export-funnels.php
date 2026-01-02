@@ -46,3 +46,5 @@ foreach ($slugsToExport as $slug) {
 echo "\nTotal exported: $exported funnels\n";
 
 
+
+
