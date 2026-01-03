@@ -1246,7 +1246,7 @@ class FunnelConfigLoader
             if (is_string($metaValue) && strpos($metaValue, 'a:') === 0) {
                 $unserialized = maybe_unserialize($metaValue);
                 return self::ensureArrayRecursive($unserialized);
-            }
+                }
             return self::ensureArrayRecursive($metaValue);
         }
 
@@ -1278,6 +1278,142 @@ class FunnelConfigLoader
      *
      * @param mixed  $value    ACF image value (ID, URL, or array)
      * @param string $fallback Fallback URL
+     * @return string Image URL
+     */
+    private static function resolveImageUrl($value, string $fallback = ''): string
+    {
+        if (empty($value)) {
+            return $fallback;
+        }
+
+        // If it's already a URL
+        if (is_string($value) && filter_var($value, FILTER_VALIDATE_URL)) {
+            return $value;
+        }
+
+        // If it's an array (ACF returns array when return_format is 'array')
+        if (is_array($value) && isset($value['url'])) {
+            return (string) $value['url'];
+        }
+
+        // If it's an ID
+        if (is_numeric($value)) {
+            $imageData = wp_get_attachment_image_src((int) $value, 'large');
+            if ($imageData && isset($imageData[0])) {
+                return $imageData[0];
+            }
+        }
+
+        return $fallback;
+    }
+
+    /**
+     * Try to load config from legacy options (for backwards compatibility).
+     *
+     * @param string $slug Funnel slug
+     * @return array|null Legacy config or null
+     */
+    private static function getLegacyConfig(string $slug): ?array
+    {
+        // Check main settings
+        $opts = get_option('hp_rw_settings', []);
+        if (!empty($opts['funnel_configs'][$slug])) {
+            return self::normalizeLegacyConfig($opts['funnel_configs'][$slug], $slug);
+        }
+
+        // Check separate option
+        $funnelOpts = get_option('hp_rw_funnel_' . $slug, []);
+        if (!empty($funnelOpts)) {
+            return self::normalizeLegacyConfig($funnelOpts, $slug);
+        }
+
+        return null;
+    }
+
+    /**
+     * Normalize legacy config format to new structure.
+     *
+     * @param array  $legacy Legacy config data
+     * @param string $slug   Funnel slug
+     * @return array Normalized config
+     */
+    private static function normalizeLegacyConfig(array $legacy, string $slug): array
+    {
+        return [
+            'id'          => 0,
+            'status'      => 'active',
+            'active'      => true,
+            'name'        => $legacy['name'] ?? ucfirst($slug),
+            'slug'        => $slug,
+            'stripe_mode' => 'auto',
+            
+            'hero' => [
+                'title'         => $legacy['hero_title'] ?? ($legacy['title'] ?? ''),
+                'subtitle'      => $legacy['hero_subtitle'] ?? ($legacy['subtitle'] ?? ''),
+                'tagline'       => $legacy['hero_tagline'] ?? ($legacy['tagline'] ?? ''),
+                'description'   => $legacy['hero_description'] ?? ($legacy['description'] ?? ''),
+                'image'         => $legacy['hero_image'] ?? '',
+                'logo'          => $legacy['logo_url'] ?? '',
+                'logo_link'     => $legacy['logo_link'] ?? home_url('/'),
+                'cta_text'      => $legacy['cta_text'] ?? 'Get Your Special Offer Now',
+                'benefits_title' => $legacy['benefits_title'] ?? 'Why Choose Us?',
+                'benefits'      => $legacy['benefits'] ?? [],
+            ],
+            
+            'products' => $legacy['products'] ?? [],
+            
+            'checkout' => [
+                'url'                    => $legacy['checkout_url'] ?? '/checkout/',
+                'free_shipping_countries' => $legacy['free_shipping_countries'] ?? ['US'],
+                'global_discount_percent' => (float) ($legacy['global_discount_percent'] ?? 0),
+                'enable_points'          => true,
+                'show_order_summary'     => true,
+            ],
+            
+            'thankyou' => [
+                'url'       => $legacy['thankyou_url'] ?? '/thank-you/',
+                'headline'  => $legacy['thankyou_headline'] ?? 'Thank You for Your Order!',
+                'message'   => $legacy['thankyou_subheadline'] ?? '',
+                'show_upsell' => !empty($legacy['upsell_offers']),
+                'upsell'    => null,
+            ],
+            
+            'styling' => [
+                'accent_color'     => $legacy['payment_style']['accent_color'] ?? '#eab308',
+                'background_type'  => 'solid',
+                'page_bg_color'    => $legacy['payment_style']['background_color'] ?? '#121212',
+                'background_image' => '',
+                'custom_css'       => '',
+            ],
+            
+            'footer' => [
+                'text'       => $legacy['footer_text'] ?? '',
+                'disclaimer' => $legacy['footer_disclaimer'] ?? '',
+            ],
+        ];
+    }
+
+    /**
+     * Get all active funnels.
+     *
+     * @return array Array of normalized configs
+     */
+    public static function getAllActive(): array
+    {
+        $funnels = self::getAllPosts();
+        $result = [];
+
+        foreach ($funnels as $post) {
+            $config = self::loadFromPost($post);
+            if ($config['active']) {
+                $result[] = $config;
+            }
+        }
+
+        return $result;
+    }
+}
+
      * @return string Image URL
      */
     private static function resolveImageUrl($value, string $fallback = ''): string
