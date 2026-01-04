@@ -265,10 +265,10 @@ class FunnelListEnhancements
         <script>
         jQuery(document).ready(function($) {
             // Inject version label under the main heading
-            var versionHtml = '<div style="margin: 5px 0 15px 0; color: #666; font-size: 13px; font-weight: 400;">';
+            var versionHtml = '<div style="margin: 0 0 15px 0; color: #666; font-size: 13px; font-weight: 400;">';
             versionHtml += 'HP React Widgets v<?php echo esc_js(HP_RW_VERSION); ?> | HP Abilities v<?php echo esc_js(HP_ABILITIES_VERSION); ?>';
             versionHtml += '</div>';
-            $('.wp-header-end').after(versionHtml);
+            $('.wp-heading-inline').after(versionHtml);
         });
         </script>
         <style>

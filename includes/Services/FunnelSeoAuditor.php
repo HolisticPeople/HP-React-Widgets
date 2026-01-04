@@ -20,16 +20,20 @@ class FunnelSeoAuditor
      */
     public static function audit($funnel): array
     {
+        error_log("[SEO-AUDIT] Starting audit for: " . (is_array($funnel) ? 'array' : $funnel));
         if (is_numeric($funnel)) {
+            error_log("[SEO-AUDIT] Loading by ID: " . $funnel);
             $data = FunnelConfigLoader::getById((int) $funnel);
         } else {
             $data = $funnel;
         }
 
+        error_log("[SEO-AUDIT] Data loaded, converting to array");
         // Deep convert everything to arrays to handle nested stdClass objects
         $data = self::ensureArrayRecursive($data);
 
         if (empty($data) || !is_array($data)) {
+            error_log("[SEO-AUDIT] Error: No valid data");
             return [
                 'status' => 'error',
                 'message' => 'No valid funnel data provided for audit.',
@@ -37,26 +41,33 @@ class FunnelSeoAuditor
         }
 
         $focusKeyword = $data['seo']['focus_keyword'] ?? '';
+        error_log("[SEO-AUDIT] Focus keyword: " . $focusKeyword);
         $problems = [];
         $improvements = [];
         $good = [];
         $suggestions = [];
 
         // 1. Keyword Analysis
+        error_log("[SEO-AUDIT] Analyzing keywords");
         self::analyzeKeywords($data, $focusKeyword, $problems, $improvements, $good);
 
         // 2. Link Analysis
+        error_log("[SEO-AUDIT] Analyzing links");
         self::analyzeLinks($data, $problems, $improvements, $good);
 
         // 3. Media Analysis
+        error_log("[SEO-AUDIT] Analyzing media");
         self::analyzeMedia($data, $focusKeyword, $problems, $improvements, $good);
 
         // 4. Readability Analysis
+        error_log("[SEO-AUDIT] Analyzing readability");
         self::analyzeReadability($data, $problems, $improvements, $good);
 
         // 5. Generate Suggestions for missing fields
+        error_log("[SEO-AUDIT] Generating suggestions");
         self::generateSuggestions($data, $focusKeyword, $suggestions);
 
+        error_log("[SEO-AUDIT] Audit complete");
         $score = count($good);
         $total = count($problems) + count($improvements) + count($good);
         $status = 'needs_improvement';
