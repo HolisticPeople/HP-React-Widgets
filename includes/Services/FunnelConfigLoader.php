@@ -416,10 +416,12 @@ class FunnelConfigLoader
      */
     private static function loadFromPost(\WP_Post $post): array
     {
+        error_log('[SEO-AUDIT] loadFromPost started');
         $postId = $post->ID;
 
         // Check status
         $status = self::getFieldValue('funnel_status', $postId, 'active');
+        error_log('[SEO-AUDIT] status: ' . $status);
         if ($status === 'inactive') {
             return ['status' => 'inactive', 'active' => false];
         }
@@ -427,6 +429,7 @@ class FunnelConfigLoader
         // Get the funnel_slug from ACF - this is the SINGLE SOURCE OF TRUTH for all URLs
         // If not set, derive from post title (this will be auto-saved on next post save)
         $funnelSlug = self::getFieldValue('funnel_slug', $postId, '');
+        error_log('[SEO-AUDIT] slug: ' . $funnelSlug);
         if (empty($funnelSlug)) {
             $funnelSlug = sanitize_title($post->post_title);
         }
@@ -564,6 +567,7 @@ class FunnelConfigLoader
             ],
         ];
 
+        error_log('[SEO-AUDIT] loadFromPost complete');
         return $config;
     }
 
