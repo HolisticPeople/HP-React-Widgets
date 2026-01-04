@@ -261,18 +261,16 @@ class FunnelListEnhancements
         if (!$screen || $screen->post_type !== 'hp-funnel') {
             return;
         }
-        
-        // Add version label under title
-        add_action('admin_notices', function() {
-            $screen = get_current_screen();
-            if ($screen && $screen->id === 'edit-hp-funnel') {
-                echo '<div style="margin: -10px 0 10px 0; color: #666; font-size: 12px;">';
-                echo 'HP React Widgets v' . esc_html(HP_RW_VERSION);
-                echo ' | HP Abilities v' . esc_html(HP_ABILITIES_VERSION);
-                echo '</div>';
-            }
-        });
         ?>
+        <script>
+        jQuery(document).ready(function($) {
+            // Inject version label under the main heading
+            var versionHtml = '<div style="margin: 0 0 15px 0; color: #666; font-size: 13px; font-weight: 400;">';
+            versionHtml += 'HP React Widgets v<?php echo esc_js(HP_RW_VERSION); ?> | HP Abilities v<?php echo esc_js(HP_ABILITIES_VERSION); ?>';
+            versionHtml += '</div>';
+            $('.wp-header-end').before(versionHtml);
+        });
+        </script>
         <style>
             .column-economics { width: 90px; }
             .column-versions { width: 70px; }
