@@ -382,22 +382,29 @@ class FunnelListEnhancements
                 $.ajax({
                     url: '/wp-json/hp-abilities/v1/funnels/' + slug + '/seo-audit',
                     method: 'GET',
+                    dataType: 'text', // Get raw text to handle potential stray whitespace
                     beforeSend: function(xhr) {
                         xhr.setRequestHeader('X-WP-Nonce', wpApiSettings.nonce);
                     },
-                    success: function(response) {
+                    success: function(rawResponse) {
                         btn.text('SEO Audit');
-                        if (response.success && response.data) {
-                            showAuditReport(response.data);
-                        } else {
-                            alert('Audit failed: ' + (response.error || 'Unknown error'));
+                        try {
+                            var response = JSON.parse(rawResponse.trim());
+                            if (response.success && response.data) {
+                                showAuditReport(response.data);
+                            } else {
+                                alert('Audit failed: ' + (response.error || 'Unknown error'));
+                            }
+                        } catch (e) {
+                            console.error('JSON Parse Error:', e, rawResponse);
+                            alert('Audit error: Malformed JSON response. See console for details.');
                         }
                     },
                     error: function(xhr) {
                         btn.text('SEO Audit');
                         var errorMsg = 'Audit error: ' + xhr.statusText;
                         if (xhr.responseText) {
-                            errorMsg += '\n\nResponse: ' + xhr.responseText.substring(0, 500);
+                            errorMsg += '\n\nResponse: ' + xhr.responseText.substring(0, 1000);
                         }
                         alert(errorMsg);
                     }
