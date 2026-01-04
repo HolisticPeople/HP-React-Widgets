@@ -18,10 +18,6 @@ define('HP_RW_URL', plugin_dir_url(__FILE__));
 
 // Simple Autoloader
 spl_autoload_register(function ($class) {
-    // #region agent log
-    $log = ['sessionId' => 'debug-site-crash', 'runId' => 'initial', 'hypothesisId' => 'A', 'location' => 'hp-react-widgets.php:21', 'message' => 'Autoloader check', 'data' => ['class' => $class], 'timestamp' => microtime(true)*1000];
-    error_log('[AGENT-DEBUG] ' . json_encode($log));
-    // #endregion
     $prefix = 'HP_RW\\';
     $base_dir = HP_RW_PATH . 'includes/';
     $len = strlen($prefix);
@@ -30,10 +26,6 @@ spl_autoload_register(function ($class) {
     }
     $relative_class = substr($class, $len);
     $file = $base_dir . str_replace('\\', DIRECTORY_SEPARATOR, $relative_class) . '.php';
-    // #region agent log
-    $log = ['sessionId' => 'debug-site-crash', 'runId' => 'initial', 'hypothesisId' => 'B', 'location' => 'hp-react-widgets.php:33', 'message' => 'Autoloader attempting file', 'data' => ['file' => $file, 'exists' => file_exists($file)], 'timestamp' => microtime(true)*1000];
-    error_log('[AGENT-DEBUG] ' . json_encode($log));
-    // #endregion
     if (file_exists($file)) {
         require $file;
     }
@@ -41,15 +33,7 @@ spl_autoload_register(function ($class) {
 
 // Initialize Plugin
 add_action('plugins_loaded', function () {
-    // #region agent log
-    $log = ['sessionId' => 'debug-site-crash', 'runId' => 'initial', 'hypothesisId' => 'C', 'location' => 'hp-react-widgets.php:44', 'message' => 'plugins_loaded hook triggered', 'data' => [], 'timestamp' => microtime(true)*1000];
-    error_log('[AGENT-DEBUG] ' . json_encode($log));
-    // #endregion
     if (class_exists('HP_RW\\Plugin')) {
-        // #region agent log
-        $log = ['sessionId' => 'debug-site-crash', 'runId' => 'initial', 'hypothesisId' => 'C', 'location' => 'hp-react-widgets.php:49', 'message' => 'HP_RW\\Plugin exists, calling init', 'data' => [], 'timestamp' => microtime(true)*1000];
-        error_log('[AGENT-DEBUG] ' . json_encode($log));
-        // #endregion
         \HP_RW\Plugin::init();
     }
 });
