@@ -395,7 +395,11 @@ class FunnelListEnhancements
                     },
                     error: function(xhr) {
                         btn.text('SEO Audit');
-                        alert('Audit error: ' + xhr.statusText);
+                        var errorMsg = 'Audit error: ' + xhr.statusText;
+                        if (xhr.responseText) {
+                            errorMsg += '\n\nResponse: ' + xhr.responseText.substring(0, 500);
+                        }
+                        alert(errorMsg);
                     }
                 });
             });
