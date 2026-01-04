@@ -193,6 +193,10 @@ class Plugin
      */
     public static function init(): void
     {
+        // #region agent log
+        $log = ['sessionId' => 'debug-site-crash', 'runId' => 'initial', 'hypothesisId' => 'C', 'location' => 'HP_RW/Plugin.php:196', 'message' => 'HP_RW\\Plugin::init started', 'data' => [], 'timestamp' => microtime(true)*1000];
+        file_put_contents('c:\DEV\WC Plugins\My Plugins\HP-React-Widgets\.cursor\debug.log', json_encode($log) . PHP_EOL, FILE_APPEND);
+        // #endregion
         // Register the HP Funnel custom post type (fallback if not registered by ACF Pro)
         FunnelPostType::init();
         
