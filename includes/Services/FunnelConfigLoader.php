@@ -607,12 +607,13 @@ class FunnelConfigLoader
     /**
      * Extract navigation items from ACF repeater.
      *
-     * @param array $navItems ACF repeater data
+     * @param array|null $navItems ACF repeater data
      * @return array Array of nav item objects
      */
-    private static function extractNavItems(array $navItems): array
+    private static function extractNavItems(?array $navItems): array
     {
         $result = [];
+        $navItems = $navItems ?: [];
         foreach ($navItems as $row) {
             if (isset($row['label']) && !empty($row['label'])) {
                 $result[] = [
@@ -628,12 +629,13 @@ class FunnelConfigLoader
     /**
      * Extract benefits array from ACF repeater.
      *
-     * @param array $benefits ACF repeater data
+     * @param array|null $benefits ACF repeater data
      * @return array Simple array of benefit strings
      */
-    private static function extractBenefits(array $benefits): array
+    private static function extractBenefits(?array $benefits): array
     {
         $result = [];
+        $benefits = $benefits ?: [];
         foreach ($benefits as $row) {
             if (isset($row['text']) && !empty($row['text'])) {
                 $result[] = (string) $row['text'];
@@ -645,12 +647,13 @@ class FunnelConfigLoader
     /**
      * Extract benefits with icons from ACF repeater.
      *
-     * @param array $benefits ACF repeater data
+     * @param array|null $benefits ACF repeater data
      * @return array Array of benefit objects with text and icon
      */
-    private static function extractBenefitsWithIcons(array $benefits): array
+    private static function extractBenefitsWithIcons(?array $benefits): array
     {
         $result = [];
+        $benefits = $benefits ?: [];
         foreach ($benefits as $row) {
             if (isset($row['text']) && !empty($row['text'])) {
                 $result[] = [
@@ -665,12 +668,13 @@ class FunnelConfigLoader
     /**
      * Extract features from ACF repeater.
      *
-     * @param array $features ACF repeater data
+     * @param array|null $features ACF repeater data
      * @return array Array of feature objects
      */
-    private static function extractFeatures(array $features): array
+    private static function extractFeatures(?array $features): array
     {
         $result = [];
+        $features = $features ?: [];
         foreach ($features as $row) {
             if (!empty($row['title'])) {
                 $result[] = [
@@ -686,12 +690,13 @@ class FunnelConfigLoader
     /**
      * Extract quotes from ACF repeater.
      *
-     * @param array $quotes ACF repeater data
+     * @param array|null $quotes ACF repeater data
      * @return array Array of quote objects
      */
-    private static function extractQuotes(array $quotes): array
+    private static function extractQuotes(?array $quotes): array
     {
         $result = [];
+        $quotes = $quotes ?: [];
         foreach ($quotes as $row) {
             if (!empty($row['text'])) {
                 $result[] = ['text' => (string) $row['text']];
@@ -703,12 +708,13 @@ class FunnelConfigLoader
     /**
      * Extract quote categories from ACF repeater.
      *
-     * @param array $categories ACF repeater data
+     * @param array|null $categories ACF repeater data
      * @return array Array of quote category objects
      */
-    private static function extractQuoteCategories(array $categories): array
+    private static function extractQuoteCategories(?array $categories): array
     {
         $result = [];
+        $categories = $categories ?: [];
         foreach ($categories as $row) {
             if (!empty($row['title'])) {
                 // Quotes can be stored as newline-separated text or array
@@ -749,12 +755,13 @@ class FunnelConfigLoader
     /**
      * Extract testimonials from ACF repeater.
      *
-     * @param array $testimonials ACF repeater data
+     * @param array|null $testimonials ACF repeater data
      * @return array Array of testimonial objects
      */
-    private static function extractTestimonials(array $testimonials): array
+    private static function extractTestimonials(?array $testimonials): array
     {
         $result = [];
+        $testimonials = $testimonials ?: [];
         foreach ($testimonials as $row) {
             if (!empty($row['name']) && !empty($row['quote'])) {
                 $result[] = [
@@ -773,12 +780,13 @@ class FunnelConfigLoader
     /**
      * Extract FAQ items from ACF repeater.
      *
-     * @param array $faqs ACF repeater data
+     * @param array|null $faqs ACF repeater data
      * @return array Array of FAQ objects
      */
-    private static function extractFaqItems(array $faqs): array
+    private static function extractFaqItems(?array $faqs): array
     {
         $result = [];
+        $faqs = $faqs ?: [];
         foreach ($faqs as $row) {
             if (!empty($row['question']) && !empty($row['answer'])) {
                 $result[] = [
@@ -793,12 +801,13 @@ class FunnelConfigLoader
     /**
      * Extract science sections from ACF repeater.
      *
-     * @param array $sections ACF repeater data
+     * @param array|null $sections ACF repeater data
      * @return array Array of science section objects
      */
-    private static function extractScienceSections(array $sections): array
+    private static function extractScienceSections(?array $sections): array
     {
         $result = [];
+        $sections = $sections ?: [];
         foreach ($sections as $row) {
             if (!empty($row['title'])) {
                 // Bullets can be stored as newline-separated text or array
@@ -820,12 +829,13 @@ class FunnelConfigLoader
     /**
      * Extract footer links from ACF repeater.
      *
-     * @param array $links ACF repeater data
+     * @param array|null $links ACF repeater data
      * @return array Array of link objects
      */
-    private static function extractFooterLinks(array $links): array
+    private static function extractFooterLinks(?array $links): array
     {
         $result = [];
+        $links = $links ?: [];
         foreach ($links as $row) {
             if (!empty($row['label']) && !empty($row['url'])) {
                 $result[] = [
@@ -840,12 +850,13 @@ class FunnelConfigLoader
     /**
      * Extract and enrich offers array from ACF repeater.
      *
-     * @param array $offers ACF repeater data
+     * @param array|null $offers ACF repeater data
      * @return array Enriched offer data with WooCommerce product info
      */
-    private static function extractOffers(array $offers): array
+    private static function extractOffers(?array $offers): array
     {
         $result = [];
+        $offers = $offers ?: [];
         $offerIndex = 0;
         
         foreach ($offers as $row) {
