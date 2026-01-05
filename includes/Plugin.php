@@ -219,12 +219,6 @@ class Plugin
         // Initialize Funnel Offer ACF fields
         Admin\FunnelOfferFields::init();
         
-        // Initialize Funnel Styling ACF fields (text colors)
-        // Admin\FunnelStylingFields::init();
-        
-        // Initialize Testimonials display settings
-        Admin\FunnelTestimonialsFields::init();
-        
         // Setup ACF Local JSON sync for version control
         self::setupAcfLocalJson();
 
@@ -266,7 +260,6 @@ class Plugin
         Admin\EconomicsDashboard::init();
 
         // Initialize SEO & Tracking components (Smart Bridge).
-        Admin\FunnelSeoFields::init();
         Admin\SeoTrackingSettings::init();
         Admin\FunnelTestingMetabox::init();
         Services\FunnelSeoService::init();
