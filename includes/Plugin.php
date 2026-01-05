@@ -220,10 +220,10 @@ class Plugin
         Admin\FunnelOfferFields::init();
         
         // Initialize Funnel Styling ACF fields (text colors)
-        Admin\FunnelStylingFields::init();
+        // Admin\FunnelStylingFields::init();
         
         // Initialize Testimonials display settings
-        // Admin\FunnelTestimonialsFields::init();
+        Admin\FunnelTestimonialsFields::init();
         
         // Setup ACF Local JSON sync for version control
         self::setupAcfLocalJson();
@@ -960,6 +960,41 @@ class Plugin
         
         // Tell ACF where to load JSON files from (for deployment)
         add_filter('acf/settings/load_json', [self::class, 'acfJsonLoadPoints']);
+
+        // AUTO-SYNC: Import JSON files automatically if they are newer than DB
+        add_action('acf/init', [self::class, 'autoSyncAcfJson']);
+    }
+
+    /**
+     * Automatically sync ACF field groups from JSON files if they are newer than the database versions.
+     * This ensures the JSON files remain the "Source of Truth".
+     */
+    public static function autoSyncAcfJson(): void
+    {
+        if (!function_exists('acf_get_field_groups') || !function_exists('acf_get_local_field_groups')) {
+            return;
+        }
+
+        // Only run in admin and not during AJAX/Heartbeat
+        if (!is_admin() || (defined('DOING_AJAX') && DOING_AJAX)) {
+            return;
+        }
+
+        $groups = acf_get_local_field_groups();
+        if (empty($groups)) {
+            return;
+        }
+
+        foreach ($groups as $group) {
+            // Check if this group needs a sync
+            $sync = acf_get_instance('ACF_Admin_Field_Groups')->get_sync_status($group);
+            
+            if (isset($sync['status']) && $sync['status'] === 'available') {
+                // Sync the group
+                acf_get_instance('ACF_Admin_Field_Groups')->sync_field_group($group['key']);
+                error_log("[HP-RW] ACF Auto-Sync: Updated field group '{$group['title']}' ({$group['key']}) from JSON.");
+            }
+        }
     }
 
     /**
