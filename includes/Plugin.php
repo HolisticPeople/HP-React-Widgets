@@ -971,28 +971,76 @@ class Plugin
      */
     public static function autoSyncAcfJson(): void
     {
-        if (!function_exists('acf_get_field_groups') || !function_exists('acf_get_local_field_groups')) {
+        // Only run if ACF is active and we have the required functions
+        if (!function_exists('acf_get_local_json_files') || !is_admin()) {
             return;
         }
 
-        // Only run in admin and not during AJAX/Heartbeat
-        if (!is_admin() || (defined('DOING_AJAX') && DOING_AJAX)) {
+        // Avoid sync during AJAX/Heartbeat
+        if (defined('DOING_AJAX') && DOING_AJAX) {
             return;
         }
 
-        $groups = acf_get_local_field_groups();
+        $post_type = 'acf-field-group';
+        $files = acf_get_local_json_files($post_type);
+        if (empty($files)) {
+            return;
+        }
+
+        // Get all groups (handles both DB and JSON-only groups)
+        $groups = function_exists('acf_get_internal_post_type_posts') 
+            ? acf_get_internal_post_type_posts($post_type) 
+            : acf_get_field_groups();
+
         if (empty($groups)) {
             return;
         }
 
         foreach ($groups as $group) {
-            // Check if this group needs a sync
-            $sync = acf_get_instance('ACF_Admin_Field_Groups')->get_sync_status($group);
-            
-            if (isset($sync['status']) && $sync['status'] === 'available') {
-                // Sync the group
-                acf_get_instance('ACF_Admin_Field_Groups')->sync_field_group($group['key']);
-                error_log("[HP-RW] ACF Auto-Sync: Updated field group '{$group['title']}' ({$group['key']}) from JSON.");
+            $key = isset($group['key']) ? $group['key'] : '';
+            if (!$key || !isset($files[$key])) {
+                continue;
+            }
+
+            $id = isset($group['ID']) ? $group['ID'] : 0;
+            $local = isset($group['local']) ? $group['local'] : '';
+            $modified = isset($group['modified']) ? $group['modified'] : 0;
+
+            // Only sync if it's a JSON-based group that isn't private
+            if ($local !== 'json' || !empty($group['private'])) {
+                continue;
+            }
+
+            $needs_sync = false;
+            if (!$id) {
+                // Not in database yet
+                $needs_sync = true;
+            } elseif ($modified && $modified > get_post_modified_time('U', true, $id)) {
+                // JSON is newer than database
+                $needs_sync = true;
+            }
+
+            if ($needs_sync) {
+                $json_content = file_get_contents($files[$key]);
+                $data = json_decode($json_content, true);
+                
+                if ($data) {
+                    $data['ID'] = $id;
+                    
+                    // Disable "Local JSON" controller to prevent the .json file from being modified during import
+                    acf_update_setting('json', false);
+                    
+                    if (function_exists('acf_import_internal_post_type')) {
+                        acf_import_internal_post_type($data, $post_type);
+                    } else if (function_exists('acf_import_field_group')) {
+                        acf_import_field_group($data);
+                    }
+                    
+                    // Re-enable JSON
+                    acf_update_setting('json', true);
+                    
+                    error_log("[HP-RW] ACF Auto-Sync: Updated field group '{$group['title']}' ($key) from JSON.");
+                }
             }
         }
     }
