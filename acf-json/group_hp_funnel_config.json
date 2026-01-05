@@ -482,7 +482,14 @@
                 "3xl": "3XL"
             },
             "default_value": "xl",
+            "multiple": 0,
+            "allow_null": 0,
+            "ui": 0,
+            "ajax": 0,
+            "placeholder": "",
             "return_format": "value",
+            "create_options": 0,
+            "save_options": 0,
             "_name": "hero_title_size",
             "_valid": 1
         },
@@ -1628,7 +1635,7 @@
             "type": "text",
             "value": null,
             "menu_order": 29.1,
-            "instructions": "Subtitle under the main title, e.g., 'The Creator of ILLUMODINE™'",
+            "instructions": "Subtitle under the main title, e.g., 'The Creator of ILLUMODINE\u00e2\u201e\u00a2'",
             "required": false,
             "id": "",
             "class": "",
@@ -1679,7 +1686,7 @@
         {
             "ID": 125189,
             "key": "field_authority_credentials",
-            "label": "Credentials\/Title",
+            "label": "Credentials/Title",
             "name": "authority_credentials",
             "aria-label": "",
             "prefix": "acf",
@@ -2146,7 +2153,14 @@
                 "carousel": "Carousel"
             },
             "default_value": "grid",
+            "multiple": 0,
+            "allow_null": 0,
+            "ui": 0,
+            "ajax": 0,
+            "placeholder": "",
             "return_format": "value",
+            "create_options": 0,
+            "save_options": 0,
             "_name": "testimonials_display_mode",
             "_valid": 1
         },
@@ -2248,7 +2262,7 @@
                 {
                     "ID": 125198,
                     "key": "field_testimonial_role",
-                    "label": "Role\/Location",
+                    "label": "Role/Location",
                     "name": "role",
                     "aria-label": "",
                     "prefix": "acf",
@@ -2917,7 +2931,7 @@
                 "class": "",
                 "id": ""
             },
-            "message": "<div style=\"background: #f8f9fa; border-left: 4px solid #eab308; padding: 20px; margin: 10px 0; border-radius: 4px;\">\r\n<h3 style=\"margin-top: 0; color: #1e1e1e;\">🚀 Checkout SPA Shortcode<\/h3>\r\n<p>The checkout flow uses a Single Page Application (SPA) that handles <strong>checkout → upsell → thank-you<\/strong> steps without page reloads.<\/p>\r\n\r\n<h4>Setup Instructions:<\/h4>\r\n<ol>\r\n<li><strong>Create a WordPress page<\/strong> for checkout (e.g., \"Illumodine Checkout\")<\/li>\r\n<li><strong>Set the page permalink<\/strong> to: <code>\/express-shop\/{funnel-slug}\/checkout\/<\/code><\/li>\r\n<li><strong>Add this shortcode<\/strong> to the page content:<\/li>\r\n<\/ol>\r\n\r\n<pre style=\"background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 5px; font-family: monospace; overflow-x: auto;\">\r\n[hp_funnel_checkout_app]\r\n<\/pre>\r\n\r\n<p style=\"margin-top: 15px;\"><strong>Optional attributes:<\/strong><\/p>\r\n<pre style=\"background: #1e1e1e; color: #d4d4d4; padding: 12px; border-radius: 5px; font-family: monospace; font-size: 13px;\">\r\n[hp_funnel_checkout_app funnel=\"illumodine\"]   <!-- By slug -->\r\n[hp_funnel_checkout_app id=\"123\"]              <!-- By post ID -->\r\n[hp_funnel_checkout_app product=\"SKU123\"]      <!-- Pre-select product -->\r\n<\/pre>\r\n\r\n<h4 style=\"margin-top: 20px;\">What the SPA handles automatically:<\/h4>\r\n<ul style=\"columns: 2; column-gap: 30px;\">\r\n<li>✅ Product selection with quantity<\/li>\r\n<li>✅ Customer lookup on email blur<\/li>\r\n<li>✅ Auto-fill address for returning customers<\/li>\r\n<li>✅ Points redemption (if enabled below)<\/li>\r\n<li>✅ Stripe Elements inline payment<\/li>\r\n<li>✅ 3D Secure authentication<\/li>\r\n<li>✅ One-click upsell offers<\/li>\r\n<li>✅ Thank you page with order summary<\/li>\r\n<\/ul>\r\n<\/div>",
+            "message": "<div style=\"background: #f8f9fa; border-left: 4px solid #eab308; padding: 20px; margin: 10px 0; border-radius: 4px;\">\r\n<h3 style=\"margin-top: 0; color: #1e1e1e;\">\u00f0\u0178\u0161\u20ac Checkout SPA Shortcode</h3>\r\n<p>The checkout flow uses a Single Page Application (SPA) that handles <strong>checkout \u00e2\u2020\u2019 upsell \u00e2\u2020\u2019 thank-you</strong> steps without page reloads.</p>\r\n\r\n<h4>Setup Instructions:</h4>\r\n<ol>\r\n<li><strong>Create a WordPress page</strong> for checkout (e.g., \"Illumodine Checkout\")</li>\r\n<li><strong>Set the page permalink</strong> to: <code>/express-shop/{funnel-slug}/checkout/</code></li>\r\n<li><strong>Add this shortcode</strong> to the page content:</li>\r\n</ol>\r\n\r\n<pre style=\"background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 5px; font-family: monospace; overflow-x: auto;\">\r\n[hp_funnel_checkout_app]\r\n</pre>\r\n\r\n<p style=\"margin-top: 15px;\"><strong>Optional attributes:</strong></p>\r\n<pre style=\"background: #1e1e1e; color: #d4d4d4; padding: 12px; border-radius: 5px; font-family: monospace; font-size: 13px;\">\r\n[hp_funnel_checkout_app funnel=\"illumodine\"]   <!-- By slug -->\r\n[hp_funnel_checkout_app id=\"123\"]              <!-- By post ID -->\r\n[hp_funnel_checkout_app product=\"SKU123\"]      <!-- Pre-select product -->\r\n</pre>\r\n\r\n<h4 style=\"margin-top: 20px;\">What the SPA handles automatically:</h4>\r\n<ul style=\"columns: 2; column-gap: 30px;\">\r\n<li>\u00e2\u0153\u2026 Product selection with quantity</li>\r\n<li>\u00e2\u0153\u2026 Customer lookup on email blur</li>\r\n<li>\u00e2\u0153\u2026 Auto-fill address for returning customers</li>\r\n<li>\u00e2\u0153\u2026 Points redemption (if enabled below)</li>\r\n<li>\u00e2\u0153\u2026 Stripe Elements inline payment</li>\r\n<li>\u00e2\u0153\u2026 3D Secure authentication</li>\r\n<li>\u00e2\u0153\u2026 One-click upsell offers</li>\r\n<li>\u00e2\u0153\u2026 Thank you page with order summary</li>\r\n</ul>\r\n</div>",
             "new_lines": "",
             "esc_html": 0,
             "_name": "checkout_spa_instructions",
@@ -3089,7 +3103,7 @@
                 "class": "",
                 "id": ""
             },
-            "default_value": "\/thank-you\/",
+            "default_value": "/thank-you/",
             "placeholder": "",
             "_name": "thankyou_url",
             "_valid": 1
@@ -4097,7 +4111,15 @@
             "default_value": "InStock",
             "readonly": 1,
             "_name": "funnel_availability",
-            "_valid": 1
+            "_valid": 1,
+            "multiple": 0,
+            "allow_null": 0,
+            "ui": 0,
+            "ajax": 0,
+            "return_format": "value",
+            "placeholder": "",
+            "create_options": 0,
+            "save_options": 0
         },
         {
             "ID": 125217011,
@@ -4127,7 +4149,15 @@
             },
             "default_value": "NewCondition",
             "_name": "funnel_condition",
-            "_valid": 1
+            "_valid": 1,
+            "multiple": 0,
+            "allow_null": 0,
+            "ui": 0,
+            "ajax": 0,
+            "return_format": "value",
+            "placeholder": "",
+            "create_options": 0,
+            "save_options": 0
         },
         {
             "ID": 125217012,

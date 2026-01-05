@@ -1206,7 +1206,6 @@ class FunnelConfigLoader
      */
     private static function extractUpsellConfig(?array $config): ?array
     {
-        Plugin::debugLog('H1', 'FunnelConfigLoader.php:1213', 'extractUpsellConfig entry', ['config' => $config]);
         if (empty($config) || empty($config['sku'])) {
             return null;
         }
