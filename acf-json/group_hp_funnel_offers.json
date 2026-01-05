@@ -60,7 +60,8 @@
                     "placeholder": "",
                     "prepend": "",
                     "append": "",
-                    "parent_repeater": "field_funnel_offers"
+                    "parent_repeater": "field_funnel_offers",
+                    "readonly": 0
                 },
                 {
                     "ID": 0,
@@ -129,7 +130,8 @@
                     "maxlength": "",
                     "prepend": "",
                     "append": "",
-                    "parent_repeater": "field_funnel_offers"
+                    "parent_repeater": "field_funnel_offers",
+                    "readonly": 0
                 },
                 {
                     "ID": 0,
@@ -255,7 +257,8 @@
                     "maxlength": "",
                     "_name": "offer_image_alt",
                     "_valid": 1,
-                    "parent_repeater": "field_funnel_offers"
+                    "parent_repeater": "field_funnel_offers",
+                    "readonly": 0
                 },
                 {
                     "ID": 0,
@@ -287,7 +290,8 @@
                     "max": "",
                     "placeholder": "",
                     "append": "",
-                    "parent_repeater": "field_funnel_offers"
+                    "parent_repeater": "field_funnel_offers",
+                    "readonly": 0
                 },
                 {
                     "ID": 0,
@@ -317,7 +321,8 @@
                     "maxlength": "",
                     "prepend": "",
                     "append": "",
-                    "parent_repeater": "field_funnel_offers"
+                    "parent_repeater": "field_funnel_offers",
+                    "readonly": 0
                 },
                 {
                     "ID": 0,
@@ -347,7 +352,8 @@
                     "placeholder": "",
                     "prepend": "",
                     "append": "",
-                    "parent_repeater": "field_funnel_offers"
+                    "parent_repeater": "field_funnel_offers",
+                    "readonly": 0
                 },
                 {
                     "ID": 0,
@@ -377,7 +383,8 @@
                     "maxlength": "",
                     "prepend": "",
                     "append": "",
-                    "parent_repeater": "field_funnel_offers"
+                    "parent_repeater": "field_funnel_offers",
+                    "readonly": 0
                 },
                 {
                     "ID": 0,
@@ -417,7 +424,8 @@
                     "placeholder": "",
                     "prepend": "",
                     "append": "",
-                    "parent_repeater": "field_funnel_offers"
+                    "parent_repeater": "field_funnel_offers",
+                    "readonly": 0
                 },
                 {
                     "ID": 0,
@@ -495,7 +503,7 @@
                                 "class": "",
                                 "id": ""
                             },
-                            "message": "<div class=\"hp-products-section\" data-offer-products><\/div>",
+                            "message": "<div class=\"hp-products-section\" data-offer-products></div>",
                             "esc_html": 0,
                             "_name": "container",
                             "_valid": 1,

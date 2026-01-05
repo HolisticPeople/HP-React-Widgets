@@ -84,7 +84,8 @@
             "prepend": "",
             "append": "",
             "_name": "m1_affiliate_username",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         }
     ],
     "location": [

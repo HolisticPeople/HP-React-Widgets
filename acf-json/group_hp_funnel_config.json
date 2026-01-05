@@ -57,7 +57,8 @@
             "prepend": "",
             "append": "",
             "_name": "funnel_slug",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125090,
@@ -337,7 +338,8 @@
                     "append": "",
                     "_name": "label",
                     "_valid": 1,
-                    "parent_repeater": "field_header_nav_items"
+                    "parent_repeater": "field_header_nav_items",
+                    "readonly": 0
                 },
                 {
                     "ID": 125172,
@@ -452,7 +454,8 @@
             "prepend": "",
             "append": "",
             "_name": "hero_title",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125093001,
@@ -520,7 +523,8 @@
             "prepend": "",
             "append": "",
             "_name": "hero_subtitle",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125095,
@@ -549,7 +553,8 @@
             "prepend": "",
             "append": "",
             "_name": "hero_tagline",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125096,
@@ -641,7 +646,8 @@
             "append": "",
             "maxlength": "",
             "_name": "hero_image_alt",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125098,
@@ -730,7 +736,8 @@
             "prepend": "",
             "append": "",
             "_name": "hero_cta_text",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125175,
@@ -786,7 +793,8 @@
             "prepend": "",
             "append": "",
             "_name": "hero_benefits_title",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125258,
@@ -815,7 +823,8 @@
             "prepend": "",
             "append": "",
             "_name": "hero_benefits_subtitle",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125102,
@@ -875,7 +884,8 @@
                     "append": "",
                     "_name": "text",
                     "_valid": 1,
-                    "parent_repeater": "field_hero_benefits"
+                    "parent_repeater": "field_hero_benefits",
+                    "readonly": 0
                 },
                 {
                     "ID": 125176,
@@ -1004,7 +1014,8 @@
                     "append": "",
                     "_name": "product_search",
                     "_valid": 1,
-                    "parent_repeater": "field_funnel_products"
+                    "parent_repeater": "field_funnel_products",
+                    "readonly": 0
                 },
                 {
                     "ID": 125107,
@@ -1034,7 +1045,8 @@
                     "append": "",
                     "_name": "sku",
                     "_valid": 1,
-                    "parent_repeater": "field_funnel_products"
+                    "parent_repeater": "field_funnel_products",
+                    "readonly": 0
                 },
                 {
                     "ID": 125108,
@@ -1064,7 +1076,8 @@
                     "append": "",
                     "_name": "display_name",
                     "_valid": 1,
-                    "parent_repeater": "field_funnel_products"
+                    "parent_repeater": "field_funnel_products",
+                    "readonly": 0
                 },
                 {
                     "ID": 125109,
@@ -1096,7 +1109,8 @@
                     "append": "",
                     "_name": "display_price",
                     "_valid": 1,
-                    "parent_repeater": "field_funnel_products"
+                    "parent_repeater": "field_funnel_products",
+                    "readonly": 0
                 },
                 {
                     "ID": 125111,
@@ -1126,7 +1140,8 @@
                     "append": "",
                     "_name": "description",
                     "_valid": 1,
-                    "parent_repeater": "field_funnel_products"
+                    "parent_repeater": "field_funnel_products",
+                    "readonly": 0
                 },
                 {
                     "ID": 125113,
@@ -1191,7 +1206,8 @@
                     "append": "",
                     "_name": "badge",
                     "_valid": 1,
-                    "parent_repeater": "field_funnel_products"
+                    "parent_repeater": "field_funnel_products",
+                    "readonly": 0
                 },
                 {
                     "ID": 125112,
@@ -1281,7 +1297,8 @@
                             "append": "",
                             "_name": "text",
                             "_valid": 1,
-                            "parent_repeater": "field_product_features"
+                            "parent_repeater": "field_product_features",
+                            "readonly": 0
                         }
                     ],
                     "parent_repeater": "field_funnel_products"
@@ -1314,7 +1331,8 @@
                     "append": "",
                     "_name": "free_item_sku",
                     "_valid": 1,
-                    "parent_repeater": "field_funnel_products"
+                    "parent_repeater": "field_funnel_products",
+                    "readonly": 0
                 },
                 {
                     "ID": 125117,
@@ -1346,7 +1364,8 @@
                     "append": "",
                     "_name": "free_item_qty",
                     "_valid": 1,
-                    "parent_repeater": "field_funnel_products"
+                    "parent_repeater": "field_funnel_products",
+                    "readonly": 0
                 }
             ]
         },
@@ -1404,7 +1423,8 @@
             "prepend": "",
             "append": "",
             "_name": "features_title",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125181,
@@ -1433,7 +1453,8 @@
             "prepend": "",
             "append": "",
             "_name": "features_subtitle",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125182,
@@ -1535,7 +1556,8 @@
                     "append": "",
                     "_name": "title",
                     "_valid": 1,
-                    "parent_repeater": "field_features_list"
+                    "parent_repeater": "field_features_list",
+                    "readonly": 0
                 },
                 {
                     "ID": 125185,
@@ -1623,7 +1645,8 @@
             "prepend": "",
             "append": "",
             "_name": "authority_title",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125242,
@@ -1652,7 +1675,8 @@
             "prepend": "",
             "append": "",
             "_name": "authority_subtitle",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125188,
@@ -1681,7 +1705,8 @@
             "prepend": "",
             "append": "",
             "_name": "authority_name",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125189,
@@ -1710,7 +1735,8 @@
             "prepend": "",
             "append": "",
             "_name": "authority_credentials",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125190,
@@ -1773,7 +1799,8 @@
             "append": "",
             "maxlength": "",
             "_name": "authority_image_alt",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125191001,
@@ -1802,7 +1829,8 @@
             "append": "",
             "maxlength": "",
             "_name": "authority_image_alt",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125191,
@@ -1860,7 +1888,8 @@
             "prepend": "",
             "append": "",
             "_name": "authority_article_text",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125247,
@@ -2008,7 +2037,8 @@
                     "append": "",
                     "_name": "title",
                     "_valid": 1,
-                    "parent_repeater": "field_authority_quote_categories"
+                    "parent_repeater": "field_authority_quote_categories",
+                    "readonly": 0
                 },
                 {
                     "ID": 125245,
@@ -2096,7 +2126,8 @@
             "prepend": "",
             "append": "",
             "_name": "testimonials_title",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125249,
@@ -2125,7 +2156,8 @@
             "prepend": "",
             "append": "",
             "_name": "testimonials_subtitle",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125249001,
@@ -2197,7 +2229,12 @@
             "min": 1,
             "max": 4,
             "_name": "testimonials_columns",
-            "_valid": 1
+            "_valid": 1,
+            "placeholder": "",
+            "prepend": "",
+            "append": "",
+            "step": "",
+            "readonly": 0
         },
         {
             "ID": 125196,
@@ -2257,7 +2294,8 @@
                     "append": "",
                     "_name": "name",
                     "_valid": 1,
-                    "parent_repeater": "field_testimonials_list"
+                    "parent_repeater": "field_testimonials_list",
+                    "readonly": 0
                 },
                 {
                     "ID": 125198,
@@ -2287,7 +2325,8 @@
                     "append": "",
                     "_name": "role",
                     "_valid": 1,
-                    "parent_repeater": "field_testimonials_list"
+                    "parent_repeater": "field_testimonials_list",
+                    "readonly": 0
                 },
                 {
                     "ID": 125199,
@@ -2384,7 +2423,8 @@
                     "append": "",
                     "_name": "rating",
                     "_valid": 1,
-                    "parent_repeater": "field_testimonials_list"
+                    "parent_repeater": "field_testimonials_list",
+                    "readonly": 0
                 }
             ]
         },
@@ -2442,7 +2482,8 @@
             "prepend": "",
             "append": "",
             "_name": "science_title",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125236,
@@ -2471,7 +2512,8 @@
             "prepend": "",
             "append": "",
             "_name": "science_subtitle",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125237,
@@ -2531,7 +2573,8 @@
                     "append": "",
                     "_name": "title",
                     "_valid": 1,
-                    "parent_repeater": "field_science_sections"
+                    "parent_repeater": "field_science_sections",
+                    "readonly": 0
                 },
                 {
                     "ID": 125239,
@@ -2649,7 +2692,8 @@
             "prepend": "",
             "append": "",
             "_name": "faq_title",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125204,
@@ -2709,7 +2753,8 @@
                     "append": "",
                     "_name": "question",
                     "_valid": 1,
-                    "parent_repeater": "field_faq_list"
+                    "parent_repeater": "field_faq_list",
+                    "readonly": 0
                 },
                 {
                     "ID": 125206,
@@ -2797,7 +2842,8 @@
             "prepend": "",
             "append": "",
             "_name": "cta_title",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125209,
@@ -2826,7 +2872,8 @@
             "prepend": "",
             "append": "",
             "_name": "cta_subtitle",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125210,
@@ -2855,7 +2902,8 @@
             "prepend": "",
             "append": "",
             "_name": "cta_button_text",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125211,
@@ -2964,7 +3012,8 @@
             "prepend": "",
             "append": "",
             "_name": "free_shipping_countries",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125214,
@@ -2995,7 +3044,8 @@
             "prepend": "",
             "append": "",
             "_name": "global_discount_percent",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125215,
@@ -3135,7 +3185,8 @@
             "prepend": "",
             "append": "",
             "_name": "thankyou_headline",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125127,
@@ -3340,7 +3391,10 @@
             "default_value": 0,
             "ui": 1,
             "_name": "text_color_accent_override",
-            "_valid": 1
+            "_valid": 1,
+            "message": "",
+            "ui_on_text": "",
+            "ui_off_text": ""
         },
         {
             "ID": 125221003,
@@ -3723,7 +3777,8 @@
             "prepend": "",
             "append": "",
             "_name": "footer_text",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125144,
@@ -3812,7 +3867,8 @@
                     "append": "",
                     "_name": "label",
                     "_valid": 1,
-                    "parent_repeater": "field_footer_links"
+                    "parent_repeater": "field_footer_links",
+                    "readonly": 0
                 },
                 {
                     "ID": 125229,
@@ -3894,7 +3950,11 @@
             "default_value": "",
             "placeholder": "e.g. Detox Protocol",
             "_name": "seo_focus_keyword",
-            "_valid": 1
+            "_valid": 1,
+            "prepend": "",
+            "append": "",
+            "maxlength": "",
+            "readonly": 0
         },
         {
             "ID": 125217003,
@@ -3920,7 +3980,11 @@
             "default_value": "",
             "placeholder": "",
             "_name": "seo_meta_title",
-            "_valid": 1
+            "_valid": 1,
+            "prepend": "",
+            "append": "",
+            "maxlength": "",
+            "readonly": 0
         },
         {
             "ID": 125217004,
@@ -3947,7 +4011,9 @@
             "placeholder": "",
             "rows": 2,
             "_name": "seo_meta_description",
-            "_valid": 1
+            "_valid": 1,
+            "maxlength": "",
+            "new_lines": ""
         },
         {
             "ID": 125217005,
@@ -3973,7 +4039,10 @@
             "default_value": 0,
             "ui": 1,
             "_name": "seo_cornerstone_content",
-            "_valid": 1
+            "_valid": 1,
+            "message": "",
+            "ui_on_text": "",
+            "ui_off_text": ""
         },
         {
             "ID": 125217006,
@@ -3999,7 +4068,11 @@
             "default_value": "",
             "placeholder": "Auto-detect",
             "_name": "funnel_brand_override",
-            "_valid": 1
+            "_valid": 1,
+            "prepend": "",
+            "append": "",
+            "maxlength": "",
+            "readonly": 0
         },
         {
             "ID": 125217007,
@@ -4025,7 +4098,11 @@
             "default_value": "",
             "readonly": 1,
             "_name": "funnel_brand",
-            "_valid": 1
+            "_valid": 1,
+            "placeholder": "",
+            "prepend": "",
+            "append": "",
+            "maxlength": ""
         },
         {
             "ID": 125217008,
@@ -4052,7 +4129,12 @@
             "readonly": 1,
             "prepend": "$",
             "_name": "funnel_min_price",
-            "_valid": 1
+            "_valid": 1,
+            "placeholder": "",
+            "append": "",
+            "min": "",
+            "max": "",
+            "step": ""
         },
         {
             "ID": 125217009,
@@ -4079,7 +4161,12 @@
             "readonly": 1,
             "prepend": "$",
             "_name": "funnel_max_price",
-            "_valid": 1
+            "_valid": 1,
+            "placeholder": "",
+            "append": "",
+            "min": "",
+            "max": "",
+            "step": ""
         },
         {
             "ID": 125217010,
@@ -4183,7 +4270,11 @@
             "placeholder": "Auto: \"From $89 - $249\"",
             "_name": "funnel_price_range_label",
             "_valid": 1,
-            "default_value": ""
+            "default_value": "",
+            "prepend": "",
+            "append": "",
+            "maxlength": "",
+            "readonly": 0
         }
     ],
     "location": [

@@ -30,7 +30,8 @@
             "append": "",
             "maxlength": "",
             "_name": "slogan",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 22,
@@ -61,7 +62,8 @@
             "max": "",
             "step": "",
             "_name": "bottle_size_eu",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 23,
@@ -133,7 +135,8 @@
             "max": "",
             "step": "",
             "_name": "bottle_size_usa",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 25,

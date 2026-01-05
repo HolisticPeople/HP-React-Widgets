@@ -31,7 +31,8 @@
             "prepend": "",
             "append": "",
             "_name": "video",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 46,
@@ -89,7 +90,8 @@
             "append": "",
             "maxlength": "",
             "_name": "aka_product_name",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 29,

@@ -112,7 +112,8 @@
             "prepend": "",
             "append": "",
             "_name": "sku_mfr",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         }
     ],
     "location": [
