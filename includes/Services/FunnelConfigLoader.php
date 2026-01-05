@@ -4,8 +4,6 @@ namespace HP_RW\Services;
 use HP_RW\Plugin;
 use HP_RW\Util\Resolver;
 
-use HP_RW\Plugin;
-
 if (!defined('ABSPATH')) {
     exit;
 }
