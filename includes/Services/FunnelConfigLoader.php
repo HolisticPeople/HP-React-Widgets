@@ -4,6 +4,8 @@ namespace HP_RW\Services;
 use HP_RW\Plugin;
 use HP_RW\Util\Resolver;
 
+use HP_RW\Plugin;
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -1201,12 +1203,13 @@ class FunnelConfigLoader
     /**
      * Extract upsell configuration from ACF group.
      *
-     * @param array $config ACF group data
+     * @param array|null $config ACF group data
      * @return array|null Upsell config or null
      */
-    private static function extractUpsellConfig(array $config): ?array
+    private static function extractUpsellConfig(?array $config): ?array
     {
-        if (empty($config['sku'])) {
+        Plugin::debugLog('H1', 'FunnelConfigLoader.php:1213', 'extractUpsellConfig entry', ['config' => $config]);
+        if (empty($config) || empty($config['sku'])) {
             return null;
         }
 

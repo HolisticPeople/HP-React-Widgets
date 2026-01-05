@@ -981,9 +981,12 @@ class Plugin
             return;
         }
 
+        self::debugLog('H2', 'Plugin.php:985', 'Starting autoSyncAcfJson');
+
         $post_type = 'acf-field-group';
         $files = acf_get_local_json_files($post_type);
         if (empty($files)) {
+            self::debugLog('H2', 'Plugin.php:990', 'No local JSON files found');
             return;
         }
 
@@ -993,8 +996,11 @@ class Plugin
             : acf_get_field_groups();
 
         if (empty($groups)) {
+            self::debugLog('H2', 'Plugin.php:999', 'No field groups found via ACF API');
             return;
         }
+
+        self::debugLog('H2', 'Plugin.php:1003', 'Processing groups', ['count' => count($groups)]);
 
         foreach ($groups as $group) {
             $key = isset($group['key']) ? $group['key'] : '';
@@ -1006,6 +1012,13 @@ class Plugin
             $local = isset($group['local']) ? $group['local'] : '';
             $modified = isset($group['modified']) ? $group['modified'] : 0;
 
+            self::debugLog('H2', 'Plugin.php:1015', 'Checking group', [
+                'key' => $key,
+                'id' => $id,
+                'local' => $local,
+                'title' => $group['title'] ?? 'Unknown'
+            ]);
+
             // Only sync if it's a JSON-based group that isn't private
             if ($local !== 'json' || !empty($group['private'])) {
                 continue;
@@ -1015,9 +1028,15 @@ class Plugin
             if (!$id) {
                 // Not in database yet
                 $needs_sync = true;
+                self::debugLog('H2', 'Plugin.php:1031', 'Needs sync: Not in DB', ['key' => $key]);
             } elseif ($modified && $modified > get_post_modified_time('U', true, $id)) {
                 // JSON is newer than database
                 $needs_sync = true;
+                self::debugLog('H2', 'Plugin.php:1035', 'Needs sync: JSON newer', [
+                    'key' => $key,
+                    'json_mod' => $modified,
+                    'db_mod' => get_post_modified_time('U', true, $id)
+                ]);
             }
 
             if ($needs_sync) {
@@ -1027,13 +1046,17 @@ class Plugin
                 if ($data) {
                     $data['ID'] = $id;
                     
+                    self::debugLog('H2', 'Plugin.php:1049', 'Importing group', ['key' => $key, 'id' => $id]);
+
                     // Disable "Local JSON" controller to prevent the .json file from being modified during import
                     acf_update_setting('json', false);
                     
                     if (function_exists('acf_import_internal_post_type')) {
-                        acf_import_internal_post_type($data, $post_type);
+                        $result = acf_import_internal_post_type($data, $post_type);
+                        self::debugLog('H2', 'Plugin.php:1056', 'Import result (internal)', ['result_id' => $result['ID'] ?? 'error']);
                     } else if (function_exists('acf_import_field_group')) {
-                        acf_import_field_group($data);
+                        $result = acf_import_field_group($data);
+                        self::debugLog('H2', 'Plugin.php:1059', 'Import result (legacy)', ['result_id' => $result['ID'] ?? 'error']);
                     }
                     
                     // Re-enable JSON
@@ -1054,6 +1077,25 @@ class Plugin
     public static function acfJsonSavePoint(string $path): string
     {
         return HP_RW_PATH . 'acf-json';
+    }
+
+    /**
+     * Helper for debug logging to NDJSON.
+     */
+    public static function debugLog(string $hypothesisId, string $location, string $message, array $data = []): void
+    {
+        $logPath = 'c:\DEV\WC Plugins\My Plugins\HP-React-Widgets\.cursor\debug.log';
+        $logEntry = [
+            'id' => 'log_' . time() . '_' . uniqid(),
+            'timestamp' => round(microtime(true) * 1000),
+            'location' => $location,
+            'message' => $message,
+            'data' => $data,
+            'sessionId' => 'debug-session',
+            'runId' => 'run1',
+            'hypothesisId' => $hypothesisId
+        ];
+        file_put_contents($logPath, json_encode($logEntry) . "\n", FILE_APPEND);
     }
 
     /**
