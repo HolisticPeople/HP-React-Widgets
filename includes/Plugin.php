@@ -219,12 +219,6 @@ class Plugin
         // Initialize Funnel Offer ACF fields
         Admin\FunnelOfferFields::init();
         
-        // Initialize Funnel Styling ACF fields (text colors)
-        Admin\FunnelStylingFields::init();
-        
-        // Initialize Testimonials display settings
-        // Admin\FunnelTestimonialsFields::init();
-        
         // Setup ACF Local JSON sync for version control
         self::setupAcfLocalJson();
 
@@ -266,7 +260,6 @@ class Plugin
         Admin\EconomicsDashboard::init();
 
         // Initialize SEO & Tracking components (Smart Bridge).
-        Admin\FunnelSeoFields::init();
         Admin\SeoTrackingSettings::init();
         Admin\FunnelTestingMetabox::init();
         Services\FunnelSeoService::init();
@@ -960,6 +953,94 @@ class Plugin
         
         // Tell ACF where to load JSON files from (for deployment)
         add_filter('acf/settings/load_json', [self::class, 'acfJsonLoadPoints']);
+
+        // AUTO-SYNC: Import JSON files automatically if they are newer than DB
+        add_action('acf/init', [self::class, 'autoSyncAcfJson']);
+    }
+
+    /**
+     * Automatically sync ACF field groups from JSON files if they are newer than the database versions.
+     * This ensures the JSON files remain the "Source of Truth".
+     */
+    public static function autoSyncAcfJson(): void
+    {
+        // Only run if ACF is active and we have the required functions
+        if (!function_exists('acf_get_local_json_files') || !is_admin()) {
+            return;
+        }
+
+        // Avoid sync during AJAX/Heartbeat
+        if (defined('DOING_AJAX') && DOING_AJAX) {
+            return;
+        }
+
+        $post_type = 'acf-field-group';
+        $files = acf_get_local_json_files($post_type);
+        if (empty($files)) {
+            return;
+        }
+
+        // Check if we need a forced sync due to version change
+        $current_version = defined('HP_RW_VERSION') ? HP_RW_VERSION : '';
+        $stored_version = get_option('hp_rw_version', '');
+        $force_sync = ($current_version !== $stored_version);
+
+        foreach ($files as $key => $file_path) {
+            // Get the group from ACF (might be from JSON or DB)
+            $group = acf_get_field_group($key);
+            if (!$group) {
+                // If not even found in local JSON registry by ACF, something is wrong
+                continue;
+            }
+
+            $id = isset($group['ID']) ? $group['ID'] : 0;
+            $local = isset($group['local']) ? $group['local'] : '';
+            $modified = isset($group['modified']) ? $group['modified'] : 0;
+
+            // Only sync if it's a JSON-based group that isn't private
+            if ($local !== 'json' || !empty($group['private'])) {
+                continue;
+            }
+
+            $needs_sync = false;
+            if (!$id) {
+                // Not in database yet
+                $needs_sync = true;
+            } elseif ($force_sync) {
+                // Forced sync due to version change
+                $needs_sync = true;
+            } elseif ($modified && $modified > get_post_modified_time('U', true, $id)) {
+                // JSON is newer than database
+                $needs_sync = true;
+            }
+
+            if ($needs_sync) {
+                $json_content = file_get_contents($file_path);
+                $data = json_decode($json_content, true);
+                
+                if ($data) {
+                    $data['ID'] = $id;
+                    
+                    // Disable "Local JSON" controller to prevent the .json file from being modified during import
+                    acf_update_setting('json', false);
+                    
+                    if (function_exists('acf_import_internal_post_type')) {
+                        acf_import_internal_post_type($data, $post_type);
+                    } else if (function_exists('acf_import_field_group')) {
+                        acf_import_field_group($data);
+                    }
+                    
+                    // Re-enable JSON
+                    acf_update_setting('json', true);
+                    
+                    error_log("[HP-RW] ACF Auto-Sync: Updated field group '{$data['title']}' ($key) from JSON.");
+                }
+            }
+        }
+
+        if ($force_sync && $current_version) {
+            update_option('hp_rw_version', $current_version);
+        }
     }
 
     /**

@@ -81,6 +81,7 @@ class FunnelSeoService
 
         // MODULE A.4: CONTENT ANALYSIS BRIDGE (Yoast Analyzer)
         add_filter('wpseo_content_analysis_content', [self::class, 'bridgeFunnelContent'], 10, 2);
+        add_filter('wpseo_acf_analysis_excluded_fields', [self::class, 'blacklistTechnicalFields']);
 
         // MODULE A.3: SEARCH BRIDGE (FiboSearch)
         if ($settings['enable_fibosearch']) {
@@ -160,7 +161,7 @@ class FunnelSeoService
      */
     public static function calculateFunnelPriceRange(int $postId): array
     {
-        $offers = get_field('funnel_offers', $postId);
+        $offers = FunnelConfigLoader::getFieldValue('funnel_offers', $postId);
         if (empty($offers) || !is_array($offers)) {
             $settings = self::getSettings();
             return ['min' => $settings['min_price_threshold'], 'max' => 0];
@@ -335,7 +336,7 @@ class FunnelSeoService
             return $customBrand;
         }
 
-        $offers = get_field('funnel_offers', $postId);
+        $offers = FunnelConfigLoader::getFieldValue('funnel_offers', $postId);
         if (empty($offers)) {
             return $defaultBrand;
         }
@@ -382,7 +383,7 @@ class FunnelSeoService
 
         // Try ACF brand field
         if (function_exists('get_field')) {
-            $brand = get_field('product_brand', $productId);
+            $brand = FunnelConfigLoader::getFieldValue('product_brand', $productId);
             if ($brand) {
                 return is_array($brand) ? ($brand['name'] ?? '') : (string) $brand;
             }
@@ -396,7 +397,7 @@ class FunnelSeoService
      */
     public static function calculateFunnelAvailability(int $postId): string
     {
-        $offers = get_field('funnel_offers', $postId);
+        $offers = FunnelConfigLoader::getFieldValue('funnel_offers', $postId);
         if (empty($offers)) {
             return 'InStock';
         }
@@ -485,7 +486,7 @@ class FunnelSeoService
         $availability = get_post_meta($postId, 'funnel_availability', true) ?: 'InStock';
 
         // Get offer count
-        $offers = get_field('funnel_offers', $postId);
+        $offers = FunnelConfigLoader::getFieldValue('funnel_offers', $postId);
         $offerCount = is_array($offers) ? count($offers) : 1;
 
         // Get primary SKU from first offer
@@ -499,8 +500,8 @@ class FunnelSeoService
         $schema = [
             '@type' => 'Product',
             '@id'   => get_permalink($postId) . '#product',
-            'name'  => get_field('hero_title', $postId) ?: get_the_title($postId),
-            'description' => wp_strip_all_tags(get_field('hero_subtitle', $postId) ?: get_the_excerpt($postId)),
+            'name'  => FunnelConfigLoader::getFieldValue('hero_title', $postId) ?: get_the_title($postId),
+            'description' => wp_strip_all_tags(FunnelConfigLoader::getFieldValue('hero_subtitle', $postId) ?: get_the_excerpt($postId)),
             'url'   => get_permalink($postId),
             'sku'   => $primarySku,
             'brand' => [
@@ -528,7 +529,7 @@ class FunnelSeoService
         ];
 
         // Add image
-        $heroImage = get_field('hero_image', $postId);
+        $heroImage = FunnelConfigLoader::getFieldValue('hero_image', $postId);
         if ($heroImage) {
             $schema['image'] = is_array($heroImage) ? ($heroImage['url'] ?? '') : $heroImage;
         } else {
@@ -556,7 +557,7 @@ class FunnelSeoService
      */
     private static function getFirstProductImage(int $postId): ?string
     {
-        $offers = get_field('funnel_offers', $postId);
+        $offers = FunnelConfigLoader::getFieldValue('funnel_offers', $postId);
         if (empty($offers)) {
             return null;
         }
@@ -594,7 +595,7 @@ class FunnelSeoService
      */
     private static function getSchemaReviews(int $postId): array
     {
-        $testimonials = get_field('testimonials_list', $postId);
+        $testimonials = FunnelConfigLoader::getFieldValue('testimonials_list', $postId);
         if (empty($testimonials) || !is_array($testimonials)) {
             return [];
         }
@@ -656,7 +657,7 @@ class FunnelSeoService
         $postId = get_the_ID();
 
         // Priority 1: Hero image
-        $heroImage = get_field('hero_image', $postId);
+        $heroImage = FunnelConfigLoader::getFieldValue('hero_image', $postId);
         if ($heroImage) {
             return is_array($heroImage) ? ($heroImage['url'] ?? $url) : $heroImage;
         }
@@ -680,7 +681,7 @@ class FunnelSeoService
             return $desc;
         }
 
-        $heroDesc = get_field('hero_subtitle', get_the_ID());
+        $heroDesc = FunnelConfigLoader::getFieldValue('hero_subtitle', get_the_ID());
         if ($heroDesc) {
             return wp_strip_all_tags($heroDesc);
         }
@@ -711,13 +712,13 @@ class FunnelSeoService
         $searchableData = [];
 
         // Add hero title and subtitle for searchability
-        $heroTitle = get_field('hero_title', $postId);
+        $heroTitle = FunnelConfigLoader::getFieldValue('hero_title', $postId);
         if ($heroTitle) {
             $searchableData[] = $heroTitle;
         }
 
         // Get offers from ACF
-        $offers = get_field('funnel_offers', $postId);
+        $offers = FunnelConfigLoader::getFieldValue('funnel_offers', $postId);
         if (!empty($offers) && is_array($offers)) {
             foreach ($offers as $offer) {
                 // Add offer name
@@ -765,7 +766,7 @@ class FunnelSeoService
 
         // Get primary SKU
         $primarySku = '';
-        $offers = get_field('funnel_offers', $postId);
+        $offers = FunnelConfigLoader::getFieldValue('funnel_offers', $postId);
         if (!empty($offers[0]['products_data'])) {
             $products = json_decode($offers[0]['products_data'], true);
             $primarySku = $products[0]['sku'] ?? '';
@@ -917,7 +918,7 @@ class FunnelSeoService
 
         // A. Product Canonical Swap (Type-1 funnels)
         if ($settings['type1_product_swap'] && is_singular('product')) {
-            $funnelId = get_field('product_funnel_override', get_the_ID());
+            $funnelId = FunnelConfigLoader::getFieldValue('product_funnel_override', get_the_ID());
             if ($funnelId) {
                 return get_permalink($funnelId);
             }
@@ -927,7 +928,7 @@ class FunnelSeoService
         if ($settings['type2_category_swap'] && is_product_category()) {
             $term = get_queried_object();
             if ($term) {
-                $funnelId = get_field('category_canonical_funnel', 'product_cat_' . $term->term_id);
+                $funnelId = FunnelConfigLoader::getFieldValue('category_canonical_funnel', 'product_cat_' . $term->term_id);
                 if ($funnelId) {
                     return get_permalink($funnelId);
                 }
@@ -955,7 +956,7 @@ class FunnelSeoService
             return;
         }
 
-        $funnelId = get_field('product_funnel_override', $postId);
+        $funnelId = FunnelConfigLoader::getFieldValue('product_funnel_override', $postId);
         if ($funnelId) {
             $funnelTitle = get_the_title($funnelId);
             $editLink = get_edit_post_link($funnelId);
@@ -1014,56 +1015,112 @@ class FunnelSeoService
         $funnelContent = [];
 
         // 1. Hero Section
-        $heroTitle = get_field('hero_title', $postId);
-        $heroSubtitle = get_field('hero_subtitle', $postId);
-        $heroDesc = get_field('hero_description', $postId);
+        $heroTitle = FunnelConfigLoader::getFieldValue('hero_title', $postId);
+        $heroSubtitle = FunnelConfigLoader::getFieldValue('hero_subtitle', $postId);
+        $heroDesc = FunnelConfigLoader::getFieldValue('hero_description', $postId);
         if ($heroTitle) $funnelContent[] = "<h1>" . esc_html($heroTitle) . "</h1>";
         if ($heroSubtitle) $funnelContent[] = "<h2>" . esc_html($heroSubtitle) . "</h2>";
         if ($heroDesc) $funnelContent[] = "<div>" . wp_kses_post($heroDesc) . "</div>";
 
         // 2. Benefits
-        $benefits = get_field('hero_benefits', $postId);
+        $benefits = FunnelConfigLoader::getFieldValue('hero_benefits', $postId);
         if (!empty($benefits) && is_array($benefits)) {
             $funnelContent[] = "<h3>Benefits</h3><ul>";
             foreach ($benefits as $b) {
-                $text = $b['benefit_text'] ?? '';
+                $text = $b['text'] ?? '';
                 if ($text) $funnelContent[] = "<li>" . esc_html($text) . "</li>";
             }
             $funnelContent[] = "</ul>";
         }
 
         // 3. Features
-        $features = get_field('features_list', $postId);
+        $features = FunnelConfigLoader::getFieldValue('features_list', $postId);
         if (!empty($features) && is_array($features)) {
             $funnelContent[] = "<h3>Features</h3>";
             foreach ($features as $f) {
-                $title = $f['feature_title'] ?? '';
-                $desc = $f['feature_description'] ?? '';
+                $title = $f['title'] ?? '';
+                $desc = $f['description'] ?? '';
                 if ($title) $funnelContent[] = "<h4>" . esc_html($title) . "</h4>";
                 if ($desc) $funnelContent[] = "<div>" . wp_kses_post($desc) . "</div>";
             }
         }
 
         // 4. Authority
-        $authBio = get_field('authority_bio', $postId);
+        $authBio = FunnelConfigLoader::getFieldValue('authority_bio', $postId);
         if ($authBio) {
             $funnelContent[] = "<h3>About the Expert</h3>";
             $funnelContent[] = "<div>" . wp_kses_post($authBio) . "</div>";
         }
 
         // 5. Science
-        $science = get_field('science_sections', $postId);
+        $science = FunnelConfigLoader::getFieldValue('science_sections', $postId);
         if (!empty($science) && is_array($science)) {
             $funnelContent[] = "<h3>The Science</h3>";
             foreach ($science as $s) {
                 $title = $s['title'] ?? '';
                 $desc = $s['description'] ?? '';
+                $bullets = $s['bullets'] ?? '';
+                
                 if ($title) $funnelContent[] = "<h4>" . esc_html($title) . "</h4>";
                 if ($desc) $funnelContent[] = "<div>" . wp_kses_post($desc) . "</div>";
+                if ($bullets) {
+                    $bulletList = is_string($bullets) ? explode("\n", $bullets) : (array)$bullets;
+                    $funnelContent[] = "<ul>";
+                    foreach ($bulletList as $b) {
+                        if (trim($b)) $funnelContent[] = "<li>" . esc_html(trim($b)) . "</li>";
+                    }
+                    $funnelContent[] = "</ul>";
+                }
+            }
+        }
+
+        // 6. Testimonials
+        $testimonials = FunnelConfigLoader::getFieldValue('testimonials_list', $postId);
+        if (!empty($testimonials) && is_array($testimonials)) {
+            $funnelContent[] = "<h3>What Customers Say</h3>";
+            foreach ($testimonials as $t) {
+                $quote = $t['quote'] ?? '';
+                $name = $t['name'] ?? '';
+                if ($quote) $funnelContent[] = "<blockquote>" . wp_kses_post($quote) . " <cite>— " . esc_html($name) . "</cite></blockquote>";
             }
         }
 
         return implode("\n", $funnelContent) . "\n" . $content;
+    }
+
+    /**
+     * Blacklist technical or redundant ACF fields from Yoast analysis.
+     * Since we bridge the important content via bridgeFunnelContent(),
+     * we can exclude non-textual fields.
+     */
+    public static function blacklistTechnicalFields(array $excluded): array
+    {
+        $technicalFields = [
+            'funnel_status',
+            'stripe_mode',
+            'header_sticky',
+            'header_transparent',
+            'hero_title_size',
+            'accent_color',
+            'text_color_basic',
+            'text_color_note',
+            'text_color_discount',
+            'page_bg_color',
+            'card_bg_color',
+            'input_bg_color',
+            'border_color',
+            'background_type',
+            'custom_css',
+            'global_discount_percent',
+            'enable_points_redemption',
+            'show_order_summary',
+            'checkout_url',
+            'thankyou_url',
+            'show_upsell',
+            'seo_cornerstone_content',
+        ];
+
+        return array_merge($excluded, $technicalFields);
     }
 
     /**

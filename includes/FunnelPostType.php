@@ -96,7 +96,6 @@ class FunnelPostType
                 'revisions',
                 'page-attributes',
                 'thumbnail',
-                'custom-fields',
             ],
             'has_archive'           => 'express-shops',
             'rewrite'               => [

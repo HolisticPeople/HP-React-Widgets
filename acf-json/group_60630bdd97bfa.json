@@ -33,7 +33,8 @@
             "prepend": "Serving Size:",
             "append": "",
             "_name": "serving_size",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 37,
@@ -64,7 +65,8 @@
             "max": "",
             "step": "",
             "_name": "servings_per_container",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 36,
@@ -170,7 +172,8 @@
             "append": "",
             "maxlength": "",
             "_name": "ingredients_other",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 33,
@@ -200,7 +203,8 @@
             "prepend": "",
             "append": "",
             "_name": "potency",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 34,

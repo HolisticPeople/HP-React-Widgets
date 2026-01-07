@@ -86,9 +86,9 @@ class FunnelExporter
             
             'funnel' => [
                 'name' => $post->post_title,
-                'slug' => get_field('funnel_slug', $postId) ?: $post->post_name,
-                'status' => get_field('funnel_status', $postId) ?: 'active',
-                'stripe_mode' => get_field('stripe_mode', $postId) ?: 'auto',
+                'slug' => FunnelConfigLoader::getFieldValue('funnel_slug', $postId) ?: $post->post_name,
+                'status' => FunnelConfigLoader::getFieldValue('funnel_status', $postId),
+                'stripe_mode' => FunnelConfigLoader::getFieldValue('stripe_mode', $postId),
             ],
 
             'header' => self::exportHeader($postId),
@@ -125,11 +125,11 @@ class FunnelExporter
     private static function exportHeader(int $postId): array
     {
         return [
-            'logo' => self::resolveImageUrl(get_field('header_logo', $postId)),
-            'logo_link' => get_field('header_logo_link', $postId) ?: '',
-            'sticky' => (bool) get_field('header_sticky', $postId),
-            'transparent' => (bool) get_field('header_transparent', $postId),
-            'nav_items' => self::exportRepeater(get_field('header_nav_items', $postId) ?: [], ['label', 'url', 'is_external']),
+            'logo' => self::resolveImageUrl(FunnelConfigLoader::getFieldValue('header_logo', $postId)),
+            'logo_link' => FunnelConfigLoader::getFieldValue('header_logo_link', $postId) ?: '',
+            'sticky' => (bool) FunnelConfigLoader::getFieldValue('header_sticky', $postId),
+            'transparent' => (bool) FunnelConfigLoader::getFieldValue('header_transparent', $postId),
+            'nav_items' => self::exportRepeater(FunnelConfigLoader::getFieldValue('header_nav_items', $postId) ?: [], ['label', 'url', 'is_external']),
         ];
     }
 
@@ -139,14 +139,14 @@ class FunnelExporter
     private static function exportHero(int $postId): array
     {
         return [
-            'title' => get_field('hero_title', $postId) ?: '',
-            'subtitle' => get_field('hero_subtitle', $postId) ?: '',
-            'tagline' => get_field('hero_tagline', $postId) ?: '',
-            'description' => get_field('hero_description', $postId) ?: '',
-            'image' => self::resolveImageUrl(get_field('hero_image', $postId)),
-            'logo' => self::resolveImageUrl(get_field('hero_logo', $postId)),
-            'logo_link' => get_field('hero_logo_link', $postId) ?: '',
-            'cta_text' => get_field('hero_cta_text', $postId) ?: 'Get Your Special Offer Now',
+            'title' => FunnelConfigLoader::getFieldValue('hero_title', $postId),
+            'subtitle' => FunnelConfigLoader::getFieldValue('hero_subtitle', $postId),
+            'tagline' => FunnelConfigLoader::getFieldValue('hero_tagline', $postId),
+            'description' => FunnelConfigLoader::getFieldValue('hero_description', $postId),
+            'image' => self::resolveImageUrl(FunnelConfigLoader::getFieldValue('hero_image', $postId)),
+            'logo' => self::resolveImageUrl(FunnelConfigLoader::getFieldValue('hero_logo', $postId)),
+            'logo_link' => FunnelConfigLoader::getFieldValue('hero_logo_link', $postId),
+            'cta_text' => FunnelConfigLoader::getFieldValue('hero_cta_text', $postId),
         ];
     }
 
@@ -155,20 +155,20 @@ class FunnelExporter
      */
     private static function exportBenefits(int $postId): array
     {
-        $benefits = get_field('hero_benefits', $postId) ?: [];
+        $benefits = FunnelConfigLoader::getFieldValue('hero_benefits', $postId) ?: [];
         $items = [];
         
         foreach ($benefits as $b) {
             if (!empty($b['text'])) {
                 $items[] = [
                     'text' => $b['text'],
-                    'icon' => $b['icon'] ?? 'check',
+                    'icon' => $b['icon'],
                 ];
             }
         }
 
         return [
-            'title' => get_field('hero_benefits_title', $postId) ?: 'Why Choose Us?',
+            'title' => FunnelConfigLoader::getFieldValue('hero_benefits_title', $postId),
             'items' => $items,
         ];
     }
@@ -178,7 +178,7 @@ class FunnelExporter
      */
     private static function exportOffers(int $postId): array
     {
-        $offers = get_field('funnel_offers', $postId) ?: [];
+        $offers = FunnelConfigLoader::getFieldValue('funnel_offers', $postId) ?: [];
         $result = [];
         $offerIndex = 0;
 
@@ -248,22 +248,22 @@ class FunnelExporter
      */
     private static function exportFeatures(int $postId): array
     {
-        $features = get_field('features_list', $postId) ?: [];
+        $features = FunnelConfigLoader::getFieldValue('features_list', $postId) ?: [];
         $items = [];
 
         foreach ($features as $f) {
             if (!empty($f['title'])) {
                 $items[] = [
-                    'icon' => $f['icon'] ?? 'check',
+                    'icon' => $f['icon'],
                     'title' => $f['title'],
-                    'description' => $f['description'] ?? '',
+                    'description' => $f['description'],
                 ];
             }
         }
 
         return [
-            'title' => get_field('features_title', $postId) ?: 'Key Features',
-            'subtitle' => get_field('features_subtitle', $postId) ?: '',
+            'title' => FunnelConfigLoader::getFieldValue('features_title', $postId),
+            'subtitle' => FunnelConfigLoader::getFieldValue('features_subtitle', $postId),
             'items' => $items,
         ];
     }
@@ -274,7 +274,7 @@ class FunnelExporter
     private static function exportAuthority(int $postId): array
     {
         // Simple quotes
-        $quotes = get_field('authority_quotes', $postId) ?: [];
+        $quotes = FunnelConfigLoader::getFieldValue('authority_quotes', $postId) ?: [];
         $quoteItems = [];
         foreach ($quotes as $q) {
             if (!empty($q['text'])) {
@@ -283,7 +283,7 @@ class FunnelExporter
         }
 
         // Quote categories
-        $categories = get_field('authority_quote_categories', $postId) ?: [];
+        $categories = FunnelConfigLoader::getFieldValue('authority_quote_categories', $postId) ?: [];
         $categoryItems = [];
         foreach ($categories as $cat) {
             if (!empty($cat['title'])) {
@@ -297,19 +297,19 @@ class FunnelExporter
 
         // Article link
         $articleLink = null;
-        $articleText = get_field('authority_article_text', $postId);
-        $articleUrl = get_field('authority_article_url', $postId);
+        $articleText = FunnelConfigLoader::getFieldValue('authority_article_text', $postId);
+        $articleUrl = FunnelConfigLoader::getFieldValue('authority_article_url', $postId);
         if ($articleText && $articleUrl) {
             $articleLink = ['text' => $articleText, 'url' => $articleUrl];
         }
 
         return [
-            'title' => get_field('authority_title', $postId) ?: 'Who We Are',
-            'subtitle' => get_field('authority_subtitle', $postId) ?: '',
-            'name' => get_field('authority_name', $postId) ?: '',
-            'credentials' => get_field('authority_credentials', $postId) ?: '',
-            'image' => self::resolveImageUrl(get_field('authority_image', $postId)),
-            'bio' => get_field('authority_bio', $postId) ?: '',
+            'title' => FunnelConfigLoader::getFieldValue('authority_title', $postId),
+            'subtitle' => FunnelConfigLoader::getFieldValue('authority_subtitle', $postId),
+            'name' => FunnelConfigLoader::getFieldValue('authority_name', $postId),
+            'credentials' => FunnelConfigLoader::getFieldValue('authority_credentials', $postId),
+            'image' => self::resolveImageUrl(FunnelConfigLoader::getFieldValue('authority_image', $postId)),
+            'bio' => FunnelConfigLoader::getFieldValue('authority_bio', $postId),
             'quotes' => $quoteItems,
             'quote_categories' => $categoryItems,
             'article_link' => $articleLink,
@@ -321,25 +321,25 @@ class FunnelExporter
      */
     private static function exportTestimonials(int $postId): array
     {
-        $testimonials = get_field('testimonials_list', $postId) ?: [];
+        $testimonials = FunnelConfigLoader::getFieldValue('testimonials_list', $postId) ?: [];
         $items = [];
 
         foreach ($testimonials as $t) {
             if (!empty($t['name']) && !empty($t['quote'])) {
                 $items[] = [
                     'name' => $t['name'],
-                    'role' => $t['role'] ?? '',
-                    'title' => $t['title'] ?? '',
+                    'role' => $t['role'],
+                    'title' => $t['title'],
                     'quote' => $t['quote'],
                     'image' => self::resolveImageUrl($t['image'] ?? null),
-                    'rating' => (int) ($t['rating'] ?? 5),
+                    'rating' => (int) $t['rating'],
                 ];
             }
         }
 
         return [
-            'title' => get_field('testimonials_title', $postId) ?: 'What Our Customers Say',
-            'subtitle' => get_field('testimonials_subtitle', $postId) ?: '',
+            'title' => FunnelConfigLoader::getFieldValue('testimonials_title', $postId),
+            'subtitle' => FunnelConfigLoader::getFieldValue('testimonials_subtitle', $postId),
             'items' => $items,
         ];
     }
@@ -349,7 +349,7 @@ class FunnelExporter
      */
     private static function exportScience(int $postId): array
     {
-        $sections = get_field('science_sections', $postId) ?: [];
+        $sections = FunnelConfigLoader::getFieldValue('science_sections', $postId) ?: [];
         $items = [];
 
         foreach ($sections as $s) {
@@ -357,15 +357,15 @@ class FunnelExporter
                 $bulletsText = $s['bullets'] ?? '';
                 $items[] = [
                     'title' => $s['title'],
-                    'description' => $s['description'] ?? '',
+                    'description' => $s['description'],
                     'bullets' => is_string($bulletsText) ? array_filter(explode("\n", $bulletsText)) : (array) $bulletsText,
                 ];
             }
         }
 
         return [
-            'title' => get_field('science_title', $postId) ?: 'The Science Behind Our Product',
-            'subtitle' => get_field('science_subtitle', $postId) ?: '',
+            'title' => FunnelConfigLoader::getFieldValue('science_title', $postId),
+            'subtitle' => FunnelConfigLoader::getFieldValue('science_subtitle', $postId),
             'sections' => $items,
         ];
     }
@@ -375,7 +375,7 @@ class FunnelExporter
      */
     private static function exportFaq(int $postId): array
     {
-        $faqs = get_field('faq_list', $postId) ?: [];
+        $faqs = FunnelConfigLoader::getFieldValue('faq_list', $postId) ?: [];
         $items = [];
 
         foreach ($faqs as $f) {
@@ -388,7 +388,7 @@ class FunnelExporter
         }
 
         return [
-            'title' => get_field('faq_title', $postId) ?: 'Frequently Asked Questions',
+            'title' => FunnelConfigLoader::getFieldValue('faq_title', $postId),
             'items' => $items,
         ];
     }
@@ -399,10 +399,10 @@ class FunnelExporter
     private static function exportCta(int $postId): array
     {
         return [
-            'title' => get_field('cta_title', $postId) ?: 'Ready to Get Started?',
-            'subtitle' => get_field('cta_subtitle', $postId) ?: '',
-            'button_text' => get_field('cta_button_text', $postId) ?: 'Order Now',
-            'button_url' => get_field('cta_button_url', $postId) ?: '',
+            'title' => FunnelConfigLoader::getFieldValue('cta_title', $postId),
+            'subtitle' => FunnelConfigLoader::getFieldValue('cta_subtitle', $postId),
+            'button_text' => FunnelConfigLoader::getFieldValue('cta_button_text', $postId),
+            'button_url' => FunnelConfigLoader::getFieldValue('cta_button_url', $postId),
         ];
     }
 
@@ -412,11 +412,11 @@ class FunnelExporter
     private static function exportCheckout(int $postId): array
     {
         return [
-            'url' => get_field('checkout_url', $postId) ?: '/checkout/',
-            'free_shipping_countries' => get_field('free_shipping_countries', $postId) ?: 'US',
-            'global_discount_percent' => (float) (get_field('global_discount_percent', $postId) ?: 0),
-            'enable_points_redemption' => (bool) (get_field('enable_points_redemption', $postId) ?? true),
-            'show_order_summary' => (bool) (get_field('show_order_summary', $postId) ?? true),
+            'url' => FunnelConfigLoader::getFieldValue('checkout_url', $postId),
+            'free_shipping_countries' => FunnelConfigLoader::getFieldValue('free_shipping_countries', $postId),
+            'global_discount_percent' => (float) FunnelConfigLoader::getFieldValue('global_discount_percent', $postId),
+            'enable_points_redemption' => (bool) FunnelConfigLoader::getFieldValue('enable_points_redemption', $postId),
+            'show_order_summary' => (bool) FunnelConfigLoader::getFieldValue('show_order_summary', $postId),
         ];
     }
 
@@ -425,19 +425,19 @@ class FunnelExporter
      */
     private static function exportThankYou(int $postId): array
     {
-        $upsellConfig = get_field('upsell_config', $postId) ?: [];
+        $upsellConfig = FunnelConfigLoader::getFieldValue('upsell_config', $postId) ?: [];
 
         return [
-            'url' => get_field('thankyou_url', $postId) ?: '/thank-you/',
-            'headline' => get_field('thankyou_headline', $postId) ?: 'Thank You for Your Order!',
-            'message' => get_field('thankyou_message', $postId) ?: '',
-            'show_upsell' => (bool) get_field('show_upsell', $postId),
+            'url' => FunnelConfigLoader::getFieldValue('thankyou_url', $postId),
+            'headline' => FunnelConfigLoader::getFieldValue('thankyou_headline', $postId),
+            'message' => FunnelConfigLoader::getFieldValue('thankyou_message', $postId),
+            'show_upsell' => (bool) FunnelConfigLoader::getFieldValue('show_upsell', $postId),
             'upsell' => !empty($upsellConfig['sku']) ? [
                 'sku' => $upsellConfig['sku'],
-                'qty' => (int) ($upsellConfig['qty'] ?? 1),
-                'discount_percent' => (float) ($upsellConfig['discount_percent'] ?? 0),
-                'headline' => $upsellConfig['headline'] ?? '',
-                'description' => $upsellConfig['description'] ?? '',
+                'qty' => (int) $upsellConfig['qty'],
+                'discount_percent' => (float) $upsellConfig['discount_percent'],
+                'headline' => $upsellConfig['headline'],
+                'description' => $upsellConfig['description'],
                 'image' => self::resolveImageUrl($upsellConfig['image'] ?? null),
             ] : null,
         ];
@@ -448,9 +448,9 @@ class FunnelExporter
      */
     private static function exportStyling(int $postId): array
     {
-        $accentColor = get_field('accent_color', $postId) ?: '#eab308';
-        $accentOverride = (bool) get_field('text_color_accent_override', $postId);
-        $customTextAccent = get_field('text_color_accent', $postId) ?: '';
+        $accentColor = FunnelConfigLoader::getFieldValue('accent_color', $postId);
+        $accentOverride = (bool) FunnelConfigLoader::getFieldValue('text_color_accent_override', $postId);
+        $customTextAccent = FunnelConfigLoader::getFieldValue('text_color_accent', $postId);
         
         // Resolve text accent: use custom if override checked, otherwise use global accent
         $textAccent = ($accentOverride && !empty($customTextAccent)) ? $customTextAccent : $accentColor;
@@ -458,19 +458,19 @@ class FunnelExporter
         return [
             'accent_color' => $accentColor,
             // Text colors
-            'text_color_basic' => get_field('text_color_basic', $postId) ?: '#e5e5e5',
+            'text_color_basic' => FunnelConfigLoader::getFieldValue('text_color_basic', $postId),
             'text_color_accent' => $textAccent,
-            'text_color_note' => get_field('text_color_note', $postId) ?: '#a3a3a3',
-            'text_color_discount' => get_field('text_color_discount', $postId) ?: '#22c55e',
+            'text_color_note' => FunnelConfigLoader::getFieldValue('text_color_note', $postId),
+            'text_color_discount' => FunnelConfigLoader::getFieldValue('text_color_discount', $postId),
             // UI element colors
-            'page_bg_color' => get_field('page_bg_color', $postId) ?: '#121212',
-            'card_bg_color' => get_field('card_bg_color', $postId) ?: '#1a1a1a',
-            'input_bg_color' => get_field('input_bg_color', $postId) ?: '#333333',
-            'border_color' => get_field('border_color', $postId) ?: '#7c3aed',
+            'page_bg_color' => FunnelConfigLoader::getFieldValue('page_bg_color', $postId),
+            'card_bg_color' => FunnelConfigLoader::getFieldValue('card_bg_color', $postId),
+            'input_bg_color' => FunnelConfigLoader::getFieldValue('input_bg_color', $postId),
+            'border_color' => FunnelConfigLoader::getFieldValue('border_color', $postId),
             // Background type settings
-            'background_type' => get_field('background_type', $postId) ?: 'solid',
-            'background_image' => self::resolveImageUrl(get_field('background_image', $postId)),
-            'custom_css' => get_field('custom_css', $postId) ?: '',
+            'background_type' => FunnelConfigLoader::getFieldValue('background_type', $postId),
+            'background_image' => self::resolveImageUrl(FunnelConfigLoader::getFieldValue('background_image', $postId)),
+            'custom_css' => FunnelConfigLoader::getFieldValue('custom_css', $postId),
         ];
     }
 
@@ -479,7 +479,7 @@ class FunnelExporter
      */
     private static function exportFooter(int $postId): array
     {
-        $links = get_field('footer_links', $postId) ?: [];
+        $links = FunnelConfigLoader::getFieldValue('footer_links', $postId) ?: [];
         $linkItems = [];
 
         foreach ($links as $l) {
@@ -492,8 +492,8 @@ class FunnelExporter
         }
 
         return [
-            'text' => get_field('footer_text', $postId) ?: '',
-            'disclaimer' => get_field('footer_disclaimer', $postId) ?: '',
+            'text' => FunnelConfigLoader::getFieldValue('footer_text', $postId),
+            'disclaimer' => FunnelConfigLoader::getFieldValue('footer_disclaimer', $postId),
             'links' => $linkItems,
         ];
     }

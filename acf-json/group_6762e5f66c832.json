@@ -31,7 +31,8 @@
             "prepend": "",
             "append": "",
             "_name": "legacy_order_number",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         }
     ],
     "location": [

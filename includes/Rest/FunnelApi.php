@@ -320,8 +320,8 @@ class FunnelApi
         $funnels = [];
 
         foreach ($posts as $post) {
-            $slug = get_field('funnel_slug', $post->ID) ?: $post->post_name;
-            $status = get_field('funnel_status', $post->ID) ?: 'active';
+            $slug = FunnelConfigLoader::getFieldValue('funnel_slug', $post->ID) ?: $post->post_name;
+            $status = FunnelConfigLoader::getFieldValue('funnel_status', $post->ID) ?: 'active';
 
             $funnels[] = [
                 'id' => $post->ID,

@@ -14,11 +14,9 @@ class FunnelStylingFields
 {
     public static function init(): void
     {
-        // Register color fields as a separate field group
-        add_action('acf/init', [self::class, 'registerColorFieldGroup'], 20);
-        
-        // Register hero title size as separate field group
-        add_action('acf/init', [self::class, 'registerHeroTitleSizeField'], 25);
+        // Fields registered via ACF JSON: group_hp_funnel_config.json
+        // add_action('acf/init', [self::class, 'registerColorFieldGroup'], 20);
+        // add_action('acf/init', [self::class, 'registerHeroTitleSizeField'], 25);
         
         // Hide original fields from Styling tab (by key, not name, to preserve our local fields)
         add_filter('acf/prepare_field/key=field_accent_color', [self::class, 'hideFunnelField']);

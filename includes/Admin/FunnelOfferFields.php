@@ -13,7 +13,9 @@ class FunnelOfferFields
 {
     public static function init(): void
     {
-        add_action('acf/init', [self::class, 'registerFields']);
+        // Fields registered via ACF JSON: group_hp_funnel_offers.json
+        // add_action('acf/init', [self::class, 'registerFields']);
+        
         add_action('acf/init', [self::class, 'removeLegacyProductsTab'], 99);
         add_action('acf/input/admin_enqueue_scripts', [self::class, 'enqueueScripts']);
         add_filter('acf/update_value/key=field_offer_id', [self::class, 'generateOfferId'], 10, 3);

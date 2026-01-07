@@ -22,9 +22,10 @@ class FunnelSeoFields
      */
     public static function init(): void
     {
-        add_action('acf/init', [self::class, 'registerFunnelSeoFields']);
-        add_action('acf/init', [self::class, 'registerProductCanonicalFields']);
-        add_action('acf/init', [self::class, 'registerCategoryCanonicalFields']);
+        // Fields registered via ACF JSON: group_hp_funnel_config.json, group_product_funnel_canonical.json, group_category_funnel_canonical.json
+        // add_action('acf/init', [self::class, 'registerFunnelSeoFields']);
+        // add_action('acf/init', [self::class, 'registerProductCanonicalFields']);
+        // add_action('acf/init', [self::class, 'registerCategoryCanonicalFields']);
     }
 
     /**

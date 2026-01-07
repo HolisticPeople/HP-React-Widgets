@@ -76,6 +76,7 @@ class FunnelSchema
                     'description' => 'Hero section with headline, image, and call-to-action',
                     'properties' => [
                         'title' => ['type' => 'string', 'description' => 'Main headline, 3-8 words, compelling'],
+                        'title_size' => ['type' => 'string', 'enum' => ['sm', 'md', 'lg', 'xl', '2xl'], 'default' => 'lg'],
                         'subtitle' => ['type' => 'string', 'description' => 'Secondary headline'],
                         'tagline' => ['type' => 'string', 'description' => 'Short tagline or value proposition'],
                         'description' => ['type' => 'string', 'description' => 'Longer description paragraph'],
@@ -241,6 +242,8 @@ class FunnelSchema
                     'properties' => [
                         'title' => ['type' => 'string', 'default' => 'What Our Customers Say'],
                         'subtitle' => ['type' => 'string'],
+                        'display_mode' => ['type' => 'string', 'enum' => ['grid', 'carousel', 'list'], 'default' => 'grid'],
+                        'columns' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 4, 'default' => 3],
                         'items' => [
                             'type' => 'array',
                             'description' => 'Array of testimonials, recommend 3-6',

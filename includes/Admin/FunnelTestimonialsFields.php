@@ -13,8 +13,8 @@ class FunnelTestimonialsFields
 {
     public static function init(): void
     {
-        // Register the actual ACF fields (will be hidden, controlled via JS UI)
-        add_action('acf/init', [self::class, 'registerFields'], 20);
+        // Registered via ACF JSON: group_hp_funnel_config.json
+        // add_action('acf/init', [self::class, 'registerFields'], 20);
         
         // Inject custom UI via JavaScript
         add_action('acf/input/admin_footer', [self::class, 'injectDisplayModeUI']);

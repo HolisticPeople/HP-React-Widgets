@@ -327,14 +327,14 @@ class FunnelImporter
     {
         if (!function_exists('update_field')) {
             self::updateMeta($postId, 'funnel_slug', $funnel['slug']);
-            self::updateMeta($postId, 'funnel_status', $funnel['status'] ?? 'active');
-            self::updateMeta($postId, 'stripe_mode', $funnel['stripe_mode'] ?? 'auto');
+            self::updateMeta($postId, 'funnel_status', $funnel['status'] ?? null);
+            self::updateMeta($postId, 'stripe_mode', $funnel['stripe_mode'] ?? null);
             return;
         }
 
         update_field('funnel_slug', $funnel['slug'], $postId);
-        update_field('funnel_status', $funnel['status'] ?? 'active', $postId);
-        update_field('stripe_mode', $funnel['stripe_mode'] ?? 'auto', $postId);
+        update_field('funnel_status', $funnel['status'] ?? null, $postId);
+        update_field('stripe_mode', $funnel['stripe_mode'] ?? null, $postId);
     }
 
     /**
@@ -344,15 +344,15 @@ class FunnelImporter
     {
         if (empty($header)) return;
 
-        self::setField($postId, 'header_logo', $header['logo'] ?? '');
-        self::setUrlField($postId, 'header_logo_link', $header['logo_link'] ?? '');
+        self::setField($postId, 'header_logo', $header['logo'] ?? null);
+        self::setUrlField($postId, 'header_logo_link', $header['logo_link'] ?? null);
         self::setField($postId, 'header_sticky', !empty($header['sticky']));
         self::setField($postId, 'header_transparent', !empty($header['transparent']));
         
         if (!empty($header['nav_items'])) {
             self::setField($postId, 'header_nav_items', array_map(function($item) {
                 return [
-                    'label' => $item['label'] ?? '',
+                    'label' => $item['label'] ?? null,
                     'url' => self::toAbsoluteUrl($item['url'] ?? ''),
                     'is_external' => !empty($item['is_external']),
                 ];
@@ -367,15 +367,15 @@ class FunnelImporter
     {
         if (empty($hero)) return;
 
-        self::setField($postId, 'hero_title', $hero['title'] ?? '');
-        self::setField($postId, 'hero_subtitle', $hero['subtitle'] ?? '');
-        self::setField($postId, 'hero_tagline', $hero['tagline'] ?? '');
-        self::setField($postId, 'hero_description', $hero['description'] ?? '');
-        self::setUrlField($postId, 'hero_image', $hero['image'] ?? '');
-        self::setField($postId, 'hero_image_alt', $hero['image_alt'] ?? '');
-        self::setUrlField($postId, 'hero_logo', $hero['logo'] ?? '');
-        self::setUrlField($postId, 'hero_logo_link', $hero['logo_link'] ?? '');
-        self::setField($postId, 'hero_cta_text', $hero['cta_text'] ?? 'Get Your Special Offer Now');
+        self::setField($postId, 'hero_title', $hero['title'] ?? null);
+        self::setField($postId, 'hero_subtitle', $hero['subtitle'] ?? null);
+        self::setField($postId, 'hero_tagline', $hero['tagline'] ?? null);
+        self::setField($postId, 'hero_description', $hero['description'] ?? null);
+        self::setUrlField($postId, 'hero_image', $hero['image'] ?? null);
+        self::setField($postId, 'hero_image_alt', $hero['image_alt'] ?? null);
+        self::setUrlField($postId, 'hero_logo', $hero['logo'] ?? null);
+        self::setUrlField($postId, 'hero_logo_link', $hero['logo_link'] ?? null);
+        self::setField($postId, 'hero_cta_text', $hero['cta_text'] ?? null);
     }
 
     /**
@@ -385,13 +385,13 @@ class FunnelImporter
     {
         if (empty($benefits)) return;
 
-        self::setField($postId, 'hero_benefits_title', $benefits['title'] ?? 'Why Choose Us?');
+        self::setField($postId, 'hero_benefits_title', $benefits['title'] ?? null);
         
         if (!empty($benefits['items'])) {
             self::setField($postId, 'hero_benefits', array_map(function($item) {
                 return [
-                    'text' => $item['text'] ?? '',
-                    'icon' => $item['icon'] ?? 'check',
+                    'text' => $item['text'] ?? $item['benefit_text'] ?? null, // Fallback for old format
+                    'icon' => $item['icon'] ?? null,
                 ];
             }, $benefits['items']));
         }
@@ -440,15 +440,15 @@ class FunnelImporter
     {
         if (empty($features)) return;
 
-        self::setField($postId, 'features_title', $features['title'] ?? 'Key Features');
-        self::setField($postId, 'features_subtitle', $features['subtitle'] ?? '');
+        self::setField($postId, 'features_title', $features['title'] ?? null);
+        self::setField($postId, 'features_subtitle', $features['subtitle'] ?? null);
         
         if (!empty($features['items'])) {
             self::setField($postId, 'features_list', array_map(function($item) {
                 return [
-                    'icon' => $item['icon'] ?? 'check',
-                    'title' => $item['title'] ?? '',
-                    'description' => $item['description'] ?? '',
+                    'icon' => $item['icon'] ?? null,
+                    'title' => $item['title'] ?? $item['feature_title'] ?? null, // Fallback for old format
+                    'description' => $item['description'] ?? $item['feature_description'] ?? null, // Fallback for old format
                 ];
             }, $features['items']));
         }
@@ -461,18 +461,18 @@ class FunnelImporter
     {
         if (empty($authority)) return;
 
-        self::setField($postId, 'authority_title', $authority['title'] ?? 'Who We Are');
-        self::setField($postId, 'authority_subtitle', $authority['subtitle'] ?? '');
-        self::setField($postId, 'authority_name', $authority['name'] ?? '');
-        self::setField($postId, 'authority_credentials', $authority['credentials'] ?? '');
-        self::setField($postId, 'authority_image', $authority['image'] ?? '');
-        self::setField($postId, 'authority_image_alt', $authority['image_alt'] ?? '');
-        self::setField($postId, 'authority_bio', $authority['bio'] ?? '');
+        self::setField($postId, 'authority_title', $authority['title'] ?? null);
+        self::setField($postId, 'authority_subtitle', $authority['subtitle'] ?? null);
+        self::setField($postId, 'authority_name', $authority['name'] ?? null);
+        self::setField($postId, 'authority_credentials', $authority['credentials'] ?? null);
+        self::setField($postId, 'authority_image', $authority['image'] ?? null);
+        self::setField($postId, 'authority_image_alt', $authority['image_alt'] ?? null);
+        self::setField($postId, 'authority_bio', $authority['bio'] ?? null);
         
         // Simple quotes (flat list)
         if (!empty($authority['quotes'])) {
             self::setField($postId, 'authority_quotes', array_map(function($q) {
-                return ['text' => is_string($q) ? $q : ($q['text'] ?? '')];
+                return ['text' => is_string($q) ? $q : ($q['text'] ?? null)];
             }, $authority['quotes']));
         }
 
@@ -480,7 +480,7 @@ class FunnelImporter
         if (!empty($authority['quote_categories'])) {
             self::setField($postId, 'authority_quote_categories', array_map(function($cat) {
                 return [
-                    'title' => $cat['title'] ?? '',
+                    'title' => $cat['title'] ?? null,
                     'quotes' => implode("\n", $cat['quotes'] ?? []),
                 ];
             }, $authority['quote_categories']));
@@ -488,8 +488,8 @@ class FunnelImporter
 
         // Article link
         if (!empty($authority['article_link'])) {
-            self::setField($postId, 'authority_article_text', $authority['article_link']['text'] ?? '');
-            self::setUrlField($postId, 'authority_article_url', $authority['article_link']['url'] ?? '');
+            self::setField($postId, 'authority_article_text', $authority['article_link']['text'] ?? null);
+            self::setUrlField($postId, 'authority_article_url', $authority['article_link']['url'] ?? null);
         }
     }
 
@@ -500,18 +500,18 @@ class FunnelImporter
     {
         if (empty($testimonials)) return;
 
-        self::setField($postId, 'testimonials_title', $testimonials['title'] ?? 'What Our Customers Say');
-        self::setField($postId, 'testimonials_subtitle', $testimonials['subtitle'] ?? '');
+        self::setField($postId, 'testimonials_title', $testimonials['title'] ?? null);
+        self::setField($postId, 'testimonials_subtitle', $testimonials['subtitle'] ?? null);
         
         if (!empty($testimonials['items'])) {
             self::setField($postId, 'testimonials_list', array_map(function($t) {
                 return [
-                    'name' => $t['name'] ?? '',
-                    'role' => $t['role'] ?? '',
-                    'title' => $t['title'] ?? '',
-                    'quote' => $t['quote'] ?? '',
-                    'image' => $t['image'] ?? '',
-                    'rating' => $t['rating'] ?? 5,
+                    'name' => $t['name'] ?? null,
+                    'role' => $t['role'] ?? null,
+                    'title' => $t['title'] ?? null,
+                    'quote' => $t['quote'] ?? null,
+                    'image' => $t['image'] ?? null,
+                    'rating' => $t['rating'] ?? null,
                 ];
             }, $testimonials['items']));
         }
@@ -524,14 +524,14 @@ class FunnelImporter
     {
         if (empty($science)) return;
 
-        self::setField($postId, 'science_title', $science['title'] ?? 'The Science Behind Our Product');
-        self::setField($postId, 'science_subtitle', $science['subtitle'] ?? '');
+        self::setField($postId, 'science_title', $science['title'] ?? null);
+        self::setField($postId, 'science_subtitle', $science['subtitle'] ?? null);
         
         if (!empty($science['sections'])) {
             self::setField($postId, 'science_sections', array_map(function($s) {
                 return [
-                    'title' => $s['title'] ?? '',
-                    'description' => $s['description'] ?? '',
+                    'title' => $s['title'] ?? null,
+                    'description' => $s['description'] ?? null,
                     'bullets' => implode("\n", $s['bullets'] ?? []),
                 ];
             }, $science['sections']));
@@ -545,13 +545,13 @@ class FunnelImporter
     {
         if (empty($faq)) return;
 
-        self::setField($postId, 'faq_title', $faq['title'] ?? 'Frequently Asked Questions');
+        self::setField($postId, 'faq_title', $faq['title'] ?? null);
         
         if (!empty($faq['items'])) {
             self::setField($postId, 'faq_list', array_map(function($f) {
                 return [
-                    'question' => $f['question'] ?? '',
-                    'answer' => $f['answer'] ?? '',
+                    'question' => $f['question'] ?? null,
+                    'answer' => $f['answer'] ?? null,
                 ];
             }, $faq['items']));
         }
@@ -564,10 +564,10 @@ class FunnelImporter
     {
         if (empty($cta)) return;
 
-        self::setField($postId, 'cta_title', $cta['title'] ?? 'Ready to Get Started?');
-        self::setField($postId, 'cta_subtitle', $cta['subtitle'] ?? '');
-        self::setField($postId, 'cta_button_text', $cta['button_text'] ?? 'Order Now');
-        self::setUrlField($postId, 'cta_button_url', $cta['button_url'] ?? '');
+        self::setField($postId, 'cta_title', $cta['title'] ?? null);
+        self::setField($postId, 'cta_subtitle', $cta['subtitle'] ?? null);
+        self::setField($postId, 'cta_button_text', $cta['button_text'] ?? null);
+        self::setUrlField($postId, 'cta_button_url', $cta['button_url'] ?? null);
     }
 
     /**
@@ -577,11 +577,11 @@ class FunnelImporter
     {
         if (empty($checkout)) return;
 
-        self::setUrlField($postId, 'checkout_url', $checkout['url'] ?? '/checkout/');
-        self::setField($postId, 'free_shipping_countries', $checkout['free_shipping_countries'] ?? 'US');
-        self::setField($postId, 'global_discount_percent', $checkout['global_discount_percent'] ?? 0);
-        self::setField($postId, 'enable_points_redemption', $checkout['enable_points_redemption'] ?? true);
-        self::setField($postId, 'show_order_summary', $checkout['show_order_summary'] ?? true);
+        self::setUrlField($postId, 'checkout_url', $checkout['url'] ?? null);
+        self::setField($postId, 'free_shipping_countries', $checkout['free_shipping_countries'] ?? null);
+        self::setField($postId, 'global_discount_percent', $checkout['global_discount_percent'] ?? null);
+        self::setField($postId, 'enable_points_redemption', $checkout['enable_points_redemption'] ?? null);
+        self::setField($postId, 'show_order_summary', $checkout['show_order_summary'] ?? null);
     }
 
     /**
@@ -600,19 +600,19 @@ class FunnelImporter
     {
         if (empty($thankyou)) return;
 
-        self::setUrlField($postId, 'thankyou_url', $thankyou['url'] ?? '/thank-you/');
-        self::setField($postId, 'thankyou_headline', $thankyou['headline'] ?? 'Thank You for Your Order!');
-        self::setField($postId, 'thankyou_message', $thankyou['message'] ?? '');
+        self::setUrlField($postId, 'thankyou_url', $thankyou['url'] ?? null);
+        self::setField($postId, 'thankyou_headline', $thankyou['headline'] ?? null);
+        self::setField($postId, 'thankyou_message', $thankyou['message'] ?? null);
         self::setField($postId, 'show_upsell', !empty($thankyou['show_upsell']));
         
         if (!empty($thankyou['upsell']) && !empty($thankyou['upsell']['sku'])) {
             self::setField($postId, 'upsell_config', [
                 'sku' => $thankyou['upsell']['sku'],
-                'qty' => $thankyou['upsell']['qty'] ?? 1,
-                'discount_percent' => $thankyou['upsell']['discount_percent'] ?? 0,
-                'headline' => $thankyou['upsell']['headline'] ?? '',
-                'description' => $thankyou['upsell']['description'] ?? '',
-                'image' => $thankyou['upsell']['image'] ?? '',
+                'qty' => $thankyou['upsell']['qty'] ?? null,
+                'discount_percent' => $thankyou['upsell']['discount_percent'] ?? null,
+                'headline' => $thankyou['upsell']['headline'] ?? null,
+                'description' => $thankyou['upsell']['description'] ?? null,
+                'image' => $thankyou['upsell']['image'] ?? null,
             ]);
         }
     }
@@ -624,30 +624,30 @@ class FunnelImporter
     {
         if (empty($styling)) return;
 
-        $accentColor = $styling['accent_color'] ?? '#eab308';
+        $accentColor = $styling['accent_color'] ?? null;
         $textAccent = $styling['text_color_accent'] ?? $accentColor;
         
         // Check if text accent differs from global accent (means override)
-        $hasOverride = ($textAccent !== $accentColor);
+        $hasOverride = ($accentColor !== null && $textAccent !== $accentColor);
         
         self::setField($postId, 'accent_color', $accentColor);
         // Text colors
-        self::setField($postId, 'text_color_basic', $styling['text_color_basic'] ?? '#e5e5e5');
+        self::setField($postId, 'text_color_basic', $styling['text_color_basic'] ?? null);
         self::setField($postId, 'text_color_accent_override', $hasOverride ? 1 : 0);
         if ($hasOverride) {
             self::setField($postId, 'text_color_accent', $textAccent);
         }
-        self::setField($postId, 'text_color_note', $styling['text_color_note'] ?? '#a3a3a3');
-        self::setField($postId, 'text_color_discount', $styling['text_color_discount'] ?? '#22c55e');
+        self::setField($postId, 'text_color_note', $styling['text_color_note'] ?? null);
+        self::setField($postId, 'text_color_discount', $styling['text_color_discount'] ?? null);
         // UI element colors
-        self::setField($postId, 'page_bg_color', $styling['page_bg_color'] ?? '#121212');
-        self::setField($postId, 'card_bg_color', $styling['card_bg_color'] ?? '#1a1a1a');
-        self::setField($postId, 'input_bg_color', $styling['input_bg_color'] ?? '#333333');
-        self::setField($postId, 'border_color', $styling['border_color'] ?? '#7c3aed');
+        self::setField($postId, 'page_bg_color', $styling['page_bg_color'] ?? null);
+        self::setField($postId, 'card_bg_color', $styling['card_bg_color'] ?? null);
+        self::setField($postId, 'input_bg_color', $styling['input_bg_color'] ?? null);
+        self::setField($postId, 'border_color', $styling['border_color'] ?? null);
         // Background type settings
-        self::setField($postId, 'background_type', $styling['background_type'] ?? 'solid');
-        self::setField($postId, 'background_image', $styling['background_image'] ?? '');
-        self::setField($postId, 'custom_css', $styling['custom_css'] ?? '');
+        self::setField($postId, 'background_type', $styling['background_type'] ?? null);
+        self::setField($postId, 'background_image', $styling['background_image'] ?? null);
+        self::setField($postId, 'custom_css', $styling['custom_css'] ?? null);
     }
 
     /**
@@ -657,13 +657,13 @@ class FunnelImporter
     {
         if (empty($footer)) return;
 
-        self::setField($postId, 'footer_text', $footer['text'] ?? '');
-        self::setField($postId, 'footer_disclaimer', $footer['disclaimer'] ?? '');
+        self::setField($postId, 'footer_text', $footer['text'] ?? null);
+        self::setField($postId, 'footer_disclaimer', $footer['disclaimer'] ?? null);
         
         if (!empty($footer['links'])) {
             self::setField($postId, 'footer_links', array_map(function($l) {
                 return [
-                    'label' => $l['label'] ?? '',
+                    'label' => $l['label'] ?? null,
                     'url' => self::toAbsoluteUrl($l['url'] ?? ''),
                 ];
             }, $footer['links']));
