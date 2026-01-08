@@ -419,7 +419,20 @@ class FunnelConfigLoader
         $postId = $post->ID;
 
         // #region agent log
-        @file_put_contents('c:\DEV\.cursor\debug.log', json_encode(['location' => 'FunnelConfigLoader.php:421', 'message' => 'loadFromPost entry', 'data' => ['postId' => $postId, 'postTitle' => $post->post_title], 'timestamp' => microtime(true) * 1000, 'sessionId' => 'debug-session', 'hypothesisId' => 'A']) . PHP_EOL, FILE_APPEND);
+        if (function_exists('wp_remote_post')) {
+            wp_remote_post('http://127.0.0.1:7243/ingest/fdc1e251-7d8c-4076-b3bd-ed8c4301842f', [
+                'blocking' => false,
+                'headers' => ['Content-Type' => 'application/json'],
+                'body' => json_encode([
+                    'location' => 'FunnelConfigLoader.php:421',
+                    'message' => 'loadFromPost entry',
+                    'data' => ['postId' => $postId, 'postTitle' => $post->post_title],
+                    'timestamp' => (int)(microtime(true) * 1000),
+                    'sessionId' => 'debug-session',
+                    'hypothesisId' => 'A'
+                ])
+            ]);
+        }
         // #endregion
 
         // Check status
@@ -478,7 +491,20 @@ class FunnelConfigLoader
             'offers' => (function() use ($postId) {
                 $val = self::getFieldValue('funnel_offers', $postId);
                 if ($val && !is_array($val)) {
-                    @file_put_contents('c:\DEV\.cursor\debug.log', json_encode(['location' => 'FunnelConfigLoader.php:474', 'message' => 'funnel_offers weird value', 'data' => ['postId' => $postId, 'type' => gettype($val), 'value' => $val], 'timestamp' => microtime(true) * 1000, 'sessionId' => 'debug-session', 'hypothesisId' => 'A']) . PHP_EOL, FILE_APPEND);
+                    if (function_exists('wp_remote_post')) {
+                        wp_remote_post('http://127.0.0.1:7243/ingest/fdc1e251-7d8c-4076-b3bd-ed8c4301842f', [
+                            'blocking' => false,
+                            'headers' => ['Content-Type' => 'application/json'],
+                            'body' => json_encode([
+                                'location' => 'FunnelConfigLoader.php:474',
+                                'message' => 'funnel_offers weird value',
+                                'data' => ['postId' => $postId, 'type' => gettype($val), 'value' => $val],
+                                'timestamp' => (int)(microtime(true) * 1000),
+                                'sessionId' => 'debug-session',
+                                'hypothesisId' => 'A'
+                            ])
+                        ]);
+                    }
                 }
                 return is_array($val) ? self::extractOffers($val) : [];
             })(),
@@ -544,7 +570,20 @@ class FunnelConfigLoader
                 'items'        => (function() use ($postId) {
                     $val = self::getFieldValue('testimonials_list', $postId);
                     // #region agent log
-                    @file_put_contents('c:\DEV\.cursor\debug.log', json_encode(['location' => 'FunnelConfigLoader.php:534', 'message' => 'testimonials_list value', 'data' => ['postId' => $postId, 'type' => gettype($val), 'value' => $val], 'timestamp' => microtime(true) * 1000, 'sessionId' => 'debug-session', 'hypothesisId' => 'A']) . PHP_EOL, FILE_APPEND);
+                    if (function_exists('wp_remote_post')) {
+                        wp_remote_post('http://127.0.0.1:7243/ingest/fdc1e251-7d8c-4076-b3bd-ed8c4301842f', [
+                            'blocking' => false,
+                            'headers' => ['Content-Type' => 'application/json'],
+                            'body' => json_encode([
+                                'location' => 'FunnelConfigLoader.php:534',
+                                'message' => 'testimonials_list value',
+                                'data' => ['postId' => $postId, 'type' => gettype($val), 'value' => $val],
+                                'timestamp' => (int)(microtime(true) * 1000),
+                                'sessionId' => 'debug-session',
+                                'hypothesisId' => 'A'
+                            ])
+                        ]);
+                    }
                     // #endregion
                     return is_array($val) ? self::extractTestimonials($val) : [];
                 })(),
@@ -1264,7 +1303,20 @@ class FunnelConfigLoader
             if ($value !== null && $value !== false && $value !== '') {
                 $ret = self::ensureArrayRecursive($value);
                 // #region agent log
-                @file_put_contents('c:\DEV\.cursor\debug.log', json_encode(['location' => 'FunnelConfigLoader.php:1251', 'message' => 'getFieldValue ACF result', 'data' => ['field' => $fieldName, 'postId' => $postId, 'type' => gettype($ret), 'value' => is_array($ret)?'array':$ret], 'timestamp' => microtime(true) * 1000, 'sessionId' => 'debug-session', 'hypothesisId' => 'D']) . PHP_EOL, FILE_APPEND);
+                if (function_exists('wp_remote_post')) {
+                    wp_remote_post('http://127.0.0.1:7243/ingest/fdc1e251-7d8c-4076-b3bd-ed8c4301842f', [
+                        'blocking' => false,
+                        'headers' => ['Content-Type' => 'application/json'],
+                        'body' => json_encode([
+                            'location' => 'FunnelConfigLoader.php:1251',
+                            'message' => 'getFieldValue ACF result',
+                            'data' => ['field' => $fieldName, 'postId' => $postId, 'type' => gettype($ret), 'value' => is_array($ret)?'array':$ret],
+                            'timestamp' => (int)(microtime(true) * 1000),
+                            'sessionId' => 'debug-session',
+                            'hypothesisId' => 'D'
+                        ])
+                    ]);
+                }
                 // #endregion
                 return $ret;
             }
@@ -1274,7 +1326,20 @@ class FunnelConfigLoader
         $metaValue = get_post_meta($postId, $fieldName, true);
         if (!empty($metaValue)) {
             // #region agent log
-            @file_put_contents('c:\DEV\.cursor\debug.log', json_encode(['location' => 'FunnelConfigLoader.php:1258', 'message' => 'getFieldValue Meta fallback', 'data' => ['field' => $fieldName, 'postId' => $postId, 'type' => gettype($metaValue), 'value' => is_array($metaValue)?'array':$metaValue], 'timestamp' => microtime(true) * 1000, 'sessionId' => 'debug-session', 'hypothesisId' => 'D']) . PHP_EOL, FILE_APPEND);
+            if (function_exists('wp_remote_post')) {
+                wp_remote_post('http://127.0.0.1:7243/ingest/fdc1e251-7d8c-4076-b3bd-ed8c4301842f', [
+                    'blocking' => false,
+                    'headers' => ['Content-Type' => 'application/json'],
+                    'body' => json_encode([
+                        'location' => 'FunnelConfigLoader.php:1258',
+                        'message' => 'getFieldValue Meta fallback',
+                        'data' => ['field' => $fieldName, 'postId' => $postId, 'type' => gettype($metaValue), 'value' => is_array($metaValue)?'array':$metaValue],
+                        'timestamp' => (int)(microtime(true) * 1000),
+                        'sessionId' => 'debug-session',
+                        'hypothesisId' => 'D'
+                    ])
+                ]);
+            }
             // #endregion
             // Handle serialized arrays
             if (is_string($metaValue) && strpos($metaValue, 'a:') === 0) {
