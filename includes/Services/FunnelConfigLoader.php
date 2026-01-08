@@ -418,6 +418,10 @@ class FunnelConfigLoader
     {
         $postId = $post->ID;
 
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/fdc1e251-7d8c-4076-b3bd-ed8c4301842f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'FunnelConfigLoader.php:421',message:'loadFromPost entry',data:{postId:postId,postTitle:$post->post_title},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+
         // Check status
         $status = self::getFieldValue('funnel_status', $postId);
         if ($status === 'inactive') {
@@ -471,7 +475,13 @@ class FunnelConfigLoader
             ],
             
             // Offers (replaces legacy products)
-            'offers' => self::extractOffers(self::getFieldValue('funnel_offers', $postId)),
+            'offers' => (function() use ($postId) {
+                $val = self::getFieldValue('funnel_offers', $postId);
+                if ($val && !is_array($val)) {
+                    fetch('http://127.0.0.1:7243/ingest/fdc1e251-7d8c-4076-b3bd-ed8c4301842f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'FunnelConfigLoader.php:474',message:'funnel_offers weird value',data:{postId:$postId,type:gettype($val),value:$val},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+                }
+                return is_array($val) ? self::extractOffers($val) : [];
+            })(),
             
             // Checkout
             // Auto-generate checkout URL based on funnel_slug (single source of truth)
@@ -531,7 +541,13 @@ class FunnelConfigLoader
                 'subtitle'     => self::getFieldValue('testimonials_subtitle', $postId),
                 'display_mode' => self::getFieldValue('testimonials_display_mode', $postId),
                 'columns'      => (int) self::getFieldValue('testimonials_columns', $postId),
-                'items'        => self::extractTestimonials(self::getFieldValue('testimonials_list', $postId)),
+                'items'        => (function() use ($postId) {
+                    $val = self::getFieldValue('testimonials_list', $postId);
+                    // #region agent log
+                    fetch('http://127.0.0.1:7243/ingest/fdc1e251-7d8c-4076-b3bd-ed8c4301842f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'FunnelConfigLoader.php:534',message:'testimonials_list value',data:{postId:$postId,type:gettype($val),value:$val},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+                    // #endregion
+                    return is_array($val) ? self::extractTestimonials($val) : [];
+                })(),
             ],
             
             // FAQ section
@@ -1246,13 +1262,20 @@ class FunnelConfigLoader
         if (function_exists('get_field')) {
             $value = get_field($fieldName, $postId);
             if ($value !== null && $value !== false && $value !== '') {
-                return self::ensureArrayRecursive($value);
+                $ret = self::ensureArrayRecursive($value);
+                // #region agent log
+                fetch('http://127.0.0.1:7243/ingest/fdc1e251-7d8c-4076-b3bd-ed8c4301842f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'FunnelConfigLoader.php:1251',message:'getFieldValue ACF result',data:{field:$fieldName,postId:$postId,type:gettype($ret),value:is_array($ret)?'array':$ret},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D'})}).catch(()=>{});
+                // #endregion
+                return $ret;
             }
         }
 
         // Fall back to post meta
         $metaValue = get_post_meta($postId, $fieldName, true);
         if (!empty($metaValue)) {
+            // #region agent log
+            fetch('http://127.0.0.1:7243/ingest/fdc1e251-7d8c-4076-b3bd-ed8c4301842f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'FunnelConfigLoader.php:1258',message:'getFieldValue Meta fallback',data:{field:$fieldName,postId:$postId,type:gettype($metaValue),value:is_array($metaValue)?'array':$metaValue},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D'})}).catch(()=>{});
+            // #endregion
             // Handle serialized arrays
             if (is_string($metaValue) && strpos($metaValue, 'a:') === 0) {
                 $unserialized = maybe_unserialize($metaValue);
