@@ -983,7 +983,7 @@ class Plugin
         $force_sync = ($current_version !== $stored_version);
 
         foreach ($acf_internal_types as $internal_type) {
-            $files = acf_get_local_json_files($internal_type);
+            $files = \acf_get_local_json_files($internal_type);
             if (empty($files)) {
                 continue;
             }
@@ -992,7 +992,9 @@ class Plugin
                 // Get the ID from the database for this key
                 $id = 0;
                 if ($internal_type === 'acf-field-group') {
-                    $id = acf_get_field_group_id($key);
+                    if (function_exists('acf_get_field_group_id')) {
+                        $id = \acf_get_field_group_id($key);
+                    }
                 } else {
                     // For post types and taxonomies, we need to find the ID by post_name
                     $existing_posts = get_posts([
@@ -1010,11 +1012,11 @@ class Plugin
                 // Get the current data (might be from JSON or DB)
                 $data_from_acf = null;
                 if ($internal_type === 'acf-field-group') {
-                    $data_from_acf = acf_get_field_group($key);
+                    $data_from_acf = \acf_get_field_group($key);
                 } else if ($internal_type === 'acf-post-type') {
-                    $data_from_acf = acf_get_post_type($key);
+                    $data_from_acf = \acf_get_post_type($key);
                 } else if ($internal_type === 'acf-taxonomy') {
-                    $data_from_acf = acf_get_taxonomy($key);
+                    $data_from_acf = \acf_get_taxonomy($key);
                 }
 
                 if (!$data_from_acf) {
@@ -1050,16 +1052,16 @@ class Plugin
                         $data['ID'] = $id;
                         
                         // Disable "Local JSON" controller to prevent the .json file from being modified during import
-                        acf_update_setting('json', false);
+                        \acf_update_setting('json', false);
                         
                         if (function_exists('acf_import_internal_post_type')) {
-                            acf_import_internal_post_type($data, $internal_type);
+                            \acf_import_internal_post_type($data, $internal_type);
                         } else if ($internal_type === 'acf-field-group' && function_exists('acf_import_field_group')) {
-                            acf_import_field_group($data);
+                            \acf_import_field_group($data);
                         }
                         
                         // Re-enable JSON
-                        acf_update_setting('json', true);
+                        \acf_update_setting('json', true);
                         
                         error_log("[HP-RW] ACF Auto-Sync: Updated {$internal_type} '{$data['title']}' ($key) from JSON.");
                     }
