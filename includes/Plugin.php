@@ -688,7 +688,7 @@ class Plugin
             }
 
             // v2.25.19+: Clean up duplicate ACF field groups (Funnel SEO)
-            if (version_compare($storedVersion, '2.25.19', '<')) {
+            if (version_compare($storedVersion, '2.25.20', '<')) {
                 self::cleanupDuplicateFieldGroups();
             }
             
