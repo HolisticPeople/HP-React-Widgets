@@ -989,7 +989,25 @@ class Plugin
             }
 
             foreach ($files as $key => $file_path) {
-                // Get the group/cpt from ACF (might be from JSON or DB)
+                // Get the ID from the database for this key
+                $id = 0;
+                if ($internal_type === 'acf-field-group') {
+                    $id = acf_get_field_group_id($key);
+                } else {
+                    // For post types and taxonomies, we need to find the ID by post_name
+                    $existing_posts = get_posts([
+                        'post_type'      => $internal_type,
+                        'post_status'    => 'any',
+                        'name'           => $key,
+                        'posts_per_page' => 1,
+                        'fields'         => 'ids',
+                    ]);
+                    if (!empty($existing_posts)) {
+                        $id = $existing_posts[0];
+                    }
+                }
+
+                // Get the current data (might be from JSON or DB)
                 $data_from_acf = null;
                 if ($internal_type === 'acf-field-group') {
                     $data_from_acf = acf_get_field_group($key);
@@ -1003,7 +1021,6 @@ class Plugin
                     continue;
                 }
 
-                $id = isset($data_from_acf['ID']) ? $data_from_acf['ID'] : 0;
                 $local = isset($data_from_acf['local']) ? $data_from_acf['local'] : '';
                 $modified = isset($data_from_acf['modified']) ? $data_from_acf['modified'] : 0;
 
@@ -1029,6 +1046,7 @@ class Plugin
                     $data = json_decode($json_content, true);
                     
                     if ($data) {
+                        // Crucial: Set the ID so we update the existing post instead of creating a new one
                         $data['ID'] = $id;
                         
                         // Disable "Local JSON" controller to prevent the .json file from being modified during import
