@@ -63,3 +63,7 @@ SELECT * FROM wp_postmeta WHERE meta_key LIKE '_field_677%' AND post_id IN (SELE
 DELETE FROM wp_postmeta WHERE meta_key IN ('_hp_funnel_min_price', '_hp_funnel_max_price');
 ```
 
+
+
+
+
