@@ -686,70 +686,12 @@ class Plugin
             if (version_compare($storedVersion, '2.7.3', '<')) {
                 flush_rewrite_rules(false);
             }
-
-            // v2.25.19+: Clean up duplicate ACF field groups (Funnel SEO)
-            if (version_compare($storedVersion, '2.25.21', '<')) {
-                self::cleanupDuplicateFieldGroups();
-            }
             
             // Update stored version
             update_option('hp_rw_version', $currentVersion);
         }
     }
 
-    /**
-     * Clean up duplicate ACF field groups from the database.
-     * Specifically targets 'group_category_funnel_canonical' and 'group_product_funnel_canonical'.
-     */
-    private static function cleanupDuplicateFieldGroups(): void
-    {
-        $posts = get_posts([
-            'post_type'      => 'acf-field-group',
-            'post_status'    => 'any',
-            'posts_per_page' => -1,
-        ]);
-
-        $groups_by_key = [];
-        $legacy_keys = ['group_hp_funnel_seo'];
-
-        foreach ($posts as $p) {
-            $data = unserialize($p->post_content);
-            $key = $data['key'] ?? $p->post_name;
-            
-            if (!$key) continue;
-
-            if (!isset($groups_by_key[$key])) {
-                $groups_by_key[$key] = [];
-            }
-            $groups_by_key[$key][] = $p;
-        }
-
-        foreach ($groups_by_key as $key => $instances) {
-            // Sort by ID descending (newest first)
-            usort($instances, function($a, $b) {
-                return $b->ID - $a->ID;
-            });
-
-            // If it's a legacy key, delete ALL instances
-            if (in_array($key, $legacy_keys)) {
-                foreach ($instances as $inst) {
-                    wp_delete_post($inst->ID, true);
-                }
-                error_log("[HP-RW] Cleanup: Purged legacy field group '{$key}'.");
-                continue;
-            }
-
-            // Otherwise, keep only the newest one
-            if (count($instances) > 1) {
-                array_shift($instances); // Keep the first (newest)
-                foreach ($instances as $inst) {
-                    wp_delete_post($inst->ID, true);
-                }
-                error_log("[HP-RW] Cleanup: Removed " . count($instances) . " duplicates for key '{$key}'.");
-            }
-        }
-    }
-    
     /**
      * Activation hook callback. Ensures default settings exist.
      */
