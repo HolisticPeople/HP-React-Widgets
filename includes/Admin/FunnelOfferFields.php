@@ -19,7 +19,7 @@ class FunnelOfferFields
         add_action('acf/init', [self::class, 'removeLegacyProductsTab'], 99);
         add_action('acf/input/admin_enqueue_scripts', [self::class, 'enqueueScripts']);
         add_filter('acf/update_value/key=field_offer_id', [self::class, 'generateOfferId'], 10, 3);
-        add_action('edit_form_top', [self::class, 'displayVersionLabel']);
+        // remove_action('edit_form_top', [self::class, 'displayVersionLabel']); // Duplicate with FunnelListEnhancements
         add_action('admin_footer', [self::class, 'injectSavedProductsData']);
         
         // Auto-generate Thank You URL when saving
@@ -57,26 +57,6 @@ class FunnelOfferFields
             return true;
         }
         return $valid;
-    }
-
-    /**
-     * Display plugin version under the Edit Funnel heading.
-     */
-    public static function displayVersionLabel($post): void
-    {
-        if ($post->post_type !== 'hp-funnel') {
-            return;
-        }
-        
-        // Position it below the title input using JS to avoid overlap with Add New button
-        echo '<script>
-        jQuery(function($) {
-            var $titleWrap = $("#titlewrap");
-            if ($titleWrap.length) {
-                $titleWrap.after("<p style=\"color: #666; font-size: 12px; margin: 5px 0 15px 0;\">HP React Widgets v' . HP_RW_VERSION . '</p>");
-            }
-        });
-        </script>';
     }
 
     /**

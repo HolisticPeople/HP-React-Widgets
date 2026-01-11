@@ -248,6 +248,7 @@ class ProductCatalogService
             'weight_oz' => self::getWeightInOz($product),
             'categories' => $categories,
             'image_url' => $imageUrl,
+            'description' => $product->get_description(),
             'short_description' => $product->get_short_description(),
             // Serving information
             'servings_per_container' => self::getServingsPerContainer($product),
