@@ -974,66 +974,77 @@ class Plugin
             return;
         }
 
-        $post_type = 'acf-field-group';
-        $files = acf_get_local_json_files($post_type);
-        if (empty($files)) {
-            return;
-        }
-
+        // List of internal post types supported by ACF for JSON sync
+        $acf_internal_types = ['acf-field-group', 'acf-post-type', 'acf-taxonomy'];
+        
         // Check if we need a forced sync due to version change
         $current_version = defined('HP_RW_VERSION') ? HP_RW_VERSION : '';
         $stored_version = get_option('hp_rw_version', '');
         $force_sync = ($current_version !== $stored_version);
 
-        foreach ($files as $key => $file_path) {
-            // Get the group from ACF (might be from JSON or DB)
-            $group = acf_get_field_group($key);
-            if (!$group) {
-                // If not even found in local JSON registry by ACF, something is wrong
+        foreach ($acf_internal_types as $internal_type) {
+            $files = acf_get_local_json_files($internal_type);
+            if (empty($files)) {
                 continue;
             }
 
-            $id = isset($group['ID']) ? $group['ID'] : 0;
-            $local = isset($group['local']) ? $group['local'] : '';
-            $modified = isset($group['modified']) ? $group['modified'] : 0;
+            foreach ($files as $key => $file_path) {
+                // Get the group/cpt from ACF (might be from JSON or DB)
+                $data_from_acf = null;
+                if ($internal_type === 'acf-field-group') {
+                    $data_from_acf = acf_get_field_group($key);
+                } else if ($internal_type === 'acf-post-type') {
+                    $data_from_acf = acf_get_post_type($key);
+                } else if ($internal_type === 'acf-taxonomy') {
+                    $data_from_acf = acf_get_taxonomy($key);
+                }
 
-            // Only sync if it's a JSON-based group that isn't private
-            if ($local !== 'json' || !empty($group['private'])) {
-                continue;
-            }
+                if (!$data_from_acf) {
+                    continue;
+                }
 
-            $needs_sync = false;
-            if (!$id) {
-                // Not in database yet
-                $needs_sync = true;
-            } elseif ($force_sync) {
-                // Forced sync due to version change
-                $needs_sync = true;
-            } elseif ($modified && $modified > get_post_modified_time('U', true, $id)) {
-                // JSON is newer than database
-                $needs_sync = true;
-            }
+                $id = isset($data_from_acf['ID']) ? $data_from_acf['ID'] : 0;
+                $local = isset($data_from_acf['local']) ? $data_from_acf['local'] : '';
+                $modified = isset($data_from_acf['modified']) ? $data_from_acf['modified'] : 0;
 
-            if ($needs_sync) {
-                $json_content = file_get_contents($file_path);
-                $data = json_decode($json_content, true);
-                
-                if ($data) {
-                    $data['ID'] = $id;
+                // Only sync if it's a JSON-based object that isn't private
+                if ($local !== 'json' || !empty($data_from_acf['private'])) {
+                    continue;
+                }
+
+                $needs_sync = false;
+                if (!$id) {
+                    // Not in database yet
+                    $needs_sync = true;
+                } elseif ($force_sync) {
+                    // Forced sync due to version change
+                    $needs_sync = true;
+                } elseif ($modified && $modified > get_post_modified_time('U', true, $id)) {
+                    // JSON is newer than database
+                    $needs_sync = true;
+                }
+
+                if ($needs_sync) {
+                    $json_content = file_get_contents($file_path);
+                    $data = json_decode($json_content, true);
                     
-                    // Disable "Local JSON" controller to prevent the .json file from being modified during import
-                    acf_update_setting('json', false);
-                    
-                    if (function_exists('acf_import_internal_post_type')) {
-                        acf_import_internal_post_type($data, $post_type);
-                    } else if (function_exists('acf_import_field_group')) {
-                        acf_import_field_group($data);
+                    if ($data) {
+                        $data['ID'] = $id;
+                        
+                        // Disable "Local JSON" controller to prevent the .json file from being modified during import
+                        acf_update_setting('json', false);
+                        
+                        if (function_exists('acf_import_internal_post_type')) {
+                            acf_import_internal_post_type($data, $internal_type);
+                        } else if ($internal_type === 'acf-field-group' && function_exists('acf_import_field_group')) {
+                            acf_import_field_group($data);
+                        }
+                        
+                        // Re-enable JSON
+                        acf_update_setting('json', true);
+                        
+                        error_log("[HP-RW] ACF Auto-Sync: Updated {$internal_type} '{$data['title']}' ($key) from JSON.");
                     }
-                    
-                    // Re-enable JSON
-                    acf_update_setting('json', true);
-                    
-                    error_log("[HP-RW] ACF Auto-Sync: Updated field group '{$data['title']}' ($key) from JSON.");
                 }
             }
         }
