@@ -686,9 +686,49 @@ class Plugin
             if (version_compare($storedVersion, '2.7.3', '<')) {
                 flush_rewrite_rules(false);
             }
+
+            // v2.25.19+: Clean up duplicate ACF field groups (Funnel SEO)
+            if (version_compare($storedVersion, '2.25.19', '<')) {
+                self::cleanupDuplicateFieldGroups();
+            }
             
             // Update stored version
             update_option('hp_rw_version', $currentVersion);
+        }
+    }
+
+    /**
+     * Clean up duplicate ACF field groups from the database.
+     * Specifically targets 'group_category_funnel_canonical' and 'group_product_funnel_canonical'.
+     */
+    private static function cleanupDuplicateFieldGroups(): void
+    {
+        $keys_to_clean = [
+            'group_category_funnel_canonical',
+            'group_product_funnel_canonical',
+            'group_hp_funnel_seo'
+        ];
+
+        foreach ($keys_to_clean as $key) {
+            $posts = get_posts([
+                'post_type'      => 'acf-field-group',
+                'post_status'    => 'any',
+                'name'           => $key,
+                'posts_per_page' => -1,
+                'orderby'        => 'ID',
+                'order'          => 'DESC',
+            ]);
+
+            if (count($posts) > 1) {
+                // Keep the most recent one
+                array_shift($posts);
+                
+                foreach ($posts as $p) {
+                    wp_delete_post($p->ID, true);
+                }
+                
+                error_log("[HP-RW] Cleanup: Removed duplicate ACF field groups for key '{$key}'.");
+            }
         }
     }
     
