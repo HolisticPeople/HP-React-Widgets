@@ -1435,13 +1435,15 @@ export const CheckoutStep = ({
                           )}
                         >
                           <div className="flex items-center gap-3">
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? 'border-accent bg-accent' : 'border-gray-500 bg-gray-700'}`}>
+                              {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-gray-900" />}
+                            </div>
                             <input
                               type="radio"
                               name="shippingRate"
                               checked={isSelected}
                               onChange={() => handleSelectRate(rate)}
-                              className="w-4 h-4 accent-accent bg-gray-700 border-gray-600"
-                              style={{ accentColor: 'var(--accent, #eab308)' }}
+                              className="sr-only"
                             />
                             <div className="flex items-center gap-2">
                               <span className="flex-shrink-0">{getCarrierLogo(serviceName)}</span>
