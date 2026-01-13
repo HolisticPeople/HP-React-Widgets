@@ -64,15 +64,23 @@ class FunnelTestimonialsShortcode
             ? (int) $atts['columns'] 
             : ($testimonialsConfig['columns'] ?? 3);
 
+        // Get CTA behavior from funnel config
+        $ctaBehavior = $config['cta']['button_behavior'] ?? 'scroll_offers';
+        $checkoutUrl = $config['checkout']['url'] ?? '#checkout';
+        $featuredOfferId = $config['offers'][0]['id'] ?? '';
+
         $props = [
-            'title'        => !empty($atts['title']) ? $atts['title'] : ($testimonialsConfig['title'] ?? 'What Our Customers Say'),
-            'subtitle'     => !empty($atts['subtitle']) ? $atts['subtitle'] : ($testimonialsConfig['subtitle'] ?? ''),
-            'testimonials' => $testimonials,
-            'columns'      => min($columns, 4),
-            'showRatings'  => filter_var($atts['show_ratings'], FILTER_VALIDATE_BOOLEAN),
-            'layout'       => $layout,
-            'ctaText'      => $config['hero']['cta_text'] ?? '',
-            'ctaUrl'       => $config['checkout']['url'] ?? '',
+            'title'           => !empty($atts['title']) ? $atts['title'] : ($testimonialsConfig['title'] ?? 'What Our Customers Say'),
+            'subtitle'        => !empty($atts['subtitle']) ? $atts['subtitle'] : ($testimonialsConfig['subtitle'] ?? ''),
+            'testimonials'    => $testimonials,
+            'columns'         => min($columns, 4),
+            'showRatings'     => filter_var($atts['show_ratings'], FILTER_VALIDATE_BOOLEAN),
+            'layout'          => $layout,
+            'ctaText'         => $config['hero']['cta_text'] ?? '',
+            'ctaUrl'          => $checkoutUrl,
+            'ctaBehavior'     => $ctaBehavior,
+            'checkoutUrl'     => $checkoutUrl,
+            'featuredOfferId' => $featuredOfferId,
         ];
 
         return $this->renderWidget('FunnelTestimonials', $config['slug'], $props);

@@ -70,14 +70,22 @@ class FunnelScienceShortcode
             return '';
         }
 
+        // Get CTA behavior from funnel config
+        $ctaBehavior = $config['cta']['button_behavior'] ?? 'scroll_offers';
+        $checkoutUrl = $atts['cta_url'] ?: ($config['checkout']['url'] ?? '#checkout');
+        $featuredOfferId = $config['offers'][0]['id'] ?? '';
+
         // Props for React component
         $props = [
-            'title'    => $atts['title'] ?: ($science['title'] ?? 'The Science Behind Our Product'),
-            'subtitle' => $atts['subtitle'] ?: ($science['subtitle'] ?? ''),
-            'sections' => $sections,
-            'layout'   => $atts['layout'],
-            'ctaText'  => $atts['cta_text'] ?: ($config['hero']['cta_text'] ?? ''),
-            'ctaUrl'   => $atts['cta_url'] ?: ($config['checkout']['url'] ?? '#checkout'),
+            'title'           => $atts['title'] ?: ($science['title'] ?? 'The Science Behind Our Product'),
+            'subtitle'        => $atts['subtitle'] ?: ($science['subtitle'] ?? ''),
+            'sections'        => $sections,
+            'layout'          => $atts['layout'],
+            'ctaText'         => $atts['cta_text'] ?: ($config['hero']['cta_text'] ?? ''),
+            'ctaUrl'          => $checkoutUrl,
+            'ctaBehavior'     => $ctaBehavior,
+            'checkoutUrl'     => $checkoutUrl,
+            'featuredOfferId' => $featuredOfferId,
         ];
 
         return $this->renderWidget('FunnelScience', $config['slug'], $props);

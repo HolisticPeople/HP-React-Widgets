@@ -227,6 +227,21 @@ export interface TextColors {
   discount: string; // Green, savings/discounts
 }
 
+// Initial user data for form autofill (logged-in users)
+export interface InitialUserData {
+  userId: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  postcode: string;
+  country: string;
+  pointsBalance: number;
+}
+
 export interface FunnelCheckoutAppConfig {
   funnelId: string;
   funnelName: string;
@@ -239,6 +254,7 @@ export interface FunnelCheckoutAppConfig {
   freeShippingCountries: string[];
   enablePoints: boolean;
   enableCustomerLookup: boolean;
+  showAllOffers: boolean;
   stripePublishableKey: string;
   stripeMode?: string;
   upsellOffers: UpsellOffer[];
@@ -249,6 +265,7 @@ export interface FunnelCheckoutAppConfig {
   textColors?: TextColors;
   footerText: string;
   footerDisclaimer: string;
+  initialUserData?: InitialUserData | null; // Pre-filled user data for logged-in users
 }
 
 

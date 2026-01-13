@@ -110,6 +110,9 @@ class FunnelCheckoutAppShortcode
         $stripeMode = (string) ($config['stripe_mode'] ?? 'auto');
         $stripeKey = $this->getStripePublishableKey($stripeMode, $resolvedMode);
 
+        // Get logged-in user data for autofill
+        $initialUserData = $this->getLoggedInUserData();
+
         // Build props for React component
         $props = [
             'funnelId'            => (string) $config['id'],
@@ -123,6 +126,7 @@ class FunnelCheckoutAppShortcode
             'freeShippingCountries' => $config['checkout']['free_shipping_countries'] ?? ['US'],
             'enablePoints'        => (bool) ($config['checkout']['enable_points'] ?? true),
             'enableCustomerLookup' => (bool) ($config['checkout']['enable_customer_lookup'] ?? true),
+            'showAllOffers'       => (bool) ($config['checkout']['show_all_offers'] ?? true),
             'stripePublishableKey' => $stripeKey,
             'stripeMode'          => $resolvedMode, // Use the resolved 'test' or 'live'
             'upsellOffers'        => $this->buildUpsellOffers($config['thankyou']['upsell'] ?? null),
@@ -132,6 +136,7 @@ class FunnelCheckoutAppShortcode
             'accentColor'         => $config['styling']['accent_color'] ?? '#eab308',
             'footerText'          => $config['footer']['text'] ?? '',
             'footerDisclaimer'    => $config['footer']['disclaimer'] ?? '',
+            'initialUserData'     => $initialUserData,
         ];
 
         // Unique container ID
@@ -220,6 +225,81 @@ class FunnelCheckoutAppShortcode
             'discountPercent' => (int) $discountPercent,
             'features'        => [],
         ]];
+    }
+
+    /**
+     * Get logged-in user data for form autofill.
+     * Returns null if not logged in.
+     *
+     * @return array|null User data with shipping address
+     */
+    private function getLoggedInUserData(): ?array
+    {
+        if (!is_user_logged_in()) {
+            return null;
+        }
+
+        $userId = get_current_user_id();
+        $user = get_userdata($userId);
+        
+        if (!$user) {
+            return null;
+        }
+
+        // Get WooCommerce customer data if available
+        if (class_exists('WC_Customer')) {
+            $customer = new \WC_Customer($userId);
+            
+            return [
+                'userId'        => $userId,
+                'email'         => $user->user_email,
+                'firstName'     => $customer->get_shipping_first_name() ?: $customer->get_billing_first_name() ?: $user->first_name,
+                'lastName'      => $customer->get_shipping_last_name() ?: $customer->get_billing_last_name() ?: $user->last_name,
+                'phone'         => $customer->get_billing_phone() ?: '',
+                'address'       => $customer->get_shipping_address_1() ?: $customer->get_billing_address_1(),
+                'city'          => $customer->get_shipping_city() ?: $customer->get_billing_city(),
+                'state'         => $customer->get_shipping_state() ?: $customer->get_billing_state(),
+                'postcode'      => $customer->get_shipping_postcode() ?: $customer->get_billing_postcode(),
+                'country'       => $customer->get_shipping_country() ?: $customer->get_billing_country() ?: 'US',
+                'pointsBalance' => $this->getCustomerPointsBalance($userId),
+            ];
+        }
+
+        // Fallback without WooCommerce
+        return [
+            'userId'        => $userId,
+            'email'         => $user->user_email,
+            'firstName'     => $user->first_name,
+            'lastName'      => $user->last_name,
+            'phone'         => '',
+            'address'       => '',
+            'city'          => '',
+            'state'         => '',
+            'postcode'      => '',
+            'country'       => 'US',
+            'pointsBalance' => 0,
+        ];
+    }
+
+    /**
+     * Get customer points balance.
+     *
+     * @param int $userId User ID
+     * @return int Points balance
+     */
+    private function getCustomerPointsBalance(int $userId): int
+    {
+        // Try WooCommerce Points and Rewards
+        if (class_exists('WC_Points_Rewards_Manager')) {
+            return (int) \WC_Points_Rewards_Manager::get_users_points($userId);
+        }
+        
+        // Try myCRED
+        if (function_exists('mycred_get_users_balance')) {
+            return (int) mycred_get_users_balance($userId);
+        }
+        
+        return 0;
     }
 
     /**

@@ -13,6 +13,9 @@ export interface FunnelScienceProps {
   sections: ScienceSection[];
   ctaText?: string;
   ctaUrl?: string;
+  ctaBehavior?: 'scroll_offers' | 'checkout';
+  checkoutUrl?: string;
+  featuredOfferId?: string;
   layout?: 'columns' | 'stacked';
   className?: string;
 }
@@ -23,9 +26,34 @@ export const FunnelScience = ({
   sections,
   ctaText,
   ctaUrl,
+  ctaBehavior = 'scroll_offers',
+  checkoutUrl,
+  featuredOfferId,
   layout = 'columns',
   className,
 }: FunnelScienceProps) => {
+  // Handle CTA click based on behavior setting
+  const handleCtaClick = () => {
+    if (ctaBehavior === 'checkout') {
+      const url = checkoutUrl || ctaUrl || '#checkout';
+      const separator = url.includes('?') ? '&' : '?';
+      window.location.href = featuredOfferId 
+        ? `${url}${separator}offer=${featuredOfferId}`
+        : url;
+    } else {
+      // Scroll to offers section - use same selectors as HeroSection
+      const offersSection = document.getElementById('hp-funnel-offers') 
+        || document.querySelector('.hp-funnel-products')
+        || document.querySelector('[data-section="offers"]')
+        || document.querySelector('[data-component="FunnelProducts"]');
+      if (offersSection) {
+        offersSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.location.href = checkoutUrl || ctaUrl || '#checkout';
+      }
+    }
+  };
+
   return (
     <section
       className={cn(
@@ -166,11 +194,11 @@ export const FunnelScience = ({
         )}
 
         {/* CTA */}
-        {ctaText && ctaUrl && (
+        {ctaText && (
           <div className="text-center mt-12 md:mt-16">
             <Button
               size="lg"
-              onClick={() => window.location.href = ctaUrl}
+              onClick={handleCtaClick}
               className="hp-funnel-cta-btn font-bold text-lg md:text-xl px-10 md:px-12 py-5 md:py-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
             >
               {ctaText}

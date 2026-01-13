@@ -52,6 +52,9 @@ export interface FunnelTestimonialsProps {
   layout?: 'cards' | 'carousel' | 'simple';
   ctaText?: string;
   ctaUrl?: string;
+  ctaBehavior?: 'scroll_offers' | 'checkout';
+  checkoutUrl?: string;
+  featuredOfferId?: string;
   className?: string;
 }
 
@@ -64,10 +67,35 @@ export const FunnelTestimonials = ({
   layout = 'cards',
   ctaText,
   ctaUrl,
+  ctaBehavior = 'scroll_offers',
+  checkoutUrl,
+  featuredOfferId,
   className,
 }: FunnelTestimonialsProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
+
+  // Handle CTA click based on behavior setting
+  const handleCtaClick = () => {
+    if (ctaBehavior === 'checkout') {
+      const url = checkoutUrl || ctaUrl || '#checkout';
+      const separator = url.includes('?') ? '&' : '?';
+      window.location.href = featuredOfferId 
+        ? `${url}${separator}offer=${featuredOfferId}`
+        : url;
+    } else {
+      // Scroll to offers section - use same selectors as HeroSection
+      const offersSection = document.getElementById('hp-funnel-offers') 
+        || document.querySelector('.hp-funnel-products')
+        || document.querySelector('[data-section="offers"]')
+        || document.querySelector('[data-component="FunnelProducts"]');
+      if (offersSection) {
+        offersSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.location.href = checkoutUrl || ctaUrl || '#checkout';
+      }
+    }
+  };
 
   const gridCols: Record<number, string> = {
     2: 'md:grid-cols-2',
@@ -378,11 +406,11 @@ export const FunnelTestimonials = ({
         )}
 
         {/* CTA */}
-        {ctaText && ctaUrl && (
+        {ctaText && (
           <div className="text-center mt-12">
             <Button
               size="lg"
-              onClick={() => window.location.href = ctaUrl}
+              onClick={handleCtaClick}
               className="hp-funnel-cta-btn font-bold text-lg md:text-xl px-10 md:px-12 py-5 md:py-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
             >
               {ctaText}

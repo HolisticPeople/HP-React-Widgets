@@ -38,6 +38,9 @@ export interface FunnelAuthorityProps {
   // CTA
   ctaText?: string;
   ctaUrl?: string;
+  ctaBehavior?: 'scroll_offers' | 'checkout';
+  checkoutUrl?: string;
+  featuredOfferId?: string;
   layout?: 'side-by-side' | 'centered' | 'card' | 'illumodine';
   className?: string;
 }
@@ -54,6 +57,9 @@ export const FunnelAuthority = ({
   articleLink,
   ctaText,
   ctaUrl,
+  ctaBehavior = 'scroll_offers',
+  checkoutUrl,
+  featuredOfferId,
   layout = 'side-by-side',
   className,
 }: FunnelAuthorityProps) => {
@@ -63,6 +69,30 @@ export const FunnelAuthority = ({
   );
 
   const hasQuoteCategories = quoteCategories && quoteCategories.length > 0;
+
+  // Handle CTA click based on behavior setting
+  const handleCtaClick = () => {
+    if (ctaBehavior === 'checkout') {
+      // Navigate to checkout with featured offer
+      const url = checkoutUrl || ctaUrl || '#checkout';
+      const separator = url.includes('?') ? '&' : '?';
+      window.location.href = featuredOfferId 
+        ? `${url}${separator}offer=${featuredOfferId}`
+        : url;
+    } else {
+      // Scroll to offers section - use same selectors as HeroSection
+      const offersSection = document.getElementById('hp-funnel-offers') 
+        || document.querySelector('.hp-funnel-products')
+        || document.querySelector('[data-section="offers"]')
+        || document.querySelector('[data-component="FunnelProducts"]');
+      if (offersSection) {
+        offersSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        // Fallback to checkout if no offers section
+        window.location.href = checkoutUrl || ctaUrl || '#checkout';
+      }
+    }
+  };
 
   return (
     <section
@@ -273,10 +303,10 @@ export const FunnelAuthority = ({
                 </svg>
               </Button>
             )}
-            {ctaText && ctaUrl && (
+            {ctaText && (
               <Button
                 size="lg"
-                onClick={() => window.location.href = ctaUrl}
+                onClick={handleCtaClick}
                 className="hp-funnel-cta-btn font-bold px-8 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 {ctaText}
