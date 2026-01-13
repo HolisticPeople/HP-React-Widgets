@@ -1440,11 +1440,12 @@ export const CheckoutStep = ({
                               name="shippingRate"
                               checked={isSelected}
                               onChange={() => handleSelectRate(rate)}
-                              className="accent-accent"
+                              className="w-4 h-4 accent-accent bg-gray-700 border-gray-600"
+                              style={{ accentColor: 'var(--accent, #eab308)' }}
                             />
                             <div className="flex items-center gap-2">
                               <span className="flex-shrink-0">{getCarrierLogo(serviceName)}</span>
-                              <span className="text-foreground">{serviceName}</span>
+                              <span className={isSelected ? "text-foreground" : "text-gray-400"}>{serviceName}</span>
                             </div>
                           </div>
                           <span className="text-accent font-semibold">
