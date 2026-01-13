@@ -428,6 +428,7 @@
             "readonly": 0
         },
         {
+            "ID": 129269,
             "key": "field_hero_title_size",
             "label": "Title Size",
             "name": "hero_title_size",
@@ -2785,6 +2786,7 @@
             "_valid": 1
         },
         {
+            "ID": 129270,
             "key": "field_cta_button_behavior",
             "label": "CTA Button Behavior",
             "name": "cta_button_behavior",
@@ -2792,6 +2794,7 @@
             "prefix": "acf",
             "type": "select",
             "value": null,
+            "menu_order": 42,
             "instructions": "Control what happens when CTA buttons are clicked",
             "required": 0,
             "id": "",
@@ -2963,6 +2966,7 @@
             "_valid": 1
         },
         {
+            "ID": 129271,
             "key": "field_checkout_show_all_offers",
             "label": "Show All Offers in Checkout",
             "name": "checkout_show_all_offers",
@@ -2970,6 +2974,7 @@
             "prefix": "acf",
             "type": "true_false",
             "value": null,
+            "menu_order": 47,
             "instructions": "When enabled, displays all offers in checkout. When disabled, shows only the selected offer.",
             "required": 0,
             "id": "",
