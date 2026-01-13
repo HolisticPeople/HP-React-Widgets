@@ -35,14 +35,19 @@ export const FunnelScience = ({
   // Handle CTA click based on behavior setting
   const handleCtaClick = () => {
     if (ctaBehavior === 'checkout') {
-      const url = featuredOfferId 
-        ? `${checkoutUrl || ctaUrl}?offer=${featuredOfferId}`
-        : (checkoutUrl || ctaUrl || '#checkout');
-      window.location.href = url;
+      const url = checkoutUrl || ctaUrl || '#checkout';
+      const separator = url.includes('?') ? '&' : '?';
+      window.location.href = featuredOfferId 
+        ? `${url}${separator}offer=${featuredOfferId}`
+        : url;
     } else {
-      const offersSection = document.getElementById('offers') || document.querySelector('[data-section="offers"]');
+      // Scroll to offers section - use same selectors as HeroSection
+      const offersSection = document.getElementById('hp-funnel-offers') 
+        || document.querySelector('.hp-funnel-products')
+        || document.querySelector('[data-section="offers"]')
+        || document.querySelector('[data-component="FunnelProducts"]');
       if (offersSection) {
-        offersSection.scrollIntoView({ behavior: 'smooth' });
+        offersSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       } else {
         window.location.href = checkoutUrl || ctaUrl || '#checkout';
       }
