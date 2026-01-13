@@ -939,6 +939,11 @@ class Plugin
                         // Re-enable JSON
                         \acf_update_setting('json', true);
                         
+                        // CREATE NEW FIELDS: Add fields that exist in JSON but not in DB
+                        if ($internal_type === 'acf-field-group' && $id && !empty($data['fields'])) {
+                            self::createMissingAcfFields($id, $data['fields']);
+                        }
+                        
                         // DELETE ORPHANED FIELDS: Remove fields that exist in DB but not in JSON
                         if ($internal_type === 'acf-field-group' && $id && !empty($data['fields'])) {
                             self::deleteOrphanedAcfFields($id, $data['fields']);
@@ -981,6 +986,146 @@ class Plugin
         $paths[] = HP_RW_PATH . 'acf-json';
         
         return $paths;
+    }
+
+    /**
+     * Create ACF fields that exist in JSON but not in the database.
+     * This ensures new fields are added during sync to any environment.
+     *
+     * @param int   $field_group_id The field group post ID.
+     * @param array $json_fields    The fields array from the JSON file.
+     */
+    private static function createMissingAcfFields(int $field_group_id, array $json_fields): void
+    {
+        global $wpdb;
+        
+        // Get all existing field keys from the database
+        $db_field_keys = $wpdb->get_col($wpdb->prepare(
+            "SELECT post_name FROM {$wpdb->posts} WHERE post_type = 'acf-field' AND post_parent = %d",
+            $field_group_id
+        ));
+        
+        // Also get nested field keys
+        $all_db_keys = $db_field_keys;
+        foreach ($db_field_keys as $key) {
+            $field_id = $wpdb->get_var($wpdb->prepare(
+                "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'acf-field' AND post_name = %s",
+                $key
+            ));
+            if ($field_id) {
+                $nested_keys = self::getNestedFieldKeys((int)$field_id);
+                $all_db_keys = array_merge($all_db_keys, $nested_keys);
+            }
+        }
+        
+        // Process each field in the JSON
+        self::createFieldsRecursively($json_fields, $field_group_id, $all_db_keys);
+    }
+
+    /**
+     * Recursively create fields from JSON that don't exist in the database.
+     *
+     * @param array $fields         The fields array from JSON.
+     * @param int   $parent_id      The parent post ID (field group or parent field).
+     * @param array $existing_keys  Array of field keys that already exist in DB.
+     */
+    private static function createFieldsRecursively(array $fields, int $parent_id, array $existing_keys): void
+    {
+        foreach ($fields as $field) {
+            if (empty($field['key'])) {
+                continue;
+            }
+            
+            // Check if this field exists in the database
+            if (!in_array($field['key'], $existing_keys, true)) {
+                // Field doesn't exist, create it
+                $field_data = $field;
+                unset($field_data['ID']); // Remove any existing ID
+                unset($field_data['key']); // Key goes in post_name
+                unset($field_data['name']); // Name goes in post_excerpt
+                unset($field_data['label']); // Label goes in post_title
+                unset($field_data['sub_fields']); // Handle separately
+                unset($field_data['layouts']); // Handle separately
+                
+                $post_id = wp_insert_post([
+                    'post_type'    => 'acf-field',
+                    'post_title'   => $field['label'] ?? '',
+                    'post_excerpt' => $field['name'] ?? '',
+                    'post_name'    => $field['key'],
+                    'post_parent'  => $parent_id,
+                    'post_status'  => 'publish',
+                    'menu_order'   => isset($field['menu_order']) ? (int)$field['menu_order'] : 0,
+                    'post_content' => serialize($field_data),
+                ]);
+                
+                if ($post_id && !is_wp_error($post_id)) {
+                    error_log("[HP-RW] ACF Auto-Sync: Created missing field '{$field['key']}' (ID: {$post_id})");
+                    
+                    // Handle sub_fields for repeaters, groups, etc.
+                    if (!empty($field['sub_fields']) && is_array($field['sub_fields'])) {
+                        self::createFieldsRecursively($field['sub_fields'], $post_id, $existing_keys);
+                    }
+                    
+                    // Handle layouts for flexible content
+                    if (!empty($field['layouts']) && is_array($field['layouts'])) {
+                        foreach ($field['layouts'] as $layout) {
+                            if (!empty($layout['sub_fields'])) {
+                                self::createFieldsRecursively($layout['sub_fields'], $post_id, $existing_keys);
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Field exists, but check if it has sub_fields or layouts that need creating
+                global $wpdb;
+                $field_id = $wpdb->get_var($wpdb->prepare(
+                    "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'acf-field' AND post_name = %s",
+                    $field['key']
+                ));
+                
+                if ($field_id) {
+                    if (!empty($field['sub_fields']) && is_array($field['sub_fields'])) {
+                        self::createFieldsRecursively($field['sub_fields'], (int)$field_id, $existing_keys);
+                    }
+                    if (!empty($field['layouts']) && is_array($field['layouts'])) {
+                        foreach ($field['layouts'] as $layout) {
+                            if (!empty($layout['sub_fields'])) {
+                                self::createFieldsRecursively($layout['sub_fields'], (int)$field_id, $existing_keys);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Get all nested field keys under a parent field.
+     *
+     * @param int $parent_id The parent field post ID.
+     * @return array List of field keys.
+     */
+    private static function getNestedFieldKeys(int $parent_id): array
+    {
+        global $wpdb;
+        
+        $keys = $wpdb->get_col($wpdb->prepare(
+            "SELECT post_name FROM {$wpdb->posts} WHERE post_type = 'acf-field' AND post_parent = %d",
+            $parent_id
+        ));
+        
+        foreach ($keys as $key) {
+            $field_id = $wpdb->get_var($wpdb->prepare(
+                "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'acf-field' AND post_name = %s",
+                $key
+            ));
+            if ($field_id) {
+                $nested = self::getNestedFieldKeys((int)$field_id);
+                $keys = array_merge($keys, $nested);
+            }
+        }
+        
+        return $keys;
     }
 
     /**
