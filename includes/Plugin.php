@@ -934,6 +934,11 @@ class Plugin
                         // Re-enable JSON
                         \acf_update_setting('json', true);
                         
+                        // DELETE ORPHANED FIELDS: Remove fields that exist in DB but not in JSON
+                        if ($internal_type === 'acf-field-group' && $id && !empty($data['fields'])) {
+                            self::deleteOrphanedAcfFields($id, $data['fields']);
+                        }
+                        
                         error_log("[HP-RW] ACF Auto-Sync: Updated {$internal_type} '{$data['title']}' ($key) from JSON.");
                     }
                 }
@@ -971,5 +976,100 @@ class Plugin
         $paths[] = HP_RW_PATH . 'acf-json';
         
         return $paths;
+    }
+
+    /**
+     * Delete ACF fields that exist in the database but not in the JSON definition.
+     * This ensures removed fields are cleaned up during sync.
+     *
+     * @param int   $field_group_id The field group post ID.
+     * @param array $json_fields    The fields array from the JSON file.
+     */
+    private static function deleteOrphanedAcfFields(int $field_group_id, array $json_fields): void
+    {
+        // Recursively collect all field keys from JSON
+        $json_field_keys = self::collectFieldKeys($json_fields);
+        
+        // Get all field posts in the database for this field group
+        $db_fields = get_posts([
+            'post_type'      => 'acf-field',
+            'post_parent'    => $field_group_id,
+            'posts_per_page' => -1,
+            'post_status'    => 'any',
+        ]);
+        
+        // Also get nested fields (fields inside tabs, groups, repeaters, etc.)
+        $all_db_field_ids = [];
+        foreach ($db_fields as $field) {
+            $all_db_field_ids[] = $field->ID;
+            // Get children recursively
+            $children = self::getNestedFieldIds($field->ID);
+            $all_db_field_ids = array_merge($all_db_field_ids, $children);
+        }
+        
+        // Now check each DB field against JSON keys
+        foreach ($all_db_field_ids as $field_id) {
+            $field_key = get_post_field('post_name', $field_id);
+            if ($field_key && !in_array($field_key, $json_field_keys, true)) {
+                wp_delete_post($field_id, true);
+                error_log("[HP-RW] ACF Auto-Sync: Deleted orphaned field '{$field_key}' (ID: {$field_id})");
+            }
+        }
+    }
+
+    /**
+     * Recursively collect all field keys from a fields array.
+     *
+     * @param array $fields The fields array.
+     * @return array List of field keys.
+     */
+    private static function collectFieldKeys(array $fields): array
+    {
+        $keys = [];
+        foreach ($fields as $field) {
+            if (!empty($field['key'])) {
+                $keys[] = $field['key'];
+            }
+            // Check for nested fields (sub_fields in repeaters/groups, layouts in flexible content)
+            if (!empty($field['sub_fields']) && is_array($field['sub_fields'])) {
+                $keys = array_merge($keys, self::collectFieldKeys($field['sub_fields']));
+            }
+            if (!empty($field['layouts']) && is_array($field['layouts'])) {
+                foreach ($field['layouts'] as $layout) {
+                    if (!empty($layout['key'])) {
+                        $keys[] = $layout['key'];
+                    }
+                    if (!empty($layout['sub_fields']) && is_array($layout['sub_fields'])) {
+                        $keys = array_merge($keys, self::collectFieldKeys($layout['sub_fields']));
+                    }
+                }
+            }
+        }
+        return $keys;
+    }
+
+    /**
+     * Recursively get all nested field IDs under a parent field.
+     *
+     * @param int $parent_id The parent field post ID.
+     * @return array List of child field post IDs.
+     */
+    private static function getNestedFieldIds(int $parent_id): array
+    {
+        $children = get_posts([
+            'post_type'      => 'acf-field',
+            'post_parent'    => $parent_id,
+            'posts_per_page' => -1,
+            'post_status'    => 'any',
+            'fields'         => 'ids',
+        ]);
+        
+        $all_ids = $children;
+        foreach ($children as $child_id) {
+            $nested = self::getNestedFieldIds($child_id);
+            $all_ids = array_merge($all_ids, $nested);
+        }
+        
+        return $all_ids;
     }
 }
