@@ -919,8 +919,13 @@ class Plugin
                     $data = json_decode($json_content, true);
                     
                     if ($data) {
-                        // Crucial: Set the ID so we update the existing post instead of creating a new one
-                        $data['ID'] = $id;
+                        // Set the ID only if we have an existing post to update
+                        // If $id is 0, ACF will create a new post
+                        if ($id) {
+                            $data['ID'] = $id;
+                        } else {
+                            unset($data['ID']); // Ensure no ID is set for new imports
+                        }
                         
                         // Disable "Local JSON" controller to prevent the .json file from being modified during import
                         \acf_update_setting('json', false);

@@ -428,7 +428,7 @@
             "readonly": 0
         },
         {
-            "ID": 125093001,
+            "ID": 129268,
             "key": "field_hero_title_size",
             "label": "Title Size",
             "name": "hero_title_size",
@@ -436,7 +436,7 @@
             "prefix": "acf",
             "type": "select",
             "value": null,
-            "menu_order": 11.5,
+            "menu_order": 12,
             "instructions": "",
             "required": false,
             "id": "",
