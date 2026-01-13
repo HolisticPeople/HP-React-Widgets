@@ -495,7 +495,7 @@ class FunnelConfigLoader
                 'global_discount_percent' => (float) self::getFieldValue('global_discount_percent', $postId),
                 'enable_points'          => (bool) self::getFieldValue('enable_points_redemption', $postId),
                 'show_order_summary'     => (bool) self::getFieldValue('show_order_summary', $postId),
-                'show_all_offers'        => self::getFieldValue('checkout_show_all_offers', $postId) !== false,
+                'show_all_offers'        => (bool) self::getFieldValue('checkout_show_all_offers', $postId),
             ],
             
             // Thank you page
