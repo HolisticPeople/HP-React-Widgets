@@ -495,15 +495,7 @@ class FunnelConfigLoader
                 'global_discount_percent' => (float) self::getFieldValue('global_discount_percent', $postId),
                 'enable_points'          => (bool) self::getFieldValue('enable_points_redemption', $postId),
                 'show_order_summary'     => (bool) self::getFieldValue('show_order_summary', $postId),
-                // #region agent log
-                'show_all_offers'        => (function() use ($postId) {
-                    $raw = self::getFieldValue('checkout_show_all_offers', $postId);
-                    $rawAcf = function_exists('get_field') ? get_field('checkout_show_all_offers', $postId) : 'NO_ACF';
-                    $rawMeta = get_post_meta($postId, 'checkout_show_all_offers', true);
-                    error_log("[HP_DEBUG] show_all_offers - postId: $postId, raw: " . var_export($raw, true) . ", rawAcf: " . var_export($rawAcf, true) . ", rawMeta: " . var_export($rawMeta, true));
-                    return (bool) $raw;
-                })(),
-                // #endregion
+                'show_all_offers'        => (bool) self::getFieldValue('checkout_show_all_offers', $postId),
             ],
             
             // Thank you page

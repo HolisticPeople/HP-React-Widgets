@@ -142,18 +142,7 @@ class FunnelCheckoutAppShortcode
         // Unique container ID
         $rootId = 'hp-checkout-app-' . substr(md5($config['slug'] . uniqid()), 0, 8);
 
-        // #region agent log - HTML debug output
-        $debugData = [
-            'configShowAll' => $config['checkout']['show_all_offers'] ?? 'KEY_NOT_SET',
-            'configShowAllType' => gettype($config['checkout']['show_all_offers'] ?? null),
-            'propsShowAll' => $props['showAllOffers'],
-            'propsShowAllType' => gettype($props['showAllOffers']),
-            'pluginVersion' => HP_RW_VERSION,
-        ];
-        $debugHtml = '<!-- HP_DEBUG:' . wp_json_encode($debugData) . ' -->';
-        // #endregion
-
-        return $debugHtml . sprintf(
+        return sprintf(
             '<div id="%s" class="hp-funnel-%s hp-checkout-app" data-hp-widget="1" data-component="%s" data-props="%s"></div>',
             esc_attr($rootId),
             esc_attr($config['slug']),
