@@ -45,6 +45,47 @@ const LoaderIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
   </svg>
 );
 
+// Country name to code mapping (handles cases where full name is passed instead of code)
+const COUNTRY_NAME_TO_CODE: Record<string, string> = {
+  'united states': 'US', 'usa': 'US', 'u.s.a.': 'US', 'u.s.': 'US',
+  'canada': 'CA',
+  'united kingdom': 'GB', 'uk': 'GB', 'great britain': 'GB', 'england': 'GB',
+  'australia': 'AU',
+  'new zealand': 'NZ',
+  'germany': 'DE', 'deutschland': 'DE',
+  'france': 'FR',
+  'italy': 'IT', 'italia': 'IT',
+  'spain': 'ES', 'españa': 'ES',
+  'netherlands': 'NL', 'holland': 'NL',
+  'belgium': 'BE',
+  'austria': 'AT',
+  'switzerland': 'CH',
+  'sweden': 'SE',
+  'norway': 'NO',
+  'denmark': 'DK',
+  'finland': 'FI',
+  'ireland': 'IE',
+  'portugal': 'PT',
+  'japan': 'JP',
+  'south korea': 'KR', 'korea': 'KR',
+  'singapore': 'SG',
+  'hong kong': 'HK',
+  'israel': 'IL',
+  'mexico': 'MX',
+  'brazil': 'BR',
+};
+
+// Normalize country value to 2-letter ISO code
+const normalizeCountryCode = (value: string | undefined | null): string => {
+  if (!value) return 'US';
+  const v = value.trim();
+  // Already a 2-letter code? Return uppercase
+  if (v.length === 2) return v.toUpperCase();
+  // Try mapping from full name
+  const mapped = COUNTRY_NAME_TO_CODE[v.toLowerCase()];
+  return mapped || 'US';
+};
+
 const ShieldIcon = () => (
   <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
@@ -243,7 +284,7 @@ export const CheckoutStep = ({
     city: shippingAddress?.city || initialUserData?.city || '',
     state: shippingAddress?.state || initialUserData?.state || '',
     zipCode: shippingAddress?.postcode || initialUserData?.postcode || '',
-    country: shippingAddress?.country || initialUserData?.country || 'US',
+    country: normalizeCountryCode(shippingAddress?.country || initialUserData?.country),
   });
 
   const [totals, setTotals] = useState<TotalsResponse | null>(null);
