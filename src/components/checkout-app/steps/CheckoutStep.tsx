@@ -9,6 +9,7 @@ import { useCustomerLookup } from '../hooks/useCustomerLookup';
 import { useCheckoutApi } from '../hooks/useCheckoutApi';
 import { useStripePayment } from '../hooks/useStripePayment';
 import { getServiceCode, extractShippingCost } from '../utils/shipping';
+import { getCarrierLogo } from '../utils/carrierLogos';
 import type { 
   Offer,
   SingleOffer,
@@ -188,11 +189,13 @@ interface CheckoutStepProps {
   freeShippingCountries: string[];
   enablePoints: boolean;
   enableCustomerLookup: boolean;
+  showAllOffers?: boolean;
   stripePublishableKey: string;
   stripeMode: string;
   landingUrl: string;
   apiBase: string;
   getCartItems: () => CartItem[];
+  initialUserData?: import('../types').InitialUserData | null;
   onComplete: (piId: string, address: Address, orderDraftId: string) => void;
 }
 
@@ -218,27 +221,29 @@ export const CheckoutStep = ({
   freeShippingCountries,
   enablePoints,
   enableCustomerLookup,
+  showAllOffers = true,
   stripePublishableKey,
   stripeMode,
   landingUrl,
   apiBase,
   getCartItems,
+  initialUserData,
   onComplete,
 }: CheckoutStepProps) => {
   // Ensure offers is always an array
   const offers = Array.isArray(rawOffers) ? rawOffers : [];
 
-  // Form state
+  // Form state - prefill from initialUserData (logged-in user) if available
   const [formData, setFormData] = useState({
-    firstName: shippingAddress?.firstName || '',
-    lastName: shippingAddress?.lastName || '',
-    email: customerData?.email || '',
-    phone: shippingAddress?.phone || '',
-    address: shippingAddress?.address1 || '',
-    city: shippingAddress?.city || '',
-    state: shippingAddress?.state || '',
-    zipCode: shippingAddress?.postcode || '',
-    country: shippingAddress?.country || 'US',
+    firstName: shippingAddress?.firstName || initialUserData?.firstName || '',
+    lastName: shippingAddress?.lastName || initialUserData?.lastName || '',
+    email: customerData?.email || initialUserData?.email || '',
+    phone: shippingAddress?.phone || initialUserData?.phone || '',
+    address: shippingAddress?.address1 || initialUserData?.address || '',
+    city: shippingAddress?.city || initialUserData?.city || '',
+    state: shippingAddress?.state || initialUserData?.state || '',
+    zipCode: shippingAddress?.postcode || initialUserData?.postcode || '',
+    country: shippingAddress?.country || initialUserData?.country || 'US',
   });
 
   const [totals, setTotals] = useState<TotalsResponse | null>(null);
@@ -978,7 +983,35 @@ export const CheckoutStep = ({
           <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
             <h2 className="text-2xl font-bold mb-6 text-accent">Select Your Package</h2>
             
-            {offers.map(renderOfferCard)}
+            {/* Sort offers: selected first, then apply showAllOffers filter */}
+            {(() => {
+              // Sort offers: selected first
+              const sortedOffers = [...offers].sort((a, b) => {
+                if (a.id === selectedOfferId) return -1;
+                if (b.id === selectedOfferId) return 1;
+                return 0;
+              });
+              
+              // Filter to show only selected offer if showAllOffers is false
+              const visibleOffers = showAllOffers 
+                ? sortedOffers 
+                : sortedOffers.filter(o => o.id === selectedOfferId);
+              
+              return visibleOffers.map((offer, index) => {
+                const isSelected = selectedOfferId === offer.id;
+                // Apply dimming to non-selected offers when multiple are shown
+                const isDimmed = showAllOffers && !isSelected && visibleOffers.length > 1;
+                
+                return (
+                  <div 
+                    key={offer.id} 
+                    className={isDimmed ? 'opacity-60 hover:opacity-90 transition-opacity' : ''}
+                  >
+                    {renderOfferCard(offer)}
+                  </div>
+                );
+              });
+            })()}
           </Card>
 
           {/* Quantity Selector - Only for non-kit offers */}
@@ -1368,7 +1401,10 @@ export const CheckoutStep = ({
                               onChange={() => handleSelectRate(rate)}
                               className="accent-accent"
                             />
-                            <span className="text-foreground">{serviceName}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="flex-shrink-0">{getCarrierLogo(serviceName)}</span>
+                              <span className="text-foreground">{serviceName}</span>
+                            </div>
                           </div>
                           <span className="text-accent font-semibold">
                             {totalCost === 0 ? 'FREE' : `$${totalCost.toFixed(2)}`}
@@ -1445,6 +1481,36 @@ export const CheckoutStep = ({
                 )}
               </Button>
             </form>
+
+            {/* Security Badges */}
+            <div className="flex flex-col items-center gap-2 mt-4">
+              <span className="text-xs text-muted-foreground">Secured by</span>
+              <div className="flex items-center justify-center gap-4">
+                {/* Stripe Badge */}
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-card/40 rounded border border-border/30">
+                  <svg className="w-4 h-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                    <line x1="1" y1="10" x2="23" y2="10"/>
+                  </svg>
+                  <span className="text-xs font-medium text-foreground/80">Stripe</span>
+                </div>
+                {/* Google Merchant Badge */}
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-card/40 rounded border border-border/30">
+                  <svg className="w-4 h-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                  </svg>
+                  <span className="text-xs font-medium text-foreground/80">Google</span>
+                </div>
+                {/* Security Shield Badge */}
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-card/40 rounded border border-border/30">
+                  <svg className="w-4 h-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <polyline points="9 12 11 14 15 10"/>
+                  </svg>
+                  <span className="text-xs font-medium text-foreground/80">SSL</span>
+                </div>
+              </div>
+            </div>
 
             <p className="text-xs text-muted-foreground text-center mt-4">
               By completing this purchase, you agree to our terms and conditions.

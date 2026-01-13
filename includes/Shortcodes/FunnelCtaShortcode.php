@@ -47,15 +47,29 @@ class FunnelCtaShortcode
         $postId = $config['id'];
 
         // Get CTA config from ACF or use checkout URL as fallback
+        $buttonBehavior = $config['cta']['button_behavior'] ?? 'scroll_offers';
+        
+        // Determine button URL based on behavior
         $buttonUrl = !empty($atts['button_url']) 
             ? $atts['button_url'] 
             : (get_field('cta_button_url', $postId) ?: $config['checkout']['url']);
+        
+        // Get featured offer ID for checkout behavior
+        $featuredOfferId = '';
+        if ($buttonBehavior === 'checkout') {
+            $offers = $config['offers'] ?? [];
+            $featured = array_filter($offers, fn($o) => !empty($o['isFeatured']));
+            $featuredOfferId = !empty($featured) ? reset($featured)['id'] : (!empty($offers) ? $offers[0]['id'] : '');
+        }
 
         $props = [
             'title'           => !empty($atts['title']) ? $atts['title'] : (get_field('cta_title', $postId) ?: 'Ready to Get Started?'),
             'subtitle'        => !empty($atts['subtitle']) ? $atts['subtitle'] : (get_field('cta_subtitle', $postId) ?: ''),
             'buttonText'      => !empty($atts['button_text']) ? $atts['button_text'] : (get_field('cta_button_text', $postId) ?: 'Order Now'),
             'buttonUrl'       => $buttonUrl,
+            'buttonBehavior'  => $buttonBehavior,
+            'checkoutUrl'     => $config['checkout']['url'],
+            'featuredOfferId' => $featuredOfferId,
             'backgroundStyle' => $atts['background'],
             'alignment'       => $atts['alignment'],
         ];

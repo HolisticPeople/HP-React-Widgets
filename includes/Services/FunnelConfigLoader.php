@@ -230,11 +230,9 @@ class FunnelConfigLoader
         // Clear by ID
         delete_transient(self::CACHE_PREFIX . 'id_' . $postId);
         
-        // Clear by funnel_slug (single source of truth)
-        $currentSlug = function_exists('get_field') ? get_field('funnel_slug', $postId) : null;
-        if (!$currentSlug) {
-            $currentSlug = get_post_meta($postId, 'funnel_slug', true);
-        }
+        // Clear by post_name (single source of truth)
+        $post = get_post($postId);
+        $currentSlug = $post ? $post->post_name : '';
         if ($currentSlug) {
             delete_transient(self::CACHE_PREFIX . 'slug_' . $currentSlug);
         }
@@ -347,33 +345,15 @@ class FunnelConfigLoader
     /**
      * Find a funnel post by slug.
      * 
-     * Uses the ACF funnel_slug field as the SINGLE SOURCE OF TRUTH.
-     * No fallbacks - the funnel_slug field is definitive.
+     * Uses the WordPress post_name (slug) as the SINGLE SOURCE OF TRUTH.
+     * This aligns with native WP functionality and Yoast SEO.
      *
      * @param string $slug Funnel slug
      * @return \WP_Post|null
      */
     public static function findPostBySlug(string $slug): ?\WP_Post
     {
-        // Primary: Query by funnel_slug ACF field - this is the single source of truth
-        $posts = get_posts([
-            'post_type'      => Plugin::FUNNEL_POST_TYPE,
-            'post_status'    => ['publish', 'draft', 'private'],
-            'posts_per_page' => 1,
-            'meta_query'     => [
-                [
-                    'key'   => 'funnel_slug',
-                    'value' => $slug,
-                ],
-            ],
-        ]);
-
-        if (!empty($posts)) {
-            return $posts[0];
-        }
-        
-        // Fallback: Check post_name for transition period
-        // This handles funnels where post_name hasn't been synced to funnel_slug yet
+        // Use WordPress native post_name as the single source of truth
         $posts = get_posts([
             'post_type'      => Plugin::FUNNEL_POST_TYPE,
             'post_status'    => ['publish', 'draft', 'private'],
@@ -382,10 +362,6 @@ class FunnelConfigLoader
         ]);
 
         if (!empty($posts)) {
-            // Log this so we know syncing is needed
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("[HP-RW] findPostBySlug: Found via post_name fallback for '{$slug}'. Consider re-saving funnel to sync slugs.");
-            }
             return $posts[0];
         }
         
@@ -441,9 +417,9 @@ class FunnelConfigLoader
             return ['status' => 'inactive', 'active' => false];
         }
 
-        // Get the funnel_slug from ACF - this is the SINGLE SOURCE OF TRUTH for all URLs
-        // If not set, derive from post title (this will be auto-saved on next post save)
-        $funnelSlug = self::getFieldValue('funnel_slug', $postId);
+        // Use WordPress post_name (slug) as the SINGLE SOURCE OF TRUTH for all URLs
+        // This aligns with native WP functionality and Yoast SEO
+        $funnelSlug = $post->post_name;
         if (empty($funnelSlug)) {
             $funnelSlug = sanitize_title($post->post_title);
         }
@@ -519,6 +495,7 @@ class FunnelConfigLoader
                 'global_discount_percent' => (float) self::getFieldValue('global_discount_percent', $postId),
                 'enable_points'          => (bool) self::getFieldValue('enable_points_redemption', $postId),
                 'show_order_summary'     => (bool) self::getFieldValue('show_order_summary', $postId),
+                'show_all_offers'        => self::getFieldValue('checkout_show_all_offers', $postId) !== false,
             ],
             
             // Thank you page
@@ -597,10 +574,11 @@ class FunnelConfigLoader
             
             // CTA section
             'cta' => [
-                'title'       => self::getFieldValue('cta_title', $postId),
-                'subtitle'    => self::getFieldValue('cta_subtitle', $postId),
-                'button_text' => self::getFieldValue('cta_button_text', $postId),
-                'button_url'  => self::getFieldValue('cta_button_url', $postId),
+                'title'           => self::getFieldValue('cta_title', $postId),
+                'subtitle'        => self::getFieldValue('cta_subtitle', $postId),
+                'button_text'     => self::getFieldValue('cta_button_text', $postId),
+                'button_url'      => self::getFieldValue('cta_button_url', $postId),
+                'button_behavior' => self::getFieldValue('cta_button_behavior', $postId) ?: 'scroll_offers',
             ],
             
             // Science section

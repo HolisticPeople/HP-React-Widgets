@@ -511,10 +511,8 @@ class Plugin
     {
         switch ($column) {
             case 'funnel_slug':
-                $slug = get_field('funnel_slug', $post_id);
-                if (!$slug) {
-                    $slug = get_post_field('post_name', $post_id);
-                }
+                // Use native WordPress post_name as the slug
+                $slug = get_post_field('post_name', $post_id);
                 echo '<code>' . esc_html($slug) . '</code>';
                 break;
                 
@@ -532,9 +530,8 @@ class Plugin
     /**
      * Handle funnel post save - clear caches.
      * 
-     * Note: We no longer auto-generate funnel_slug as we now use the native
-     * WordPress post_name (slug) as the canonical identifier. This provides
-     * better SEO compatibility with Yoast, FiboSearch, and other plugins.
+     * Uses native WordPress post_name (slug) as the canonical identifier.
+     * This provides better SEO compatibility with Yoast, FiboSearch, and other plugins.
      *
      * @param int $post_id Post ID
      * @param \WP_Post $post Post object
@@ -551,118 +548,18 @@ class Plugin
             return;
         }
 
-        // Prevent infinite loop when we update meta
-        static $saving = [];
-        if (isset($saving[$post_id])) {
-            return;
-        }
-        $saving[$post_id] = true;
-
-        // Get old slug before any changes (for cache invalidation)
+        // Get old slug for cache invalidation
         $oldSlug = get_post_meta($post_id, '_hp_funnel_previous_slug', true);
         
-        // Get current funnel_slug from ACF/meta
-        $currentSlug = '';
-        if (function_exists('get_field')) {
-            $currentSlug = get_field('funnel_slug', $post_id);
-        }
-        if (empty($currentSlug)) {
-            $currentSlug = get_post_meta($post_id, 'funnel_slug', true);
-        }
-
-        // AUTO-GENERATE: If funnel_slug is empty, derive from post title
-        if (empty($currentSlug) && !empty($post->post_title)) {
-            $currentSlug = sanitize_title($post->post_title);
-            
-            // Ensure uniqueness by checking for conflicts
-            $currentSlug = self::ensureUniqueFunnelSlug($currentSlug, $post_id);
-            
-            // Save the auto-generated slug
-            if (function_exists('update_field')) {
-                update_field('funnel_slug', $currentSlug, $post_id);
-            } else {
-                update_post_meta($post_id, 'funnel_slug', $currentSlug);
-            }
-        }
-
-        // Store current slug for next save comparison
-        if ($currentSlug) {
-            update_post_meta($post_id, '_hp_funnel_previous_slug', $currentSlug);
-        }
-
-        // SYNC: Keep post_name in sync with funnel_slug (this controls the WordPress URL)
-        if ($currentSlug && $post->post_name !== $currentSlug) {
-            // Use wpdb directly to avoid triggering save_post again
-            global $wpdb;
-            $wpdb->update(
-                $wpdb->posts,
-                ['post_name' => $currentSlug],
-                ['ID' => $post_id],
-                ['%s'],
-                ['%d']
-            );
-            
-            // Clean post cache so WP sees the updated post_name
-            clean_post_cache($post_id);
-            
-            // Flush rewrite rules to update permalinks
-            flush_rewrite_rules(false);
-            
-            error_log("[HP-RW] Synced post_name to funnel_slug: {$currentSlug} for post {$post_id}");
+        // Store current post_name for next save comparison
+        if ($post->post_name) {
+            update_post_meta($post_id, '_hp_funnel_previous_slug', $post->post_name);
         }
 
         // Clear the funnel config cache (pass old slug for cascade invalidation)
         if (class_exists('HP_RW\\Services\\FunnelConfigLoader')) {
             Services\FunnelConfigLoader::clearCache($post_id, $oldSlug ?: '');
         }
-
-        unset($saving[$post_id]);
-    }
-
-    /**
-     * Ensure a funnel slug is unique across all funnels.
-     *
-     * @param string $slug Base slug to check
-     * @param int $excludePostId Post ID to exclude from check
-     * @return string Unique slug (may have suffix added)
-     */
-    private static function ensureUniqueFunnelSlug(string $slug, int $excludePostId): string
-    {
-        $originalSlug = $slug;
-        $suffix = 1;
-
-        while (self::funnelSlugExists($slug, $excludePostId)) {
-            $slug = $originalSlug . '-' . $suffix;
-            $suffix++;
-        }
-
-        return $slug;
-    }
-
-    /**
-     * Check if a funnel_slug already exists.
-     *
-     * @param string $slug Slug to check
-     * @param int $excludePostId Post ID to exclude
-     * @return bool True if exists
-     */
-    private static function funnelSlugExists(string $slug, int $excludePostId): bool
-    {
-        $posts = get_posts([
-            'post_type'      => self::FUNNEL_POST_TYPE,
-            'post_status'    => ['publish', 'draft', 'private'],
-            'posts_per_page' => 1,
-            'post__not_in'   => [$excludePostId],
-            'meta_query'     => [
-                [
-                    'key'   => 'funnel_slug',
-                    'value' => $slug,
-                ],
-            ],
-            'fields' => 'ids',
-        ]);
-
-        return !empty($posts);
     }
 
     /**
@@ -713,8 +610,9 @@ class Plugin
     }
     
     /**
-     * Sync all funnel post_names to match their funnel_slug values.
-     * This ensures URLs align with the admin-defined slugs.
+     * Clear all funnel caches on plugin upgrade.
+     * Previously synced funnel_slug to post_name, now just clears caches
+     * since we use native WordPress post_name.
      */
     public static function syncAllFunnelSlugs(): void
     {
@@ -729,55 +627,14 @@ class Plugin
             return;
         }
         
-        global $wpdb;
-        $updated = 0;
-        
+        // Clear cache for all funnels
         foreach ($funnels as $post_id) {
-            $post = get_post($post_id);
-            if (!$post) {
-                continue;
-            }
-            
-            // Get funnel_slug
-            $funnelSlug = '';
-            if (function_exists('get_field')) {
-                $funnelSlug = get_field('funnel_slug', $post_id);
-            }
-            if (empty($funnelSlug)) {
-                $funnelSlug = get_post_meta($post_id, 'funnel_slug', true);
-            }
-            
-            // If no funnel_slug, generate from title
-            if (empty($funnelSlug) && !empty($post->post_title)) {
-                $funnelSlug = sanitize_title($post->post_title);
-                $funnelSlug = self::ensureUniqueFunnelSlug($funnelSlug, $post_id);
-                
-                if (function_exists('update_field')) {
-                    update_field('funnel_slug', $funnelSlug, $post_id);
-                } else {
-                    update_post_meta($post_id, 'funnel_slug', $funnelSlug);
-                }
-            }
-            
-            // Sync post_name if different
-            if ($funnelSlug && $post->post_name !== $funnelSlug) {
-                $wpdb->update(
-                    $wpdb->posts,
-                    ['post_name' => $funnelSlug],
-                    ['ID' => $post_id],
-                    ['%s'],
-                    ['%d']
-                );
-                clean_post_cache($post_id);
-                $updated++;
-                error_log("[HP-RW] syncAllFunnelSlugs: Updated post {$post_id} from '{$post->post_name}' to '{$funnelSlug}'");
+            if (class_exists('HP_RW\\Services\\FunnelConfigLoader')) {
+                Services\FunnelConfigLoader::clearCache($post_id);
             }
         }
         
-        if ($updated > 0) {
-            flush_rewrite_rules(false);
-            error_log("[HP-RW] syncAllFunnelSlugs: Synced {$updated} funnel(s)");
-        }
+        error_log("[HP-RW] syncAllFunnelSlugs: Cleared cache for " . count($funnels) . " funnel(s)");
     }
 
     /**

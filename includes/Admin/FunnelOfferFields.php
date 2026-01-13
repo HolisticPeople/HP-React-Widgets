@@ -35,13 +35,10 @@ class FunnelOfferFields
      */
     public static function autoGenerateThankYouUrl($value, $post_id, $field)
     {
-        // If empty or just a path, generate full URL
+        // If empty or just a path, generate full URL using native post_name
         if (empty($value) || $value === '/thank-you/' || !filter_var($value, FILTER_VALIDATE_URL)) {
-            $slug = get_post_meta($post_id, 'funnel_slug', true);
-            if (!$slug) {
-                $post = get_post($post_id);
-                $slug = $post ? $post->post_name : 'funnel';
-            }
+            $post = get_post($post_id);
+            $slug = $post ? $post->post_name : 'funnel';
             $value = home_url('/express-shop/' . $slug . '/thank-you/');
         }
         return $value;
@@ -95,8 +92,8 @@ class FunnelOfferFields
             }
         }
 
-        // Get the funnel slug for URL auto-generation
-        $funnelSlug = get_post_meta($post->ID, 'funnel_slug', true) ?: $post->post_name;
+        // Get the funnel slug from native post_name for URL auto-generation
+        $funnelSlug = $post->post_name;
         $siteUrl = home_url();
         
         ?>
@@ -118,10 +115,11 @@ class FunnelOfferFields
                 return $('[data-name="thankyou_url"] input[type="url"], [data-name="thankyou_url"] input[type="text"], input[name*="thankyou_url"]').first();
             }
             
-            // Function to get the current slug from the slug field
+            // Function to get the current slug from WordPress permalink slug
             function getCurrentSlug() {
-                var $slugField = $('[data-name="funnel_slug"] input, input[name*="funnel_slug"]').first();
-                return $slugField.length ? $slugField.val() : funnelSlug;
+                // Try to get from WP's post slug input, fallback to initial value
+                var $slugField = $('#post_name, #new-post-slug, input[name="post_name"]').first();
+                return $slugField.length && $slugField.val() ? $slugField.val() : funnelSlug;
             }
             
             // Function to set the Thank You URL
@@ -138,8 +136,8 @@ class FunnelOfferFields
                 }
             }
             
-            // Listen for slug field input (real-time as user types)
-            $(document).on('input change blur', '[data-name="funnel_slug"] input, input[name*="funnel_slug"]', function() {
+            // Listen for WordPress post slug changes (from permalink editor)
+            $(document).on('input change blur', '#post_name, #new-post-slug, input[name="post_name"]', function() {
                 var newSlug = $(this).val();
                 if (newSlug) {
                     var $tyField = getThankYouField();

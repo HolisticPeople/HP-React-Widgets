@@ -8,6 +8,9 @@ export interface FunnelCtaProps {
   buttonUrl: string;
   buttonSecondaryText?: string;
   buttonSecondaryUrl?: string;
+  buttonBehavior?: 'scroll_offers' | 'checkout';
+  checkoutUrl?: string;
+  featuredOfferId?: string;
   backgroundStyle?: 'gradient' | 'solid' | 'transparent';
   alignment?: 'center' | 'left';
   className?: string;
@@ -20,10 +23,36 @@ export const FunnelCta = ({
   buttonUrl,
   buttonSecondaryText,
   buttonSecondaryUrl,
+  buttonBehavior = 'scroll_offers',
+  checkoutUrl,
+  featuredOfferId,
   backgroundStyle = 'gradient',
   alignment = 'center',
   className,
 }: FunnelCtaProps) => {
+  // Handle CTA button click based on behavior
+  const handleCtaClick = () => {
+    if (buttonBehavior === 'checkout') {
+      // Navigate to checkout with featured offer
+      const url = checkoutUrl || buttonUrl;
+      const separator = url.includes('?') ? '&' : '?';
+      window.location.href = featuredOfferId 
+        ? `${url}${separator}offer=${featuredOfferId}` 
+        : url;
+    } else {
+      // Scroll to offers section (default behavior)
+      const offersSection = document.getElementById('hp-funnel-offers') || 
+                           document.querySelector('.hp-funnel-products') ||
+                           document.querySelector('[data-section="offers"]');
+      if (offersSection) {
+        offersSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        // Fallback: navigate to checkout if no offers section found
+        window.location.href = checkoutUrl || buttonUrl;
+      }
+    }
+  };
+
   const bgClasses = {
     gradient: 'bg-gradient-to-r from-primary/30 via-secondary/40 to-primary/30',
     solid: 'bg-primary/20',
@@ -66,7 +95,7 @@ export const FunnelCta = ({
         >
           <Button
             size="lg"
-            onClick={() => (window.location.href = buttonUrl)}
+            onClick={handleCtaClick}
             className="hp-funnel-cta-btn font-bold text-xl px-12 py-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
           >
             {buttonText}

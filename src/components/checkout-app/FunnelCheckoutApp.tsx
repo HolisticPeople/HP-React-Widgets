@@ -467,11 +467,13 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
             freeShippingCountries={freeShippingCountries}
             enablePoints={enablePoints}
             enableCustomerLookup={enableCustomerLookup}
+            showAllOffers={props.showAllOffers ?? true}
             stripePublishableKey={stripePublishableKey}
             stripeMode={stripeMode}
             landingUrl={landingUrl}
             apiBase={apiBase}
             getCartItems={getCartItems}
+            initialUserData={props.initialUserData}
             onComplete={handleCheckoutComplete}
           />
         )}

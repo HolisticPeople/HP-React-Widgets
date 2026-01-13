@@ -43,9 +43,21 @@ class FunnelHeroSectionShortcode
 
         $hero = $config['hero'];
         $styling = $config['styling'];
+        $cta = $config['cta'] ?? [];
 
         // Build background gradient from config
         $backgroundGradient = $this->buildBackgroundGradient($styling);
+
+        // Get CTA button behavior
+        $buttonBehavior = $cta['button_behavior'] ?? 'scroll_offers';
+        
+        // Get featured offer ID for checkout behavior
+        $featuredOfferId = '';
+        if ($buttonBehavior === 'checkout') {
+            $offers = $config['offers'] ?? [];
+            $featured = array_filter($offers, fn($o) => !empty($o['isFeatured']));
+            $featuredOfferId = !empty($featured) ? reset($featured)['id'] : (!empty($offers) ? $offers[0]['id'] : '');
+        }
 
         // Build props for React component
         $props = [
@@ -58,6 +70,9 @@ class FunnelHeroSectionShortcode
             'heroImageAlt'       => $config['name'],
             'ctaText'            => $hero['cta_text'],
             'ctaUrl'             => $config['checkout']['url'],
+            'ctaBehavior'        => $buttonBehavior,
+            'checkoutUrl'        => $config['checkout']['url'],
+            'featuredOfferId'    => $featuredOfferId,
             'backgroundGradient' => $backgroundGradient,
             'accentColor'        => $styling['accent_color'],
             'textAlign'          => !empty($atts['text_align']) ? $atts['text_align'] : 'left',

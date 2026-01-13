@@ -15,6 +15,9 @@ export interface FunnelHeroSectionProps {
   ctaUrl: string;
   ctaSecondaryText?: string;
   ctaSecondaryUrl?: string;
+  ctaBehavior?: 'scroll_offers' | 'checkout'; // Button behavior
+  checkoutUrl?: string;
+  featuredOfferId?: string;
   
   // Styling
   backgroundGradient?: string;
@@ -50,6 +53,9 @@ export const FunnelHeroSection = ({
   ctaUrl,
   ctaSecondaryText,
   ctaSecondaryUrl,
+  ctaBehavior = 'scroll_offers',
+  checkoutUrl,
+  featuredOfferId,
   backgroundGradient,
   backgroundColor,
   backgroundImage,
@@ -61,6 +67,28 @@ export const FunnelHeroSection = ({
   titleSize = 'xl', // Default to xl (matches reference funnel)
   className,
 }: FunnelHeroSectionProps) => {
+  // Handle CTA button click based on behavior
+  const handleCtaClick = () => {
+    if (ctaBehavior === 'checkout') {
+      // Navigate to checkout with featured offer
+      const url = checkoutUrl || ctaUrl;
+      const separator = url.includes('?') ? '&' : '?';
+      window.location.href = featuredOfferId 
+        ? `${url}${separator}offer=${featuredOfferId}` 
+        : url;
+    } else {
+      // Scroll to offers section (default behavior)
+      const offersSection = document.getElementById('hp-funnel-offers') || 
+                           document.querySelector('.hp-funnel-products') ||
+                           document.querySelector('[data-section="offers"]');
+      if (offersSection) {
+        offersSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        // Fallback: navigate to checkout if no offers section found
+        window.location.href = checkoutUrl || ctaUrl;
+      }
+    }
+  };
   const customStyles: React.CSSProperties = {
     minHeight,
   };
@@ -182,7 +210,7 @@ export const FunnelHeroSection = ({
             )}>
               <Button
                 size="lg"
-                onClick={() => window.location.href = ctaUrl}
+                onClick={handleCtaClick}
                 className="hp-funnel-cta-btn font-bold text-xl px-12 py-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 {ctaText}
