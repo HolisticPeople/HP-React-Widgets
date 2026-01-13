@@ -54,6 +54,11 @@ class FunnelAuthorityShortcode
         $hasQuoteCategories = !empty($authority['quoteCategories']);
         $layout = $hasQuoteCategories ? 'illumodine' : $atts['layout'];
 
+        // Get CTA behavior from funnel config
+        $ctaBehavior = $config['cta']['button_behavior'] ?? 'scroll_offers';
+        $checkoutUrl = $config['checkout']['url'] ?? '#checkout';
+        $featuredOfferId = $config['offers'][0]['id'] ?? '';
+
         $props = [
             'title'           => !empty($atts['title']) ? $atts['title'] : ($authority['title'] ?? 'Who We Are'),
             'subtitle'        => $authority['subtitle'] ?? '',
@@ -65,7 +70,10 @@ class FunnelAuthorityShortcode
             'quoteCategories' => $authority['quoteCategories'] ?? [],
             'articleLink'     => $authority['articleLink'] ?? null,
             'ctaText'         => $config['hero']['cta_text'] ?? 'Get Your Special Offer Now',
-            'ctaUrl'          => $config['checkout']['url'] ?? '#checkout',
+            'ctaUrl'          => $checkoutUrl,
+            'ctaBehavior'     => $ctaBehavior,
+            'checkoutUrl'     => $checkoutUrl,
+            'featuredOfferId' => $featuredOfferId,
             'layout'          => $layout,
         ];
 
