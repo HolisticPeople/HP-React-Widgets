@@ -21,11 +21,6 @@ if (!defined('ABSPATH')) {
 class HpMenuShortcode
 {
     /**
-     * ACF Options page slug
-     */
-    private const OPTIONS_PAGE = 'hp-menu-options';
-
-    /**
      * Render the shortcode.
      *
      * @param array $atts Shortcode attributes
@@ -43,12 +38,17 @@ class HpMenuShortcode
         // Load menu configuration from ACF options
         $config = $this->loadMenuConfig();
 
+        // Check if menu has any items
+        if (empty($config['sections'])) {
+            return $this->renderEmptyState();
+        }
+
         // Override with shortcode attributes if provided
         $title = !empty($atts['title']) ? $atts['title'] : ($config['title'] ?? 'Menu');
         $footerText = !empty($atts['footer_text']) ? $atts['footer_text'] : ($config['footerText'] ?? '');
 
         $props = [
-            'sections'   => $config['sections'] ?? [],
+            'sections'   => $config['sections'],
             'title'      => $title,
             'footerText' => $footerText,
         ];
@@ -72,13 +72,13 @@ class HpMenuShortcode
     {
         $config = [
             'title'      => 'Menu',
-            'footerText' => 'HolisticPeople — Supreme Quality Botanicals',
+            'footerText' => '',
             'sections'   => [],
         ];
 
         // Check if ACF is available
         if (!function_exists('get_field')) {
-            return $this->getDefaultMenuConfig();
+            return $config;
         }
 
         // Load from ACF options
@@ -95,11 +95,6 @@ class HpMenuShortcode
         $sections = get_field('hp_menu_sections', 'option');
         if (!empty($sections) && is_array($sections)) {
             $config['sections'] = $this->transformSections($sections);
-        }
-
-        // If no sections configured, return defaults
-        if (empty($config['sections'])) {
-            return $this->getDefaultMenuConfig();
         }
 
         return $config;
@@ -175,40 +170,22 @@ class HpMenuShortcode
     }
 
     /**
-     * Get default menu configuration (fallback when ACF not configured).
+     * Render empty state message for admins.
      *
-     * @return array Default menu config
+     * @return string HTML output
      */
-    private function getDefaultMenuConfig(): array
+    private function renderEmptyState(): string
     {
-        return [
-            'title'      => 'Menu',
-            'footerText' => 'HolisticPeople — Supreme Quality Botanicals',
-            'sections'   => [
-                [
-                    'items' => [
-                        ['label' => 'All Brands', 'href' => '/brands'],
-                        ['label' => 'DrCousensGlobal', 'href' => '/drcousensglobal'],
-                    ],
-                ],
-                [
-                    'title' => 'Featured Categories',
-                    'items' => [
-                        ['label' => 'Illumodine Iodine', 'href' => '/supplements-category/dietary-supplements/minerals-supplements/best-iodine-illumodine-supplement/'],
-                        ['label' => 'Vegan Vitamin B B12', 'href' => '/supplements-category/dietary-supplements/vitamins/vitamin-b-b12/'],
-                        ['label' => 'Vegan Omega 3', 'href' => '/supplements-category/dietary-supplements/fatty-acids/omega-3/'],
-                        ['label' => 'Juice Fasting & Detox', 'href' => '/supplements-category/protocols/juice-fasting-detox/'],
-                        ['label' => 'Medicinal Mushrooms', 'href' => '/supplements-category/dietary-supplements/medicinal-mushrooms/'],
-                        ['label' => 'Minerals', 'href' => '/supplements-category/dietary-supplements/vitamins-minerals-herbs-supplements/minerals-supplements/'],
-                        ['label' => 'Protection & Immune', 'href' => '/supplements-category/protocols/protection/protection-prevention/'],
-                        ['label' => 'Digestion Health', 'href' => '/supplements-category/conditions/gut-digestion-health/digestion-gut-digestion-health/'],
-                        ['label' => 'Chinese Medicine', 'href' => '/supplements-category/dietary-supplements/chinese-medicine-herbs/'],
-                        ['label' => 'Essential Oils', 'href' => '/supplements-category/essential-oils/'],
-                        ['label' => 'Tachyon Energy', 'href' => '/supplements-category/energy-healing/tachyon-energy/'],
-                        ['label' => 'Books', 'href' => '/supplements-category/books/'],
-                    ],
-                ],
-            ],
-        ];
+        // Only show message to admins
+        if (!current_user_can('manage_options')) {
+            return '';
+        }
+
+        $settings_url = admin_url('options-general.php?page=hp-menu-options');
+
+        return sprintf(
+            '<div class="hp-menu-empty" style="padding: 12px 16px; background: hsl(38 92%% 50%% / 0.15); border: 1px solid hsl(38 92%% 50%% / 0.3); border-radius: 8px; font-size: 14px; color: hsl(38 92%% 40%%);"><strong>HP Menu:</strong> No menu items configured. <a href="%s" style="color: inherit; text-decoration: underline;">Configure menu items →</a></div>',
+            esc_url($settings_url)
+        );
     }
 }

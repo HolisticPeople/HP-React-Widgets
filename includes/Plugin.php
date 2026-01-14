@@ -234,6 +234,9 @@ class Plugin
         // Register ACF options pages
         add_action('acf/init', [self::class, 'registerAcfOptionsPages']);
 
+        // Import default HP Menu data if not configured
+        add_action('acf/init', [self::class, 'maybeImportHpMenuDefaults'], 20);
+
         // Enqueue admin scripts for funnel editing
         add_action('admin_enqueue_scripts', [self::class, 'enqueueAdminScripts']);
 
@@ -831,6 +834,51 @@ class Plugin
             'autoload'      => true,
             'update_button' => __('Save Menu Settings', 'hp-react-widgets'),
         ]);
+    }
+
+    /**
+     * Import default HP Menu data from JSON if ACF options are empty.
+     * This auto-populates the menu on first install.
+     */
+    public static function maybeImportHpMenuDefaults(): void
+    {
+        if (!function_exists('get_field') || !function_exists('update_field')) {
+            return;
+        }
+
+        // Check if menu sections already have data
+        $existingSections = get_field('hp_menu_sections', 'option');
+        if (!empty($existingSections)) {
+            return; // Already configured, don't overwrite
+        }
+
+        // Load default data from JSON file
+        $jsonFile = HP_RW_PATH . 'data/hp-menu-default-data.json';
+        if (!file_exists($jsonFile)) {
+            return;
+        }
+
+        $jsonContent = file_get_contents($jsonFile);
+        $defaultData = json_decode($jsonContent, true);
+
+        if (empty($defaultData) || !is_array($defaultData)) {
+            return;
+        }
+
+        // Import each field
+        if (isset($defaultData['hp_menu_title'])) {
+            update_field('hp_menu_title', $defaultData['hp_menu_title'], 'option');
+        }
+
+        if (isset($defaultData['hp_menu_footer_text'])) {
+            update_field('hp_menu_footer_text', $defaultData['hp_menu_footer_text'], 'option');
+        }
+
+        if (isset($defaultData['hp_menu_sections'])) {
+            update_field('hp_menu_sections', $defaultData['hp_menu_sections'], 'option');
+        }
+
+        error_log('[HP-RW] HP Menu default data imported from JSON.');
     }
 
     /**

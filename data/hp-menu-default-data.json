@@ -1,0 +1,100 @@
+{
+    "hp_menu_title": "Menu",
+    "hp_menu_footer_text": "HolisticPeople — Supreme Quality Botanicals",
+    "hp_menu_sections": [
+        {
+            "section_title": "",
+            "section_items": [
+                {
+                    "item_label": "All Brands",
+                    "item_link": "/brands",
+                    "item_image": "",
+                    "item_children": []
+                },
+                {
+                    "item_label": "DrCousensGlobal",
+                    "item_link": "/drcousensglobal",
+                    "item_image": "",
+                    "item_children": []
+                }
+            ]
+        },
+        {
+            "section_title": "Featured Categories",
+            "section_items": [
+                {
+                    "item_label": "Illumodine Iodine",
+                    "item_link": "/supplements-category/dietary-supplements/minerals-supplements/best-iodine-illumodine-supplement/",
+                    "item_image": "",
+                    "item_children": []
+                },
+                {
+                    "item_label": "Vegan Vitamin B B12",
+                    "item_link": "/supplements-category/dietary-supplements/vitamins/vitamin-b-b12/",
+                    "item_image": "",
+                    "item_children": []
+                },
+                {
+                    "item_label": "Vegan Omega 3",
+                    "item_link": "/supplements-category/dietary-supplements/fatty-acids/omega-3/",
+                    "item_image": "",
+                    "item_children": []
+                },
+                {
+                    "item_label": "Juice Fasting & Detox",
+                    "item_link": "/supplements-category/protocols/juice-fasting-detox/",
+                    "item_image": "",
+                    "item_children": []
+                },
+                {
+                    "item_label": "Medicinal Mushrooms",
+                    "item_link": "/supplements-category/dietary-supplements/medicinal-mushrooms/",
+                    "item_image": "",
+                    "item_children": []
+                },
+                {
+                    "item_label": "Minerals",
+                    "item_link": "/supplements-category/dietary-supplements/vitamins-minerals-herbs-supplements/minerals-supplements/",
+                    "item_image": "",
+                    "item_children": []
+                },
+                {
+                    "item_label": "Protection & Immune",
+                    "item_link": "/supplements-category/protocols/protection/protection-prevention/",
+                    "item_image": "",
+                    "item_children": []
+                },
+                {
+                    "item_label": "Digestion Health",
+                    "item_link": "/supplements-category/conditions/gut-digestion-health/digestion-gut-digestion-health/",
+                    "item_image": "",
+                    "item_children": []
+                },
+                {
+                    "item_label": "Chinese Medicine",
+                    "item_link": "/supplements-category/dietary-supplements/chinese-medicine-herbs/",
+                    "item_image": "",
+                    "item_children": []
+                },
+                {
+                    "item_label": "Essential Oils",
+                    "item_link": "/supplements-category/essential-oils/",
+                    "item_image": "",
+                    "item_children": []
+                },
+                {
+                    "item_label": "Tachyon Energy",
+                    "item_link": "/supplements-category/energy-healing/tachyon-energy/",
+                    "item_image": "",
+                    "item_children": []
+                },
+                {
+                    "item_label": "Books",
+                    "item_link": "/supplements-category/books/",
+                    "item_image": "",
+                    "item_children": []
+                }
+            ]
+        }
+    ]
+}
