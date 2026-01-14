@@ -1,0 +1,254 @@
+{
+    "key": "group_hp_menu_options",
+    "title": "HP Menu Options",
+    "fields": [
+        {
+            "key": "field_hp_menu_title",
+            "label": "Menu Title",
+            "name": "hp_menu_title",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "Title displayed at the top of the menu panel",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "Menu",
+            "maxlength": "",
+            "placeholder": "Menu"
+        },
+        {
+            "key": "field_hp_menu_footer_text",
+            "label": "Footer Text",
+            "name": "hp_menu_footer_text",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "Text displayed at the bottom of the menu panel",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "HolisticPeople — Supreme Quality Botanicals",
+            "maxlength": "",
+            "placeholder": ""
+        },
+        {
+            "key": "field_hp_menu_sections",
+            "label": "Menu Sections",
+            "name": "hp_menu_sections",
+            "aria-label": "",
+            "type": "repeater",
+            "instructions": "Add sections to organize your menu. Each section can have an optional title and contains menu items.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "layout": "block",
+            "pagination": 0,
+            "min": 0,
+            "max": 10,
+            "collapsed": "field_hp_section_title",
+            "button_label": "Add Section",
+            "rows_per_page": 20,
+            "sub_fields": [
+                {
+                    "key": "field_hp_section_title",
+                    "label": "Section Title",
+                    "name": "section_title",
+                    "aria-label": "",
+                    "type": "text",
+                    "instructions": "Optional. Leave blank for no section heading (e.g., top brand links).",
+                    "required": 0,
+                    "conditional_logic": 0,
+                    "wrapper": {
+                        "width": "",
+                        "class": "",
+                        "id": ""
+                    },
+                    "default_value": "",
+                    "maxlength": "",
+                    "placeholder": "e.g., Featured Categories",
+                    "parent_repeater": "field_hp_menu_sections"
+                },
+                {
+                    "key": "field_hp_section_items",
+                    "label": "Menu Items",
+                    "name": "section_items",
+                    "aria-label": "",
+                    "type": "repeater",
+                    "instructions": "",
+                    "required": 0,
+                    "conditional_logic": 0,
+                    "wrapper": {
+                        "width": "",
+                        "class": "",
+                        "id": ""
+                    },
+                    "layout": "row",
+                    "pagination": 0,
+                    "min": 0,
+                    "max": 50,
+                    "collapsed": "field_hp_item_label",
+                    "button_label": "Add Menu Item",
+                    "rows_per_page": 20,
+                    "sub_fields": [
+                        {
+                            "key": "field_hp_item_label",
+                            "label": "Label",
+                            "name": "item_label",
+                            "aria-label": "",
+                            "type": "text",
+                            "instructions": "",
+                            "required": 1,
+                            "conditional_logic": 0,
+                            "wrapper": {
+                                "width": "30",
+                                "class": "",
+                                "id": ""
+                            },
+                            "default_value": "",
+                            "maxlength": "",
+                            "placeholder": "Link text",
+                            "parent_repeater": "field_hp_section_items"
+                        },
+                        {
+                            "key": "field_hp_item_link",
+                            "label": "Link URL",
+                            "name": "item_link",
+                            "aria-label": "",
+                            "type": "url",
+                            "instructions": "",
+                            "required": 0,
+                            "conditional_logic": 0,
+                            "wrapper": {
+                                "width": "40",
+                                "class": "",
+                                "id": ""
+                            },
+                            "default_value": "",
+                            "placeholder": "https://",
+                            "parent_repeater": "field_hp_section_items"
+                        },
+                        {
+                            "key": "field_hp_item_image",
+                            "label": "Image",
+                            "name": "item_image",
+                            "aria-label": "",
+                            "type": "image",
+                            "instructions": "Optional thumbnail",
+                            "required": 0,
+                            "conditional_logic": 0,
+                            "wrapper": {
+                                "width": "30",
+                                "class": "",
+                                "id": ""
+                            },
+                            "return_format": "url",
+                            "library": "all",
+                            "min_width": "",
+                            "min_height": "",
+                            "min_size": "",
+                            "max_width": "",
+                            "max_height": "",
+                            "max_size": "",
+                            "mime_types": "jpg,jpeg,png,webp",
+                            "preview_size": "thumbnail",
+                            "parent_repeater": "field_hp_section_items"
+                        },
+                        {
+                            "key": "field_hp_item_children",
+                            "label": "Subcategories",
+                            "name": "item_children",
+                            "aria-label": "",
+                            "type": "repeater",
+                            "instructions": "Optional sub-links that expand when the parent is clicked",
+                            "required": 0,
+                            "conditional_logic": 0,
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "layout": "table",
+                            "pagination": 0,
+                            "min": 0,
+                            "max": 20,
+                            "collapsed": "",
+                            "button_label": "Add Subcategory",
+                            "rows_per_page": 20,
+                            "sub_fields": [
+                                {
+                                    "key": "field_hp_child_label",
+                                    "label": "Label",
+                                    "name": "child_label",
+                                    "aria-label": "",
+                                    "type": "text",
+                                    "instructions": "",
+                                    "required": 1,
+                                    "conditional_logic": 0,
+                                    "wrapper": {
+                                        "width": "",
+                                        "class": "",
+                                        "id": ""
+                                    },
+                                    "default_value": "",
+                                    "maxlength": "",
+                                    "placeholder": "Subcategory name",
+                                    "parent_repeater": "field_hp_item_children"
+                                },
+                                {
+                                    "key": "field_hp_child_link",
+                                    "label": "Link URL",
+                                    "name": "child_link",
+                                    "aria-label": "",
+                                    "type": "url",
+                                    "instructions": "",
+                                    "required": 1,
+                                    "conditional_logic": 0,
+                                    "wrapper": {
+                                        "width": "",
+                                        "class": "",
+                                        "id": ""
+                                    },
+                                    "default_value": "",
+                                    "placeholder": "https://",
+                                    "parent_repeater": "field_hp_item_children"
+                                }
+                            ],
+                            "parent_repeater": "field_hp_section_items"
+                        }
+                    ],
+                    "parent_repeater": "field_hp_menu_sections"
+                }
+            ]
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "options_page",
+                "operator": "==",
+                "value": "hp-menu-options"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "Configure the HP Menu shortcode appearance and content",
+    "show_in_rest": 0,
+    "modified": 1736899200
+}

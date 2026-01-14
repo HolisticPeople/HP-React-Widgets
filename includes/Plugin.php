@@ -186,6 +186,15 @@ class Plugin
             'root_id'     => 'hp-funnel-science-root',
             'hydrator_class' => 'FunnelScienceShortcode',
         ],
+        // Navigation components
+        'hp_menu' => [
+            'label'       => 'HP Menu',
+            'description' => 'Off-canvas navigation menu with hamburger trigger. Place in header.',
+            'example'     => '[hp_menu]',
+            'component'   => 'HpMenu',
+            'root_id'     => 'hp-menu-root',
+            'hydrator_class' => 'HpMenuShortcode',
+        ],
     ];
 
     /**
@@ -221,6 +230,9 @@ class Plugin
         
         // Setup ACF Local JSON sync for version control
         self::setupAcfLocalJson();
+
+        // Register ACF options pages
+        add_action('acf/init', [self::class, 'registerAcfOptionsPages']);
 
         // Enqueue admin scripts for funnel editing
         add_action('admin_enqueue_scripts', [self::class, 'enqueueAdminScripts']);
@@ -795,6 +807,30 @@ class Plugin
     public static function set_shortcode_descriptions(array $descriptions): void
     {
         update_option(self::OPTION_SHORTCODE_DESCRIPTIONS, $descriptions);
+    }
+
+    /**
+     * Register ACF options pages for plugin settings.
+     */
+    public static function registerAcfOptionsPages(): void
+    {
+        if (!function_exists('acf_add_options_page')) {
+            return;
+        }
+
+        // HP Menu Options page
+        acf_add_options_page([
+            'page_title'    => __('HP Menu Settings', 'hp-react-widgets'),
+            'menu_title'    => __('HP Menu', 'hp-react-widgets'),
+            'menu_slug'     => 'hp-menu-options',
+            'capability'    => 'manage_options',
+            'parent_slug'   => 'options-general.php',
+            'position'      => 80,
+            'icon_url'      => 'dashicons-menu',
+            'redirect'      => false,
+            'autoload'      => true,
+            'update_button' => __('Save Menu Settings', 'hp-react-widgets'),
+        ]);
     }
 
     /**

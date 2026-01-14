@@ -28,6 +28,9 @@ import {
   FunnelScience,
 } from '@/components/funnel'
 
+// Navigation components
+import { HpMenu } from '@/components/HpMenu'
+
 // Global settings injected by PHP (v2.14.19)
 declare global {
     interface Window {
@@ -71,6 +74,9 @@ widgetRegistry.FunnelFaq = FunnelFaq;
 widgetRegistry.FunnelCta = FunnelCta;
 widgetRegistry.FunnelFooter = FunnelFooter;
 widgetRegistry.FunnelScience = FunnelScience;
+
+// Navigation components
+widgetRegistry.HpMenu = HpMenu;
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component<
