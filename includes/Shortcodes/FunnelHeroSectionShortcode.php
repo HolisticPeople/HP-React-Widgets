@@ -205,9 +205,20 @@ class FunnelHeroSectionShortcode
         if (!empty($config['styling']['alternate_section_bg']) && !empty($config['styling']['alternate_bg_color'])) {
             $altBgColor = sanitize_hex_color($config['styling']['alternate_bg_color']);
             if ($altBgColor) {
-                // CSS for alternate sections
+                // CSS for alternate sections - full width background
                 $output .= sprintf(
-                    '<style>.hp-funnel-section.hp-alt-bg { background-color: %s !important; }</style>',
+                    '<style>.hp-funnel-section.hp-alt-bg { 
+                        background-color: %s !important; 
+                        width: 100vw !important;
+                        position: relative !important;
+                        left: 50%% !important;
+                        right: 50%% !important;
+                        margin-left: -50vw !important;
+                        margin-right: -50vw !important;
+                        padding-left: calc(50vw - 50%%) !important;
+                        padding-right: calc(50vw - 50%%) !important;
+                        box-sizing: border-box !important;
+                    }</style>',
                     $altBgColor
                 );
                 
