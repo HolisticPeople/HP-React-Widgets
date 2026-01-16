@@ -67,6 +67,7 @@ class FunnelBenefitsShortcode
             'defaultIcon'        => $atts['default_icon'],
             'backgroundColor'    => $atts['background_color'],
             'backgroundGradient' => $atts['background_gradient'],
+            'enableCategories'   => !empty($benefitsConfig['enable_categories']), // Round 2: categorized layout
         ];
 
         return $this->renderWidget('FunnelBenefits', $config['slug'], $props);

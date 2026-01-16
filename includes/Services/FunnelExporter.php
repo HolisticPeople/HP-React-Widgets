@@ -89,6 +89,7 @@ class FunnelExporter
                 'slug' => FunnelConfigLoader::getFieldValue('funnel_slug', $postId) ?: $post->post_name,
                 'status' => FunnelConfigLoader::getFieldValue('funnel_status', $postId),
                 'stripe_mode' => FunnelConfigLoader::getFieldValue('stripe_mode', $postId),
+                'enable_scroll_navigation' => (bool) FunnelConfigLoader::getFieldValue('enable_scroll_navigation', $postId), // Round 2
             ],
 
             'header' => self::exportHeader($postId),
@@ -162,13 +163,16 @@ class FunnelExporter
             if (!empty($b['text'])) {
                 $items[] = [
                     'text' => $b['text'],
-                    'icon' => $b['icon'],
+                    'icon' => $b['icon'] ?? 'check',
+                    'category' => $b['category'] ?? null, // Round 2
                 ];
             }
         }
 
         return [
             'title' => FunnelConfigLoader::getFieldValue('hero_benefits_title', $postId),
+            'subtitle' => FunnelConfigLoader::getFieldValue('hero_benefits_subtitle', $postId), // Round 2
+            'enable_categories' => (bool) FunnelConfigLoader::getFieldValue('enable_benefit_categories', $postId), // Round 2
             'items' => $items,
         ];
     }
@@ -179,7 +183,10 @@ class FunnelExporter
     private static function exportOffers(int $postId): array
     {
         $offers = FunnelConfigLoader::getFieldValue('funnel_offers', $postId) ?: [];
-        $result = [];
+        $result = [
+            'section_title' => FunnelConfigLoader::getFieldValue('offers_section_title', $postId) ?: 'Choose Your Package', // Round 2
+            'items' => [],
+        ];
         $offerIndex = 0;
 
         foreach ($offers as $o) {
@@ -193,6 +200,7 @@ class FunnelExporter
                 'id' => $offerId,
                 'name' => $o['offer_name'] ?? '',
                 'type' => $offerType,
+                'enabled' => isset($o['offer_enabled']) ? (bool) $o['offer_enabled'] : true, // Round 2
                 'description' => $o['offer_description'] ?? '',
                 'image' => self::resolveImageUrl($o['offer_image'] ?? null),
                 'badge' => $o['offer_badge'] ?? '',
@@ -237,7 +245,7 @@ class FunnelExporter
                 }
             }
 
-            $result[] = $offer;
+            $result['items'][] = $offer;
         }
 
         return $result;
@@ -417,6 +425,11 @@ class FunnelExporter
             'global_discount_percent' => (float) FunnelConfigLoader::getFieldValue('global_discount_percent', $postId),
             'enable_points_redemption' => (bool) FunnelConfigLoader::getFieldValue('enable_points_redemption', $postId),
             'show_order_summary' => (bool) FunnelConfigLoader::getFieldValue('show_order_summary', $postId),
+            // Round 2 additions
+            'page_title' => FunnelConfigLoader::getFieldValue('checkout_page_title', $postId),
+            'page_subtitle' => FunnelConfigLoader::getFieldValue('checkout_page_subtitle', $postId),
+            'tos_page_id' => (int) FunnelConfigLoader::getFieldValue('checkout_tos_page_id', $postId),
+            'privacy_page_id' => (int) FunnelConfigLoader::getFieldValue('checkout_privacy_page_id', $postId),
         ];
     }
 
@@ -471,6 +484,9 @@ class FunnelExporter
             'background_type' => FunnelConfigLoader::getFieldValue('background_type', $postId),
             'background_image' => self::resolveImageUrl(FunnelConfigLoader::getFieldValue('background_image', $postId)),
             'custom_css' => FunnelConfigLoader::getFieldValue('custom_css', $postId),
+            // Round 2: Alternating backgrounds
+            'alternate_section_bg' => (bool) FunnelConfigLoader::getFieldValue('alternate_section_bg', $postId),
+            'alternate_bg_color' => FunnelConfigLoader::getFieldValue('alternate_bg_color', $postId),
         ];
     }
 

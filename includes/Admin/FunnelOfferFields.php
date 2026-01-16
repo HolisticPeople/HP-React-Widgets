@@ -178,6 +178,31 @@ class FunnelOfferFields
                     }, 100);
                 }
             });
+            
+            // Round 2: Toggle disabled styling based on offer_enabled field
+            function updateOfferDisabledState($row) {
+                var $enabledField = $row.find('[data-name="offer_enabled"] input[type="checkbox"]');
+                if ($enabledField.length) {
+                    if ($enabledField.is(':checked')) {
+                        $row.removeClass('hp-offer-disabled');
+                    } else {
+                        $row.addClass('hp-offer-disabled');
+                    }
+                }
+            }
+            
+            // Update all offer rows on page load
+            setTimeout(function() {
+                $('[data-key="field_funnel_offers"] .acf-row').each(function() {
+                    updateOfferDisabledState($(this));
+                });
+            }, 500);
+            
+            // Update when offer_enabled checkbox changes
+            $(document).on('change', '[data-name="offer_enabled"] input[type="checkbox"]', function() {
+                var $row = $(this).closest('.acf-row');
+                updateOfferDisabledState($row);
+            });
         });
         </script>
         <?php
@@ -269,16 +294,65 @@ class FunnelOfferFields
     private static function getStyles(): string
     {
         return '
-            /* Offer row styling */
+            /* Offer row styling - Round 2 Enhanced */
             .acf-field[data-key="field_funnel_offers"] .acf-row {
-                background: #fafafa;
-                border: 1px solid #e0e0e0;
-                border-radius: 8px;
-                margin-bottom: 12px;
+                background: linear-gradient(to right, #f8f9fa, #ffffff);
+                border: 2px solid #dee2e6;
+                border-radius: 12px;
+                margin-bottom: 20px;
                 position: relative;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            }
+            .acf-field[data-key="field_funnel_offers"] .acf-row:hover {
+                border-color: #0073aa;
+                box-shadow: 0 4px 12px rgba(0,115,170,0.1);
             }
             .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed {
                 background: #fff;
+                border-color: #e0e0e0;
+            }
+            
+            /* Offer number badge - visible when expanded */
+            .acf-field[data-key="field_funnel_offers"] .acf-row::before {
+                content: "Offer #" counter(offer-counter);
+                counter-increment: offer-counter;
+                position: absolute;
+                top: -12px;
+                left: 20px;
+                background: #0073aa;
+                color: #fff;
+                padding: 4px 12px;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: 600;
+                z-index: 1;
+            }
+            .acf-field[data-key="field_funnel_offers"] .acf-repeater > .acf-table > tbody {
+                counter-reset: offer-counter;
+            }
+            .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed::before {
+                display: none;
+            }
+            
+            /* Disabled offer styling */
+            .acf-field[data-key="field_funnel_offers"] .acf-row.hp-offer-disabled {
+                opacity: 0.6;
+                border-color: #dc3545;
+            }
+            .acf-field[data-key="field_funnel_offers"] .acf-row.hp-offer-disabled::before {
+                background: #dc3545;
+            }
+            .acf-field[data-key="field_funnel_offers"] .acf-row.hp-offer-disabled::after {
+                content: "DISABLED";
+                position: absolute;
+                top: -12px;
+                right: 20px;
+                background: #dc3545;
+                color: #fff;
+                padding: 4px 12px;
+                border-radius: 4px;
+                font-size: 11px;
+                font-weight: 600;
             }
             .acf-field[data-key="field_funnel_offers"] .acf-row-handle .acf-icon.-minus {
                 display: block !important;

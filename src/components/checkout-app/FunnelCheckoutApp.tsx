@@ -122,6 +122,28 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentStep]);
+  
+  // Update browser URL when step changes (Round 2 improvement for Google Merchant Center)
+  // This creates a canonical thank-you URL at /express-shop/{slug}/thank-you/
+  useEffect(() => {
+    if (!funnelSlug) return;
+    
+    const basePath = `/express-shop/${funnelSlug}`;
+    let newPath = basePath + '/checkout/';
+    
+    if (currentStep === 'thankyou') {
+      newPath = basePath + '/thank-you/';
+    } else if (currentStep === 'upsell') {
+      newPath = basePath + '/upsell/';
+    } else if (currentStep === 'processing') {
+      newPath = basePath + '/processing/';
+    }
+    
+    // Only update if path is different from current
+    if (window.location.pathname !== newPath) {
+      window.history.replaceState({ step: currentStep }, '', newPath);
+    }
+  }, [currentStep, funnelSlug]);
 
   // Handle offer selection change - reset kit selection and quantity ONLY when changing offers
   const handleOfferSelect = useCallback((offerId: string) => {

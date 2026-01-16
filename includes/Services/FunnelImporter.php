@@ -183,8 +183,17 @@ class FunnelImporter
     {
         if (empty($offers)) return;
 
+        // Round 2: Handle section_title for new offers format
+        if (isset($offers['section_title'])) {
+            self::setField($postId, 'offers_section_title', $offers['section_title']);
+            $offerItems = $offers['items'] ?? [];
+        } else {
+            // Legacy format - offers is directly an array of items
+            $offerItems = $offers;
+        }
+
         $offersData = [];
-        foreach ($offers as $o) {
+        foreach ($offerItems as $o) {
             if (empty($o['id']) || empty($o['type'])) continue;
 
             $offer = [
@@ -192,6 +201,7 @@ class FunnelImporter
                 'offer_name' => $o['name'] ?? '',
                 'offer_description' => $o['description'] ?? '',
                 'offer_type' => $o['type'],
+                'offer_enabled' => isset($o['enabled']) ? (bool) $o['enabled'] : true, // Round 2
                 'offer_badge' => $o['badge'] ?? '',
                 'offer_is_featured' => !empty($o['is_featured']),
                 'offer_image' => $o['image'] ?? '',
@@ -335,6 +345,8 @@ class FunnelImporter
         update_field('funnel_slug', $funnel['slug'], $postId);
         update_field('funnel_status', $funnel['status'] ?? null, $postId);
         update_field('stripe_mode', $funnel['stripe_mode'] ?? null, $postId);
+        // Round 2
+        update_field('enable_scroll_navigation', !empty($funnel['enable_scroll_navigation']), $postId);
     }
 
     /**
@@ -386,12 +398,15 @@ class FunnelImporter
         if (empty($benefits)) return;
 
         self::setField($postId, 'hero_benefits_title', $benefits['title'] ?? null);
+        self::setField($postId, 'hero_benefits_subtitle', $benefits['subtitle'] ?? null); // Round 2
+        self::setField($postId, 'enable_benefit_categories', !empty($benefits['enable_categories'])); // Round 2
         
         if (!empty($benefits['items'])) {
             self::setField($postId, 'hero_benefits', array_map(function($item) {
                 return [
                     'text' => $item['text'] ?? $item['benefit_text'] ?? null, // Fallback for old format
                     'icon' => $item['icon'] ?? null,
+                    'category' => $item['category'] ?? null, // Round 2
                 ];
             }, $benefits['items']));
         }
@@ -582,6 +597,11 @@ class FunnelImporter
         self::setField($postId, 'global_discount_percent', $checkout['global_discount_percent'] ?? null);
         self::setField($postId, 'enable_points_redemption', $checkout['enable_points_redemption'] ?? null);
         self::setField($postId, 'show_order_summary', $checkout['show_order_summary'] ?? null);
+        // Round 2 additions
+        self::setField($postId, 'checkout_page_title', $checkout['page_title'] ?? null);
+        self::setField($postId, 'checkout_page_subtitle', $checkout['page_subtitle'] ?? null);
+        self::setField($postId, 'checkout_tos_page_id', $checkout['tos_page_id'] ?? null);
+        self::setField($postId, 'checkout_privacy_page_id', $checkout['privacy_page_id'] ?? null);
     }
 
     /**
@@ -648,6 +668,9 @@ class FunnelImporter
         self::setField($postId, 'background_type', $styling['background_type'] ?? null);
         self::setField($postId, 'background_image', $styling['background_image'] ?? null);
         self::setField($postId, 'custom_css', $styling['custom_css'] ?? null);
+        // Round 2: Alternating backgrounds
+        self::setField($postId, 'alternate_section_bg', !empty($styling['alternate_section_bg']));
+        self::setField($postId, 'alternate_bg_color', $styling['alternate_bg_color'] ?? null);
     }
 
     /**

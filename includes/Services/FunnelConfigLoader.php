@@ -461,11 +461,12 @@ class FunnelConfigLoader
                 'cta_text'         => self::getFieldValue('hero_cta_text', $postId),
             ],
             
-            // Benefits section
+            // Benefits section (Round 2 - now supports categorized layout)
             'benefits' => [
                 'title'    => self::getFieldValue('hero_benefits_title', $postId),
                 'subtitle' => self::getFieldValue('hero_benefits_subtitle', $postId),
                 'items'    => self::extractBenefitsWithIcons(self::getFieldValue('hero_benefits', $postId)),
+                'enable_categories' => (bool) self::getFieldValue('enable_benefit_categories', $postId),
             ],
             
             // Offers section (replaces legacy products)
@@ -708,8 +709,9 @@ class FunnelConfigLoader
         foreach ($benefits as $row) {
             if (isset($row['text']) && !empty($row['text'])) {
                 $result[] = [
-                    'text' => (string) $row['text'],
-                    'icon' => $row['icon'] ?? 'check',
+                    'text'     => (string) $row['text'],
+                    'icon'     => $row['icon'] ?? 'check',
+                    'category' => $row['category'] ?? null, // Round 2: category for grouped display
                 ];
             }
         }

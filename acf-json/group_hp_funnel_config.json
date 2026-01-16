@@ -903,7 +903,7 @@
                     "conditional_logic": false,
                     "parent": 125102,
                     "wrapper": {
-                        "width": "",
+                        "width": "50",
                         "class": "",
                         "id": ""
                     },
@@ -911,7 +911,13 @@
                         "check": "Check",
                         "star": "Star",
                         "shield": "Shield",
-                        "heart": "Heart"
+                        "heart": "Heart",
+                        "leaf": "Leaf",
+                        "bolt": "Bolt",
+                        "flask": "Flask",
+                        "brain": "Brain",
+                        "sun": "Sun",
+                        "moon": "Moon"
                     },
                     "default_value": "check",
                     "multiple": 0,
@@ -925,8 +931,78 @@
                     "_name": "icon",
                     "_valid": 1,
                     "parent_repeater": "field_hero_benefits"
+                },
+                {
+                    "ID": 0,
+                    "key": "field_benefit_category",
+                    "label": "Category",
+                    "name": "category",
+                    "aria-label": "",
+                    "prefix": "acf",
+                    "type": "select",
+                    "value": null,
+                    "menu_order": 2,
+                    "instructions": "Group benefits by category for column display.",
+                    "required": false,
+                    "id": "",
+                    "class": "",
+                    "conditional_logic": false,
+                    "parent": 125102,
+                    "wrapper": {
+                        "width": "50",
+                        "class": "",
+                        "id": ""
+                    },
+                    "choices": {
+                        "health": "Health & Wellness",
+                        "science": "Science & Research",
+                        "quality": "Quality & Purity",
+                        "results": "Results & Benefits",
+                        "support": "Support & Care"
+                    },
+                    "default_value": "health",
+                    "multiple": 0,
+                    "allow_null": 1,
+                    "ui": 1,
+                    "ajax": 0,
+                    "placeholder": "Select category...",
+                    "return_format": "value",
+                    "create_options": 0,
+                    "save_options": 0,
+                    "_name": "category",
+                    "_valid": 1,
+                    "parent_repeater": "field_hero_benefits"
                 }
             ]
+        },
+        {
+            "ID": 0,
+            "key": "field_enable_benefit_categories",
+            "label": "Enable Categorized Layout",
+            "name": "enable_benefit_categories",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "true_false",
+            "value": null,
+            "menu_order": 21.5,
+            "instructions": "Display benefits grouped by category in columns instead of a flat list.",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": false,
+            "parent": 125087,
+            "wrapper": {
+                "width": "100",
+                "class": "",
+                "id": ""
+            },
+            "default_value": 0,
+            "ui": 1,
+            "message": "",
+            "ui_on_text": "Columns",
+            "ui_off_text": "List",
+            "_name": "enable_benefit_categories",
+            "_valid": 1
         },
         {
             "ID": 125177,
