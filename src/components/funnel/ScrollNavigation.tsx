@@ -14,12 +14,26 @@ interface SectionInfo {
   id: string;
 }
 
+// Known section type patterns - only these will be included
+const KNOWN_SECTION_TYPES = [
+  { pattern: 'hero-section', name: 'Home', priority: 1 },
+  { pattern: 'benefits', name: 'Benefits', priority: 2 },
+  { pattern: 'offers', name: 'Offers', priority: 3 },
+  { pattern: 'products', name: 'Products', priority: 3 },
+  { pattern: 'testimonials', name: 'Reviews', priority: 4 },
+  { pattern: 'faq', name: 'FAQ', priority: 5 },
+  { pattern: 'cta', name: 'Order', priority: 6 },
+];
+
+// Maximum number of dots to show
+const MAX_SECTIONS = 6;
+
 /**
  * Fixed scroll navigation on the right side of the viewport.
- * Styled to match the reference: https://etemplates.wdesignkit.com/theplusaddons/one-page-scroll-navigation-demo-2/
+ * Styled to match: https://etemplates.wdesignkit.com/theplusaddons/one-page-scroll-navigation-demo-2/
  * 
- * Only includes direct HP funnel shortcode sections (hero, benefits, offers, testimonials, etc.)
- * Excludes nested elements and sub-components.
+ * Only includes recognized HP funnel section types (hero, benefits, offers, testimonials, etc.)
+ * Maximum of 6 sections to keep the navigation clean.
  */
 export const ScrollNavigation = ({
   sections: providedSections,
@@ -32,12 +46,11 @@ export const ScrollNavigation = ({
   const scrollingRef = useRef(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Ensure we're mounted (for portal)
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Find all funnel sections - only top-level shortcode sections
+  // Find funnel sections - strictly filtered
   useEffect(() => {
     const findSections = () => {
       if (providedSections && providedSections.length > 0) {
@@ -52,114 +65,86 @@ export const ScrollNavigation = ({
             });
           }
         });
-        setSectionInfos(infos);
+        setSectionInfos(infos.slice(0, MAX_SECTIONS));
         return;
       }
 
-      // Auto-detect sections - only include top-level shortcode containers
-      // Filter by specific class patterns to avoid nested elements
-      const sectionPatterns = [
-        '.hp-funnel-hero-section-', // Hero section
-        '.hp-funnel-benefits-',     // Benefits
-        '.hp-funnel-offers-',       // Offers
-        '.hp-funnel-products-',     // Products
-        '.hp-funnel-testimonials-', // Testimonials
-        '.hp-funnel-faq-',          // FAQ
-        '.hp-funnel-cta-',          // CTA sections
-        '.hp-funnel-footer-',       // Footer
-      ];
-
+      // Auto-detect - ONLY include recognized section types
       const allSections = document.querySelectorAll<HTMLElement>('.hp-funnel-section');
-      const topLevelSections: SectionInfo[] = [];
-      const seenTypes = new Set<string>();
+      const foundSections: Array<SectionInfo & { priority: number }> = [];
 
       allSections.forEach((section) => {
-        // Check if this is a top-level section (not nested in another hp-funnel-section)
+        // Skip nested sections
         const parent = section.parentElement?.closest('.hp-funnel-section');
-        if (parent) return; // Skip nested sections
+        if (parent) return;
 
-        // Check if section matches one of our patterns
+        // Skip small sections (less than 200px height)
+        if (section.offsetHeight < 200) return;
+
         const className = section.className;
-        let sectionType = '';
         
-        for (const pattern of sectionPatterns) {
-          if (className.includes(pattern.replace('.', ''))) {
-            sectionType = pattern.replace('.hp-funnel-', '').replace('-', '');
-            break;
-          }
-        }
+        // Find matching known type
+        const matchedType = KNOWN_SECTION_TYPES.find(type => 
+          className.includes(type.pattern)
+        );
 
-        // Only include if we haven't seen this type yet (avoid duplicates)
-        // and section has meaningful height
-        if (section.offsetHeight > 100) {
-          const name = getSectionName(className, sectionType);
+        if (matchedType) {
+          // Check if we already have this type (avoid duplicates)
+          const alreadyHasType = foundSections.some(s => 
+            s.name === matchedType.name
+          );
           
-          // For sections without a specific type, use generic naming
-          if (!sectionType || !seenTypes.has(sectionType)) {
-            if (sectionType) seenTypes.add(sectionType);
-            
-            topLevelSections.push({
+          if (!alreadyHasType) {
+            foundSections.push({
               element: section,
-              name: section.dataset.sectionName || name,
-              id: section.id || `section-${topLevelSections.length}`,
+              name: section.dataset.sectionName || matchedType.name,
+              id: section.id || `section-${foundSections.length}`,
+              priority: matchedType.priority,
             });
           }
         }
       });
 
-      setSectionInfos(topLevelSections);
+      // Sort by priority and limit
+      foundSections.sort((a, b) => a.priority - b.priority);
+      setSectionInfos(foundSections.slice(0, MAX_SECTIONS));
     };
 
-    // Initial check with delay to allow sections to render
-    const timer = setTimeout(findSections, 800);
+    const timer = setTimeout(findSections, 1000);
 
-    // Also watch for DOM changes
-    const observer = new MutationObserver(() => {
-      setTimeout(findSections, 200);
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    return () => {
-      clearTimeout(timer);
-      observer.disconnect();
-    };
+    return () => clearTimeout(timer);
   }, [providedSections]);
 
-  // Track scroll position to update active dot
+  // Track scroll position
   useEffect(() => {
     if (sectionInfos.length === 0) return;
 
     const handleScroll = () => {
-      // Don't update during programmatic scrolling
       if (scrollingRef.current) return;
 
       const scrollY = window.scrollY;
-      const viewportHeight = window.innerHeight;
-      const scrollCenter = scrollY + viewportHeight * 0.4;
+      const viewportCenter = scrollY + window.innerHeight * 0.4;
       
       let newActiveIndex = 0;
       
-      // Find which section is most visible
-      sectionInfos.forEach((info, index) => {
-        const rect = info.element.getBoundingClientRect();
+      for (let i = 0; i < sectionInfos.length; i++) {
+        const rect = sectionInfos[i].element.getBoundingClientRect();
         const sectionTop = scrollY + rect.top;
         const sectionBottom = sectionTop + rect.height;
         
-        // Section is considered active if scroll center is within it
-        if (scrollCenter >= sectionTop && scrollCenter < sectionBottom) {
-          newActiveIndex = index;
-        } else if (scrollCenter >= sectionBottom) {
-          // If we've scrolled past this section, it could be active
-          newActiveIndex = Math.min(index + 1, sectionInfos.length - 1);
+        if (viewportCenter >= sectionTop && viewportCenter < sectionBottom) {
+          newActiveIndex = i;
+          break;
+        } else if (viewportCenter >= sectionBottom) {
+          newActiveIndex = i;
         }
-      });
+      }
 
       setActiveIndex(newActiveIndex);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // Initial check
+    handleScroll();
 
     return () => window.removeEventListener('scroll', handleScroll);
   }, [sectionInfos]);
@@ -174,35 +159,29 @@ export const ScrollNavigation = ({
         block: 'start',
       });
 
-      // Clear scrolling flag after animation completes
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
       scrollTimeoutRef.current = setTimeout(() => {
         scrollingRef.current = false;
       }, 1000);
     }
   }, [sectionInfos]);
 
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
     };
   }, []);
 
   // Don't render if not mounted or fewer than 2 sections
   if (!mounted || sectionInfos.length < 2) return null;
 
-  // Use accent color or default to golden yellow like the example
+  // Golden accent color matching reference
   const activeColor = accentColor || '#D4A853';
 
   const navContent = (
     <nav
       className={cn(
-        'fixed right-6 top-1/2 -translate-y-1/2 z-[9999] flex flex-col items-end gap-4',
+        'fixed right-8 top-1/2 -translate-y-1/2 z-[9999] flex flex-col items-end gap-6',
         className
       )}
       aria-label="Page sections"
@@ -214,69 +193,50 @@ export const ScrollNavigation = ({
           <button
             key={info.id}
             onClick={() => scrollToSection(index)}
-            className="group flex items-center gap-2 focus:outline-none"
+            className="group flex items-center gap-3 focus:outline-none transition-all duration-300"
             title={info.name}
             aria-label={`Go to ${info.name}`}
             aria-current={isActive ? 'true' : undefined}
           >
-            {/* Section name - appears on hover */}
+            {/* Section name - visible on hover */}
             <span 
               className={cn(
-                'text-xs font-medium uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap',
-                isActive ? 'text-[var(--nav-accent)]' : 'text-gray-400'
+                'text-[11px] font-medium uppercase tracking-[0.15em] opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap pr-2',
+                isActive ? 'opacity-100' : ''
               )}
-              style={{ '--nav-accent': activeColor } as React.CSSProperties}
+              style={{ color: isActive ? activeColor : '#9CA3AF' }}
             >
               {info.name}
             </span>
             
-            {/* Line + dot indicator */}
-            <div className="flex items-center gap-1">
-              {/* Animated line */}
-              <div 
-                className={cn(
-                  'h-[2px] transition-all duration-300 rounded-full',
-                  isActive 
-                    ? 'w-8 bg-[var(--nav-accent)]' 
-                    : 'w-4 bg-gray-500/50 group-hover:w-6 group-hover:bg-gray-400'
-                )}
-                style={{ '--nav-accent': activeColor } as React.CSSProperties}
-              />
-              
-              {/* Dot */}
-              <div 
-                className={cn(
-                  'w-2.5 h-2.5 rounded-full transition-all duration-300 border-2',
-                  isActive 
-                    ? 'bg-[var(--nav-accent)] border-[var(--nav-accent)] shadow-[0_0_10px_var(--nav-accent)]' 
-                    : 'bg-transparent border-gray-500/50 group-hover:border-gray-400'
-                )}
-                style={{ '--nav-accent': activeColor } as React.CSSProperties}
-              />
-            </div>
+            {/* Line indicator */}
+            <div 
+              className="transition-all duration-300 rounded-full"
+              style={{
+                width: isActive ? '32px' : '16px',
+                height: '2px',
+                backgroundColor: isActive ? activeColor : 'rgba(156, 163, 175, 0.4)',
+              }}
+            />
+            
+            {/* Dot */}
+            <div 
+              className="transition-all duration-300 rounded-full"
+              style={{
+                width: '10px',
+                height: '10px',
+                backgroundColor: isActive ? activeColor : 'transparent',
+                border: `2px solid ${isActive ? activeColor : 'rgba(156, 163, 175, 0.5)'}`,
+                boxShadow: isActive ? `0 0 12px ${activeColor}` : 'none',
+              }}
+            />
           </button>
         );
       })}
     </nav>
   );
 
-  // Use portal to render at body level for proper fixed positioning
   return createPortal(navContent, document.body);
 };
-
-/**
- * Get a human-readable name for a section based on its class
- */
-function getSectionName(className: string, sectionType: string): string {
-  if (className.includes('hero-section')) return 'Home';
-  if (className.includes('benefits')) return 'Benefits';
-  if (className.includes('offers') || className.includes('products')) return 'Offers';
-  if (className.includes('testimonials')) return 'Reviews';
-  if (className.includes('faq')) return 'FAQ';
-  if (className.includes('cta')) return 'Order';
-  if (className.includes('footer')) return 'Contact';
-  if (sectionType) return sectionType.charAt(0).toUpperCase() + sectionType.slice(1);
-  return 'Section';
-}
 
 export default ScrollNavigation;
