@@ -914,7 +914,7 @@ class Plugin
     public static function autoSyncAcfJson(): void
     {
         // Only run if ACF is active and we have the required functions
-        if (!function_exists('acf_get_local_json_files') || !is_admin()) {
+        if (!function_exists('acf_get_local_json_files')) {
             return;
         }
 
@@ -923,13 +923,19 @@ class Plugin
             return;
         }
 
-        // List of internal post types supported by ACF for JSON sync
-        $acf_internal_types = ['acf-field-group', 'acf-post-type', 'acf-taxonomy'];
-        
         // Check if we need a forced sync due to version change
         $current_version = defined('HP_RW_VERSION') ? HP_RW_VERSION : '';
         $stored_version = get_option('hp_rw_version', '');
         $force_sync = ($current_version !== $stored_version);
+        
+        // On frontend, only run if version changed (to avoid performance hit on every page)
+        // On admin, always check for sync opportunities
+        if (!is_admin() && !$force_sync) {
+            return;
+        }
+
+        // List of internal post types supported by ACF for JSON sync
+        $acf_internal_types = ['acf-field-group', 'acf-post-type', 'acf-taxonomy'];
 
         foreach ($acf_internal_types as $internal_type) {
             $files = \acf_get_local_json_files($internal_type);
