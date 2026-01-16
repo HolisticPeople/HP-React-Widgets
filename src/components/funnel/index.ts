@@ -15,6 +15,9 @@ export { FunnelCta } from './FunnelCta';
 export { FunnelFooter } from './FunnelFooter';
 export { FunnelScience } from './FunnelScience';
 
+// Round 2 Components
+export { ScrollNavigation } from './ScrollNavigation';
+
 // Re-export types
 export type { FunnelHeaderProps, NavItem } from './FunnelHeader';
 export type { FunnelHeroSectionProps } from './FunnelHeroSection';
@@ -28,4 +31,5 @@ export type { FunnelCtaProps } from './FunnelCta';
 export type { FunnelFooterProps, FooterLink } from './FunnelFooter';
 export type { FunnelScienceProps, ScienceSection } from './FunnelScience';
 export type { QuoteCategory, ArticleLink } from './FunnelAuthority';
+export type { ScrollNavigationProps } from './ScrollNavigation';
 

@@ -186,6 +186,14 @@ class Plugin
             'root_id'     => 'hp-funnel-science-root',
             'hydrator_class' => 'FunnelScienceShortcode',
         ],
+        'hp_funnel_scroll_navigation' => [
+            'label'       => 'Funnel Scroll Navigation',
+            'description' => 'Fixed scroll navigation dots on the right side of the viewport.',
+            'example'     => '[hp_funnel_scroll_navigation]',
+            'component'   => 'ScrollNavigation',
+            'root_id'     => 'hp-funnel-scroll-navigation-root',
+            'hydrator_class' => 'FunnelScrollNavigationShortcode',
+        ],
         // Navigation components
         'hp_menu' => [
             'label'       => 'HP Menu',
