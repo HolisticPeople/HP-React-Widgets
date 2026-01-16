@@ -913,8 +913,13 @@ class Plugin
      */
     public static function autoSyncAcfJson(): void
     {
+        // #region agent log
+        error_log('[HP-RW DEBUG] autoSyncAcfJson called');
+        // #endregion
+        
         // Only run if ACF is active and we have the required functions
         if (!function_exists('acf_get_local_json_files')) {
+            error_log('[HP-RW DEBUG] autoSyncAcfJson: ACF function not available, exiting');
             return;
         }
 
@@ -928,9 +933,14 @@ class Plugin
         $stored_version = get_option('hp_rw_version', '');
         $force_sync = ($current_version !== $stored_version);
         
+        // #region agent log
+        error_log('[HP-RW DEBUG] autoSyncAcfJson: current=' . $current_version . ', stored=' . $stored_version . ', force_sync=' . ($force_sync ? 'true' : 'false') . ', is_admin=' . (is_admin() ? 'true' : 'false'));
+        // #endregion
+        
         // On frontend, only run if version changed (to avoid performance hit on every page)
         // On admin, always check for sync opportunities
         if (!is_admin() && !$force_sync) {
+            error_log('[HP-RW DEBUG] autoSyncAcfJson: Skipping - frontend and no version change');
             return;
         }
 
