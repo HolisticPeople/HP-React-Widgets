@@ -59,9 +59,12 @@ class FunnelProductsShortcode
         // Transform offers into the products format expected by FunnelProducts component
         $products = $this->transformOffersToProducts($offers);
 
+        // Get section title from config (Round 2 improvement), fallback to default
+        $sectionTitle = $config['offers_section']['title'] ?? 'Choose Your Package';
+        
         // Build props for React component
         $props = [
-            'title'              => !empty($atts['title']) ? $atts['title'] : 'Choose Your Package',
+            'title'              => !empty($atts['title']) ? $atts['title'] : $sectionTitle,
             'subtitle'           => $atts['subtitle'],
             'products'           => $products,
             'defaultCtaText'     => $atts['cta_text'],

@@ -468,7 +468,12 @@ class FunnelConfigLoader
                 'items'    => self::extractBenefitsWithIcons(self::getFieldValue('hero_benefits', $postId)),
             ],
             
-            // Offers (replaces legacy products)
+            // Offers section (replaces legacy products)
+            'offers_section' => [
+                'title' => self::getFieldValue('offers_section_title', $postId) ?: 'Choose Your Package',
+            ],
+            
+            // Offers items (replaces legacy products)
             'offers' => (function() use ($postId) {
                 $val = self::getFieldValue('funnel_offers', $postId);
                 if ($val && !is_array($val)) {
@@ -909,6 +914,12 @@ class FunnelConfigLoader
             $offerType = $row['offer_type'] ?? 'single';
             $offerId = $row['offer_id'] ?? ('offer-' . ++$offerIndex);
             
+            // Skip disabled offers (Round 2 improvement)
+            $offerEnabled = $row['offer_enabled'] ?? true;
+            if (!$offerEnabled) {
+                continue;
+            }
+            
             // Base offer data
             $offer = [
                 'id'            => $offerId,
@@ -918,6 +929,7 @@ class FunnelConfigLoader
                 'badge'         => $row['offer_badge'] ?? '',
                 'bonusMessage'  => $row['offer_bonus_message'] ?? '',
                 'isFeatured'    => !empty($row['offer_is_featured']),
+                'enabled'       => true, // Only enabled offers reach here
                 'image'         => self::resolveImageUrl($row['offer_image'] ?? null),
                 'image_alt'     => $row['offer_image_alt'] ?? '',
                 'discountLabel' => $row['offer_discount_label'] ?? '',
