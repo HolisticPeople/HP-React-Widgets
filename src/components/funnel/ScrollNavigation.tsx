@@ -23,6 +23,9 @@ export const ScrollNavigation = ({
   // Ensure we're mounted (for portal)
   useEffect(() => {
     setMounted(true);
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ScrollNavigation.tsx:24',message:'ScrollNavigation mounted',data:{providedSections},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B,E'})}).catch(()=>{});
+    // #endregion
   }, []);
 
   // Find all funnel sections - with delay to allow other components to render
@@ -45,7 +48,13 @@ export const ScrollNavigation = ({
     };
 
     // Initial check with delay to allow other sections to render
-    const timer = setTimeout(findSections, 500);
+    const timer = setTimeout(() => {
+      findSections();
+      // #region agent log
+      const allSections = document.querySelectorAll('.hp-funnel-section');
+      fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ScrollNavigation.tsx:52',message:'findSections after delay',data:{sectionsFound:allSections.length,sectionClasses:Array.from(allSections).map(s=>s.className)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C,D'})}).catch(()=>{});
+      // #endregion
+    }, 500);
 
     // Also watch for DOM changes in case sections are added dynamically
     const observer = new MutationObserver(() => {
@@ -94,6 +103,9 @@ export const ScrollNavigation = ({
   }, [sectionElements]);
 
   // Don't render if not mounted or fewer than 2 sections
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ScrollNavigation.tsx:95',message:'ScrollNav render decision',data:{mounted,sectionElementsLength:sectionElements.length,willRender:mounted&&sectionElements.length>=2},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C,E'})}).catch(()=>{});
+  // #endregion
   if (!mounted || sectionElements.length < 2) return null;
 
   const navContent = (

@@ -72,6 +72,9 @@ export const FunnelHeroSection = ({
   enableScrollNavigation = false,
   className,
 }: FunnelHeroSectionProps) => {
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'FunnelHeroSection.tsx:75',message:'FunnelHeroSection render',data:{enableScrollNavigation,titleReceived:!!title},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B'})}).catch(()=>{});
+  // #endregion
   // Handle CTA button click based on behavior
   const handleCtaClick = () => {
     if (ctaBehavior === 'checkout') {
