@@ -57,7 +57,7 @@ class FunnelTestimonialsShortcode
         // Get layout from config or shortcode attribute
         $layout = !empty($atts['layout']) && $atts['layout'] !== 'cards' 
             ? $atts['layout'] 
-            : ($testimonialsConfig['displayMode'] ?? 'cards');
+            : ($testimonialsConfig['display_mode'] ?? 'cards');
         
         // Get columns from config or shortcode attribute
         $columns = (int) $atts['columns'] !== 3 

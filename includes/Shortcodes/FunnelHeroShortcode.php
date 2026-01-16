@@ -95,16 +95,39 @@ class FunnelHeroShortcode
             'backgroundImage'   => $config['styling']['background_image'],
             'footerText'        => $config['footer']['text'],
             'footerDisclaimer'  => $config['footer']['disclaimer'],
+            // Scroll navigation - automatically rendered when enabled
+            'enableScrollNavigation' => !empty($config['general']['enable_scroll_navigation']),
         ];
 
         // Add custom CSS if present
         $customCss = '';
+        $cssRules = [];
+        
         if (!empty($config['styling']['custom_css'])) {
-            $customCss = sprintf(
-                '<style>.hp-funnel-%s { %s }</style>',
+            $cssRules[] = sprintf(
+                '.hp-funnel-%s { %s }',
                 esc_attr($config['slug']),
                 wp_strip_all_tags($config['styling']['custom_css'])
             );
+        }
+        
+        // Add alternating section background CSS if enabled
+        if (!empty($config['styling']['alternate_section_bg']) && !empty($config['styling']['alternate_bg_color'])) {
+            $altBgColor = sanitize_hex_color($config['styling']['alternate_bg_color']);
+            if ($altBgColor) {
+                // Apply to even sections (2nd, 4th, etc.) after hero
+                // Using nth-of-type to target sections on the page
+                $cssRules[] = sprintf(
+                    '.hp-funnel-%s .hp-funnel-section:nth-of-type(even), .hp-funnel-section.hp-funnel-%s:nth-of-type(even) { background-color: %s !important; }',
+                    esc_attr($config['slug']),
+                    esc_attr($config['slug']),
+                    $altBgColor
+                );
+            }
+        }
+        
+        if (!empty($cssRules)) {
+            $customCss = '<style>' . implode("\n", $cssRules) . '</style>';
         }
 
         $rootId = 'hp-funnel-hero-' . esc_attr($config['slug']) . '-' . uniqid();

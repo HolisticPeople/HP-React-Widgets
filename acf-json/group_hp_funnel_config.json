@@ -872,7 +872,7 @@
                     "conditional_logic": false,
                     "parent": 125102,
                     "wrapper": {
-                        "width": "",
+                        "width": "60",
                         "class": "",
                         "id": ""
                     },
@@ -903,7 +903,7 @@
                     "conditional_logic": false,
                     "parent": 125102,
                     "wrapper": {
-                        "width": "50",
+                        "width": "20",
                         "class": "",
                         "id": ""
                     },
@@ -949,7 +949,7 @@
                     "conditional_logic": false,
                     "parent": 125102,
                     "wrapper": {
-                        "width": "50",
+                        "width": "20",
                         "class": "",
                         "id": ""
                     },
@@ -1034,14 +1034,14 @@
         {
             "ID": 0,
             "key": "field_offers_section_title",
-            "label": "Section Title",
+            "label": "Offers Section Title",
             "name": "offers_section_title",
             "aria-label": "",
             "prefix": "acf",
             "type": "text",
             "value": null,
             "menu_order": 22.5,
-            "instructions": "Title displayed above the offers/products section.",
+            "instructions": "Title shown above the offers/packages section on the landing page (e.g., 'Choose Your Package').",
             "required": false,
             "id": "",
             "class": "",

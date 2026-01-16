@@ -497,6 +497,10 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
             getCartItems={getCartItems}
             initialUserData={props.initialUserData}
             onComplete={handleCheckoutComplete}
+            pageTitle={props.pageTitle}
+            pageSubtitle={props.pageSubtitle}
+            tosPageId={props.tosPageId}
+            privacyPageId={props.privacyPageId}
           />
         )}
 

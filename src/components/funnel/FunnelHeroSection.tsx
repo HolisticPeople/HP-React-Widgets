@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { ScrollNavigation } from './ScrollNavigation';
 
 export interface FunnelHeroSectionProps {
   // Content
@@ -29,6 +30,9 @@ export interface FunnelHeroSectionProps {
   imagePosition?: 'right' | 'left' | 'background';
   minHeight?: string;
   titleSize?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'; // Title size modifier
+  
+  // Scroll navigation (rendered automatically when enabled)
+  enableScrollNavigation?: boolean;
   
   className?: string;
 }
@@ -65,6 +69,7 @@ export const FunnelHeroSection = ({
   imagePosition = 'right',
   minHeight = '600px',
   titleSize = 'xl', // Default to xl (matches reference funnel)
+  enableScrollNavigation = false,
   className,
 }: FunnelHeroSectionProps) => {
   // Handle CTA button click based on behavior
@@ -247,6 +252,9 @@ export const FunnelHeroSection = ({
           )}
         </div>
       </div>
+
+      {/* Scroll Navigation - rendered automatically when enabled in funnel settings */}
+      {enableScrollNavigation && <ScrollNavigation />}
     </section>
   );
 };

@@ -266,6 +266,11 @@ export interface FunnelCheckoutAppConfig {
   footerText: string;
   footerDisclaimer: string;
   initialUserData?: InitialUserData | null; // Pre-filled user data for logged-in users
+  // Checkout page configuration
+  pageTitle?: string;
+  pageSubtitle?: string;
+  tosPageId?: number;
+  privacyPageId?: number;
 }
 
 

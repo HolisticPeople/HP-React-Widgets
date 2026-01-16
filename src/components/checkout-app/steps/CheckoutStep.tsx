@@ -242,6 +242,9 @@ interface CheckoutStepProps {
   // Configurable page title
   pageTitle?: string;
   pageSubtitle?: string;
+  // Legal page IDs for TOS/Privacy popups
+  tosPageId?: number;
+  privacyPageId?: number;
 }
 
 export const CheckoutStep = ({
@@ -276,6 +279,8 @@ export const CheckoutStep = ({
   onComplete,
   pageTitle = 'Secure Your Order',
   pageSubtitle = 'Choose your preferred package and complete your purchase',
+  tosPageId,
+  privacyPageId,
 }: CheckoutStepProps) => {
   // Ensure offers is always an array
   const offers = Array.isArray(rawOffers) ? rawOffers : [];
@@ -1535,7 +1540,7 @@ export const CheckoutStep = ({
                 type="submit"
                 size="lg"
                 disabled={isSubmitting || isCalculating || stripePayment.isProcessing || !stripePayment.isReady}
-                className="w-full rounded-full py-7 font-bold text-xl transition-all duration-300 bg-accent text-accent-foreground hover:bg-accent/90 shadow-[0_0_30px_hsl(var(--accent)/0.4)] hover:shadow-[0_0_40px_hsl(var(--accent)/0.6)] disabled:opacity-50 disabled:shadow-none"
+                className="w-full rounded-full py-7 font-bold text-xl transition-all duration-300 bg-purple-600/80 text-white hover:bg-orange-500 hover:text-purple-900 shadow-[0_0_30px_rgba(147,51,234,0.4)] hover:shadow-[0_0_40px_rgba(249,115,22,0.6)] disabled:opacity-50 disabled:shadow-none"
               >
                 {isSubmitting || stripePayment.isProcessing ? (
                   <div className="flex items-center justify-center">
@@ -1608,6 +1613,8 @@ export const CheckoutStep = ({
             isOpen={legalPopupType !== null}
             onClose={() => setLegalPopupType(null)}
             apiBase="/wp-json/wp/v2"
+            tosPageId={tosPageId}
+            privacyPageId={privacyPageId}
           />
         </div>
       </div>
