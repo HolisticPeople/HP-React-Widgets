@@ -98,10 +98,6 @@ class FunnelHeroShortcode
             // Scroll navigation - automatically rendered when enabled
             'enableScrollNavigation' => !empty($config['general']['enable_scroll_navigation']),
         ];
-        
-        // #region agent log - PHP side debug
-        error_log('[HP-RW DEBUG] FunnelHeroShortcode: scroll_nav_raw=' . var_export($config['general']['enable_scroll_navigation'] ?? 'NOT_SET', true) . ', computed=' . var_export($props['enableScrollNavigation'], true) . ', slug=' . $config['slug']);
-        // #endregion
 
         // Add custom CSS if present
         $customCss = '';

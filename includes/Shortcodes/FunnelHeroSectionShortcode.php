@@ -81,12 +81,9 @@ class FunnelHeroSectionShortcode
             // Scroll navigation - automatically rendered when enabled
             'enableScrollNavigation' => !empty($config['general']['enable_scroll_navigation']),
         ];
-        
-        // #region agent log - PHP side debug
-        error_log('[HP-RW DEBUG] FunnelHeroSectionShortcode: scroll_nav_raw=' . var_export($config['general']['enable_scroll_navigation'] ?? 'NOT_SET', true) . ', computed=' . var_export($props['enableScrollNavigation'], true) . ', slug=' . $config['slug']);
-        // #endregion
 
-        return $this->renderWidget('FunnelHeroSection', $config['slug'], $props, $styling);
+        // Build output with alternating background support
+        return $this->renderWidgetWithAlternatingBg($config, $props, $styling);
     }
 
     /**
@@ -188,6 +185,58 @@ class FunnelHeroSectionShortcode
             esc_attr($component),
             esc_attr(wp_json_encode($props))
         );
+    }
+
+    /**
+     * Render widget with alternating background support.
+     * This method adds CSS and JS for alternating section backgrounds if enabled.
+     *
+     * @param array $config Full funnel config
+     * @param array $props Props for React
+     * @param array $styling Styling config
+     * @return string HTML
+     */
+    private function renderWidgetWithAlternatingBg(array $config, array $props, array $styling): string
+    {
+        $slug = $config['slug'];
+        $output = '';
+        
+        // Add alternating background CSS and JS if enabled
+        if (!empty($config['styling']['alternate_section_bg']) && !empty($config['styling']['alternate_bg_color'])) {
+            $altBgColor = sanitize_hex_color($config['styling']['alternate_bg_color']);
+            if ($altBgColor) {
+                // CSS for alternate sections
+                $output .= sprintf(
+                    '<style>.hp-funnel-section.hp-alt-bg { background-color: %s !important; }</style>',
+                    $altBgColor
+                );
+                
+                // JS to apply the class to alternate sections (skip hero at index 0)
+                $output .= '<script>
+(function() {
+    function applyAltBg() {
+        var sections = document.querySelectorAll(".hp-funnel-section");
+        sections.forEach(function(section, index) {
+            // Skip hero (index 0), apply to 2nd, 4th, 6th... (indices 1, 3, 5...)
+            if (index > 0 && index % 2 === 1) {
+                section.classList.add("hp-alt-bg");
+            }
+        });
+    }
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", applyAltBg);
+    } else {
+        setTimeout(applyAltBg, 100);
+    }
+})();
+</script>';
+            }
+        }
+        
+        // Render the widget
+        $output .= $this->renderWidget('FunnelHeroSection', $slug, $props, $styling);
+        
+        return $output;
     }
 }
 
