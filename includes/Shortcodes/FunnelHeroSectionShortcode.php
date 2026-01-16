@@ -78,7 +78,13 @@ class FunnelHeroSectionShortcode
             'textAlign'          => !empty($atts['text_align']) ? $atts['text_align'] : 'left',
             'imagePosition'      => !empty($atts['image_position']) ? $atts['image_position'] : 'right',
             'minHeight'          => !empty($atts['min_height']) ? $atts['min_height'] : '600px',
+            // Scroll navigation - automatically rendered when enabled
+            'enableScrollNavigation' => !empty($config['general']['enable_scroll_navigation']),
         ];
+        
+        // #region agent log - PHP side debug
+        error_log('[HP-RW DEBUG] FunnelHeroSectionShortcode: scroll_nav_raw=' . var_export($config['general']['enable_scroll_navigation'] ?? 'NOT_SET', true) . ', computed=' . var_export($props['enableScrollNavigation'], true) . ', slug=' . $config['slug']);
+        // #endregion
 
         return $this->renderWidget('FunnelHeroSection', $config['slug'], $props, $styling);
     }
