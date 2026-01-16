@@ -1281,26 +1281,31 @@ export const CheckoutStep = ({
               {/* Address Picker for returning customers with multiple addresses */}
               {customerData && customerData.allAddresses && customerData.allAddresses.shipping.length > 1 && (
                 <>
-                  <AddressPicker
-                    addresses={customerData.allAddresses.shipping}
-                    selectedAddress={formData.address}
-                    selectedZip={formData.zipCode}
-                    onSelect={(addr) => {
-                      setFormData(prev => ({
-                        ...prev,
-                        firstName: addr.firstName || prev.firstName,
-                        lastName: addr.lastName || prev.lastName,
-                        phone: addr.phone || prev.phone,
-                        address: addr.address1 || '',
-                        city: addr.city || '',
-                        state: addr.state || '',
-                        zipCode: addr.postcode || '',
-                        country: addr.country || 'US',
-                      }));
-                    }}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Select from your saved addresses above, or enter a new address below.
+                  <div className="mb-4 p-4 bg-accent/10 rounded-lg border border-accent/30">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-medium text-foreground">Select from your saved addresses:</span>
+                    </div>
+                    <AddressPicker
+                      addresses={customerData.allAddresses.shipping}
+                      selectedAddress={formData.address}
+                      selectedZip={formData.zipCode}
+                      onSelect={(addr) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          firstName: addr.firstName || prev.firstName,
+                          lastName: addr.lastName || prev.lastName,
+                          phone: addr.phone || prev.phone,
+                          address: addr.address1 || '',
+                          city: addr.city || '',
+                          state: addr.state || '',
+                          zipCode: addr.postcode || '',
+                          country: addr.country || 'US',
+                        }));
+                      }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 mb-4">
+                    Or enter a new address below:
                   </p>
                 </>
               )}
@@ -1591,7 +1596,8 @@ export const CheckoutStep = ({
               <button
                 type="button"
                 onClick={() => setLegalPopupType('terms')}
-                className="text-accent hover:underline focus:outline-none"
+                className="text-accent underline hover:text-accent/80 bg-transparent border-none p-0 m-0 cursor-pointer"
+                style={{ font: 'inherit', fontSize: 'inherit' }}
               >
                 terms and conditions
               </button>
@@ -1599,7 +1605,8 @@ export const CheckoutStep = ({
               <button
                 type="button"
                 onClick={() => setLegalPopupType('privacy')}
-                className="text-accent hover:underline focus:outline-none"
+                className="text-accent underline hover:text-accent/80 bg-transparent border-none p-0 m-0 cursor-pointer"
+                style={{ font: 'inherit', fontSize: 'inherit' }}
               >
                 privacy policy
               </button>

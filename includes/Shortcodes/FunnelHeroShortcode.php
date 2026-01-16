@@ -111,17 +111,37 @@ class FunnelHeroShortcode
             );
         }
         
-        // Add alternating section background CSS if enabled
+        // Add alternating section background CSS and JS if enabled
+        $alternatingJs = '';
         if (!empty($config['styling']['alternate_section_bg']) && !empty($config['styling']['alternate_bg_color'])) {
             $altBgColor = sanitize_hex_color($config['styling']['alternate_bg_color']);
             if ($altBgColor) {
-                // Apply to even sections (2nd, 4th, etc.) after hero
-                // Using nth-of-type to target sections on the page
+                // Add CSS class for alternate sections
                 $cssRules[] = sprintf(
-                    '.hp-funnel-%s .hp-funnel-section:nth-of-type(even), .hp-funnel-section.hp-funnel-%s:nth-of-type(even) { background-color: %s !important; }',
-                    esc_attr($config['slug']),
-                    esc_attr($config['slug']),
+                    '.hp-funnel-section.hp-alt-bg { background-color: %s !important; }',
                     $altBgColor
+                );
+                
+                // Add JS to apply the class to even sections (run after page load)
+                $alternatingJs = sprintf(
+                    '<script>
+                    (function() {
+                        function applyAltBg() {
+                            var sections = document.querySelectorAll(".hp-funnel-section");
+                            sections.forEach(function(section, index) {
+                                // Skip hero section (index 0), apply to even indices (2nd, 4th, etc. which are index 1, 3, etc.)
+                                if (index > 0 && index %% 2 === 0) {
+                                    section.classList.add("hp-alt-bg");
+                                }
+                            });
+                        }
+                        if (document.readyState === "loading") {
+                            document.addEventListener("DOMContentLoaded", applyAltBg);
+                        } else {
+                            setTimeout(applyAltBg, 100);
+                        }
+                    })();
+                    </script>'
                 );
             }
         }
@@ -132,7 +152,7 @@ class FunnelHeroShortcode
 
         $rootId = 'hp-funnel-hero-' . esc_attr($config['slug']) . '-' . uniqid();
 
-        return $customCss . sprintf(
+        return $customCss . $alternatingJs . sprintf(
             '<div id="%s" class="hp-funnel-%s" data-hp-widget="1" data-component="%s" data-props="%s"></div>',
             esc_attr($rootId),
             esc_attr($config['slug']),

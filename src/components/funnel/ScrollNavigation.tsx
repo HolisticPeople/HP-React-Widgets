@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 
 export interface ScrollNavigationProps {
@@ -9,6 +10,7 @@ export interface ScrollNavigationProps {
 /**
  * Fixed scroll navigation dots on the right side of the viewport.
  * Automatically detects sections with hp-funnel-section class or uses provided section IDs.
+ * Uses portal to render at body level for proper fixed positioning.
  */
 export const ScrollNavigation = ({
   sections: providedSections,
@@ -16,24 +18,46 @@ export const ScrollNavigation = ({
 }: ScrollNavigationProps) => {
   const [sectionElements, setSectionElements] = useState<HTMLElement[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [mounted, setMounted] = useState(false);
 
-  // Find all funnel sections on mount
+  // Ensure we're mounted (for portal)
   useEffect(() => {
-    if (providedSections && providedSections.length > 0) {
-      // Use provided section IDs
-      const elements: HTMLElement[] = [];
-      providedSections.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) elements.push(el);
-      });
-      setSectionElements(elements);
-    } else {
-      // Auto-detect sections with hp-funnel-section class
-      const elements = Array.from(
-        document.querySelectorAll<HTMLElement>('.hp-funnel-section')
-      );
-      setSectionElements(elements);
-    }
+    setMounted(true);
+  }, []);
+
+  // Find all funnel sections - with delay to allow other components to render
+  useEffect(() => {
+    const findSections = () => {
+      if (providedSections && providedSections.length > 0) {
+        const elements: HTMLElement[] = [];
+        providedSections.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) elements.push(el);
+        });
+        setSectionElements(elements);
+      } else {
+        // Auto-detect sections with hp-funnel-section class
+        const elements = Array.from(
+          document.querySelectorAll<HTMLElement>('.hp-funnel-section')
+        );
+        setSectionElements(elements);
+      }
+    };
+
+    // Initial check with delay to allow other sections to render
+    const timer = setTimeout(findSections, 500);
+
+    // Also watch for DOM changes in case sections are added dynamically
+    const observer = new MutationObserver(() => {
+      findSections();
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
   }, [providedSections]);
 
   // Track scroll position to update active dot
@@ -69,13 +93,13 @@ export const ScrollNavigation = ({
     }
   }, [sectionElements]);
 
-  // Don't render if fewer than 2 sections
-  if (sectionElements.length < 2) return null;
+  // Don't render if not mounted or fewer than 2 sections
+  if (!mounted || sectionElements.length < 2) return null;
 
-  return (
+  const navContent = (
     <nav
       className={cn(
-        'fixed right-4 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-3',
+        'fixed right-4 top-1/2 -translate-y-1/2 z-[9999] flex flex-col gap-3',
         className
       )}
       aria-label="Page sections"
@@ -104,6 +128,9 @@ export const ScrollNavigation = ({
       })}
     </nav>
   );
+
+  // Use portal to render at body level for proper fixed positioning
+  return createPortal(navContent, document.body);
 };
 
 export default ScrollNavigation;
