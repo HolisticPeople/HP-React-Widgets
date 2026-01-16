@@ -114,19 +114,40 @@ export const FunnelTestimonials = ({
   const scrollCarousel = (direction: 'prev' | 'next') => {
     if (!carouselRef.current) return;
     const container = carouselRef.current;
-    const cardWidth = container.querySelector('.testimonial-card')?.clientWidth || 320;
-    const gap = 24;
-    const scrollAmount = cardWidth + gap;
+    const cards = container.querySelectorAll('.testimonial-card');
+    if (cards.length === 0) return;
     
     const newIndex = direction === 'next' 
       ? Math.min(currentIndex + 1, testimonials.length - 1)
       : Math.max(currentIndex - 1, 0);
     
     setCurrentIndex(newIndex);
-    container.scrollTo({
-      left: newIndex * scrollAmount,
-      behavior: 'smooth'
-    });
+    
+    // Scroll to the target card directly
+    const targetCard = cards[newIndex] as HTMLElement;
+    if (targetCard) {
+      targetCard.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'start'
+      });
+    }
+  };
+
+  const scrollToIndex = (index: number) => {
+    if (!carouselRef.current) return;
+    const cards = carouselRef.current.querySelectorAll('.testimonial-card');
+    if (cards.length === 0 || index < 0 || index >= cards.length) return;
+    
+    setCurrentIndex(index);
+    const targetCard = cards[index] as HTMLElement;
+    if (targetCard) {
+      targetCard.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'start'
+      });
+    }
   };
 
   // Card style used by both layouts
@@ -401,6 +422,30 @@ export const FunnelTestimonials = ({
               >
                 <ArrowRightIcon />
               </button>
+            )}
+
+            {/* Dot indicators */}
+            {testimonials.length > 1 && (
+              <div className="flex justify-center gap-2 mt-6">
+                {testimonials.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => scrollToIndex(index)}
+                    className={cn(
+                      'w-2.5 h-2.5 rounded-full transition-all duration-300',
+                      currentIndex === index 
+                        ? 'scale-125' 
+                        : 'opacity-50 hover:opacity-75'
+                    )}
+                    style={{
+                      backgroundColor: currentIndex === index 
+                        ? 'var(--hp-funnel-text-accent, #eab308)' 
+                        : 'var(--hp-funnel-border, #7c3aed)',
+                    }}
+                    aria-label={`Go to testimonial ${index + 1}`}
+                  />
+                ))}
+              </div>
             )}
           </div>
         )}

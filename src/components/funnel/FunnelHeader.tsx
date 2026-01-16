@@ -30,7 +30,7 @@ export const FunnelHeader = ({
       className={cn(
         'hp-funnel-header w-full z-50 transition-all duration-300',
         sticky && 'sticky top-0',
-        transparent ? 'bg-transparent' : 'bg-background/95 backdrop-blur-sm border-b border-border/50',
+        transparent ? 'bg-transparent' : 'bg-background/95 backdrop-blur-sm',
         className
       )}
     >

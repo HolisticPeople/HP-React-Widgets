@@ -10,6 +10,7 @@ import { useCheckoutApi } from '../hooks/useCheckoutApi';
 import { useStripePayment } from '../hooks/useStripePayment';
 import { getServiceCode, extractShippingCost } from '../utils/shipping';
 import { getCarrierLogo } from '../utils/carrierLogos';
+import { LegalPopup } from '../LegalPopup';
 import type { 
   Offer,
   SingleOffer,
@@ -238,6 +239,9 @@ interface CheckoutStepProps {
   getCartItems: () => CartItem[];
   initialUserData?: import('../types').InitialUserData | null;
   onComplete: (piId: string, address: Address, orderDraftId: string) => void;
+  // Configurable page title
+  pageTitle?: string;
+  pageSubtitle?: string;
 }
 
 export const CheckoutStep = ({
@@ -270,6 +274,8 @@ export const CheckoutStep = ({
   getCartItems,
   initialUserData,
   onComplete,
+  pageTitle = 'Secure Your Order',
+  pageSubtitle = 'Choose your preferred package and complete your purchase',
 }: CheckoutStepProps) => {
   // Ensure offers is always an array
   const offers = Array.isArray(rawOffers) ? rawOffers : [];
@@ -293,6 +299,9 @@ export const CheckoutStep = ({
   const [isFetchingShipping, setIsFetchingShipping] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Legal popup state
+  const [legalPopupType, setLegalPopupType] = useState<'terms' | 'privacy' | null>(null);
   
   // Store draft ID across attempts
   const orderDraftIdRef = useRef<string | null>(null);
@@ -1011,17 +1020,19 @@ export const CheckoutStep = ({
       {/* Header */}
       <div className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-accent via-accent to-foreground bg-clip-text text-transparent">
-          Secure Your Order
+          {pageTitle}
         </h1>
-        <p className="text-lg text-muted-foreground">
-          Choose your preferred package and complete your purchase
-        </p>
+        {pageSubtitle && (
+          <p className="text-lg text-muted-foreground">
+            {pageSubtitle}
+          </p>
+        )}
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Left Column - Offer Selection */}
-        <div className="space-y-6">
-          <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
+        <div className="space-y-6 lg:sticky lg:top-4 lg:self-start">
+          <Card className="p-6 pt-8 bg-card/50 backdrop-blur-sm border-border/50">
             <h2 className="text-2xl font-bold mb-6 text-accent">Select Your Package</h2>
             
             {/* Sort offers: selected first, then apply showAllOffers filter */}
@@ -1038,23 +1049,55 @@ export const CheckoutStep = ({
                 ? sortedOffers 
                 : sortedOffers.filter(o => o.id === selectedOfferId);
               
-              return visibleOffers.map((offer, index) => {
-                const isSelected = selectedOfferId === offer.id;
-                // Apply dimming to non-selected offers when multiple are shown
-                const isDimmed = showAllOffers && !isSelected && visibleOffers.length > 1;
-                
-                return (
-                  <div 
-                    key={offer.id} 
-                    className={isDimmed ? 'opacity-60 hover:opacity-90 transition-opacity' : ''}
-                  >
-                    {renderOfferCard(offer)}
-                  </div>
-                );
-              });
+              return (
+                <div className="space-y-4">
+                  {visibleOffers.map((offer, index) => {
+                    const isSelected = selectedOfferId === offer.id;
+                    // Apply dimming to non-selected offers when multiple are shown
+                    const isDimmed = showAllOffers && !isSelected && visibleOffers.length > 1;
+                    
+                    return (
+                      <div 
+                        key={offer.id} 
+                        className={cn(
+                          'pt-3', // Space for badge
+                          isDimmed && 'opacity-60 hover:opacity-90 transition-opacity'
+                        )}
+                      >
+                        {renderOfferCard(offer)}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
             })()}
           </Card>
 
+          {/* Trust Badges */}
+          <div className="grid grid-cols-3 gap-4">
+            <Card className="p-4 bg-card/30 backdrop-blur-sm border-border/30 text-center">
+              <div className="text-accent mx-auto mb-2 flex justify-center">
+                <ShieldIcon />
+              </div>
+              <p className="text-xs text-muted-foreground">Secure Checkout</p>
+            </Card>
+            <Card className="p-4 bg-card/30 backdrop-blur-sm border-border/30 text-center">
+              <div className="text-accent mx-auto mb-2 flex justify-center">
+                <TruckIcon />
+              </div>
+              <p className="text-xs text-muted-foreground">{isFreeShipping ? 'Free Shipping' : 'Fast Shipping'}</p>
+            </Card>
+            <Card className="p-4 bg-card/30 backdrop-blur-sm border-border/30 text-center">
+              <div className="text-accent mx-auto mb-2 flex justify-center">
+                <PackageIcon />
+              </div>
+              <p className="text-xs text-muted-foreground">Quality Guaranteed</p>
+            </Card>
+          </div>
+        </div>
+
+        {/* Right Column - Quantity, Order Summary & Form */}
+        <div className="space-y-6">
           {/* Quantity Selector - Only for non-kit offers */}
           {selectedOffer && selectedOffer.type !== 'customizable_kit' && (
             <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
@@ -1112,31 +1155,6 @@ export const CheckoutStep = ({
             </Card>
           )}
 
-          {/* Trust Badges */}
-          <div className="grid grid-cols-3 gap-4">
-            <Card className="p-4 bg-card/30 backdrop-blur-sm border-border/30 text-center">
-              <div className="text-accent mx-auto mb-2 flex justify-center">
-                <ShieldIcon />
-              </div>
-              <p className="text-xs text-muted-foreground">Secure Checkout</p>
-            </Card>
-            <Card className="p-4 bg-card/30 backdrop-blur-sm border-border/30 text-center">
-              <div className="text-accent mx-auto mb-2 flex justify-center">
-                <TruckIcon />
-              </div>
-              <p className="text-xs text-muted-foreground">{isFreeShipping ? 'Free Shipping' : 'Fast Shipping'}</p>
-            </Card>
-            <Card className="p-4 bg-card/30 backdrop-blur-sm border-border/30 text-center">
-              <div className="text-accent mx-auto mb-2 flex justify-center">
-                <PackageIcon />
-              </div>
-              <p className="text-xs text-muted-foreground">Quality Guaranteed</p>
-            </Card>
-          </div>
-        </div>
-
-        {/* Right Column - Order Summary & Form */}
-        <div className="space-y-6">
           {/* Order Summary */}
           <Card className="p-6 bg-gradient-to-br from-secondary/50 to-card/50 backdrop-blur-sm border-accent/30">
             <h2 className="text-2xl font-bold mb-6 text-accent">Order Summary</h2>
@@ -1257,24 +1275,29 @@ export const CheckoutStep = ({
 
               {/* Address Picker for returning customers with multiple addresses */}
               {customerData && customerData.allAddresses && customerData.allAddresses.shipping.length > 1 && (
-                <AddressPicker
-                  addresses={customerData.allAddresses.shipping}
-                  selectedAddress={formData.address}
-                  selectedZip={formData.zipCode}
-                  onSelect={(addr) => {
-                    setFormData(prev => ({
-                      ...prev,
-                      firstName: addr.firstName || prev.firstName,
-                      lastName: addr.lastName || prev.lastName,
-                      phone: addr.phone || prev.phone,
-                      address: addr.address1 || '',
-                      city: addr.city || '',
-                      state: addr.state || '',
-                      zipCode: addr.postcode || '',
-                      country: addr.country || 'US',
-                    }));
-                  }}
-                />
+                <>
+                  <AddressPicker
+                    addresses={customerData.allAddresses.shipping}
+                    selectedAddress={formData.address}
+                    selectedZip={formData.zipCode}
+                    onSelect={(addr) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        firstName: addr.firstName || prev.firstName,
+                        lastName: addr.lastName || prev.lastName,
+                        phone: addr.phone || prev.phone,
+                        address: addr.address1 || '',
+                        city: addr.city || '',
+                        state: addr.state || '',
+                        zipCode: addr.postcode || '',
+                        country: addr.country || 'US',
+                      }));
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Select from your saved addresses above, or enter a new address below.
+                  </p>
+                </>
               )}
 
               <div className="grid grid-cols-2 gap-4">
@@ -1405,8 +1428,8 @@ export const CheckoutStep = ({
 
               {/* Shipping Rate Selection */}
               {shippingRates.length > 1 && (
-                <div>
-                  <Label className="text-foreground mb-2 block">Shipping Method</Label>
+                <div className="pt-4 mt-4 border-t border-border/20">
+                  <h4 className="text-base font-medium text-foreground mb-3">Shipping Method</h4>
                   <div className="space-y-2">
                     {shippingRates.map((rate) => {
                       // Handle various field name formats from API (ShipStation returns shipping_amount_raw)
@@ -1460,10 +1483,10 @@ export const CheckoutStep = ({
                 </div>
               )}
 
-              {/* Stripe Card Element */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label className="text-foreground block">Payment</Label>
+              {/* Payment Section - Visually Separated */}
+              <div className="pt-6 mt-6 border-t border-border/30">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-lg font-semibold text-accent">Payment Details</h4>
                   {stripeMode === 'test' && (
                     <span className="px-2 py-0.5 bg-orange-500/20 text-orange-500 text-[10px] font-bold rounded uppercase tracking-wider border border-orange-500/30 animate-pulse">
                       Test Mode
@@ -1511,9 +1534,8 @@ export const CheckoutStep = ({
               <Button
                 type="submit"
                 size="lg"
-                variant="ghost"
                 disabled={isSubmitting || isCalculating || stripePayment.isProcessing || !stripePayment.isReady}
-                className="w-full rounded-full py-6 font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-[0_0_20px_rgba(234,179,8,0.3)] !bg-card/30 !border !border-border/30 !text-warning hover:!bg-card/40 hover:!border-border/50 hover:!text-warning focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:!ring-warning focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="w-full rounded-full py-7 font-bold text-xl transition-all duration-300 bg-accent text-accent-foreground hover:bg-accent/90 shadow-[0_0_30px_hsl(var(--accent)/0.4)] hover:shadow-[0_0_40px_hsl(var(--accent)/0.6)] disabled:opacity-50 disabled:shadow-none"
               >
                 {isSubmitting || stripePayment.isProcessing ? (
                   <div className="flex items-center justify-center">
@@ -1521,7 +1543,10 @@ export const CheckoutStep = ({
                     <span className="ml-3">Processing...</span>
                   </div>
                 ) : (
-                  `Pay $${displayTotal.toFixed(2)}`
+                  <>
+                    <LockIcon />
+                    <span className="ml-2">Pay ${displayTotal.toFixed(2)}</span>
+                  </>
                 )}
               </Button>
             </form>
@@ -1557,9 +1582,33 @@ export const CheckoutStep = ({
             </div>
 
             <p className="text-xs text-muted-foreground text-center mt-4">
-              By completing this purchase, you agree to our terms and conditions.
+              By completing this purchase, you agree to our{' '}
+              <button
+                type="button"
+                onClick={() => setLegalPopupType('terms')}
+                className="text-accent hover:underline focus:outline-none"
+              >
+                terms and conditions
+              </button>
+              {' '}and{' '}
+              <button
+                type="button"
+                onClick={() => setLegalPopupType('privacy')}
+                className="text-accent hover:underline focus:outline-none"
+              >
+                privacy policy
+              </button>
+              .
             </p>
           </Card>
+
+          {/* Legal Popups */}
+          <LegalPopup
+            type={legalPopupType || 'terms'}
+            isOpen={legalPopupType !== null}
+            onClose={() => setLegalPopupType(null)}
+            apiBase="/wp-json/wp/v2"
+          />
         </div>
       </div>
 

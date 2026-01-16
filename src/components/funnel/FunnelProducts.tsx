@@ -137,11 +137,12 @@ export const FunnelProducts = ({
           {products.map((product) => (
             <Card
               key={product.id}
+              onClick={() => handleProductClick(product)}
               className={cn(
-                'relative p-8 transition-all duration-300 flex flex-col h-full',
+                'relative p-8 transition-all duration-300 flex flex-col h-full cursor-pointer',
                 product.isBestValue
                   ? 'bg-gradient-to-br from-accent/10 to-card/70 backdrop-blur-sm border-accent shadow-[0_0_40px_hsl(45_95%_60%/0.3)] scale-105'
-                  : 'bg-card/70 backdrop-blur-sm border-border/50 hover:border-accent/30',
+                  : 'bg-card/70 backdrop-blur-sm border-border/50 hover:border-accent/50 hover:shadow-[0_0_30px_hsl(var(--accent)/0.3)]',
                 layout === 'horizontal' && 'md:flex-row md:items-center md:gap-8'
               )}
             >
@@ -211,7 +212,10 @@ export const FunnelProducts = ({
                 {(product.ctaUrl || defaultCtaUrl) && (
                   <div className="mt-auto pt-4">
                     <Button
-                      onClick={() => handleProductClick(product)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleProductClick(product);
+                      }}
                       className="hp-funnel-cta-btn w-full font-bold text-lg py-6 rounded-full transition-all duration-300"
                     >
                       {product.ctaText || defaultCtaText}

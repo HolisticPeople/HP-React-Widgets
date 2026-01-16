@@ -433,6 +433,11 @@ class FunnelConfigLoader
             'slug'        => $funnelSlug,
             'stripe_mode' => self::getFieldValue('stripe_mode', $postId),
             
+            // General settings (Round 2 improvements)
+            'general' => [
+                'enable_scroll_navigation' => (bool) self::getFieldValue('enable_scroll_navigation', $postId),
+            ],
+            
             // Header section
             'header' => [
                 'logo'        => self::getFieldValue('header_logo', $postId),
@@ -496,6 +501,11 @@ class FunnelConfigLoader
                 'enable_points'          => (bool) self::getFieldValue('enable_points_redemption', $postId),
                 'show_order_summary'     => (bool) self::getFieldValue('show_order_summary', $postId),
                 'show_all_offers'        => (bool) self::getFieldValue('checkout_show_all_offers', $postId),
+                // Round 2 improvements - configurable page title and legal popup pages
+                'page_title'             => self::getFieldValue('checkout_page_title', $postId) ?: 'Secure Your Order',
+                'page_subtitle'          => self::getFieldValue('checkout_page_subtitle', $postId),
+                'tos_page_id'            => (int) self::getFieldValue('checkout_tos_page_id', $postId),
+                'privacy_page_id'        => (int) self::getFieldValue('checkout_privacy_page_id', $postId),
             ],
             
             // Thank you page
@@ -634,6 +644,9 @@ class FunnelConfigLoader
             'background_type'     => self::getFieldValue('background_type', $postId),
             'background_image'    => self::getFieldValue('background_image', $postId),
             'custom_css'          => self::getFieldValue('custom_css', $postId),
+            // Alternating section backgrounds (Round 2 improvements)
+            'alternate_section_bg'=> (bool) self::getFieldValue('alternate_section_bg', $postId),
+            'alternate_bg_color'  => self::getFieldValue('alternate_bg_color', $postId),
         ];
     }
 
