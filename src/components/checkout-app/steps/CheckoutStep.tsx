@@ -1541,11 +1541,10 @@ export const CheckoutStep = ({
                 )}
               </div>
 
-              <Button
+              <button
                 type="submit"
-                size="lg"
                 disabled={isSubmitting || isCalculating || stripePayment.isProcessing || !stripePayment.isReady}
-                className="w-full h-14 rounded-lg font-bold text-lg transition-all duration-300 bg-purple-500 text-white border-0 outline-none hover:bg-orange-500 hover:text-purple-900 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:bg-purple-500/50"
+                className="w-full h-14 rounded-full font-bold text-lg transition-all duration-300 bg-accent text-accent-foreground border-0 outline-none hover:shadow-[0_0_30px_hsl(45_95%_60%/0.6)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isSubmitting || stripePayment.isProcessing ? (
                   <div className="flex items-center justify-center">
@@ -1558,7 +1557,7 @@ export const CheckoutStep = ({
                     <span className="ml-2">Pay ${displayTotal.toFixed(2)}</span>
                   </>
                 )}
-              </Button>
+              </button>
             </form>
 
             {/* Security Badges */}

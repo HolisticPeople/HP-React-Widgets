@@ -1,6 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 const CloseIcon = () => (
   <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -113,14 +111,13 @@ export const LegalPopup = ({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border/50">
           <h2 className="text-xl font-bold text-accent">{title}</h2>
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
+            type="button"
             onClick={onClose}
-            className="h-10 w-10 rounded-full hover:bg-destructive/10 hover:text-destructive"
+            className="h-10 w-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors border-0 outline-none bg-transparent"
           >
             <CloseIcon />
-          </Button>
+          </button>
         </div>
         
         {/* Content */}
@@ -130,24 +127,24 @@ export const LegalPopup = ({
               <LoaderIcon className="w-8 h-8 text-accent" />
             </div>
           ) : error ? (
-            <div className="text-center py-12 text-destructive">
+            <div className="text-center py-12 text-muted-foreground">
               <p>{error}</p>
-              <Button
-                variant="outline"
+              <button
+                type="button"
                 onClick={fetchContent}
-                className="mt-4"
+                className="mt-4 px-6 py-2 rounded-lg border border-border/50 text-muted-foreground hover:text-foreground hover:border-border transition-colors bg-transparent outline-none"
               >
                 Try Again
-              </Button>
+              </button>
             </div>
           ) : (
             <div 
-              className="prose prose-invert max-w-none text-foreground
+              className="prose prose-invert max-w-none text-muted-foreground
                 prose-headings:text-accent prose-headings:font-bold
-                prose-p:text-foreground/90 prose-p:leading-relaxed
+                prose-p:text-muted-foreground prose-p:leading-relaxed
                 prose-a:text-accent prose-a:no-underline hover:prose-a:underline
-                prose-strong:text-foreground
-                prose-ul:text-foreground/90 prose-ol:text-foreground/90
+                prose-strong:text-muted-foreground
+                prose-ul:text-muted-foreground prose-ol:text-muted-foreground
                 prose-li:marker:text-accent"
               dangerouslySetInnerHTML={{ __html: content }}
             />
@@ -156,12 +153,13 @@ export const LegalPopup = ({
         
         {/* Footer */}
         <div className="p-4 border-t border-border/50">
-          <Button
+          <button
+            type="button"
             onClick={onClose}
-            className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+            className="w-full h-12 rounded-lg font-semibold text-base transition-all duration-300 bg-accent text-accent-foreground hover:shadow-[0_0_20px_hsl(45_95%_60%/0.5)] border-0 outline-none"
           >
             Close
-          </Button>
+          </button>
         </div>
       </div>
     </div>
