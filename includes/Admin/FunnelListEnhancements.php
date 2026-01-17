@@ -156,6 +156,10 @@ class FunnelListEnhancements
         $minPercent = $guidelines['profit_requirements']['min_profit_percent'];
 
         foreach ($funnelData['offers'] as $offer) {
+            // Skip non-array items (e.g., section title string)
+            if (!is_array($offer)) {
+                continue;
+            }
             $validation = EconomicsService::validateOffer($offer);
             
             if (isset($validation['economics']['profit']['profit_margin_percent'])) {

@@ -913,6 +913,11 @@ class FunnelConfigLoader
         $offerIndex = 0;
         
         foreach ($offers as $row) {
+            // Skip non-array items (e.g., section title string mixed in)
+            if (!is_array($row)) {
+                continue;
+            }
+            
             $offerType = $row['offer_type'] ?? 'single';
             $offerId = $row['offer_id'] ?? ('offer-' . ++$offerIndex);
             
