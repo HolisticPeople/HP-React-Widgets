@@ -179,7 +179,7 @@ class FunnelHeroSectionShortcode
         }
 
         return $customCss . sprintf(
-            '<div id="%s" class="hp-funnel-section hp-funnel-hero-section-%s" data-hp-widget="1" data-component="%s" data-props="%s"></div>',
+            '<div id="%s" class="hp-funnel-section hp-funnel-hero-section hp-funnel-hero-section-%s" data-hp-widget="1" data-component="%s" data-props="%s" data-section-name="Home"></div>',
             esc_attr($rootId),
             esc_attr($slug),
             esc_attr($component),
@@ -206,8 +206,11 @@ class FunnelHeroSectionShortcode
             $altBgColor = sanitize_hex_color($config['styling']['alternate_bg_color']);
             if ($altBgColor) {
                 // CSS for alternate sections - full width background
+                // Also hide horizontal overflow on body to prevent scrollbar
                 $output .= sprintf(
-                    '<style>.hp-funnel-section.hp-alt-bg { 
+                    '<style>
+                    body { overflow-x: hidden !important; }
+                    .hp-funnel-section.hp-alt-bg { 
                         background-color: %s !important; 
                         width: 100vw !important;
                         position: relative !important;
@@ -218,7 +221,20 @@ class FunnelHeroSectionShortcode
                         padding-left: calc(50vw - 50%%) !important;
                         padding-right: calc(50vw - 50%%) !important;
                         box-sizing: border-box !important;
-                    }</style>',
+                    }
+                    /* Ensure hero sections are never styled as alternate */
+                    .hp-funnel-section.hp-funnel-hero-section.hp-alt-bg,
+                    .hp-funnel-section[class*="hp-funnel-hero-section-"].hp-alt-bg {
+                        background-color: transparent !important;
+                        width: auto !important;
+                        left: auto !important;
+                        right: auto !important;
+                        margin-left: 0 !important;
+                        margin-right: 0 !important;
+                        padding-left: 0 !important;
+                        padding-right: 0 !important;
+                    }
+                    </style>',
                     $altBgColor
                 );
                 

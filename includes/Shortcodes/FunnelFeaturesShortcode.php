@@ -124,7 +124,7 @@ class FunnelFeaturesShortcode
     {
         $rootId = 'hp-funnel-features-' . esc_attr($slug) . '-' . uniqid();
         return sprintf(
-            '<div id="%s" class="hp-funnel-section hp-funnel-features-%s" data-hp-widget="1" data-component="%s" data-props="%s"></div>',
+            '<div id="%s" class="hp-funnel-section hp-funnel-features-%s" data-hp-widget="1" data-component="%s" data-props="%s" data-section-name="Features"></div>',
             esc_attr($rootId),
             esc_attr($slug),
             esc_attr($component),

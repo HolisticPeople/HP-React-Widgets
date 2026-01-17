@@ -105,7 +105,7 @@ class FunnelScienceShortcode
         $propsJson = wp_json_encode($props);
 
         return sprintf(
-            '<div id="%s" class="hp-funnel-section hp-funnel-science-%s" data-hp-widget="1" data-component="%s" data-props=\'%s\'></div>',
+            '<div id="%s" class="hp-funnel-section hp-funnel-science-%s" data-hp-widget="1" data-component="%s" data-props=\'%s\' data-section-name="Science"></div>',
             esc_attr($rootId),
             esc_attr($slug),
             esc_attr($component),

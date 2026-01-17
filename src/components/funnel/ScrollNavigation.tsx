@@ -13,18 +13,22 @@ interface SectionInfo {
   id: string;
 }
 
-// Known section type patterns - only these will be included
+// Known section type patterns - used for detection and default names
+// The data-section-name attribute can override the default name
 const KNOWN_SECTION_TYPES = [
   { pattern: 'hero-section', name: 'Home', priority: 1 },
   { pattern: 'benefits', name: 'Benefits', priority: 2 },
-  { pattern: 'offers', name: 'Offers', priority: 3 },
-  { pattern: 'products', name: 'Products', priority: 3 },
-  { pattern: 'testimonials', name: 'Reviews', priority: 4 },
-  { pattern: 'faq', name: 'FAQ', priority: 5 },
-  { pattern: 'cta', name: 'Order', priority: 6 },
+  { pattern: 'science', name: 'Science', priority: 3 },
+  { pattern: 'features', name: 'Features', priority: 4 },
+  { pattern: 'offers', name: 'Offers', priority: 5 },
+  { pattern: 'products', name: 'Offers', priority: 5 }, // Products shows as "Offers"
+  { pattern: 'authority', name: 'Expert', priority: 6 },
+  { pattern: 'testimonials', name: 'Reviews', priority: 7 },
+  { pattern: 'faq', name: 'FAQ', priority: 8 },
+  { pattern: 'cta', name: 'Order', priority: 9 },
 ];
 
-const MAX_SECTIONS = 6;
+const MAX_SECTIONS = 10;
 
 /**
  * Fixed scroll navigation - simple vertical capsule with dots.

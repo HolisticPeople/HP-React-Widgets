@@ -77,7 +77,7 @@ class FunnelAuthorityShortcode
             'layout'          => $layout,
         ];
 
-        return $this->renderWidget('FunnelAuthority', $config['slug'], $props);
+        return $this->renderWidget('FunnelAuthority', $config['slug'], $props, $name);
     }
 
     private function resolveImageUrl($value): string
@@ -134,15 +134,16 @@ class FunnelAuthorityShortcode
         return '';
     }
 
-    private function renderWidget(string $component, string $slug, array $props): string
+    private function renderWidget(string $component, string $slug, array $props, string $authorityName = 'Expert'): string
     {
         $rootId = 'hp-funnel-authority-' . esc_attr($slug) . '-' . uniqid();
         return sprintf(
-            '<div id="%s" class="hp-funnel-section hp-funnel-authority-%s" data-hp-widget="1" data-component="%s" data-props="%s"></div>',
+            '<div id="%s" class="hp-funnel-section hp-funnel-authority-%s" data-hp-widget="1" data-component="%s" data-props="%s" data-section-name="%s"></div>',
             esc_attr($rootId),
             esc_attr($slug),
             esc_attr($component),
-            esc_attr(wp_json_encode($props))
+            esc_attr(wp_json_encode($props)),
+            esc_attr($authorityName)
         );
     }
 }
