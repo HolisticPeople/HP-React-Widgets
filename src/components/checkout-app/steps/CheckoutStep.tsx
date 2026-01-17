@@ -312,7 +312,10 @@ export const CheckoutStep = ({
   
   // Address picker modal state
   const [showAddressPicker, setShowAddressPicker] = useState(false);
-  const [savedAddresses, setSavedAddresses] = useState<PickerAddress[]>([]);
+  // Load saved addresses from initialUserData (passed from PHP)
+  const [savedAddresses, setSavedAddresses] = useState<PickerAddress[]>(
+    (initialUserData?.savedAddresses || []) as PickerAddress[]
+  );
   
   // Store draft ID across attempts
   const orderDraftIdRef = useRef<string | null>(null);
@@ -454,35 +457,6 @@ export const CheckoutStep = ({
 
   // DEBUG: Track shipping rate state
   const debugShipping = false; // Set to false for production
-  
-  // Fetch saved addresses when customer data is available
-  useEffect(() => {
-    const fetchSavedAddresses = async () => {
-      if (!customerData?.email || typeof window === 'undefined' || !window.hpReactSettings) {
-        return;
-      }
-      
-      try {
-        const { root, nonce } = window.hpReactSettings;
-        const response = await fetch(`${root}hp-rw/v1/addresses?type=shipping`, {
-          headers: {
-            'X-WP-Nonce': nonce,
-          },
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (Array.isArray(data)) {
-            setSavedAddresses(data);
-          }
-        }
-      } catch (e) {
-        // Silently fail - address picker is optional
-      }
-    };
-    
-    fetchSavedAddresses();
-  }, [customerData?.email]);
   
   // Handle address selection from the picker
   const handleAddressSelect = useCallback((address: PickerAddress) => {
