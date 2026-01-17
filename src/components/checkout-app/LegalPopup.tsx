@@ -156,7 +156,18 @@ export const LegalPopup = ({
           <button
             type="button"
             onClick={onClose}
-            className="w-full h-12 rounded-lg font-semibold text-base transition-all duration-300 bg-accent text-accent-foreground hover:shadow-[0_0_20px_hsl(45_95%_60%/0.5)] border-0 outline-none"
+            className="w-full h-12 rounded-lg font-semibold text-base transition-all duration-300 border-0 outline-none"
+            style={{
+              backgroundColor: 'hsl(var(--accent))',
+              color: 'hsl(var(--accent-foreground))',
+              boxShadow: 'none',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 0 20px hsl(45 95% 60% / 0.5)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = 'none';
+            }}
           >
             Close
           </button>
