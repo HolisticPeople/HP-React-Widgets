@@ -1544,14 +1544,19 @@ export const CheckoutStep = ({
               <button
                 type="submit"
                 disabled={isSubmitting || isCalculating || stripePayment.isProcessing || !stripePayment.isReady}
-                className="w-full h-14 rounded-full font-bold text-lg transition-all duration-300 border-0 outline-none disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="h-14 rounded-full font-bold text-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 style={{
+                  width: '100%',
                   backgroundColor: 'hsl(var(--accent))',
                   color: 'hsl(var(--accent-foreground))',
+                  border: 'none',
+                  outline: 'none',
                   boxShadow: 'none',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = '0 0 30px hsl(45 95% 60% / 0.6)';
+                  if (!e.currentTarget.disabled) {
+                    e.currentTarget.style.boxShadow = '0 0 30px hsl(45 95% 60% / 0.6)';
+                  }
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.boxShadow = 'none';

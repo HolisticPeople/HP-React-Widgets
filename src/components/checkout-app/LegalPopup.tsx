@@ -114,7 +114,8 @@ export const LegalPopup = ({
           <button
             type="button"
             onClick={onClose}
-            className="h-10 w-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors border-0 outline-none bg-transparent"
+            className="h-10 w-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors bg-transparent"
+            style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
           >
             <CloseIcon />
           </button>
@@ -156,18 +157,8 @@ export const LegalPopup = ({
           <button
             type="button"
             onClick={onClose}
-            className="w-full h-12 rounded-lg font-semibold text-base transition-all duration-300 border-0 outline-none"
-            style={{
-              backgroundColor: 'hsl(var(--accent))',
-              color: 'hsl(var(--accent-foreground))',
-              boxShadow: 'none',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = '0 0 20px hsl(45 95% 60% / 0.5)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = 'none';
-            }}
+            className="w-full h-12 rounded-lg font-semibold text-base transition-colors text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary"
+            style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
           >
             Close
           </button>
