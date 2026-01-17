@@ -222,9 +222,11 @@ class FunnelHeroSectionShortcode
                         padding-right: calc(50vw - 50%%) !important;
                         box-sizing: border-box !important;
                     }
-                    /* Ensure hero sections are never styled as alternate */
+                    /* Ensure hero, header, footer sections are never styled as alternate */
                     .hp-funnel-section.hp-funnel-hero-section.hp-alt-bg,
-                    .hp-funnel-section[class*="hp-funnel-hero-section-"].hp-alt-bg {
+                    .hp-funnel-section[class*="hp-funnel-hero-section-"].hp-alt-bg,
+                    .hp-funnel-section[class*="hp-funnel-header"].hp-alt-bg,
+                    .hp-funnel-section[class*="hp-funnel-footer"].hp-alt-bg {
                         background-color: transparent !important;
                         width: auto !important;
                         left: auto !important;
@@ -238,8 +240,8 @@ class FunnelHeroSectionShortcode
                     $altBgColor
                 );
                 
-                // JS to apply the class to alternate sections (skip hero sections)
-                // First non-hero section gets alt bg, then every other section
+                // JS to apply the class to alternate sections (skip hero, header, footer sections)
+                // First content section gets alt bg, then every other section
                 $output .= '<script>
 (function() {
     function applyAltBg() {
@@ -248,22 +250,30 @@ class FunnelHeroSectionShortcode
         var debugData = { totalSections: sections.length, processed: [] };
         
         sections.forEach(function(section, index) {
+            var className = section.className;
             var isHero = section.classList.contains("hp-funnel-hero-section") || 
-                         section.className.includes("hp-funnel-hero-section-");
-            var sectionName = section.dataset.sectionName || section.className.split(" ").find(function(c) { return c.includes("hp-funnel-") && c !== "hp-funnel-section"; }) || "unknown";
+                         className.includes("hp-funnel-hero-section-");
+            var isHeader = className.includes("hp-funnel-header");
+            var isFooter = className.includes("hp-funnel-footer");
+            var shouldSkip = isHero || isHeader || isFooter;
+            
+            var sectionName = section.dataset.sectionName || className.split(" ").find(function(c) { return c.includes("hp-funnel-") && c !== "hp-funnel-section"; }) || "unknown";
             var rect = section.getBoundingClientRect();
             
             debugData.processed.push({
                 index: index,
                 name: sectionName,
                 isHero: isHero,
-                willGetAltBg: !isHero && (sectionCount % 2 === 0),
+                isHeader: isHeader,
+                isFooter: isFooter,
+                shouldSkip: shouldSkip,
+                willGetAltBg: !shouldSkip && (sectionCount % 2 === 0),
                 sectionCount: sectionCount,
                 height: rect.height,
                 top: rect.top
             });
             
-            if (isHero) {
+            if (shouldSkip) {
                 return;
             }
             if (sectionCount % 2 === 0) {
@@ -273,7 +283,7 @@ class FunnelHeroSectionShortcode
         });
         
         // #region agent log
-        fetch("http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({location:"applyAltBg",message:"Section analysis",data:debugData,timestamp:Date.now(),sessionId:"debug-session",hypothesisId:"A,B,D,E"})}).catch(function(){});
+        fetch("http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({location:"applyAltBg",message:"Section analysis post-fix",data:debugData,timestamp:Date.now(),sessionId:"debug-session",runId:"post-fix",hypothesisId:"A,B,D,E"})}).catch(function(){});
         // #endregion
     }
     if (document.readyState === "loading") {
