@@ -49,7 +49,7 @@
                     "conditional_logic": false,
                     "parent": "field_funnel_offers",
                     "wrapper": {
-                        "width": "35",
+                        "width": "28",
                         "class": "",
                         "id": ""
                     },
@@ -80,7 +80,7 @@
                     "conditional_logic": false,
                     "parent": "field_funnel_offers",
                     "wrapper": {
-                        "width": "20",
+                        "width": "15",
                         "class": "",
                         "id": ""
                     },
@@ -119,7 +119,7 @@
                     "conditional_logic": false,
                     "parent": "field_funnel_offers",
                     "wrapper": {
-                        "width": "20",
+                        "width": "15",
                         "class": "",
                         "id": ""
                     },
@@ -150,7 +150,7 @@
                     "conditional_logic": false,
                     "parent": "field_funnel_offers",
                     "wrapper": {
-                        "width": "10",
+                        "width": "7",
                         "class": "",
                         "id": ""
                     },
@@ -180,7 +180,7 @@
                     "conditional_logic": false,
                     "parent": "field_funnel_offers",
                     "wrapper": {
-                        "width": "10",
+                        "width": "8",
                         "class": "",
                         "id": ""
                     },
@@ -210,7 +210,7 @@
                     "conditional_logic": false,
                     "parent": "field_funnel_offers",
                     "wrapper": {
-                        "width": "15",
+                        "width": "12",
                         "class": "",
                         "id": ""
                     },
