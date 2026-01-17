@@ -11,6 +11,8 @@ import { useStripePayment } from '../hooks/useStripePayment';
 import { getServiceCode, extractShippingCost } from '../utils/shipping';
 import { getCarrierLogo } from '../utils/carrierLogos';
 import { LegalPopup } from '../LegalPopup';
+import { AddressCardPicker } from '@/components/AddressCardPicker';
+import type { Address as PickerAddress } from '@/types/address';
 import type { 
   Offer,
   SingleOffer,
@@ -308,6 +310,10 @@ export const CheckoutStep = ({
   // Legal popup state
   const [legalPopupType, setLegalPopupType] = useState<'terms' | 'privacy' | null>(null);
   
+  // Address picker modal state
+  const [showAddressPicker, setShowAddressPicker] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState<PickerAddress[]>([]);
+  
   // Store draft ID across attempts
   const orderDraftIdRef = useRef<string | null>(null);
 
@@ -448,6 +454,51 @@ export const CheckoutStep = ({
 
   // DEBUG: Track shipping rate state
   const debugShipping = false; // Set to false for production
+  
+  // Fetch saved addresses when customer data is available
+  useEffect(() => {
+    const fetchSavedAddresses = async () => {
+      if (!customerData?.email || typeof window === 'undefined' || !window.hpReactSettings) {
+        return;
+      }
+      
+      try {
+        const { root, nonce } = window.hpReactSettings;
+        const response = await fetch(`${root}hp-rw/v1/addresses?type=shipping`, {
+          headers: {
+            'X-WP-Nonce': nonce,
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data)) {
+            setSavedAddresses(data);
+          }
+        }
+      } catch (e) {
+        // Silently fail - address picker is optional
+      }
+    };
+    
+    fetchSavedAddresses();
+  }, [customerData?.email]);
+  
+  // Handle address selection from the picker
+  const handleAddressSelect = useCallback((address: PickerAddress) => {
+    setFormData(prev => ({
+      ...prev,
+      firstName: address.firstName || prev.firstName,
+      lastName: address.lastName || prev.lastName,
+      phone: address.phone || prev.phone,
+      address: address.address1 || prev.address,
+      city: address.city || prev.city,
+      state: address.state || prev.state,
+      zipCode: address.postcode || prev.zipCode,
+      country: normalizeCountryCode(address.country) || prev.country,
+    }));
+    setShowAddressPicker(false);
+  }, []);
   
   // Calculate totals - does NOT fetch shipping rates (that's separate)
   const fetchTotals = useCallback(async () => {
@@ -1349,7 +1400,19 @@ export const CheckoutStep = ({
               </div>
 
               <div>
-                <Label htmlFor="address" className="text-foreground">Address</Label>
+                <div className="flex items-center justify-between mb-1">
+                  <Label htmlFor="address" className="text-foreground mb-0">Address</Label>
+                  {savedAddresses.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAddressPicker(true)}
+                      className="text-xs text-accent hover:text-accent/80 transition-colors"
+                      style={{ border: 'none', background: 'transparent', cursor: 'pointer', outline: 'none' }}
+                    >
+                      Select Different Address
+                    </button>
+                  )}
+                </div>
                 <Input
                   id="address"
                   name="address"
@@ -1642,6 +1705,44 @@ export const CheckoutStep = ({
             tosPageId={tosPageId}
             privacyPageId={privacyPageId}
           />
+          
+          {/* Address Picker Modal */}
+          {showAddressPicker && savedAddresses.length > 0 && (
+            <div 
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+              onClick={() => setShowAddressPicker(false)}
+            >
+              <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+              <div 
+                className="relative w-full max-w-4xl max-h-[80vh] bg-card rounded-xl shadow-2xl border border-border/50 flex flex-col overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between p-4 border-b border-border/50">
+                  <h2 className="text-xl font-bold text-accent">Select Shipping Address</h2>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddressPicker(false)}
+                    className="h-10 w-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors bg-transparent"
+                    style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
+                  >
+                    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-6">
+                  <AddressCardPicker
+                    addresses={savedAddresses}
+                    type="shipping"
+                    onSelect={handleAddressSelect}
+                    showActions={false}
+                    title=""
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
