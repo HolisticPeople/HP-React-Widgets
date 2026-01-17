@@ -317,13 +317,6 @@ export const CheckoutStep = ({
     (initialUserData?.savedAddresses || []) as PickerAddress[]
   );
   
-  // #region agent log
-  // Debug: Log savedAddresses on mount
-  useEffect(() => {
-    fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CheckoutStep.tsx:320',message:'Component mount - savedAddresses state',data:{savedAddressesCount:savedAddresses.length,savedAddresses:savedAddresses,initialUserDataHasSavedAddresses:!!initialUserData?.savedAddresses,initialUserDataSavedAddressesCount:initialUserData?.savedAddresses?.length||0},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1,H2'})}).catch(()=>{});
-  }, []);
-  // #endregion
-  
   // Store draft ID across attempts
   const orderDraftIdRef = useRef<string | null>(null);
 
@@ -1386,12 +1379,7 @@ export const CheckoutStep = ({
                   {savedAddresses.length > 1 && (
                     <button
                       type="button"
-                      onClick={() => {
-                        // #region agent log
-                        fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CheckoutStep.tsx:1385',message:'Select Different Address clicked',data:{savedAddressesCount:savedAddresses.length,showAddressPickerBefore:showAddressPicker},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
-                        // #endregion
-                        setShowAddressPicker(true);
-                      }}
+                      onClick={() => setShowAddressPicker(true)}
                       className="text-xs text-accent hover:text-accent/80 transition-colors"
                       style={{ border: 'none', background: 'transparent', cursor: 'pointer', outline: 'none' }}
                     >
@@ -1693,12 +1681,6 @@ export const CheckoutStep = ({
           />
           
           {/* Address Picker Modal */}
-          {(() => {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CheckoutStep.tsx:1695',message:'Modal render check',data:{showAddressPicker,savedAddressesCount:savedAddresses.length,shouldRender:showAddressPicker && savedAddresses.length > 0},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4'})}).catch(()=>{});
-            // #endregion
-            return null;
-          })()}
           {showAddressPicker && savedAddresses.length > 0 && (
             <div 
               className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
