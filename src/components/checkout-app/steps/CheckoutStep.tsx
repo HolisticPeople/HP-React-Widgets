@@ -447,7 +447,7 @@ export const CheckoutStep = ({
   }, [onSelectRate]);
 
   // DEBUG: Track shipping rate state
-  const debugShipping = true; // Set to false for production
+  const debugShipping = false; // Set to false for production
   
   // Calculate totals - does NOT fetch shipping rates (that's separate)
   const fetchTotals = useCallback(async () => {
