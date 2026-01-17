@@ -222,16 +222,20 @@ class FunnelHeroSectionShortcode
                     $altBgColor
                 );
                 
-                // JS to apply the class to alternate sections (skip hero at index 0)
-                // First section after hero gets alt bg, then every other section
+                // JS to apply the class to alternate sections (skip hero sections)
+                // First non-hero section gets alt bg, then every other section
                 $output .= '<script>
 (function() {
     function applyAltBg() {
         var sections = document.querySelectorAll(".hp-funnel-section");
         var sectionCount = 0;
-        sections.forEach(function(section, index) {
-            if (index === 0) return; // Skip hero
-            // Apply to 1st, 3rd, 5th... sections after hero (sectionCount 0, 2, 4...)
+        sections.forEach(function(section) {
+            // Skip hero sections (they have their own background)
+            if (section.classList.contains("hp-funnel-hero-section") || 
+                section.className.includes("hp-funnel-hero-section-")) {
+                return;
+            }
+            // Apply to 1st, 3rd, 5th... non-hero sections (sectionCount 0, 2, 4...)
             if (sectionCount % 2 === 0) {
                 section.classList.add("hp-alt-bg");
             }
