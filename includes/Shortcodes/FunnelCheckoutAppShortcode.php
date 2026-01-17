@@ -137,6 +137,11 @@ class FunnelCheckoutAppShortcode
             'footerText'          => $config['footer']['text'] ?? '',
             'footerDisclaimer'    => $config['footer']['disclaimer'] ?? '',
             'initialUserData'     => $initialUserData,
+            // Page title and legal page IDs for checkout
+            'pageTitle'           => $config['checkout']['page_title'] ?? 'Secure Your Order',
+            'pageSubtitle'        => $config['checkout']['page_subtitle'] ?? '',
+            'tosPageId'           => (int) ($config['checkout']['tos_page_id'] ?? 0),
+            'privacyPageId'       => (int) ($config['checkout']['privacy_page_id'] ?? 0),
         ];
 
         // Unique container ID

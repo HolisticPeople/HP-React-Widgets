@@ -289,6 +289,15 @@ class FunnelOfferFields
         ]);
 
         wp_add_inline_style('acf-input', self::getStyles());
+        
+        // Add collapsible field toggle script
+        wp_add_inline_script('acf-input', "
+            jQuery(document).ready(function($) {
+                $(document).on('click', '.acf-field.hp-collapsible-field > .acf-label', function() {
+                    $(this).parent().toggleClass('hp-collapsed');
+                });
+            });
+        ");
     }
 
     private static function getStyles(): string
@@ -1014,6 +1023,26 @@ class FunnelOfferFields
             .acf-field[data-key="field_funnel_offers"] .acf-row.-collapsed > .acf-row-handle.order,
             .acf-field[data-name="funnel_offers"] .acf-row.-collapsed > .acf-row-handle.order {
                 padding-right: 48px !important;
+            }
+            
+            /* Collapsible instruction fields */
+            .acf-field.hp-collapsible-field > .acf-label {
+                cursor: pointer;
+                position: relative;
+                padding-right: 30px;
+            }
+            .acf-field.hp-collapsible-field > .acf-label::after {
+                content: "▼";
+                position: absolute;
+                right: 0;
+                font-size: 10px;
+                transition: transform 0.2s;
+            }
+            .acf-field.hp-collapsible-field.hp-collapsed > .acf-label::after {
+                transform: rotate(-90deg);
+            }
+            .acf-field.hp-collapsible-field.hp-collapsed > .acf-input {
+                display: none;
             }
         ';
     }

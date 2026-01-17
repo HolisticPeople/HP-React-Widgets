@@ -1545,7 +1545,7 @@ export const CheckoutStep = ({
                 type="submit"
                 size="lg"
                 disabled={isSubmitting || isCalculating || stripePayment.isProcessing || !stripePayment.isReady}
-                className="w-full rounded-full py-7 font-bold text-xl transition-all duration-300 bg-purple-600/80 text-white hover:bg-orange-500 hover:text-purple-900 shadow-[0_0_30px_rgba(147,51,234,0.4)] hover:shadow-[0_0_40px_rgba(249,115,22,0.6)] disabled:opacity-50 disabled:shadow-none"
+                className="w-full h-14 rounded-lg font-bold text-lg transition-all duration-300 bg-purple-500 text-white border-0 outline-none hover:bg-orange-500 hover:text-purple-900 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:bg-purple-500/50"
               >
                 {isSubmitting || stripePayment.isProcessing ? (
                   <div className="flex items-center justify-center">
@@ -1593,23 +1593,25 @@ export const CheckoutStep = ({
 
             <p className="text-xs text-muted-foreground text-center mt-4">
               By completing this purchase, you agree to our{' '}
-              <button
-                type="button"
+              <span
+                role="button"
+                tabIndex={0}
                 onClick={() => setLegalPopupType('terms')}
-                className="text-accent underline hover:text-accent/80 bg-transparent border-none p-0 m-0 cursor-pointer"
-                style={{ font: 'inherit', fontSize: 'inherit' }}
+                onKeyDown={(e) => e.key === 'Enter' && setLegalPopupType('terms')}
+                className="text-accent hover:text-accent/80 cursor-pointer"
               >
                 terms and conditions
-              </button>
+              </span>
               {' '}and{' '}
-              <button
-                type="button"
+              <span
+                role="button"
+                tabIndex={0}
                 onClick={() => setLegalPopupType('privacy')}
-                className="text-accent underline hover:text-accent/80 bg-transparent border-none p-0 m-0 cursor-pointer"
-                style={{ font: 'inherit', fontSize: 'inherit' }}
+                onKeyDown={(e) => e.key === 'Enter' && setLegalPopupType('privacy')}
+                className="text-accent hover:text-accent/80 cursor-pointer"
               >
                 privacy policy
-              </button>
+              </span>
               .
             </p>
           </Card>
