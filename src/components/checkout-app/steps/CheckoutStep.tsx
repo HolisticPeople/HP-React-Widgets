@@ -637,8 +637,13 @@ export const CheckoutStep = ({
         if (debugShipping) console.log('[SHIPPING DEBUG] <<< RECEIVED RATES (requestId:', currentRequestId, '):', rates.length, 'rates');
         setIsFetchingShipping(false);
         if (rates.length > 0) {
-          setShippingRates(rates);
-          onSelectRateRef.current(rates[0]);
+          // Sort rates by total cost (cheapest first)
+          const sortedRates = [...rates].sort((a, b) => 
+            (a.shipmentCost + a.otherCost) - (b.shipmentCost + b.otherCost)
+          );
+          setShippingRates(sortedRates);
+          // Select the cheapest rate by default
+          onSelectRateRef.current(sortedRates[0]);
         }
       } catch (e) {
         if (currentRequestId === shippingRequestIdRef.current) {
