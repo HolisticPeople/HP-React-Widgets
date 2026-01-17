@@ -336,11 +336,11 @@ class FunnelExporter
             if (!empty($t['name']) && !empty($t['quote'])) {
                 $items[] = [
                     'name' => $t['name'],
-                    'role' => $t['role'],
-                    'title' => $t['title'],
+                    'role' => $t['role'] ?? '',
+                    'title' => $t['title'] ?? '',
                     'quote' => $t['quote'],
                     'image' => self::resolveImageUrl($t['image'] ?? null),
-                    'rating' => (int) $t['rating'],
+                    'rating' => (int) ($t['rating'] ?? 5),
                 ];
             }
         }
