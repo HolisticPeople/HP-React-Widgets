@@ -247,33 +247,15 @@ class FunnelHeroSectionShortcode
     function applyAltBg() {
         var sections = document.querySelectorAll(".hp-funnel-section");
         var sectionCount = 0;
-        var debugData = { totalSections: sections.length, processed: [] };
         
-        sections.forEach(function(section, index) {
+        sections.forEach(function(section) {
             var className = section.className;
             var isHero = section.classList.contains("hp-funnel-hero-section") || 
                          className.includes("hp-funnel-hero-section-");
             var isHeader = className.includes("hp-funnel-header");
             var isFooter = className.includes("hp-funnel-footer");
-            var shouldSkip = isHero || isHeader || isFooter;
             
-            var sectionName = section.dataset.sectionName || className.split(" ").find(function(c) { return c.includes("hp-funnel-") && c !== "hp-funnel-section"; }) || "unknown";
-            var rect = section.getBoundingClientRect();
-            
-            debugData.processed.push({
-                index: index,
-                name: sectionName,
-                isHero: isHero,
-                isHeader: isHeader,
-                isFooter: isFooter,
-                shouldSkip: shouldSkip,
-                willGetAltBg: !shouldSkip && (sectionCount % 2 === 0),
-                sectionCount: sectionCount,
-                height: rect.height,
-                top: rect.top
-            });
-            
-            if (shouldSkip) {
+            if (isHero || isHeader || isFooter) {
                 return;
             }
             if (sectionCount % 2 === 0) {
@@ -281,10 +263,6 @@ class FunnelHeroSectionShortcode
             }
             sectionCount++;
         });
-        
-        // #region agent log
-        fetch("http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({location:"applyAltBg",message:"Section analysis post-fix",data:debugData,timestamp:Date.now(),sessionId:"debug-session",runId:"post-fix",hypothesisId:"A,B,D,E"})}).catch(function(){});
-        // #endregion
     }
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", applyAltBg);

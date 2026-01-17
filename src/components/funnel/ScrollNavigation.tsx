@@ -83,16 +83,21 @@ export const ScrollNavigation = ({
         if (matchedType) {
           const alreadyHasType = foundSections.some(s => s.name === matchedType.name);
           if (!alreadyHasType) {
+            // Get actual vertical position on page for proper ordering
+            const rect = section.getBoundingClientRect();
+            const topPosition = window.scrollY + rect.top;
+            
             foundSections.push({
               element: section,
               name: section.dataset.sectionName || matchedType.name,
               id: section.id || `section-${foundSections.length}`,
-              priority: matchedType.priority,
+              priority: topPosition, // Use actual page position instead of hardcoded priority
             });
           }
         }
       });
 
+      // Sort by actual vertical position on page
       foundSections.sort((a, b) => a.priority - b.priority);
       setSectionInfos(foundSections.slice(0, MAX_SECTIONS));
     };
