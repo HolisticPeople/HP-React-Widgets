@@ -245,18 +245,36 @@ class FunnelHeroSectionShortcode
     function applyAltBg() {
         var sections = document.querySelectorAll(".hp-funnel-section");
         var sectionCount = 0;
-        sections.forEach(function(section) {
-            // Skip hero sections (they have their own background)
-            if (section.classList.contains("hp-funnel-hero-section") || 
-                section.className.includes("hp-funnel-hero-section-")) {
+        var debugData = { totalSections: sections.length, processed: [] };
+        
+        sections.forEach(function(section, index) {
+            var isHero = section.classList.contains("hp-funnel-hero-section") || 
+                         section.className.includes("hp-funnel-hero-section-");
+            var sectionName = section.dataset.sectionName || section.className.split(" ").find(function(c) { return c.includes("hp-funnel-") && c !== "hp-funnel-section"; }) || "unknown";
+            var rect = section.getBoundingClientRect();
+            
+            debugData.processed.push({
+                index: index,
+                name: sectionName,
+                isHero: isHero,
+                willGetAltBg: !isHero && (sectionCount % 2 === 0),
+                sectionCount: sectionCount,
+                height: rect.height,
+                top: rect.top
+            });
+            
+            if (isHero) {
                 return;
             }
-            // Apply to 1st, 3rd, 5th... non-hero sections (sectionCount 0, 2, 4...)
             if (sectionCount % 2 === 0) {
                 section.classList.add("hp-alt-bg");
             }
             sectionCount++;
         });
+        
+        // #region agent log
+        fetch("http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({location:"applyAltBg",message:"Section analysis",data:debugData,timestamp:Date.now(),sessionId:"debug-session",hypothesisId:"A,B,D,E"})}).catch(function(){});
+        // #endregion
     }
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", applyAltBg);
