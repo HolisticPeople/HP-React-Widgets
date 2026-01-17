@@ -139,16 +139,31 @@ export const LegalPopup = ({
               </button>
             </div>
           ) : (
-            <div 
-              className="prose prose-invert max-w-none text-muted-foreground
-                prose-headings:text-accent prose-headings:font-bold
-                prose-p:text-muted-foreground prose-p:leading-relaxed
-                prose-a:text-accent prose-a:no-underline hover:prose-a:underline
-                prose-strong:text-muted-foreground
-                prose-ul:text-muted-foreground prose-ol:text-muted-foreground
-                prose-li:marker:text-accent"
-              dangerouslySetInnerHTML={{ __html: content }}
-            />
+            <>
+              <style>{`
+                .legal-content-wrapper,
+                .legal-content-wrapper p,
+                .legal-content-wrapper li,
+                .legal-content-wrapper span,
+                .legal-content-wrapper div {
+                  color: hsl(var(--muted-foreground)) !important;
+                }
+                .legal-content-wrapper h1,
+                .legal-content-wrapper h2,
+                .legal-content-wrapper h3,
+                .legal-content-wrapper h4,
+                .legal-content-wrapper strong {
+                  color: hsl(var(--accent)) !important;
+                }
+                .legal-content-wrapper a {
+                  color: hsl(var(--accent)) !important;
+                }
+              `}</style>
+              <div 
+                className="legal-content-wrapper prose prose-invert max-w-none"
+                dangerouslySetInnerHTML={{ __html: content }}
+              />
+            </>
           )}
         </div>
         

@@ -1544,14 +1544,16 @@ export const CheckoutStep = ({
               <button
                 type="submit"
                 disabled={isSubmitting || isCalculating || stripePayment.isProcessing || !stripePayment.isReady}
-                className="h-14 rounded-full font-bold text-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="h-16 font-bold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                 style={{
                   width: '100%',
+                  borderRadius: '9999px',
                   backgroundColor: 'hsl(var(--accent))',
                   color: 'hsl(var(--accent-foreground))',
                   border: 'none',
                   outline: 'none',
                   boxShadow: 'none',
+                  fontSize: '1.25rem',
                 }}
                 onMouseEnter={(e) => {
                   if (!e.currentTarget.disabled) {
@@ -1564,7 +1566,7 @@ export const CheckoutStep = ({
               >
                 {isSubmitting || stripePayment.isProcessing ? (
                   <div className="flex items-center justify-center">
-                    <LoaderIcon className="w-6 h-6" />
+                    <LoaderIcon className="w-7 h-7" />
                     <span className="ml-3">Processing...</span>
                   </div>
                 ) : (
