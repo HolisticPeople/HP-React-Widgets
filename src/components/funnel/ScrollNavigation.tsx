@@ -81,10 +81,14 @@ export const ScrollNavigation = ({
         if (parent) { fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ScrollNavigation.tsx:76',message:'SKIPPED: has parent',data:{idx,className:section.className,id:section.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{}); return; }
         // #endregion
         if (parent) return;
+        
+        // Infographics sections use lower height threshold (images may still be loading)
+        const isInfographics = section.className.includes('infographics');
+        const minHeight = isInfographics ? 50 : 200;
         // #region agent log
-        if (section.offsetHeight < 200) { fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ScrollNavigation.tsx:77',message:'SKIPPED: height too small',data:{idx,className:section.className,height:section.offsetHeight},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{}); return; }
+        if (section.offsetHeight < minHeight) { fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ScrollNavigation.tsx:77',message:'SKIPPED: height too small',data:{idx,className:section.className,height:section.offsetHeight,minHeight,isInfographics},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{}); return; }
         // #endregion
-        if (section.offsetHeight < 200) return;
+        if (section.offsetHeight < minHeight) return;
 
         const className = section.className;
         const matchedType = KNOWN_SECTION_TYPES.find(type => 
