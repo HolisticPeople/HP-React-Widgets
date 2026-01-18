@@ -615,6 +615,7 @@ class FunnelConfigLoader
                 'right_panel_image'  => self::resolveImageUrl(self::getFieldValue('infographics_right_panel', $postId)),
                 'mobile_layout'      => self::getFieldValue('infographics_mobile_layout', $postId) ?: 'stack',
                 'alt_text'           => self::getFieldValue('infographics_alt_text', $postId),
+                'nav_label'          => self::getFieldValue('infographics_nav_label', $postId) ?: 'Comparison',
             ],
             
             // SEO metadata

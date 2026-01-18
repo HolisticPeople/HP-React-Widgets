@@ -4997,6 +4997,35 @@
             "prepend": "",
             "append": "",
             "maxlength": ""
+        },
+        {
+            "ID": 0,
+            "key": "field_infographics_nav_label",
+            "label": "Navigation Label",
+            "name": "infographics_nav_label",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "text",
+            "value": null,
+            "menu_order": 89,
+            "instructions": "Label shown in the scroll navigation dots tooltip. Leave empty to exclude from navigation.",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": false,
+            "parent": 125087,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "placeholder": "e.g., Comparison, Science, Facts",
+            "_name": "infographics_nav_label",
+            "_valid": 1,
+            "default_value": "Comparison",
+            "prepend": "",
+            "append": "",
+            "maxlength": ""
         }
     ],
     "location": [

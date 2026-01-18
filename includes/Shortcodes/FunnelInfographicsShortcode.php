@@ -47,6 +47,7 @@ class FunnelInfographicsShortcode
             'right_panel'      => '',
             'mobile_layout'    => '',
             'alt_text'         => '',
+            'nav_label'        => '',
         ], $atts);
 
         // Load config by ID, slug, or auto-detect from context
@@ -97,7 +98,10 @@ class FunnelInfographicsShortcode
             'altText'          => $atts['alt_text'] ?: ($infographics['alt_text'] ?? ''),
         ];
 
-        return $this->renderWidget('FunnelInfographics', $config['slug'], $props);
+        // Navigation label for scroll navigation dots (empty = exclude from nav)
+        $navLabel = $atts['nav_label'] ?: ($infographics['nav_label'] ?? 'Comparison');
+
+        return $this->renderWidget('FunnelInfographics', $config['slug'], $props, $navLabel);
     }
 
     /**
@@ -106,9 +110,10 @@ class FunnelInfographicsShortcode
      * @param string $component React component name
      * @param string $slug      Funnel slug
      * @param array  $props     Component props
+     * @param string $navLabel  Label for scroll navigation (empty = exclude from nav)
      * @return string HTML
      */
-    private function renderWidget(string $component, string $slug, array $props): string
+    private function renderWidget(string $component, string $slug, array $props, string $navLabel = 'Comparison'): string
     {
         $rootId = 'hp-funnel-infographics-' . esc_attr($slug) . '-' . uniqid();
         $propsJson = wp_json_encode($props);
@@ -135,12 +140,16 @@ class FunnelInfographicsShortcode
             }
         </style>';
 
+        // Only include data-section-name if navLabel is not empty
+        $sectionNameAttr = !empty($navLabel) ? sprintf(' data-section-name="%s"', esc_attr($navLabel)) : '';
+
         return $css . sprintf(
-            '<div id="%s" class="hp-funnel-section hp-funnel-infographics-%s" data-hp-widget="1" data-component="%s" data-props=\'%s\' data-section-name="Infographics" style="min-height:auto;height:auto;align-self:start;"></div>',
+            '<div id="%s" class="hp-funnel-section hp-funnel-infographics-%s" data-hp-widget="1" data-component="%s" data-props=\'%s\'%s style="min-height:auto;height:auto;align-self:start;"></div>',
             esc_attr($rootId),
             esc_attr($slug),
             esc_attr($component),
-            esc_attr($propsJson)
+            esc_attr($propsJson),
+            $sectionNameAttr
         );
     }
 }
