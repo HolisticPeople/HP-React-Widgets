@@ -19,6 +19,7 @@ const KNOWN_SECTION_TYPES = [
   { pattern: 'hero-section', name: 'Home', priority: 1 },
   { pattern: 'benefits', name: 'Benefits', priority: 2 },
   { pattern: 'science', name: 'Science', priority: 3 },
+  { pattern: 'infographics', name: 'Comparison', priority: 3.5 }, // Infographics - default name can be overridden by data-section-name
   { pattern: 'features', name: 'Features', priority: 4 },
   { pattern: 'offers', name: 'Offers', priority: 5 },
   { pattern: 'products', name: 'Offers', priority: 5 }, // Products shows as "Offers"

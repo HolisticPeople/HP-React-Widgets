@@ -99,8 +99,8 @@ class FunnelInfographicsShortcode
             return '';
         }
 
-        // Determine useMobileImages - shortcode override, then config, default true
-        $useMobileImages = true;
+        // Determine useMobileImages - shortcode override, then config, default false
+        $useMobileImages = false;
         if ($atts['use_mobile_images'] !== '') {
             $useMobileImages = filter_var($atts['use_mobile_images'], FILTER_VALIDATE_BOOLEAN);
         } elseif (isset($infographic['use_mobile_images'])) {
