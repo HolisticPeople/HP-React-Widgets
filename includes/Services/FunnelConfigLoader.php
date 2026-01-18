@@ -604,19 +604,8 @@ class FunnelConfigLoader
                 'sections' => self::extractScienceSections(self::getFieldValue('science_sections', $postId)),
             ],
             
-            // Infographics section
-            'infographics' => [
-                'title'              => self::getFieldValue('infographics_title', $postId),
-                'desktop_image'      => self::resolveImageUrl(self::getFieldValue('infographics_desktop_image', $postId)),
-                'use_mobile_images'  => (bool) self::getFieldValue('infographics_use_mobile_images', $postId),
-                'desktop_fallback'   => self::getFieldValue('infographics_desktop_fallback', $postId) ?: 'scale',
-                'title_image'        => self::resolveImageUrl(self::getFieldValue('infographics_title_image', $postId)),
-                'left_panel_image'   => self::resolveImageUrl(self::getFieldValue('infographics_left_panel', $postId)),
-                'right_panel_image'  => self::resolveImageUrl(self::getFieldValue('infographics_right_panel', $postId)),
-                'mobile_layout'      => self::getFieldValue('infographics_mobile_layout', $postId) ?: 'stack',
-                'alt_text'           => self::getFieldValue('infographics_alt_text', $postId),
-                'nav_label'          => self::getFieldValue('infographics_nav_label', $postId) ?: 'Comparison',
-            ],
+            // Infographics section (repeater - array of infographics)
+            'infographics' => self::loadInfographics($postId),
             
             // SEO metadata
             'seo' => [
@@ -1393,6 +1382,41 @@ class FunnelConfigLoader
             }
         }
         return $value;
+    }
+
+    /**
+     * Load infographics from ACF repeater field.
+     *
+     * @param int $postId The funnel post ID
+     * @return array Array of infographic configurations
+     */
+    private static function loadInfographics(int $postId): array
+    {
+        $rows = self::getFieldValue('funnel_infographics', $postId);
+        
+        if (empty($rows) || !is_array($rows)) {
+            return [];
+        }
+
+        $infographics = [];
+        foreach ($rows as $index => $row) {
+            $infographics[] = [
+                'index'             => $index + 1, // 1-based index for shortcode
+                'name'              => $row['info_name'] ?? '',
+                'nav_label'         => $row['info_nav_label'] ?? '',
+                'title'             => $row['info_title'] ?? '',
+                'desktop_image'     => self::resolveImageUrl($row['info_desktop_image'] ?? ''),
+                'use_mobile_images' => !empty($row['info_use_mobile_images']),
+                'desktop_fallback'  => $row['info_desktop_fallback'] ?? 'scale',
+                'title_image'       => self::resolveImageUrl($row['info_title_image'] ?? ''),
+                'left_panel_image'  => self::resolveImageUrl($row['info_left_panel'] ?? ''),
+                'right_panel_image' => self::resolveImageUrl($row['info_right_panel'] ?? ''),
+                'mobile_layout'     => $row['info_mobile_layout'] ?? 'stack',
+                'alt_text'          => $row['info_alt_text'] ?? '',
+            ];
+        }
+
+        return $infographics;
     }
 
     /**
