@@ -114,7 +114,7 @@ class FunnelInfographicsShortcode
         $propsJson = wp_json_encode($props);
 
         return sprintf(
-            '<div id="%s" class="hp-funnel-section hp-funnel-infographics-%s" data-hp-widget="1" data-component="%s" data-props=\'%s\' data-section-name="Infographics"></div>',
+            '<div id="%s" class="hp-funnel-section hp-funnel-infographics-%s" data-hp-widget="1" data-component="%s" data-props=\'%s\' data-section-name="Infographics" style="min-height:auto;height:auto;align-self:start;"></div>',
             esc_attr($rootId),
             esc_attr($slug),
             esc_attr($component),

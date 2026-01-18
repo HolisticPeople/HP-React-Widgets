@@ -238,10 +238,12 @@ export const FunnelInfographics = ({
     <section
       className={cn(
         'hp-funnel-infographics hp-funnel-section py-4 md:py-16 px-4',
+        'min-h-0 h-auto flex-none self-start',
         className
       )}
+      style={{ minHeight: 'auto', height: 'auto' }}
     >
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-6xl mx-auto w-full">
         {/* Optional section title */}
         {title && (
           <h2 
