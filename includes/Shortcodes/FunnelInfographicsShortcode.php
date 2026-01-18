@@ -113,7 +113,29 @@ class FunnelInfographicsShortcode
         $rootId = 'hp-funnel-infographics-' . esc_attr($slug) . '-' . uniqid();
         $propsJson = wp_json_encode($props);
 
-        return sprintf(
+        // CSS to force parent Elementor containers to shrink to content
+        $css = '<style>
+            .elementor-widget-shortcode:has(#' . esc_attr($rootId) . '),
+            .elementor-widget-shortcode:has(.hp-funnel-infographics-' . esc_attr($slug) . ') {
+                height: auto !important;
+                min-height: 0 !important;
+            }
+            .elementor-widget-shortcode:has(#' . esc_attr($rootId) . ') > .elementor-widget-container,
+            .elementor-widget-shortcode:has(.hp-funnel-infographics-' . esc_attr($slug) . ') > .elementor-widget-container {
+                height: auto !important;
+                min-height: 0 !important;
+            }
+            @media (max-width: 767px) {
+                .elementor-widget-shortcode:has(#' . esc_attr($rootId) . '),
+                .elementor-widget-shortcode:has(.hp-funnel-infographics-' . esc_attr($slug) . ') {
+                    height: auto !important;
+                    min-height: 0 !important;
+                    flex: 0 0 auto !important;
+                }
+            }
+        </style>';
+
+        return $css . sprintf(
             '<div id="%s" class="hp-funnel-section hp-funnel-infographics-%s" data-hp-widget="1" data-component="%s" data-props=\'%s\' data-section-name="Infographics" style="min-height:auto;height:auto;align-self:start;"></div>',
             esc_attr($rootId),
             esc_attr($slug),
