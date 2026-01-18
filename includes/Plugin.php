@@ -186,6 +186,14 @@ class Plugin
             'root_id'     => 'hp-funnel-science-root',
             'hydrator_class' => 'FunnelScienceShortcode',
         ],
+        'hp_funnel_infographics' => [
+            'label'       => 'Funnel Infographics',
+            'description' => 'Responsive comparison infographic with mobile panel display.',
+            'example'     => '[hp_funnel_infographics funnel="illumodine"]',
+            'component'   => 'FunnelInfographics',
+            'root_id'     => 'hp-funnel-infographics-root',
+            'hydrator_class' => 'FunnelInfographicsShortcode',
+        ],
         'hp_funnel_scroll_navigation' => [
             'label'       => 'Funnel Scroll Navigation',
             'description' => 'Fixed scroll navigation dots on the right side of the viewport.',
