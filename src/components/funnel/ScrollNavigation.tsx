@@ -71,23 +71,13 @@ export const ScrollNavigation = ({
       const allSections = document.querySelectorAll<HTMLElement>('.hp-funnel-section');
       const foundSections: Array<SectionInfo & { priority: number }> = [];
 
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ScrollNavigation.tsx:74',message:'Starting section scan',data:{totalSections:allSections.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1-H5'})}).catch(()=>{});
-      // #endregion
-
-      allSections.forEach((section, idx) => {
+      allSections.forEach((section) => {
         const parent = section.parentElement?.closest('.hp-funnel-section');
-        // #region agent log
-        if (parent) { fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ScrollNavigation.tsx:76',message:'SKIPPED: has parent',data:{idx,className:section.className,id:section.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{}); return; }
-        // #endregion
         if (parent) return;
         
         // Infographics sections use lower height threshold (images may still be loading)
         const isInfographics = section.className.includes('infographics');
         const minHeight = isInfographics ? 50 : 200;
-        // #region agent log
-        if (section.offsetHeight < minHeight) { fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ScrollNavigation.tsx:77',message:'SKIPPED: height too small',data:{idx,className:section.className,height:section.offsetHeight,minHeight,isInfographics},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{}); return; }
-        // #endregion
         if (section.offsetHeight < minHeight) return;
 
         const className = section.className;
@@ -95,19 +85,12 @@ export const ScrollNavigation = ({
           className.includes(type.pattern)
         );
 
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ScrollNavigation.tsx:84',message:'Section checked',data:{idx,className,matchedPattern:matchedType?.pattern||null,sectionName:section.dataset.sectionName||null,id:section.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1,H4'})}).catch(()=>{});
-        // #endregion
-
         if (matchedType) {
           // Use actual name (from data-section-name attribute or default type name)
           const actualName = section.dataset.sectionName || matchedType.name;
           
           // Only deduplicate if same actual name (allows multiple infographics with different names)
           const alreadyHasName = foundSections.some(s => s.name === actualName);
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ScrollNavigation.tsx:89',message:'Dedup check',data:{idx,actualName,alreadyHasName,existingNames:foundSections.map(s=>s.name)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H5'})}).catch(()=>{});
-          // #endregion
           if (!alreadyHasName) {
             // Get actual vertical position on page for proper ordering
             const rect = section.getBoundingClientRect();
@@ -119,9 +102,6 @@ export const ScrollNavigation = ({
               id: section.id || `section-${foundSections.length}`,
               priority: topPosition, // Use actual page position instead of hardcoded priority
             });
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ScrollNavigation.tsx:101',message:'ADDED section',data:{idx,actualName,id:section.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'SUCCESS'})}).catch(()=>{});
-            // #endregion
           }
         }
       });
