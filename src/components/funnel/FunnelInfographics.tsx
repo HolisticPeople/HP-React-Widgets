@@ -237,7 +237,7 @@ export const FunnelInfographics = ({
   return (
     <section
       className={cn(
-        'hp-funnel-infographics hp-funnel-section py-12 md:py-16 px-4',
+        'hp-funnel-infographics hp-funnel-section py-4 md:py-16 px-4',
         className
       )}
     >
