@@ -4751,6 +4751,7 @@
             },
             "default_value": 1,
             "ui": 1,
+            "message": "",
             "ui_on_text": "Yes",
             "ui_off_text": "No",
             "_name": "infographics_use_mobile_images",
