@@ -36,15 +36,17 @@ class FunnelInfographicsShortcode
         AssetLoader::enqueue_bundle();
 
         $atts = shortcode_atts([
-            'funnel'        => '',
-            'id'            => '',
-            'title'         => '',
-            'desktop_image' => '',
-            'title_image'   => '',
-            'left_panel'    => '',
-            'right_panel'   => '',
-            'mobile_layout' => '',
-            'alt_text'      => '',
+            'funnel'           => '',
+            'id'               => '',
+            'title'            => '',
+            'desktop_image'    => '',
+            'use_mobile_images'=> '',
+            'desktop_fallback' => '',
+            'title_image'      => '',
+            'left_panel'       => '',
+            'right_panel'      => '',
+            'mobile_layout'    => '',
+            'alt_text'         => '',
         ], $atts);
 
         // Load config by ID, slug, or auto-detect from context
@@ -74,15 +76,25 @@ class FunnelInfographicsShortcode
             return '';
         }
 
+        // Determine useMobileImages - shortcode override, then config, default true
+        $useMobileImages = true;
+        if ($atts['use_mobile_images'] !== '') {
+            $useMobileImages = filter_var($atts['use_mobile_images'], FILTER_VALIDATE_BOOLEAN);
+        } elseif (isset($infographics['use_mobile_images'])) {
+            $useMobileImages = (bool) $infographics['use_mobile_images'];
+        }
+
         // Props for React component
         $props = [
-            'title'           => $atts['title'] ?: ($infographics['title'] ?? ''),
-            'desktopImage'    => $desktopImage,
-            'titleImage'      => $titleImage,
-            'leftPanelImage'  => $leftPanelImage,
-            'rightPanelImage' => $rightPanelImage,
-            'mobileLayout'    => $atts['mobile_layout'] ?: ($infographics['mobile_layout'] ?? 'stack'),
-            'altText'         => $atts['alt_text'] ?: ($infographics['alt_text'] ?? ''),
+            'title'            => $atts['title'] ?: ($infographics['title'] ?? ''),
+            'desktopImage'     => $desktopImage,
+            'useMobileImages'  => $useMobileImages,
+            'desktopFallback'  => $atts['desktop_fallback'] ?: ($infographics['desktop_fallback'] ?? 'scale'),
+            'titleImage'       => $titleImage,
+            'leftPanelImage'   => $leftPanelImage,
+            'rightPanelImage'  => $rightPanelImage,
+            'mobileLayout'     => $atts['mobile_layout'] ?: ($infographics['mobile_layout'] ?? 'stack'),
+            'altText'          => $atts['alt_text'] ?: ($infographics['alt_text'] ?? ''),
         ];
 
         return $this->renderWidget('FunnelInfographics', $config['slug'], $props);

@@ -4730,6 +4730,77 @@
         },
         {
             "ID": 0,
+            "key": "field_infographics_use_mobile_images",
+            "label": "Use Mobile-Specific Images",
+            "name": "infographics_use_mobile_images",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "true_false",
+            "value": null,
+            "menu_order": 82,
+            "instructions": "Enable to use separate cropped images for mobile. Disable to use the desktop image on all devices.",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": false,
+            "parent": 125087,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": 1,
+            "ui": 1,
+            "ui_on_text": "Yes",
+            "ui_off_text": "No",
+            "_name": "infographics_use_mobile_images",
+            "_valid": 1
+        },
+        {
+            "ID": 0,
+            "key": "field_infographics_desktop_fallback",
+            "label": "Mobile Display Mode (Desktop Image)",
+            "name": "infographics_desktop_fallback",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "select",
+            "value": null,
+            "menu_order": 83,
+            "instructions": "How to display the desktop image on mobile when mobile images are disabled",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_infographics_use_mobile_images",
+                        "operator": "!=",
+                        "value": "1"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "choices": {
+                "scale": "Scale to Fit (shrink image to fit screen width)",
+                "scroll": "Horizontal Scroll (maintain original size, swipe to view)"
+            },
+            "default_value": "scale",
+            "multiple": 0,
+            "allow_null": 0,
+            "ui": 0,
+            "ajax": 0,
+            "placeholder": "",
+            "return_format": "value",
+            "_name": "infographics_desktop_fallback",
+            "_valid": 1
+        },
+        {
+            "ID": 0,
             "key": "field_infographics_title_image",
             "label": "Title Image (Mobile)",
             "name": "infographics_title_image",
@@ -4737,12 +4808,20 @@
             "prefix": "acf",
             "type": "image",
             "value": null,
-            "menu_order": 83,
+            "menu_order": 84,
             "instructions": "The title/header portion of the infographic for mobile. This appears at the top on mobile devices.",
             "required": false,
             "id": "",
             "class": "",
-            "conditional_logic": false,
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_infographics_use_mobile_images",
+                        "operator": "==",
+                        "value": "1"
+                    }
+                ]
+            ],
             "parent": 125087,
             "wrapper": {
                 "width": "33",
@@ -4771,12 +4850,20 @@
             "prefix": "acf",
             "type": "image",
             "value": null,
-            "menu_order": 84,
+            "menu_order": 85,
             "instructions": "The left side of the infographic for mobile display (e.g., 'Our Product' side).",
             "required": false,
             "id": "",
             "class": "",
-            "conditional_logic": false,
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_infographics_use_mobile_images",
+                        "operator": "==",
+                        "value": "1"
+                    }
+                ]
+            ],
             "parent": 125087,
             "wrapper": {
                 "width": "33",
@@ -4805,12 +4892,20 @@
             "prefix": "acf",
             "type": "image",
             "value": null,
-            "menu_order": 85,
+            "menu_order": 86,
             "instructions": "The right side of the infographic for mobile display (e.g., 'Competitors' side).",
             "required": false,
             "id": "",
             "class": "",
-            "conditional_logic": false,
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_infographics_use_mobile_images",
+                        "operator": "==",
+                        "value": "1"
+                    }
+                ]
+            ],
             "parent": 125087,
             "wrapper": {
                 "width": "33",
@@ -4839,12 +4934,20 @@
             "prefix": "acf",
             "type": "select",
             "value": null,
-            "menu_order": 86,
+            "menu_order": 87,
             "instructions": "How to display the panels on mobile devices",
             "required": false,
             "id": "",
             "class": "",
-            "conditional_logic": false,
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_infographics_use_mobile_images",
+                        "operator": "==",
+                        "value": "1"
+                    }
+                ]
+            ],
             "parent": 125087,
             "wrapper": {
                 "width": "50",
@@ -4874,7 +4977,7 @@
             "prefix": "acf",
             "type": "text",
             "value": null,
-            "menu_order": 87,
+            "menu_order": 88,
             "instructions": "Accessibility alt text for the infographic images",
             "required": false,
             "id": "",

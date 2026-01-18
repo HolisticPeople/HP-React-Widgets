@@ -23,9 +23,11 @@ import {
 export interface FunnelInfographicsProps {
   title?: string;
   desktopImage: string;
+  useMobileImages?: boolean;
+  desktopFallback?: 'scale' | 'scroll';
   titleImage?: string;
-  leftPanelImage: string;
-  rightPanelImage: string;
+  leftPanelImage?: string;
+  rightPanelImage?: string;
   mobileLayout?: 'stack' | 'carousel';
   altText?: string;
   className?: string;
@@ -34,6 +36,8 @@ export interface FunnelInfographicsProps {
 export const FunnelInfographics = ({
   title,
   desktopImage,
+  useMobileImages = true,
+  desktopFallback = 'scale',
   titleImage,
   leftPanelImage,
   rightPanelImage,
@@ -45,6 +49,11 @@ export const FunnelInfographics = ({
   const [api, setApi] = React.useState<CarouselApi>();
   const [current, setCurrent] = React.useState(0);
   const [count, setCount] = React.useState(0);
+  
+  // Determine if we should use mobile-specific images
+  // Only use mobile images if enabled AND at least one mobile image exists
+  const hasMobileImages = !!(titleImage || leftPanelImage || rightPanelImage);
+  const shouldUseMobileImages = useMobileImages && hasMobileImages;
 
   // Track carousel state for dots indicator
   React.useEffect(() => {
@@ -58,9 +67,12 @@ export const FunnelInfographics = ({
     });
   }, [api]);
 
-  // Desktop View - Full image
+  // Desktop View - Full image (hidden on mobile when using mobile-specific images)
   const renderDesktop = () => (
-    <div className="hp-infographics-desktop hidden md:block">
+    <div className={cn(
+      "hp-infographics-desktop",
+      shouldUseMobileImages ? "hidden md:block" : "" // Show on all devices if not using mobile images
+    )}>
       {desktopImage && (
         <img
           src={desktopImage}
@@ -71,6 +83,40 @@ export const FunnelInfographics = ({
       )}
     </div>
   );
+
+  // Mobile Fallback View - Desktop image on mobile with scale or scroll
+  const renderMobileFallback = () => {
+    if (!isMobile || shouldUseMobileImages || !desktopImage) return null;
+
+    if (desktopFallback === 'scroll') {
+      // Horizontal scroll mode - maintain original size, allow swipe
+      return (
+        <div className="hp-infographics-mobile-scroll md:hidden">
+          <div className="overflow-x-auto -mx-4 px-4 scrollbar-thin scrollbar-thumb-gray-400">
+            <img
+              src={desktopImage}
+              alt={altText}
+              className="h-auto rounded-lg shadow-lg"
+              style={{ 
+                minWidth: '150%', // Ensure image is wider than viewport
+                maxWidth: 'none'
+              }}
+              loading="lazy"
+            />
+          </div>
+          <p 
+            className="text-center text-sm mt-3 opacity-60"
+            style={{ color: 'var(--hp-funnel-text-note, #a3a3a3)' }}
+          >
+            ← Swipe to view full image →
+          </p>
+        </div>
+      );
+    }
+
+    // Scale mode - fit width (default) - handled by renderDesktop with full visibility
+    return null;
+  };
 
   // Mobile Stack View - Title + Left + Right stacked vertically
   const renderMobileStack = () => (
@@ -206,14 +252,18 @@ export const FunnelInfographics = ({
           </h2>
         )}
 
-        {/* Desktop view - always rendered but hidden on mobile */}
+        {/* Desktop view - always rendered, visibility depends on shouldUseMobileImages */}
         {renderDesktop()}
 
-        {/* Mobile view - based on mobileLayout setting */}
-        {isMobile && mobileLayout === 'carousel' 
-          ? renderMobileCarousel() 
-          : isMobile && renderMobileStack()
-        }
+        {/* Mobile fallback - desktop image on mobile when mobile images disabled */}
+        {renderMobileFallback()}
+
+        {/* Mobile view with separate images - based on mobileLayout setting */}
+        {isMobile && shouldUseMobileImages && (
+          mobileLayout === 'carousel' 
+            ? renderMobileCarousel() 
+            : renderMobileStack()
+        )}
       </div>
     </section>
   );

@@ -606,13 +606,15 @@ class FunnelConfigLoader
             
             // Infographics section
             'infographics' => [
-                'title'           => self::getFieldValue('infographics_title', $postId),
-                'desktop_image'   => self::resolveImageUrl(self::getFieldValue('infographics_desktop_image', $postId)),
-                'title_image'     => self::resolveImageUrl(self::getFieldValue('infographics_title_image', $postId)),
-                'left_panel_image'=> self::resolveImageUrl(self::getFieldValue('infographics_left_panel', $postId)),
-                'right_panel_image' => self::resolveImageUrl(self::getFieldValue('infographics_right_panel', $postId)),
-                'mobile_layout'   => self::getFieldValue('infographics_mobile_layout', $postId) ?: 'stack',
-                'alt_text'        => self::getFieldValue('infographics_alt_text', $postId),
+                'title'              => self::getFieldValue('infographics_title', $postId),
+                'desktop_image'      => self::resolveImageUrl(self::getFieldValue('infographics_desktop_image', $postId)),
+                'use_mobile_images'  => (bool) self::getFieldValue('infographics_use_mobile_images', $postId),
+                'desktop_fallback'   => self::getFieldValue('infographics_desktop_fallback', $postId) ?: 'scale',
+                'title_image'        => self::resolveImageUrl(self::getFieldValue('infographics_title_image', $postId)),
+                'left_panel_image'   => self::resolveImageUrl(self::getFieldValue('infographics_left_panel', $postId)),
+                'right_panel_image'  => self::resolveImageUrl(self::getFieldValue('infographics_right_panel', $postId)),
+                'mobile_layout'      => self::getFieldValue('infographics_mobile_layout', $postId) ?: 'stack',
+                'alt_text'           => self::getFieldValue('infographics_alt_text', $postId),
             ],
             
             // SEO metadata
