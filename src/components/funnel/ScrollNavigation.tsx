@@ -82,15 +82,19 @@ export const ScrollNavigation = ({
         );
 
         if (matchedType) {
-          const alreadyHasType = foundSections.some(s => s.name === matchedType.name);
-          if (!alreadyHasType) {
+          // Use actual name (from data-section-name attribute or default type name)
+          const actualName = section.dataset.sectionName || matchedType.name;
+          
+          // Only deduplicate if same actual name (allows multiple infographics with different names)
+          const alreadyHasName = foundSections.some(s => s.name === actualName);
+          if (!alreadyHasName) {
             // Get actual vertical position on page for proper ordering
             const rect = section.getBoundingClientRect();
             const topPosition = window.scrollY + rect.top;
             
             foundSections.push({
               element: section,
-              name: section.dataset.sectionName || matchedType.name,
+              name: actualName,
               id: section.id || `section-${foundSections.length}`,
               priority: topPosition, // Use actual page position instead of hardcoded priority
             });
