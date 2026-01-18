@@ -27,6 +27,7 @@ import {
   FunnelFooter,
   FunnelScience,
   ScrollNavigation,
+  FunnelInfographics,
 } from '@/components/funnel'
 
 // Navigation components
@@ -75,6 +76,7 @@ widgetRegistry.FunnelFaq = FunnelFaq;
 widgetRegistry.FunnelCta = FunnelCta;
 widgetRegistry.FunnelFooter = FunnelFooter;
 widgetRegistry.FunnelScience = FunnelScience;
+widgetRegistry.FunnelInfographics = FunnelInfographics;
 widgetRegistry.ScrollNavigation = ScrollNavigation;
 
 // Navigation components

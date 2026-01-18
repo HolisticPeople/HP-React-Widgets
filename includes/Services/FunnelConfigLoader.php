@@ -604,6 +604,9 @@ class FunnelConfigLoader
                 'sections' => self::extractScienceSections(self::getFieldValue('science_sections', $postId)),
             ],
             
+            // Infographics section (repeater - array of infographics)
+            'infographics' => self::loadInfographics($postId),
+            
             // SEO metadata
             'seo' => [
                 'focus_keyword'      => self::getFieldValue('seo_focus_keyword', $postId),
@@ -1379,6 +1382,41 @@ class FunnelConfigLoader
             }
         }
         return $value;
+    }
+
+    /**
+     * Load infographics from ACF repeater field.
+     *
+     * @param int $postId The funnel post ID
+     * @return array Array of infographic configurations
+     */
+    private static function loadInfographics(int $postId): array
+    {
+        $rows = self::getFieldValue('funnel_infographics', $postId);
+        
+        if (empty($rows) || !is_array($rows)) {
+            return [];
+        }
+
+        $infographics = [];
+        foreach ($rows as $index => $row) {
+            $infographics[] = [
+                'index'             => $index + 1, // 1-based index for shortcode
+                'name'              => $row['info_name'] ?? '',
+                'nav_label'         => $row['info_nav_label'] ?? '',
+                'title'             => $row['info_title'] ?? '',
+                'desktop_image'     => self::resolveImageUrl($row['info_desktop_image'] ?? ''),
+                'use_mobile_images' => !empty($row['info_use_mobile_images']),
+                'desktop_fallback'  => $row['info_desktop_fallback'] ?? 'scale',
+                'title_image'       => self::resolveImageUrl($row['info_title_image'] ?? ''),
+                'left_panel_image'  => self::resolveImageUrl($row['info_left_panel'] ?? ''),
+                'right_panel_image' => self::resolveImageUrl($row['info_right_panel'] ?? ''),
+                'mobile_layout'     => $row['info_mobile_layout'] ?? 'stack',
+                'alt_text'          => $row['info_alt_text'] ?? '',
+            ];
+        }
+
+        return $infographics;
     }
 
     /**

@@ -19,6 +19,7 @@ const KNOWN_SECTION_TYPES = [
   { pattern: 'hero-section', name: 'Home', priority: 1 },
   { pattern: 'benefits', name: 'Benefits', priority: 2 },
   { pattern: 'science', name: 'Science', priority: 3 },
+  { pattern: 'infographics', name: 'Comparison', priority: 3.5 }, // Infographics - default name can be overridden by data-section-name
   { pattern: 'features', name: 'Features', priority: 4 },
   { pattern: 'offers', name: 'Offers', priority: 5 },
   { pattern: 'products', name: 'Offers', priority: 5 }, // Products shows as "Offers"
@@ -73,7 +74,11 @@ export const ScrollNavigation = ({
       allSections.forEach((section) => {
         const parent = section.parentElement?.closest('.hp-funnel-section');
         if (parent) return;
-        if (section.offsetHeight < 200) return;
+        
+        // Infographics sections use lower height threshold (images may still be loading)
+        const isInfographics = section.className.includes('infographics');
+        const minHeight = isInfographics ? 50 : 200;
+        if (section.offsetHeight < minHeight) return;
 
         const className = section.className;
         const matchedType = KNOWN_SECTION_TYPES.find(type => 
@@ -81,15 +86,19 @@ export const ScrollNavigation = ({
         );
 
         if (matchedType) {
-          const alreadyHasType = foundSections.some(s => s.name === matchedType.name);
-          if (!alreadyHasType) {
+          // Use actual name (from data-section-name attribute or default type name)
+          const actualName = section.dataset.sectionName || matchedType.name;
+          
+          // Only deduplicate if same actual name (allows multiple infographics with different names)
+          const alreadyHasName = foundSections.some(s => s.name === actualName);
+          if (!alreadyHasName) {
             // Get actual vertical position on page for proper ordering
             const rect = section.getBoundingClientRect();
             const topPosition = window.scrollY + rect.top;
             
             foundSections.push({
               element: section,
-              name: section.dataset.sectionName || matchedType.name,
+              name: actualName,
               id: section.id || `section-${foundSections.length}`,
               priority: topPosition, // Use actual page position instead of hardcoded priority
             });
