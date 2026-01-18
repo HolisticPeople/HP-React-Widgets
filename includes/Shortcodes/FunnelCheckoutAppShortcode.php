@@ -267,6 +267,7 @@ class FunnelCheckoutAppShortcode
                 'postcode'      => $customer->get_shipping_postcode() ?: $customer->get_billing_postcode(),
                 'country'       => $customer->get_shipping_country() ?: $customer->get_billing_country() ?: 'US',
                 'pointsBalance' => $this->getCustomerPointsBalance($userId),
+                'savedAddresses' => $this->getSavedAddresses($userId, 'shipping'),
             ];
         }
 
@@ -283,7 +284,127 @@ class FunnelCheckoutAppShortcode
             'postcode'      => '',
             'country'       => 'US',
             'pointsBalance' => 0,
+            'savedAddresses' => [],
         ];
+    }
+    
+    /**
+     * Get saved addresses for a user from HP-Multi-Address or ThemeHigh.
+     *
+     * @param int    $userId User ID
+     * @param string $type   Address type ('shipping' or 'billing')
+     * @return array Array of addresses formatted for React
+     */
+    private function getSavedAddresses(int $userId, string $type = 'shipping'): array
+    {
+        $addresses = [];
+        $prefix = $type . '_';
+        
+        // First add the default WooCommerce address
+        if (class_exists('WC_Customer')) {
+            $customer = new \WC_Customer($userId);
+            $defaultAddress = [
+                'id'        => $type . '_primary',
+                'firstName' => $type === 'shipping' ? $customer->get_shipping_first_name() : $customer->get_billing_first_name(),
+                'lastName'  => $type === 'shipping' ? $customer->get_shipping_last_name() : $customer->get_billing_last_name(),
+                'company'   => $type === 'shipping' ? $customer->get_shipping_company() : $customer->get_billing_company(),
+                'address1'  => $type === 'shipping' ? $customer->get_shipping_address_1() : $customer->get_billing_address_1(),
+                'address2'  => $type === 'shipping' ? $customer->get_shipping_address_2() : $customer->get_billing_address_2(),
+                'city'      => $type === 'shipping' ? $customer->get_shipping_city() : $customer->get_billing_city(),
+                'state'     => $type === 'shipping' ? $customer->get_shipping_state() : $customer->get_billing_state(),
+                'postcode'  => $type === 'shipping' ? $customer->get_shipping_postcode() : $customer->get_billing_postcode(),
+                'country'   => $type === 'shipping' ? $customer->get_shipping_country() : $customer->get_billing_country(),
+                'phone'     => $customer->get_billing_phone(),
+                'email'     => $customer->get_billing_email(),
+                'isDefault' => true,
+            ];
+            
+            // Only add if address has content
+            if (!empty($defaultAddress['address1']) || !empty($defaultAddress['firstName'])) {
+                $addresses[] = $defaultAddress;
+            }
+        }
+        
+        // Try to get additional addresses from HP-Multi-Address
+        if (defined('HP_MA_ADDRESS_KEY')) {
+            $savedAddresses = get_user_meta($userId, HP_MA_ADDRESS_KEY, true);
+            if (is_array($savedAddresses) && isset($savedAddresses[$type])) {
+                foreach ($savedAddresses[$type] as $key => $addr) {
+                    // Skip if it matches the primary address
+                    $address = [
+                        'id'        => $key,
+                        'firstName' => $addr[$prefix . 'first_name'] ?? '',
+                        'lastName'  => $addr[$prefix . 'last_name'] ?? '',
+                        'company'   => $addr[$prefix . 'company'] ?? '',
+                        'address1'  => $addr[$prefix . 'address_1'] ?? '',
+                        'address2'  => $addr[$prefix . 'address_2'] ?? '',
+                        'city'      => $addr[$prefix . 'city'] ?? '',
+                        'state'     => $addr[$prefix . 'state'] ?? '',
+                        'postcode'  => $addr[$prefix . 'postcode'] ?? '',
+                        'country'   => $addr[$prefix . 'country'] ?? '',
+                        'phone'     => $addr[$prefix . 'phone'] ?? '',
+                        'email'     => $addr['billing_email'] ?? '',
+                        'isDefault' => false,
+                    ];
+                    
+                    // Check if this is a duplicate of the primary
+                    if (!empty($addresses) && $this->isSameAddress($addresses[0], $address)) {
+                        continue;
+                    }
+                    
+                    if (!empty($address['address1']) || !empty($address['firstName'])) {
+                        $addresses[] = $address;
+                    }
+                }
+            }
+        }
+        
+        // Also try ThemeHigh Multi-Address format
+        $thwmaAddresses = get_user_meta($userId, 'thwma_custom_address', true);
+        if (is_array($thwmaAddresses) && isset($thwmaAddresses[$type])) {
+            foreach ($thwmaAddresses[$type] as $key => $addr) {
+                $address = [
+                    'id'        => 'thwma_' . $key,
+                    'firstName' => $addr[$prefix . 'first_name'] ?? '',
+                    'lastName'  => $addr[$prefix . 'last_name'] ?? '',
+                    'company'   => $addr[$prefix . 'company'] ?? '',
+                    'address1'  => $addr[$prefix . 'address_1'] ?? '',
+                    'address2'  => $addr[$prefix . 'address_2'] ?? '',
+                    'city'      => $addr[$prefix . 'city'] ?? '',
+                    'state'     => $addr[$prefix . 'state'] ?? '',
+                    'postcode'  => $addr[$prefix . 'postcode'] ?? '',
+                    'country'   => $addr[$prefix . 'country'] ?? '',
+                    'phone'     => $addr[$prefix . 'phone'] ?? '',
+                    'email'     => $addr['billing_email'] ?? '',
+                    'isDefault' => false,
+                ];
+                
+                // Check for duplicates
+                $isDuplicate = false;
+                foreach ($addresses as $existing) {
+                    if ($this->isSameAddress($existing, $address)) {
+                        $isDuplicate = true;
+                        break;
+                    }
+                }
+                
+                if (!$isDuplicate && (!empty($address['address1']) || !empty($address['firstName']))) {
+                    $addresses[] = $address;
+                }
+            }
+        }
+        
+        return $addresses;
+    }
+    
+    /**
+     * Check if two addresses are the same.
+     */
+    private function isSameAddress(array $a, array $b): bool
+    {
+        return ($a['address1'] ?? '') === ($b['address1'] ?? '') 
+            && ($a['postcode'] ?? '') === ($b['postcode'] ?? '')
+            && ($a['city'] ?? '') === ($b['city'] ?? '');
     }
 
     /**
