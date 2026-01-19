@@ -6,10 +6,11 @@
  * 
  * @package HP-React-Widgets
  * @since 2.32.0
+ * @version 2.32.7 - Fixed capsule shape, visibility logic, and CTA hiding
  * @author Amnon Manneberg
  */
 
-import { useEffect, useState, CSSProperties } from 'react';
+import { useEffect, useState, useCallback, CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { useResponsive } from '@/hooks/use-responsive';
 import { smoothScrollTo } from '@/hooks/use-smooth-scroll';
@@ -52,25 +53,42 @@ export const StickyCTA = ({
   const [isVisible, setIsVisible] = useState(true);
   
   // #region agent log
-  console.log('[HP-DEBUG] StickyCTA render', {text,target,isMobile,mounted,isVisible});
+  fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StickyCTA.tsx:55',message:'StickyCTA render',data:{text,target,isMobile,mounted,isVisible},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1-H4'})}).catch(()=>{});
   // #endregion
 
   useEffect(() => {
     setMounted(true);
     
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StickyCTA.tsx:62',message:'Style injection effect running',data:{isMobile},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
+    // #endregion
+    
     // Hide section CTAs when sticky CTA is active on mobile
+    // Use broader selector to catch all CTA buttons in funnel sections
     if (isMobile) {
       const style = document.createElement('style');
       style.id = 'hp-sticky-cta-hide-section-ctas';
+      // Broader selectors to hide all CTA buttons in funnel sections
       style.textContent = `
-        @media (max-width: 639px) {
+        @media (max-width: 767px) {
+          /* Hide all CTA buttons inside funnel sections */
+          .hp-funnel-section .hp-funnel-cta-btn,
           .hp-funnel-section .hp-section-cta,
-          .hp-funnel-section [data-cta-button="true"] {
+          .hp-funnel-section [data-cta-button="true"],
+          .hp-funnel-hero-section button,
+          .hp-funnel-testimonials button:not(.hp-sticky-cta-button),
+          .hp-funnel-benefits button,
+          .hp-funnel-authority button,
+          .hp-funnel-science button {
             display: none !important;
           }
         }
       `;
       document.head.appendChild(style);
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StickyCTA.tsx:88',message:'Style injected',data:{styleContent:style.textContent.substring(0,100)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{});
+      // #endregion
       
       return () => {
         const existingStyle = document.getElementById('hp-sticky-cta-hide-section-ctas');
@@ -81,19 +99,53 @@ export const StickyCTA = ({
     }
   }, [isMobile]);
 
-  // Track scroll position to hide when in checkout/thank you area
+  // Check if element is in viewport
+  const isElementInViewport = useCallback((el: Element | null): boolean => {
+    if (!el) return false;
+    const rect = el.getBoundingClientRect();
+    // Consider element visible if at least 30% is in viewport
+    const viewportHeight = window.innerHeight;
+    const elementTop = rect.top;
+    const elementBottom = rect.bottom;
+    const visibleTop = Math.max(0, elementTop);
+    const visibleBottom = Math.min(viewportHeight, elementBottom);
+    const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+    return visibleHeight > rect.height * 0.3;
+  }, []);
+
+  // Track when in offers/products section - hide there since that's where they can buy
   useEffect(() => {
     if (!isMobile) return;
 
-    const handleScroll = () => {
-      // Hide if we're near the bottom (likely in checkout section)
-      const scrollPercent = window.scrollY / (document.body.scrollHeight - window.innerHeight);
-      setIsVisible(scrollPercent < 0.85);
+    const checkVisibility = () => {
+      // Find the offers/products section
+      const offersSection = document.querySelector('.hp-funnel-products') 
+        || document.querySelector('[data-section-type="products"]')
+        || document.querySelector('[data-section-type="offers"]');
+      
+      // Also check for checkout section
+      const checkoutSection = document.querySelector('.hp-funnel-checkout')
+        || document.querySelector('[data-section-type="checkout"]');
+      
+      // Hide if user is viewing the offers or checkout section
+      const inOffersSection = isElementInViewport(offersSection);
+      const inCheckoutSection = isElementInViewport(checkoutSection);
+      const shouldHide = inOffersSection || inCheckoutSection;
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StickyCTA.tsx:130',message:'Visibility check',data:{inOffersSection,inCheckoutSection,shouldHide,willBeVisible:!shouldHide,scrollY:window.scrollY},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
+      
+      setIsVisible(!shouldHide);
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [isMobile]);
+    // Check immediately
+    checkVisibility();
+    
+    // Check on scroll
+    window.addEventListener('scroll', checkVisibility, { passive: true });
+    return () => window.removeEventListener('scroll', checkVisibility);
+  }, [isMobile, isElementInViewport]);
 
   const handleClick = () => {
     let targetElement: HTMLElement | null = null;
@@ -125,7 +177,7 @@ export const StickyCTA = ({
 
   // Only show on mobile
   // #region agent log
-  console.log('[HP-DEBUG] StickyCTA visibility check', {mounted,isMobile,isVisible,willRender:mounted&&isMobile&&isVisible});
+  fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StickyCTA.tsx:175',message:'StickyCTA visibility check',data:{mounted,isMobile,isVisible,willRender:mounted&&isMobile&&isVisible},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4'})}).catch(()=>{});
   // #endregion
   if (!mounted || !isMobile || !isVisible) {
     return null;
@@ -147,6 +199,10 @@ export const StickyCTA = ({
         zIndex: 9998,
         padding: '12px 16px',
         paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
+        // Flex container to center the capsule button
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
         background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 70%, transparent 100%)',
       }}
     >
@@ -155,17 +211,18 @@ export const StickyCTA = ({
         className="hp-sticky-cta-button"
         style={{
           ...buttonStyle,
-          width: '100%',
-          padding: '16px 24px',
-          fontSize: '16px',
-          fontWeight: 600,
+          // Capsule shape: auto width, large horizontal padding, fully rounded
+          padding: '14px 48px',
+          fontSize: '15px',
+          fontWeight: 700,
           border: 'none',
-          borderRadius: '8px',
+          borderRadius: '9999px', // Fully rounded capsule
           cursor: 'pointer',
           textTransform: 'uppercase',
           letterSpacing: '0.5px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          boxShadow: '0 4px 16px rgba(212, 168, 83, 0.4)',
           transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+          whiteSpace: 'nowrap',
         }}
         onTouchStart={(e) => {
           (e.currentTarget as HTMLElement).style.transform = 'scale(0.98)';
