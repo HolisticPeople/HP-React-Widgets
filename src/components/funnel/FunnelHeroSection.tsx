@@ -77,7 +77,7 @@ export const FunnelHeroSection = ({
   imagePosition = 'right',
   minHeight = '600px',
   titleSize = 'xl', // Default to xl (matches reference funnel)
-  heightBehavior = 'fit_viewport',
+  heightBehavior = 'scrollable', // Changed from fit_viewport - overflow issues on mobile
   mobileImagePosition = 'below',
   mobileTitleSize,
   enableScrollNavigation = false,

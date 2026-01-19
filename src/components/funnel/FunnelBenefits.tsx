@@ -124,7 +124,7 @@ export const FunnelBenefits = ({
   backgroundGradient,
   className,
   enableCategories = false,
-  heightBehavior = 'fit_viewport',
+  heightBehavior = 'scrollable', // Changed from fit_viewport - overflow issues on mobile
 }: FunnelBenefitsProps) => {
   // Responsive hooks
   const { className: heightClassName, style: heightStyle } = useHeightBehavior(heightBehavior);
