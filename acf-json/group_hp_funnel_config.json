@@ -135,6 +135,278 @@
             "_valid": 1
         },
         {
+            "key": "field_responsive_tab",
+            "label": "Responsive",
+            "name": "",
+            "type": "tab",
+            "menu_order": 3.6,
+            "instructions": "Configure responsive behavior for different screen sizes.",
+            "parent": 125087,
+            "wrapper": { "width": "", "class": "", "id": "" },
+            "placement": "top",
+            "endpoint": 0,
+            "selected": 0
+        },
+        {
+            "key": "field_responsive_breakpoint_override",
+            "label": "Override Plugin Breakpoints",
+            "name": "responsive_breakpoint_override",
+            "type": "true_false",
+            "menu_order": 3.61,
+            "instructions": "Check to use custom breakpoint values for this funnel instead of plugin defaults.",
+            "parent": 125087,
+            "wrapper": { "width": "50", "class": "", "id": "" },
+            "default_value": 0,
+            "ui": 1,
+            "ui_on_text": "Custom",
+            "ui_off_text": "Default"
+        },
+        {
+            "key": "field_responsive_breakpoint_tablet",
+            "label": "Tablet Breakpoint (px)",
+            "name": "responsive_breakpoint_tablet",
+            "type": "number",
+            "menu_order": 3.62,
+            "instructions": "Screen width where mobile ends and tablet begins.",
+            "parent": 125087,
+            "conditional_logic": [
+                [{ "field": "field_responsive_breakpoint_override", "operator": "==", "value": "1" }]
+            ],
+            "wrapper": { "width": "33", "class": "", "id": "" },
+            "default_value": 640,
+            "placeholder": "640",
+            "min": 320,
+            "max": 1200
+        },
+        {
+            "key": "field_responsive_breakpoint_laptop",
+            "label": "Laptop Breakpoint (px)",
+            "name": "responsive_breakpoint_laptop",
+            "type": "number",
+            "menu_order": 3.63,
+            "instructions": "Screen width where tablet ends and laptop begins.",
+            "parent": 125087,
+            "conditional_logic": [
+                [{ "field": "field_responsive_breakpoint_override", "operator": "==", "value": "1" }]
+            ],
+            "wrapper": { "width": "33", "class": "", "id": "" },
+            "default_value": 1024,
+            "placeholder": "1024",
+            "min": 640,
+            "max": 1600
+        },
+        {
+            "key": "field_responsive_breakpoint_desktop",
+            "label": "Desktop Breakpoint (px)",
+            "name": "responsive_breakpoint_desktop",
+            "type": "number",
+            "menu_order": 3.64,
+            "instructions": "Screen width where laptop ends and desktop begins.",
+            "parent": 125087,
+            "conditional_logic": [
+                [{ "field": "field_responsive_breakpoint_override", "operator": "==", "value": "1" }]
+            ],
+            "wrapper": { "width": "33", "class": "", "id": "" },
+            "default_value": 1440,
+            "placeholder": "1440",
+            "min": 1024,
+            "max": 2560
+        },
+        {
+            "key": "field_responsive_content_max_width",
+            "label": "Content Max Width (px)",
+            "name": "responsive_content_max_width",
+            "type": "number",
+            "menu_order": 3.65,
+            "instructions": "Maximum width for boxed text content. Leave empty to use plugin default (1400px).",
+            "parent": 125087,
+            "wrapper": { "width": "50", "class": "", "id": "" },
+            "default_value": "",
+            "placeholder": "1400",
+            "min": 1000,
+            "max": 1600
+        },
+        {
+            "key": "field_mobile_sticky_cta_enabled",
+            "label": "Mobile Sticky CTA",
+            "name": "mobile_sticky_cta_enabled",
+            "type": "true_false",
+            "menu_order": 3.70,
+            "instructions": "Show a sticky CTA button at the bottom of the screen on mobile devices.",
+            "parent": 125087,
+            "wrapper": { "width": "50", "class": "", "id": "" },
+            "default_value": 0,
+            "ui": 1,
+            "ui_on_text": "Enabled",
+            "ui_off_text": "Disabled"
+        },
+        {
+            "key": "field_mobile_sticky_cta_text",
+            "label": "Sticky CTA Text",
+            "name": "mobile_sticky_cta_text",
+            "type": "text",
+            "menu_order": 3.71,
+            "instructions": "Button text for the sticky mobile CTA.",
+            "parent": 125087,
+            "conditional_logic": [
+                [{ "field": "field_mobile_sticky_cta_enabled", "operator": "==", "value": "1" }]
+            ],
+            "wrapper": { "width": "50", "class": "", "id": "" },
+            "default_value": "Get Your Kit Now",
+            "placeholder": "Get Your Kit Now"
+        },
+        {
+            "key": "field_mobile_sticky_cta_target",
+            "label": "Sticky CTA Target",
+            "name": "mobile_sticky_cta_target",
+            "type": "select",
+            "menu_order": 3.72,
+            "instructions": "Where should the sticky CTA scroll to when clicked?",
+            "parent": 125087,
+            "conditional_logic": [
+                [{ "field": "field_mobile_sticky_cta_enabled", "operator": "==", "value": "1" }]
+            ],
+            "wrapper": { "width": "50", "class": "", "id": "" },
+            "choices": {
+                "scroll_to_offers": "Scroll to Offers/Products",
+                "scroll_to_checkout": "Scroll to Checkout"
+            },
+            "default_value": "scroll_to_offers",
+            "return_format": "value"
+        },
+        {
+            "key": "field_responsive_infographics_mobile_mode",
+            "label": "Infographics - Mobile Mode",
+            "name": "responsive_infographics_mobile_mode",
+            "type": "select",
+            "menu_order": 3.80,
+            "instructions": "How infographics display on mobile screens.",
+            "parent": 125087,
+            "wrapper": { "width": "33", "class": "", "id": "" },
+            "choices": {
+                "swipe": "Swipe Panels",
+                "scale": "Scaled Image",
+                "split_panels": "Split Panels (Top/Bottom)"
+            },
+            "default_value": "swipe",
+            "return_format": "value"
+        },
+        {
+            "key": "field_responsive_infographics_tablet_mode",
+            "label": "Infographics - Tablet Mode",
+            "name": "responsive_infographics_tablet_mode",
+            "type": "select",
+            "menu_order": 3.81,
+            "instructions": "How infographics display on tablet screens.",
+            "parent": 125087,
+            "wrapper": { "width": "33", "class": "", "id": "" },
+            "choices": {
+                "split_panels": "Split Panels (Top/Bottom)",
+                "scale": "Scaled Image",
+                "full_image": "Full Image"
+            },
+            "default_value": "split_panels",
+            "return_format": "value"
+        },
+        {
+            "key": "field_responsive_infographics_desktop_mode",
+            "label": "Infographics - Desktop Mode",
+            "name": "responsive_infographics_desktop_mode",
+            "type": "select",
+            "menu_order": 3.82,
+            "instructions": "How infographics display on desktop screens.",
+            "parent": 125087,
+            "wrapper": { "width": "33", "class": "", "id": "" },
+            "choices": {
+                "full_image": "Full Image",
+                "scale": "Scaled Image",
+                "split_panels": "Split Panels"
+            },
+            "default_value": "full_image",
+            "return_format": "value"
+        },
+        {
+            "key": "field_responsive_testimonials_mobile_mode",
+            "label": "Testimonials - Mobile Mode",
+            "name": "responsive_testimonials_mobile_mode",
+            "type": "select",
+            "menu_order": 3.85,
+            "instructions": "How testimonials display on mobile screens.",
+            "parent": 125087,
+            "wrapper": { "width": "33", "class": "", "id": "" },
+            "choices": {
+                "carousel": "Carousel (swipe)",
+                "stacked": "Stacked (vertical)"
+            },
+            "default_value": "carousel",
+            "return_format": "value"
+        },
+        {
+            "key": "field_responsive_testimonials_tablet_mode",
+            "label": "Testimonials - Tablet Mode",
+            "name": "responsive_testimonials_tablet_mode",
+            "type": "select",
+            "menu_order": 3.86,
+            "instructions": "How testimonials display on tablet screens.",
+            "parent": 125087,
+            "wrapper": { "width": "33", "class": "", "id": "" },
+            "choices": {
+                "grid_2col": "2 Column Grid",
+                "carousel": "Carousel"
+            },
+            "default_value": "grid_2col",
+            "return_format": "value"
+        },
+        {
+            "key": "field_responsive_testimonials_desktop_mode",
+            "label": "Testimonials - Desktop Mode",
+            "name": "responsive_testimonials_desktop_mode",
+            "type": "select",
+            "menu_order": 3.87,
+            "instructions": "How testimonials display on desktop screens.",
+            "parent": 125087,
+            "wrapper": { "width": "33", "class": "", "id": "" },
+            "choices": {
+                "grid_3col": "3 Column Grid",
+                "grid_2col": "2 Column Grid",
+                "carousel": "Carousel"
+            },
+            "default_value": "grid_3col",
+            "return_format": "value"
+        },
+        {
+            "key": "field_responsive_hero_height_behavior",
+            "label": "Hero - Height Behavior",
+            "name": "responsive_hero_height_behavior",
+            "type": "select",
+            "menu_order": 3.90,
+            "instructions": "How the hero section handles its height.",
+            "parent": 125087,
+            "wrapper": { "width": "50", "class": "", "id": "" },
+            "choices": {
+                "fit_viewport": "Fit Viewport (~80vh)",
+                "scrollable": "Natural Height (scrollable)"
+            },
+            "default_value": "fit_viewport",
+            "return_format": "value"
+        },
+        {
+            "key": "field_responsive_products_height_behavior",
+            "label": "Products - Height Behavior",
+            "name": "responsive_products_height_behavior",
+            "type": "select",
+            "menu_order": 3.91,
+            "instructions": "How the products section handles its height.",
+            "parent": 125087,
+            "wrapper": { "width": "50", "class": "", "id": "" },
+            "choices": {
+                "scrollable": "Natural Height (scrollable)",
+                "fit_viewport": "Fit Viewport (~80vh)"
+            },
+            "default_value": "scrollable",
+            "return_format": "value"
+        },
+        {
             "ID": 125165,
             "key": "field_header_tab",
             "label": "Header",
