@@ -91,10 +91,24 @@ class AssetLoader
         // Localize settings (only once)
         static $localized = false;
         if (!$localized) {
+            $responsiveSettings = Plugin::get_responsive_settings();
+            
             wp_localize_script(self::HANDLE, 'hpReactSettings', [
-                'root'    => esc_url_raw(rest_url()),
-                'nonce'   => wp_create_nonce('wp_rest'),
-                'user_id' => get_current_user_id(),
+                'root'       => esc_url_raw(rest_url()),
+                'nonce'      => wp_create_nonce('wp_rest'),
+                'user_id'    => get_current_user_id(),
+                'responsive' => [
+                    'breakpoints' => [
+                        'tablet'  => (int) $responsiveSettings['breakpoint_tablet'],
+                        'laptop'  => (int) $responsiveSettings['breakpoint_laptop'],
+                        'desktop' => (int) $responsiveSettings['breakpoint_desktop'],
+                    ],
+                    'contentMaxWidth'    => (int) $responsiveSettings['content_max_width'],
+                    'enableSmoothScroll' => (bool) $responsiveSettings['enable_smooth_scroll'],
+                    'scrollDuration'     => (int) $responsiveSettings['scroll_duration'],
+                    'scrollEasing'       => $responsiveSettings['scroll_easing'],
+                    'enableScrollSnap'   => (bool) $responsiveSettings['enable_scroll_snap'],
+                ],
             ]);
             $localized = true;
         }

@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useSmoothScroll } from '@/hooks/use-smooth-scroll';
+import { useResponsive } from '@/hooks/use-responsive';
 
 export interface ScrollNavigationProps {
   sections?: string[];
@@ -44,6 +46,10 @@ export const ScrollNavigation = ({
   const [mounted, setMounted] = useState(false);
   const scrollingRef = useRef(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Use smooth scroll hook with PHP settings
+  const { scrollTo } = useSmoothScroll();
+  const { isMobile, settings } = useResponsive();
 
   useEffect(() => {
     setMounted(true);
@@ -151,14 +157,21 @@ export const ScrollNavigation = ({
     if (sectionInfos[index]) {
       scrollingRef.current = true;
       setActiveIndex(index);
-      sectionInfos[index].element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      
+      // Use custom smooth scroll with easing from PHP settings
+      // Use slightly shorter duration on mobile for snappier feel
+      const duration = isMobile 
+        ? Math.round(settings.scrollDuration * 0.75) 
+        : settings.scrollDuration;
+      
+      scrollTo(sectionInfos[index].element, { duration });
 
       if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
       scrollTimeoutRef.current = setTimeout(() => {
         scrollingRef.current = false;
-      }, 1000);
+      }, duration + 200); // Wait for scroll to complete plus buffer
     }
-  }, [sectionInfos]);
+  }, [sectionInfos, scrollTo, isMobile, settings.scrollDuration]);
 
   useEffect(() => {
     return () => {
@@ -166,7 +179,9 @@ export const ScrollNavigation = ({
     };
   }, []);
 
-  if (!mounted || sectionInfos.length < 2) return null;
+  // Hide on mobile - the dots take up valuable screen space
+  // Users can swipe naturally on mobile
+  if (!mounted || sectionInfos.length < 2 || isMobile) return null;
 
   const activeColor = accentColor || '#D4A853';
 

@@ -152,6 +152,7 @@ class FunnelImporter
             self::importFooter($postId, $data['footer'] ?? []);
             self::importScience($postId, $data['science'] ?? []);
             self::importSeo($postId, $data['seo'] ?? []);
+            self::importResponsive($postId, $data['responsive'] ?? []);
 
             // Clear cache
             FunnelConfigLoader::clearCache($postId);
@@ -690,6 +691,127 @@ class FunnelImporter
                     'url' => self::toAbsoluteUrl($l['url'] ?? ''),
                 ];
             }, $footer['links']));
+        }
+    }
+
+    /**
+     * Import responsive section (v2.32.0).
+     */
+    private static function importResponsive(int $postId, array $responsive): void
+    {
+        if (empty($responsive)) return;
+
+        // Breakpoint overrides
+        if (!empty($responsive['breakpoint_overrides'])) {
+            self::setField($postId, 'responsive_breakpoint_override', true);
+            if (!empty($responsive['breakpoints'])) {
+                self::setField($postId, 'responsive_breakpoint_tablet', $responsive['breakpoints']['tablet'] ?? 640);
+                self::setField($postId, 'responsive_breakpoint_laptop', $responsive['breakpoints']['laptop'] ?? 1024);
+                self::setField($postId, 'responsive_breakpoint_desktop', $responsive['breakpoints']['desktop'] ?? 1440);
+            }
+        }
+
+        // Content max-width
+        if (isset($responsive['content_max_width'])) {
+            self::setField($postId, 'responsive_content_max_width', (int) $responsive['content_max_width']);
+        }
+
+        // Scroll settings
+        if (!empty($responsive['scroll_settings'])) {
+            $scroll = $responsive['scroll_settings'];
+            if (isset($scroll['enable_smooth_scroll'])) {
+                self::setField($postId, 'responsive_enable_smooth_scroll', (bool) $scroll['enable_smooth_scroll']);
+            }
+            if (isset($scroll['scroll_duration'])) {
+                self::setField($postId, 'responsive_scroll_duration', (int) $scroll['scroll_duration']);
+            }
+            if (isset($scroll['scroll_easing'])) {
+                self::setField($postId, 'responsive_scroll_easing', $scroll['scroll_easing']);
+            }
+            if (isset($scroll['enable_scroll_snap'])) {
+                self::setField($postId, 'responsive_enable_scroll_snap', (bool) $scroll['enable_scroll_snap']);
+            }
+        }
+
+        // Mobile settings
+        if (!empty($responsive['mobile_settings'])) {
+            $mobile = $responsive['mobile_settings'];
+            if (isset($mobile['sticky_cta_enabled'])) {
+                self::setField($postId, 'mobile_sticky_cta_enabled', (bool) $mobile['sticky_cta_enabled']);
+            }
+            if (isset($mobile['sticky_cta_text'])) {
+                self::setField($postId, 'mobile_sticky_cta_text', $mobile['sticky_cta_text']);
+            }
+            if (isset($mobile['sticky_cta_target'])) {
+                self::setField($postId, 'mobile_sticky_cta_target', $mobile['sticky_cta_target']);
+            }
+            if (isset($mobile['enable_skeleton_placeholders'])) {
+                self::setField($postId, 'mobile_enable_skeleton_placeholders', (bool) $mobile['enable_skeleton_placeholders']);
+            }
+            if (isset($mobile['reduce_animations'])) {
+                self::setField($postId, 'mobile_reduce_animations', (bool) $mobile['reduce_animations']);
+            }
+        }
+
+        // Per-section settings
+        if (!empty($responsive['sections'])) {
+            $sections = $responsive['sections'];
+            
+            // Hero
+            if (!empty($sections['hero'])) {
+                $hero = $sections['hero'];
+                if (isset($hero['height_behavior'])) {
+                    self::setField($postId, 'responsive_hero_height_behavior', $hero['height_behavior']);
+                }
+                if (isset($hero['mobile_image_position'])) {
+                    self::setField($postId, 'responsive_hero_mobile_image_position', $hero['mobile_image_position']);
+                }
+                if (isset($hero['mobile_title_size'])) {
+                    self::setField($postId, 'responsive_hero_mobile_title_size', $hero['mobile_title_size']);
+                }
+            }
+
+            // Infographics
+            if (!empty($sections['infographics'])) {
+                $info = $sections['infographics'];
+                if (isset($info['height_behavior'])) {
+                    self::setField($postId, 'responsive_infographics_height_behavior', $info['height_behavior']);
+                }
+                if (isset($info['mobile_mode'])) {
+                    self::setField($postId, 'responsive_infographics_mobile_mode', $info['mobile_mode']);
+                }
+                if (isset($info['tablet_mode'])) {
+                    self::setField($postId, 'responsive_infographics_tablet_mode', $info['tablet_mode']);
+                }
+                if (isset($info['desktop_mode'])) {
+                    self::setField($postId, 'responsive_infographics_desktop_mode', $info['desktop_mode']);
+                }
+            }
+
+            // Testimonials
+            if (!empty($sections['testimonials'])) {
+                $test = $sections['testimonials'];
+                if (isset($test['height_behavior'])) {
+                    self::setField($postId, 'responsive_testimonials_height_behavior', $test['height_behavior']);
+                }
+                if (isset($test['mobile_mode'])) {
+                    self::setField($postId, 'responsive_testimonials_mobile_mode', $test['mobile_mode']);
+                }
+                if (isset($test['tablet_mode'])) {
+                    self::setField($postId, 'responsive_testimonials_tablet_mode', $test['tablet_mode']);
+                }
+                if (isset($test['desktop_mode'])) {
+                    self::setField($postId, 'responsive_testimonials_desktop_mode', $test['desktop_mode']);
+                }
+            }
+
+            // Simple height behavior for other sections
+            $simpleSections = ['products', 'benefits', 'features', 'authority', 'science', 'faq', 'cta'];
+            foreach ($simpleSections as $sectionName) {
+                if (!empty($sections[$sectionName]['height_behavior'])) {
+                    self::setField($postId, "responsive_{$sectionName}_height_behavior", $sections[$sectionName]['height_behavior']);
+                }
+            }
         }
     }
 

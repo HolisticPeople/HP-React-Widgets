@@ -614,9 +614,111 @@ class FunnelConfigLoader
                 'meta_description'   => self::getFieldValue('seo_meta_description', $postId),
                 'cornerstone_content' => (bool) self::getFieldValue('seo_cornerstone_content', $postId),
             ],
+            
+            // Responsive settings (v2.32.0)
+            'responsive' => self::extractResponsiveConfig($postId),
         ];
 
         return $config;
+    }
+
+    /**
+     * Extract responsive configuration including per-breakpoint modes and mobile settings.
+     *
+     * @param int $postId Post ID
+     * @return array Responsive configuration
+     */
+    private static function extractResponsiveConfig(int $postId): array
+    {
+        // Get plugin-wide defaults
+        $pluginDefaults = \HP_RW\Plugin::get_responsive_settings();
+        
+        // Check if funnel has breakpoint overrides
+        $hasOverrides = (bool) self::getFieldValue('responsive_breakpoint_override', $postId);
+        
+        // Breakpoint values (use overrides or plugin defaults)
+        $breakpoints = [
+            'tablet'  => $hasOverrides 
+                ? (int) (self::getFieldValue('responsive_breakpoint_tablet', $postId) ?: $pluginDefaults['breakpoint_tablet'])
+                : $pluginDefaults['breakpoint_tablet'],
+            'laptop'  => $hasOverrides 
+                ? (int) (self::getFieldValue('responsive_breakpoint_laptop', $postId) ?: $pluginDefaults['breakpoint_laptop'])
+                : $pluginDefaults['breakpoint_laptop'],
+            'desktop' => $hasOverrides 
+                ? (int) (self::getFieldValue('responsive_breakpoint_desktop', $postId) ?: $pluginDefaults['breakpoint_desktop'])
+                : $pluginDefaults['breakpoint_desktop'],
+        ];
+        
+        // Content max-width
+        $contentMaxWidth = (int) (self::getFieldValue('responsive_content_max_width', $postId) ?: $pluginDefaults['content_max_width']);
+        
+        // Scroll settings
+        $scrollSettings = [
+            'enable_smooth_scroll' => self::getFieldValue('responsive_enable_smooth_scroll', $postId) ?? $pluginDefaults['enable_smooth_scroll'],
+            'scroll_duration'      => (int) (self::getFieldValue('responsive_scroll_duration', $postId) ?: $pluginDefaults['scroll_duration']),
+            'scroll_easing'        => self::getFieldValue('responsive_scroll_easing', $postId) ?: $pluginDefaults['scroll_easing'],
+            'enable_scroll_snap'   => (bool) self::getFieldValue('responsive_enable_scroll_snap', $postId),
+        ];
+        
+        // Mobile settings
+        $mobileSettings = [
+            'sticky_cta_enabled'         => (bool) self::getFieldValue('mobile_sticky_cta_enabled', $postId),
+            'sticky_cta_text'            => self::getFieldValue('mobile_sticky_cta_text', $postId) ?: 'Get Your Kit Now',
+            'sticky_cta_target'          => self::getFieldValue('mobile_sticky_cta_target', $postId) ?: 'scroll_to_offers',
+            'enable_skeleton_placeholders' => (bool) self::getFieldValue('mobile_enable_skeleton_placeholders', $postId),
+            'reduce_animations'          => (bool) self::getFieldValue('mobile_reduce_animations', $postId),
+        ];
+        
+        // Per-section responsive settings
+        $sectionSettings = [
+            'hero' => [
+                'height_behavior'   => self::getFieldValue('responsive_hero_height_behavior', $postId) ?: 'fit_viewport',
+                'mobile_image_position' => self::getFieldValue('responsive_hero_mobile_image_position', $postId) ?: 'below',
+                'mobile_title_size' => self::getFieldValue('responsive_hero_mobile_title_size', $postId) ?: 'md',
+            ],
+            'infographics' => [
+                'height_behavior' => self::getFieldValue('responsive_infographics_height_behavior', $postId) ?: 'scrollable',
+                'mobile_mode'     => self::getFieldValue('responsive_infographics_mobile_mode', $postId) ?: 'swipe',
+                'tablet_mode'     => self::getFieldValue('responsive_infographics_tablet_mode', $postId) ?: 'split_panels',
+                'desktop_mode'    => self::getFieldValue('responsive_infographics_desktop_mode', $postId) ?: 'full_image',
+            ],
+            'testimonials' => [
+                'height_behavior' => self::getFieldValue('responsive_testimonials_height_behavior', $postId) ?: 'scrollable',
+                'mobile_mode'     => self::getFieldValue('responsive_testimonials_mobile_mode', $postId) ?: 'carousel',
+                'tablet_mode'     => self::getFieldValue('responsive_testimonials_tablet_mode', $postId) ?: 'grid_2col',
+                'desktop_mode'    => self::getFieldValue('responsive_testimonials_desktop_mode', $postId) ?: 'grid_3col',
+            ],
+            'products' => [
+                'height_behavior' => self::getFieldValue('responsive_products_height_behavior', $postId) ?: 'scrollable',
+            ],
+            'benefits' => [
+                'height_behavior' => self::getFieldValue('responsive_benefits_height_behavior', $postId) ?: 'fit_viewport',
+            ],
+            'features' => [
+                'height_behavior' => self::getFieldValue('responsive_features_height_behavior', $postId) ?: 'scrollable',
+            ],
+            'authority' => [
+                'height_behavior' => self::getFieldValue('responsive_authority_height_behavior', $postId) ?: 'fit_viewport',
+            ],
+            'science' => [
+                'height_behavior' => self::getFieldValue('responsive_science_height_behavior', $postId) ?: 'scrollable',
+            ],
+            'faq' => [
+                'height_behavior' => self::getFieldValue('responsive_faq_height_behavior', $postId) ?: 'scrollable',
+            ],
+            'cta' => [
+                'height_behavior' => self::getFieldValue('responsive_cta_height_behavior', $postId) ?: 'fit_viewport',
+            ],
+        ];
+        
+        return [
+            'breakpoint_overrides' => $hasOverrides,
+            'breakpoints'          => $breakpoints,
+            'content_max_width'    => $contentMaxWidth,
+            'scroll_settings'      => $scrollSettings,
+            'mobile_settings'      => $mobileSettings,
+            'sections'             => $sectionSettings,
+        ];
     }
 
     /**

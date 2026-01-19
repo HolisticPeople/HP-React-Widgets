@@ -22,6 +22,28 @@ class Plugin
     private const OPTION_SHORTCODE_DESCRIPTIONS = 'hp_rw_shortcode_descriptions';
 
     /**
+     * Option name used to store responsive settings (breakpoints, max-width, scroll).
+     */
+    private const OPTION_RESPONSIVE_SETTINGS = 'hp_rw_responsive_settings';
+
+    /**
+     * Default responsive settings.
+     */
+    private const DEFAULT_RESPONSIVE_SETTINGS = [
+        // Breakpoint pixel values
+        'breakpoint_tablet'  => 640,   // Mobile ends, tablet starts
+        'breakpoint_laptop'  => 1024,  // Tablet ends, laptop starts
+        'breakpoint_desktop' => 1440,  // Laptop ends, desktop starts
+        // Content max-width for boxed text areas
+        'content_max_width'  => 1400,  // Default max-width in pixels (range: 1000-1600)
+        // Scroll settings
+        'enable_smooth_scroll' => true,
+        'scroll_duration'      => 800,   // ms
+        'scroll_easing'        => 'ease-out-cubic', // ease-out-cubic, ease-out-quad, linear
+        'enable_scroll_snap'   => false, // Experimental
+    ];
+
+    /**
      * Registry of all shortcodes this plugin can provide.
      *
      * New shortcodes should be added here so they automatically appear
@@ -826,6 +848,57 @@ class Plugin
     public static function set_shortcode_descriptions(array $descriptions): void
     {
         update_option(self::OPTION_SHORTCODE_DESCRIPTIONS, $descriptions);
+    }
+
+    /**
+     * Get responsive settings (breakpoints, max-width, scroll settings).
+     *
+     * @return array Responsive settings merged with defaults
+     */
+    public static function get_responsive_settings(): array
+    {
+        $stored = get_option(self::OPTION_RESPONSIVE_SETTINGS, []);
+        
+        if (!is_array($stored)) {
+            $stored = [];
+        }
+        
+        // Merge with defaults to ensure all keys exist
+        return array_merge(self::DEFAULT_RESPONSIVE_SETTINGS, $stored);
+    }
+
+    /**
+     * Persist responsive settings.
+     *
+     * @param array $settings Responsive settings to save
+     */
+    public static function set_responsive_settings(array $settings): void
+    {
+        // Sanitize and validate values
+        $sanitized = [
+            'breakpoint_tablet'    => max(320, min(1200, absint($settings['breakpoint_tablet'] ?? 640))),
+            'breakpoint_laptop'    => max(640, min(1600, absint($settings['breakpoint_laptop'] ?? 1024))),
+            'breakpoint_desktop'   => max(1024, min(2560, absint($settings['breakpoint_desktop'] ?? 1440))),
+            'content_max_width'    => max(1000, min(1600, absint($settings['content_max_width'] ?? 1400))),
+            'enable_smooth_scroll' => !empty($settings['enable_smooth_scroll']),
+            'scroll_duration'      => max(200, min(2000, absint($settings['scroll_duration'] ?? 800))),
+            'scroll_easing'        => in_array($settings['scroll_easing'] ?? '', ['ease-out-cubic', 'ease-out-quad', 'linear'], true) 
+                                       ? $settings['scroll_easing'] 
+                                       : 'ease-out-cubic',
+            'enable_scroll_snap'   => !empty($settings['enable_scroll_snap']),
+        ];
+        
+        update_option(self::OPTION_RESPONSIVE_SETTINGS, $sanitized);
+    }
+
+    /**
+     * Get default responsive settings.
+     *
+     * @return array Default responsive settings
+     */
+    public static function get_default_responsive_settings(): array
+    {
+        return self::DEFAULT_RESPONSIVE_SETTINGS;
     }
 
     /**

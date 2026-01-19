@@ -106,6 +106,7 @@ class FunnelExporter
             'styling' => self::exportStyling($postId),
             'footer' => self::exportFooter($postId),
             'science' => self::exportScience($postId),
+            'responsive' => self::exportResponsive($postId),
         ];
 
         // Remove empty sections
@@ -511,6 +512,77 @@ class FunnelExporter
             'text' => FunnelConfigLoader::getFieldValue('footer_text', $postId),
             'disclaimer' => FunnelConfigLoader::getFieldValue('footer_disclaimer', $postId),
             'links' => $linkItems,
+        ];
+    }
+
+    /**
+     * Export responsive section (v2.32.0).
+     */
+    private static function exportResponsive(int $postId): array
+    {
+        $hasOverrides = (bool) FunnelConfigLoader::getFieldValue('responsive_breakpoint_override', $postId);
+        
+        return [
+            'breakpoint_overrides' => $hasOverrides,
+            'breakpoints' => $hasOverrides ? [
+                'tablet' => (int) FunnelConfigLoader::getFieldValue('responsive_breakpoint_tablet', $postId),
+                'laptop' => (int) FunnelConfigLoader::getFieldValue('responsive_breakpoint_laptop', $postId),
+                'desktop' => (int) FunnelConfigLoader::getFieldValue('responsive_breakpoint_desktop', $postId),
+            ] : null,
+            'content_max_width' => (int) FunnelConfigLoader::getFieldValue('responsive_content_max_width', $postId),
+            'scroll_settings' => [
+                'enable_smooth_scroll' => (bool) FunnelConfigLoader::getFieldValue('responsive_enable_smooth_scroll', $postId),
+                'scroll_duration' => (int) FunnelConfigLoader::getFieldValue('responsive_scroll_duration', $postId),
+                'scroll_easing' => FunnelConfigLoader::getFieldValue('responsive_scroll_easing', $postId),
+                'enable_scroll_snap' => (bool) FunnelConfigLoader::getFieldValue('responsive_enable_scroll_snap', $postId),
+            ],
+            'mobile_settings' => [
+                'sticky_cta_enabled' => (bool) FunnelConfigLoader::getFieldValue('mobile_sticky_cta_enabled', $postId),
+                'sticky_cta_text' => FunnelConfigLoader::getFieldValue('mobile_sticky_cta_text', $postId),
+                'sticky_cta_target' => FunnelConfigLoader::getFieldValue('mobile_sticky_cta_target', $postId),
+                'enable_skeleton_placeholders' => (bool) FunnelConfigLoader::getFieldValue('mobile_enable_skeleton_placeholders', $postId),
+                'reduce_animations' => (bool) FunnelConfigLoader::getFieldValue('mobile_reduce_animations', $postId),
+            ],
+            'sections' => [
+                'hero' => [
+                    'height_behavior' => FunnelConfigLoader::getFieldValue('responsive_hero_height_behavior', $postId),
+                    'mobile_image_position' => FunnelConfigLoader::getFieldValue('responsive_hero_mobile_image_position', $postId),
+                    'mobile_title_size' => FunnelConfigLoader::getFieldValue('responsive_hero_mobile_title_size', $postId),
+                ],
+                'infographics' => [
+                    'height_behavior' => FunnelConfigLoader::getFieldValue('responsive_infographics_height_behavior', $postId),
+                    'mobile_mode' => FunnelConfigLoader::getFieldValue('responsive_infographics_mobile_mode', $postId),
+                    'tablet_mode' => FunnelConfigLoader::getFieldValue('responsive_infographics_tablet_mode', $postId),
+                    'desktop_mode' => FunnelConfigLoader::getFieldValue('responsive_infographics_desktop_mode', $postId),
+                ],
+                'testimonials' => [
+                    'height_behavior' => FunnelConfigLoader::getFieldValue('responsive_testimonials_height_behavior', $postId),
+                    'mobile_mode' => FunnelConfigLoader::getFieldValue('responsive_testimonials_mobile_mode', $postId),
+                    'tablet_mode' => FunnelConfigLoader::getFieldValue('responsive_testimonials_tablet_mode', $postId),
+                    'desktop_mode' => FunnelConfigLoader::getFieldValue('responsive_testimonials_desktop_mode', $postId),
+                ],
+                'products' => [
+                    'height_behavior' => FunnelConfigLoader::getFieldValue('responsive_products_height_behavior', $postId),
+                ],
+                'benefits' => [
+                    'height_behavior' => FunnelConfigLoader::getFieldValue('responsive_benefits_height_behavior', $postId),
+                ],
+                'features' => [
+                    'height_behavior' => FunnelConfigLoader::getFieldValue('responsive_features_height_behavior', $postId),
+                ],
+                'authority' => [
+                    'height_behavior' => FunnelConfigLoader::getFieldValue('responsive_authority_height_behavior', $postId),
+                ],
+                'science' => [
+                    'height_behavior' => FunnelConfigLoader::getFieldValue('responsive_science_height_behavior', $postId),
+                ],
+                'faq' => [
+                    'height_behavior' => FunnelConfigLoader::getFieldValue('responsive_faq_height_behavior', $postId),
+                ],
+                'cta' => [
+                    'height_behavior' => FunnelConfigLoader::getFieldValue('responsive_cta_height_behavior', $postId),
+                ],
+            ],
         ];
     }
 

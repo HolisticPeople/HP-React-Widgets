@@ -19,6 +19,19 @@ export { FunnelScience } from './FunnelScience';
 export { ScrollNavigation } from './ScrollNavigation';
 export { FunnelInfographics } from './FunnelInfographics';
 
+// Responsive Components (v2.32.0)
+export { StickyCTA } from './StickyCTA';
+export { 
+  Skeleton, 
+  SkeletonText, 
+  SkeletonImage, 
+  SkeletonProductCard, 
+  SkeletonHero, 
+  SkeletonTestimonial, 
+  SkeletonBenefitCard,
+  SKELETON_CSS 
+} from './SkeletonLoader';
+
 // Re-export types
 export type { FunnelHeaderProps, NavItem } from './FunnelHeader';
 export type { FunnelHeroSectionProps } from './FunnelHeroSection';
@@ -34,4 +47,4 @@ export type { FunnelScienceProps, ScienceSection } from './FunnelScience';
 export type { QuoteCategory, ArticleLink } from './FunnelAuthority';
 export type { ScrollNavigationProps } from './ScrollNavigation';
 export type { FunnelInfographicsProps } from './FunnelInfographics';
-
+export type { StickyCTAProps } from './StickyCTA';
