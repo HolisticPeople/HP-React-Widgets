@@ -6,7 +6,7 @@
  * 
  * @package HP-React-Widgets
  * @since 2.32.0
- * @version 2.32.7 - Fixed capsule shape, visibility logic, and CTA hiding
+ * @version 2.32.8 - Position above footer, preserve offer CTAs
  * @author Amnon Manneberg
  */
 
@@ -64,22 +64,24 @@ export const StickyCTA = ({
     // #endregion
     
     // Hide section CTAs when sticky CTA is active on mobile
-    // Use broader selector to catch all CTA buttons in funnel sections
+    // IMPORTANT: Exclude products/offers section - those CTAs must remain visible!
     if (isMobile) {
       const style = document.createElement('style');
       style.id = 'hp-sticky-cta-hide-section-ctas';
-      // Broader selectors to hide all CTA buttons in funnel sections
+      // Hide CTAs only in non-product sections (Hero, Authority, Science, Benefits, Testimonials)
       style.textContent = `
         @media (max-width: 767px) {
-          /* Hide all CTA buttons inside funnel sections */
-          .hp-funnel-section .hp-funnel-cta-btn,
-          .hp-funnel-section .hp-section-cta,
-          .hp-funnel-section [data-cta-button="true"],
-          .hp-funnel-hero-section button,
-          .hp-funnel-testimonials button:not(.hp-sticky-cta-button),
-          .hp-funnel-benefits button,
-          .hp-funnel-authority button,
-          .hp-funnel-science button {
+          /* Hide CTA buttons in specific sections, but NOT in products/offers */
+          .hp-funnel-hero-section .hp-funnel-cta-btn,
+          .hp-funnel-hero-section button:not(.hp-sticky-cta-button),
+          .hp-funnel-authority .hp-funnel-cta-btn,
+          .hp-funnel-authority button:not(.hp-sticky-cta-button),
+          .hp-funnel-science .hp-funnel-cta-btn,
+          .hp-funnel-science button:not(.hp-sticky-cta-button),
+          .hp-funnel-benefits .hp-funnel-cta-btn,
+          .hp-funnel-benefits button:not(.hp-sticky-cta-button),
+          .hp-funnel-testimonials .hp-funnel-cta-btn,
+          .hp-funnel-testimonials button:not(.hp-sticky-cta-button) {
             display: none !important;
           }
         }
@@ -193,17 +195,18 @@ export const StickyCTA = ({
       className={`hp-sticky-cta-container ${className}`}
       style={{
         position: 'fixed',
-        bottom: 0,
+        // Position above the mobile sticky footer (approximately 60px height)
+        bottom: 60,
         left: 0,
         right: 0,
         zIndex: 9998,
-        padding: '12px 16px',
-        paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
+        padding: '8px 16px',
         // Flex container to center the capsule button
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 70%, transparent 100%)',
+        // No gradient background - let the button stand on its own
+        background: 'transparent',
       }}
     >
       <button
