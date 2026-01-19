@@ -122,7 +122,7 @@ export function useResponsive(): ResponsiveState {
   const [width, setWidth] = useState<number>(() => {
     if (typeof window !== 'undefined') {
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'use-responsive.ts:123',message:'useResponsive init',data:{innerWidth:window.innerWidth,tabletBreakpoint:settings.breakpoints.tablet},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A2'})}).catch(()=>{});
+      console.log('[HP-DEBUG] useResponsive init', {innerWidth:window.innerWidth,tabletBreakpoint:settings.breakpoints.tablet});
       // #endregion
       return window.innerWidth;
     }
@@ -169,7 +169,7 @@ export function useResponsive(): ResponsiveState {
   }), [breakpoint, width, settings]);
   
   // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'use-responsive.ts:167',message:'useResponsive result',data:{breakpoint:result.breakpoint,isMobile:result.isMobile,width:result.width,tabletBreakpoint:result.settings.breakpoints.tablet},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A2'})}).catch(()=>{});
+  console.log('[HP-DEBUG] useResponsive result', {breakpoint:result.breakpoint,isMobile:result.isMobile,width:result.width,tabletBreakpoint:result.settings.breakpoints.tablet});
   // #endregion
   
   return result;

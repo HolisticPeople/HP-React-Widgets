@@ -174,7 +174,7 @@ function initWidgets() {
     const nodes = document.querySelectorAll<HTMLElement>('[data-hp-widget="1"]');
     
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.tsx:172',message:'initWidgets',data:{widgetCount:nodes.length,components:Array.from(nodes).map(n=>n.dataset.component)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A4'})}).catch(()=>{});
+    console.log('[HP-DEBUG] initWidgets', {widgetCount:nodes.length,components:Array.from(nodes).map(n=>n.dataset.component)});
     // #endregion
     
     nodes.forEach((node, index) => {
