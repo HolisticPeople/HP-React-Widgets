@@ -1,6 +1,9 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useResponsive, Breakpoint } from '@/hooks/use-responsive';
+import { useHeightBehavior, HeightBehavior } from '@/hooks/use-height-behavior';
+import { smoothScrollTo } from '@/hooks/use-smooth-scroll';
 
 const StarIcon = ({ filled }: { filled: boolean }) => (
   <svg
@@ -43,6 +46,9 @@ export interface Testimonial {
   rating?: number;
 }
 
+// Display mode type for responsive settings
+export type TestimonialsDisplayMode = 'carousel' | 'stacked' | 'grid_2col' | 'grid_3col';
+
 export interface FunnelTestimonialsProps {
   title?: string;
   subtitle?: string;
@@ -56,6 +62,12 @@ export interface FunnelTestimonialsProps {
   checkoutUrl?: string;
   featuredOfferId?: string;
   className?: string;
+  
+  // Responsive settings (v2.32.0)
+  heightBehavior?: HeightBehavior | { mobile?: HeightBehavior; tablet?: HeightBehavior; desktop?: HeightBehavior };
+  mobileMode?: TestimonialsDisplayMode;  // Default: carousel
+  tabletMode?: TestimonialsDisplayMode;  // Default: grid_2col
+  desktopMode?: TestimonialsDisplayMode; // Default: grid_3col
 }
 
 export const FunnelTestimonials = ({
@@ -71,11 +83,48 @@ export const FunnelTestimonials = ({
   checkoutUrl,
   featuredOfferId,
   className,
+  // Responsive settings with sensible defaults
+  heightBehavior = 'scrollable',
+  mobileMode = 'carousel',
+  tabletMode = 'grid_2col',
+  desktopMode = 'grid_3col',
 }: FunnelTestimonialsProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
+  
+  // Responsive hooks
+  const { breakpoint, isMobile } = useResponsive();
+  const { className: heightClassName, style: heightStyle } = useHeightBehavior(heightBehavior);
+  
+  // Determine current display mode based on breakpoint
+  const currentMode = useMemo((): TestimonialsDisplayMode => {
+    switch (breakpoint) {
+      case 'mobile':
+        return mobileMode;
+      case 'tablet':
+        return tabletMode;
+      case 'laptop':
+      case 'desktop':
+      default:
+        return desktopMode;
+    }
+  }, [breakpoint, mobileMode, tabletMode, desktopMode]);
+  
+  // Map display mode to effective layout
+  const effectiveLayout = useMemo(() => {
+    if (currentMode === 'carousel') return 'carousel';
+    if (currentMode === 'stacked') return 'simple';
+    return 'cards'; // grid modes use cards layout
+  }, [currentMode]);
+  
+  // Map display mode to columns
+  const effectiveColumns = useMemo((): 2 | 3 | 4 => {
+    if (currentMode === 'grid_2col') return 2;
+    if (currentMode === 'grid_3col') return 3;
+    return columns; // Use prop default for other modes
+  }, [currentMode, columns]);
 
-  // Handle CTA click based on behavior setting
+  // Handle CTA click based on behavior setting - now uses smooth scroll
   const handleCtaClick = () => {
     if (ctaBehavior === 'checkout') {
       const url = checkoutUrl || ctaUrl || '#checkout';
@@ -84,13 +133,13 @@ export const FunnelTestimonials = ({
         ? `${url}${separator}offer=${featuredOfferId}`
         : url;
     } else {
-      // Scroll to offers section - use same selectors as HeroSection
+      // Scroll to offers section using smooth scroll
       const offersSection = document.getElementById('hp-funnel-offers') 
         || document.querySelector('.hp-funnel-products')
         || document.querySelector('[data-section="offers"]')
         || document.querySelector('[data-component="FunnelProducts"]');
       if (offersSection) {
-        offersSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        smoothScrollTo(offersSection as HTMLElement, { offset: -20 });
       } else {
         window.location.href = checkoutUrl || ctaUrl || '#checkout';
       }
@@ -193,6 +242,7 @@ export const FunnelTestimonials = ({
             <img
               src={testimonial.image}
               alt={testimonial.name}
+              loading="lazy"
               className="w-12 h-12 rounded-full object-cover"
             />
           )}
@@ -221,8 +271,10 @@ export const FunnelTestimonials = ({
     <section
       className={cn(
         'hp-funnel-testimonials hp-funnel-section py-16 md:py-20 px-4',
+        heightClassName,
         className
       )}
+      style={heightStyle}
     >
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}
@@ -247,17 +299,17 @@ export const FunnelTestimonials = ({
           </div>
         )}
 
-        {/* Grid Layout */}
-        {layout === 'cards' && (
-          <div className={cn('grid gap-6 md:gap-8', gridCols[columns])}>
+        {/* Grid Layout - uses effectiveColumns based on responsive mode */}
+        {effectiveLayout === 'cards' && (
+          <div className={cn('grid gap-6 md:gap-8', gridCols[effectiveColumns])}>
             {testimonials.map((testimonial, index) => 
               renderTestimonialCard(testimonial, index)
             )}
           </div>
         )}
 
-        {/* Simple Layout */}
-        {layout === 'simple' && (
+        {/* Simple/Stacked Layout */}
+        {effectiveLayout === 'simple' && (
           <div className="max-w-4xl mx-auto space-y-8">
             {testimonials.map((testimonial, index) => (
               <div
@@ -292,6 +344,7 @@ export const FunnelTestimonials = ({
                     <img
                       src={testimonial.image}
                       alt={testimonial.name}
+                      loading="lazy"
                       className="w-10 h-10 rounded-full object-cover"
                     />
                   )}
@@ -317,8 +370,8 @@ export const FunnelTestimonials = ({
           </div>
         )}
 
-        {/* Carousel/Slider Layout */}
-        {layout === 'carousel' && (
+        {/* Carousel/Slider Layout - mobile-optimized with touch swipe */}
+        {effectiveLayout === 'carousel' && (
           <div className="relative px-12 md:px-16">
             {/* Navigation arrows - positioned outside cards */}
             {testimonials.length > 1 && (
@@ -383,6 +436,7 @@ export const FunnelTestimonials = ({
                         <img
                           src={testimonial.image}
                           alt={testimonial.name}
+                          loading="lazy"
                           className="w-10 h-10 rounded-full object-cover"
                         />
                       )}
@@ -450,13 +504,14 @@ export const FunnelTestimonials = ({
           </div>
         )}
 
-        {/* CTA */}
+        {/* CTA - marked as hp-section-cta for sticky CTA to hide on mobile */}
         {ctaText && (
-          <div className="text-center mt-12">
+          <div className="text-center mt-12 hp-section-cta">
             <Button
               size="lg"
               onClick={handleCtaClick}
               className="hp-funnel-cta-btn font-bold text-lg md:text-xl px-10 md:px-12 py-5 md:py-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+              data-cta-button="true"
             >
               {ctaText}
             </Button>
