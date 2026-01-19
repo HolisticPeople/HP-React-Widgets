@@ -326,6 +326,33 @@
             "return_format": "value"
         },
         {
+            "key": "field_responsive_infographics_assets_hint",
+            "label": "",
+            "name": "",
+            "type": "message",
+            "menu_order": 3.83,
+            "instructions": "",
+            "parent": 125087,
+            "wrapper": { "width": "100", "class": "", "id": "" },
+            "message": "<div style='background: #fef3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 12px; margin-top: -10px;'><strong>⚠️ Split Panels or Swipe mode selected:</strong> Go to the <strong>Infographics</strong> tab and enable \"Use Mobile-Specific Images\" for each infographic, then upload Title Image, Left Panel Image, and Right Panel Image.</div>",
+            "conditional_logic": [
+                [
+                    { "field": "field_responsive_infographics_mobile_mode", "operator": "==", "value": "swipe" }
+                ],
+                [
+                    { "field": "field_responsive_infographics_mobile_mode", "operator": "==", "value": "split_panels" }
+                ],
+                [
+                    { "field": "field_responsive_infographics_tablet_mode", "operator": "==", "value": "split_panels" }
+                ],
+                [
+                    { "field": "field_responsive_infographics_desktop_mode", "operator": "==", "value": "split_panels" }
+                ]
+            ],
+            "new_lines": "wpautop",
+            "esc_html": 0
+        },
+        {
             "key": "field_responsive_testimonials_mobile_mode",
             "label": "Testimonials - Mobile Mode",
             "name": "responsive_testimonials_mobile_mode",
