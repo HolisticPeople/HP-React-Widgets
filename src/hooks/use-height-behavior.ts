@@ -101,22 +101,20 @@ export function useHeightBehavior(
   }, [behavior]);
   
   // Generate inline styles
+  // IMPORTANT: fit_viewport should NOT constrain max height or hide overflow
+  // It means "aim for 80vh" but content can grow if needed
   const style = useMemo((): CSSProperties => {
     switch (behavior) {
       case 'fit_viewport':
         return {
           minHeight: '80vh',
-          maxHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          overflow: 'hidden',
+          // NO maxHeight - allow content to grow
+          // NO overflow hidden - content should be visible
         };
       case 'scrollable':
         return {
           minHeight: 'auto',
-          maxHeight: 'none',
-          overflow: 'visible',
+          // Natural height, no constraints
         };
       default:
         return {};
@@ -134,46 +132,25 @@ export function useHeightBehavior(
 
 /**
  * CSS for height behavior classes (to be injected globally)
+ * 
+ * IMPORTANT: fit_viewport is a MINIMUM height target, not a constraint.
+ * Content should always be visible and grow if needed.
  */
 export const HEIGHT_BEHAVIOR_CSS = `
 /* Height Behavior Classes */
 .hp-height-fit {
   min-height: 80vh;
-  max-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  overflow: hidden;
+  /* NO max-height - content must be able to grow */
+  /* NO overflow hidden - content must remain visible */
 }
 
 .hp-height-scroll {
   min-height: auto;
-  max-height: none;
-  overflow: visible;
+  /* Natural height, no constraints */
 }
 
 .hp-height-auto {
   /* Natural height - no constraints */
-}
-
-/* Fit viewport with scroll fallback for overflow content */
-.hp-height-fit-with-scroll {
-  min-height: 80vh;
-  max-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Content container within fit sections */
-.hp-height-fit .hp-section-content,
-.hp-height-fit-with-scroll .hp-section-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
 }
 `;
 

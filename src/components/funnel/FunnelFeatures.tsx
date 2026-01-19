@@ -77,7 +77,7 @@ export const FunnelFeatures = ({
   columns = 3,
   layout = 'cards',
   className,
-  heightBehavior = 'fit_viewport',
+  heightBehavior = 'scrollable', // Features has variable content, use scrollable
   mobileColumns = 1,
   tabletColumns = 2,
   desktopColumns,

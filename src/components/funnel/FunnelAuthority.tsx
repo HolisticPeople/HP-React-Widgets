@@ -68,7 +68,7 @@ export const FunnelAuthority = ({
   featuredOfferId,
   layout = 'side-by-side',
   className,
-  heightBehavior = 'fit_viewport',
+  heightBehavior = 'scrollable', // Authority often has long content, use scrollable
   mobileLayout = 'stacked',
 }: FunnelAuthorityProps) => {
   // Responsive hooks
