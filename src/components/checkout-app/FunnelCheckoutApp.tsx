@@ -4,6 +4,8 @@ import { ProcessingStep } from './steps/ProcessingStep';
 import { UpsellStep } from './steps/UpsellStep';
 import { ThankYouStep } from './steps/ThankYouStep';
 import { useCheckoutApi } from './hooks/useCheckoutApi';
+import { useResponsive } from '@/hooks/use-responsive';
+import { cn } from '@/lib/utils';
 import type { 
   CheckoutStep as CheckoutStepType, 
   FunnelCheckoutAppConfig, 
@@ -446,8 +448,9 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
 
   return (
     <div 
-      className="hp-funnel-checkout-app min-h-screen bg-background"
+      className="hp-funnel-checkout-app hp-funnel-section hp-funnel-checkout min-h-screen bg-background"
       style={rootStyle}
+      data-section-type="checkout"
     >
       {/* Logo Header */}
       {logoUrl && (

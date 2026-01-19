@@ -4,6 +4,8 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { useResponsive } from '@/hooks/use-responsive';
+import { useHeightBehavior, HeightBehavior } from '@/hooks/use-height-behavior';
 
 // Inline icons
 const MinusIcon = () => (
@@ -82,6 +84,9 @@ export interface FunnelCheckoutProps {
   freeShippingCountries?: string[];
   apiBase?: string;
   stripePublishable?: string;
+  // Responsive settings (v2.32.11)
+  heightBehavior?: HeightBehavior | { mobile?: HeightBehavior; tablet?: HeightBehavior; desktop?: HeightBehavior };
+  className?: string;
 }
 
 interface FormData {
@@ -116,7 +121,12 @@ export const FunnelCheckout = ({
   logoLink = '/',
   freeShippingCountries = ['US'],
   apiBase = '/wp-json/hp-rw/v1',
+  heightBehavior = 'scrollable', // Checkout is typically scrollable
+  className,
 }: FunnelCheckoutProps) => {
+  // Responsive hooks
+  const { isMobile } = useResponsive();
+  const { className: heightClassName, style: heightStyle } = useHeightBehavior(heightBehavior);
   const [selectedProductId, setSelectedProductId] = useState<string>(
     initialProductId || (products.length > 0 ? products[0].id : '')
   );
@@ -380,7 +390,14 @@ export const FunnelCheckout = ({
   const displayTotal = totals?.grand_total ?? (selectedProduct ? selectedProduct.price * quantity : 0);
 
   return (
-    <div className="hp-funnel-checkout min-h-screen bg-background py-12 px-4">
+    <div 
+      className={cn(
+        'hp-funnel-checkout hp-funnel-section min-h-screen bg-background py-12 px-4',
+        heightClassName,
+        className
+      )}
+      style={heightStyle}
+    >
       <div className="max-w-6xl mx-auto">
         {/* Logo */}
         {logoUrl && (
