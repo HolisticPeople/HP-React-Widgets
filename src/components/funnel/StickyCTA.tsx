@@ -50,6 +50,10 @@ export const StickyCTA = ({
   const { isMobile } = useResponsive();
   const [mounted, setMounted] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
+  
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StickyCTA.tsx:52',message:'StickyCTA render',data:{text,target,isMobile,mounted,isVisible},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A1'})}).catch(()=>{});
+  // #endregion
 
   useEffect(() => {
     setMounted(true);
@@ -120,6 +124,9 @@ export const StickyCTA = ({
   };
 
   // Only show on mobile
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StickyCTA.tsx:130',message:'StickyCTA visibility check',data:{mounted,isMobile,isVisible,willRender:mounted&&isMobile&&isVisible},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A3'})}).catch(()=>{});
+  // #endregion
   if (!mounted || !isMobile || !isVisible) {
     return null;
   }

@@ -87,6 +87,10 @@ export const FunnelHeroSection = ({
   const { isMobile, isTablet, breakpoint } = useResponsive();
   const { className: heightClassName, style: heightStyle, isFitViewport } = useHeightBehavior(heightBehavior);
   
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'FunnelHeroSection.tsx:88',message:'HeroSection render',data:{breakpoint,isMobile,heightBehavior,heightClassName,heightStyle:JSON.stringify(heightStyle),isFitViewport},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B1'})}).catch(()=>{});
+  // #endregion
+  
   // Determine effective title size based on breakpoint
   const effectiveTitleSize = isMobile && mobileTitleSize ? mobileTitleSize : titleSize;
   const titleSizeValue = breakpoint === 'mobile' 

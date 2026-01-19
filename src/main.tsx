@@ -28,6 +28,7 @@ import {
   FunnelScience,
   ScrollNavigation,
   FunnelInfographics,
+  StickyCTA,
 } from '@/components/funnel'
 
 // Navigation components
@@ -78,6 +79,7 @@ widgetRegistry.FunnelFooter = FunnelFooter;
 widgetRegistry.FunnelScience = FunnelScience;
 widgetRegistry.FunnelInfographics = FunnelInfographics;
 widgetRegistry.ScrollNavigation = ScrollNavigation;
+widgetRegistry.StickyCTA = StickyCTA;
 
 // Navigation components
 widgetRegistry.HpMenu = HpMenu;
@@ -170,6 +172,10 @@ function renderWidget(node: HTMLElement, index: number) {
 // Initialize widgets - render immediately and synchronously
 function initWidgets() {
     const nodes = document.querySelectorAll<HTMLElement>('[data-hp-widget="1"]');
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.tsx:172',message:'initWidgets',data:{widgetCount:nodes.length,components:Array.from(nodes).map(n=>n.dataset.component)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A4'})}).catch(()=>{});
+    // #endregion
     
     nodes.forEach((node, index) => {
         // Render each widget directly - flushSync inside renderWidget handles sync rendering
