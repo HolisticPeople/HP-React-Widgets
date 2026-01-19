@@ -121,9 +121,6 @@ export function useResponsive(): ResponsiveState {
   
   const [width, setWidth] = useState<number>(() => {
     if (typeof window !== 'undefined') {
-      // #region agent log
-      console.log('[HP-DEBUG] useResponsive init', {innerWidth:window.innerWidth,tabletBreakpoint:settings.breakpoints.tablet});
-      // #endregion
       return window.innerWidth;
     }
     return 1024; // Default to laptop for SSR
@@ -167,10 +164,6 @@ export function useResponsive(): ResponsiveState {
     width,
     settings,
   }), [breakpoint, width, settings]);
-  
-  // #region agent log
-  console.log('[HP-DEBUG] useResponsive result', {breakpoint:result.breakpoint,isMobile:result.isMobile,width:result.width,tabletBreakpoint:result.settings.breakpoints.tablet});
-  // #endregion
   
   return result;
 }

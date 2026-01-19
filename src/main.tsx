@@ -173,10 +173,6 @@ function renderWidget(node: HTMLElement, index: number) {
 function initWidgets() {
     const nodes = document.querySelectorAll<HTMLElement>('[data-hp-widget="1"]');
     
-    // #region agent log
-    console.log('[HP-DEBUG] initWidgets', {widgetCount:nodes.length,components:Array.from(nodes).map(n=>n.dataset.component)});
-    // #endregion
-    
     nodes.forEach((node, index) => {
         // Render each widget directly - flushSync inside renderWidget handles sync rendering
         renderWidget(node, index);

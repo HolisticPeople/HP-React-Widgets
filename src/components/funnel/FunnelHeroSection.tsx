@@ -87,10 +87,6 @@ export const FunnelHeroSection = ({
   const { isMobile, isTablet, breakpoint } = useResponsive();
   const { className: heightClassName, style: heightStyle, isFitViewport } = useHeightBehavior(heightBehavior);
   
-  // #region agent log
-  console.log('[HP-DEBUG] HeroSection render', {breakpoint,isMobile,heightBehavior,heightClassName,heightStyle,isFitViewport});
-  // #endregion
-  
   // Determine effective title size based on breakpoint
   const effectiveTitleSize = isMobile && mobileTitleSize ? mobileTitleSize : titleSize;
   const titleSizeValue = breakpoint === 'mobile' 

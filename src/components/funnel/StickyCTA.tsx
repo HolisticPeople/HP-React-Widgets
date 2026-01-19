@@ -6,7 +6,7 @@
  * 
  * @package HP-React-Widgets
  * @since 2.32.0
- * @version 2.32.8 - Position above footer, preserve offer CTAs
+ * @version 2.32.9 - Finalized position (bottom: 80), removed debug logs
  * @author Amnon Manneberg
  */
 
@@ -51,17 +51,9 @@ export const StickyCTA = ({
   const { isMobile } = useResponsive();
   const [mounted, setMounted] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
-  
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StickyCTA.tsx:55',message:'StickyCTA render',data:{text,target,isMobile,mounted,isVisible},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1-H4'})}).catch(()=>{});
-  // #endregion
 
   useEffect(() => {
     setMounted(true);
-    
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StickyCTA.tsx:62',message:'Style injection effect running',data:{isMobile},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
-    // #endregion
     
     // Hide section CTAs when sticky CTA is active on mobile
     // IMPORTANT: Exclude products/offers section - those CTAs must remain visible!
@@ -87,10 +79,6 @@ export const StickyCTA = ({
         }
       `;
       document.head.appendChild(style);
-      
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StickyCTA.tsx:88',message:'Style injected',data:{styleContent:style.textContent.substring(0,100)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{});
-      // #endregion
       
       return () => {
         const existingStyle = document.getElementById('hp-sticky-cta-hide-section-ctas');
@@ -133,11 +121,6 @@ export const StickyCTA = ({
       const inOffersSection = isElementInViewport(offersSection);
       const inCheckoutSection = isElementInViewport(checkoutSection);
       const shouldHide = inOffersSection || inCheckoutSection;
-      
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StickyCTA.tsx:130',message:'Visibility check',data:{inOffersSection,inCheckoutSection,shouldHide,willBeVisible:!shouldHide,scrollY:window.scrollY},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
-      // #endregion
-      
       setIsVisible(!shouldHide);
     };
 
@@ -178,9 +161,6 @@ export const StickyCTA = ({
   };
 
   // Only show on mobile
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StickyCTA.tsx:175',message:'StickyCTA visibility check',data:{mounted,isMobile,isVisible,willRender:mounted&&isMobile&&isVisible},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4'})}).catch(()=>{});
-  // #endregion
   if (!mounted || !isMobile || !isVisible) {
     return null;
   }
@@ -195,8 +175,8 @@ export const StickyCTA = ({
       className={`hp-sticky-cta-container ${className}`}
       style={{
         position: 'fixed',
-        // Position above the mobile sticky footer (approximately 60px height)
-        bottom: 60,
+        // Position above the mobile sticky footer
+        bottom: 80,
         left: 0,
         right: 0,
         zIndex: 9998,
