@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { useHeightBehavior, HeightBehavior } from '@/hooks/use-height-behavior';
 
 export interface FooterLink {
   label: string;
@@ -12,6 +13,8 @@ export interface FunnelFooterProps {
   links?: FooterLink[];
   showCopyright?: boolean;
   className?: string;
+  // Responsive settings (v2.32.9)
+  heightBehavior?: HeightBehavior | { mobile?: HeightBehavior; tablet?: HeightBehavior; desktop?: HeightBehavior };
 }
 
 export const FunnelFooter = ({
@@ -21,15 +24,19 @@ export const FunnelFooter = ({
   links = [],
   showCopyright = true,
   className,
+  heightBehavior = 'scrollable', // Footer uses natural height
 }: FunnelFooterProps) => {
+  const { className: heightClassName, style: heightStyle } = useHeightBehavior(heightBehavior);
   const currentYear = new Date().getFullYear();
 
   return (
     <footer
       className={cn(
-        'hp-funnel-footer py-8 px-4 border-t border-border/50 bg-background/50',
+        'hp-funnel-footer hp-funnel-section py-8 px-4 border-t border-border/50 bg-background/50',
+        heightClassName,
         className
       )}
+      style={heightStyle}
     >
       <div className="max-w-6xl mx-auto">
         {/* Main content */}

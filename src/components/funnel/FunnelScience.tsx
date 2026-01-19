@@ -1,5 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useResponsive } from '@/hooks/use-responsive';
+import { useHeightBehavior, HeightBehavior } from '@/hooks/use-height-behavior';
+import { smoothScrollTo } from '@/hooks/use-smooth-scroll';
 
 export interface ScienceSection {
   title: string;
@@ -18,6 +21,11 @@ export interface FunnelScienceProps {
   featuredOfferId?: string;
   layout?: 'columns' | 'stacked';
   className?: string;
+  // Responsive settings (v2.32.9)
+  heightBehavior?: HeightBehavior | { mobile?: HeightBehavior; tablet?: HeightBehavior; desktop?: HeightBehavior };
+  mobileColumns?: 1 | 2;
+  tabletColumns?: 1 | 2 | 3;
+  desktopColumns?: 2 | 3 | 4;
 }
 
 export const FunnelScience = ({
@@ -31,7 +39,22 @@ export const FunnelScience = ({
   featuredOfferId,
   layout = 'columns',
   className,
+  heightBehavior = 'scrollable', // Science is typically scrollable content
+  mobileColumns = 1,
+  tabletColumns = 2,
+  desktopColumns = 3,
 }: FunnelScienceProps) => {
+  // Responsive hooks
+  const { breakpoint } = useResponsive();
+  const { className: heightClassName, style: heightStyle } = useHeightBehavior(heightBehavior);
+  
+  // Determine effective columns based on breakpoint
+  const effectiveColumns = breakpoint === 'mobile' 
+    ? mobileColumns 
+    : breakpoint === 'tablet' 
+      ? tabletColumns 
+      : desktopColumns;
+  
   // Handle CTA click based on behavior setting
   const handleCtaClick = () => {
     if (ctaBehavior === 'checkout') {
@@ -47,7 +70,7 @@ export const FunnelScience = ({
         || document.querySelector('[data-section="offers"]')
         || document.querySelector('[data-component="FunnelProducts"]');
       if (offersSection) {
-        offersSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        smoothScrollTo(offersSection as HTMLElement, { offset: -20 });
       } else {
         window.location.href = checkoutUrl || ctaUrl || '#checkout';
       }
@@ -58,8 +81,10 @@ export const FunnelScience = ({
     <section
       className={cn(
         'hp-funnel-science hp-funnel-section py-16 md:py-20 px-4',
+        heightClassName,
         className
       )}
+      style={heightStyle}
     >
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}
@@ -84,13 +109,16 @@ export const FunnelScience = ({
           </div>
         )}
 
-        {/* Cards Grid Layout */}
+        {/* Cards Grid Layout - uses responsive column settings */}
         {layout === 'columns' && (
           <div className={cn(
             'grid gap-6 md:gap-8',
             sections.length === 1 && 'max-w-2xl mx-auto',
-            sections.length === 2 && 'md:grid-cols-2',
-            sections.length >= 3 && 'md:grid-cols-2 lg:grid-cols-3'
+            // Use effectiveColumns for responsive grid
+            effectiveColumns === 1 && 'grid-cols-1',
+            effectiveColumns === 2 && 'grid-cols-1 md:grid-cols-2',
+            effectiveColumns === 3 && 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
+            effectiveColumns === 4 && 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
           )}>
             {sections.map((section, index) => (
               <div 
