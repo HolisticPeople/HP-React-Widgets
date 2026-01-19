@@ -225,6 +225,27 @@
         pointer-events: none;
     }
 
+    /* ===== Funnel Section Layout Fixes ===== */
+    
+    /* Ensure all funnel sections have proper stacking and no overlap */
+    .hp-funnel-section {
+        position: relative;
+        z-index: 1;
+        /* Ensure background covers full section */
+        background-color: inherit;
+    }
+    
+    /* Infographics should not have any height constraints */
+    .hp-funnel-infographics {
+        min-height: auto !important;
+        height: auto !important;
+    }
+    
+    /* Ensure section content doesn't overflow into other sections */
+    .hp-funnel-section > * {
+        position: relative;
+    }
+    
     /* Funnel CTA + badge styling (match reference funnel):
        - CTA background uses the funnel accent (orange)
        - CTA/BADGE text uses the funnel background (dark) */

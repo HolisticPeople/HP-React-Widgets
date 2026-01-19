@@ -259,11 +259,10 @@ export const FunnelInfographics = ({
     <section
       className={cn(
         'hp-funnel-infographics hp-funnel-section py-4 md:py-16 px-4',
-        'min-h-0 h-auto flex-none self-start',
-        heightClassName,
+        // No flex-related overrides - let natural flow work
         className
       )}
-      style={{ ...heightStyle, minHeight: 'auto', height: 'auto' }}
+      // No height overrides - let content determine height naturally
       data-effective-mode={effectiveMode}
     >
       <div className="max-w-6xl mx-auto w-full">
