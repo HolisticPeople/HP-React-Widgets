@@ -1,10 +1,11 @@
 /**
- * Section Background Admin UI Styles (v2.33.9)
+ * Section Background Admin UI Styles (v2.33.10)
  *
  * Styles for preview rectangles and bulk action buttons
  * - Radio button selection (single row at a time)
  * - Hidden numbering column, section_id column, and add/remove buttons
  * - Hidden remove column header (gray column on right)
+ * - Columns align by injecting before background_type
  * - Odd/Even logic starts from Home (index 0)
  */
 

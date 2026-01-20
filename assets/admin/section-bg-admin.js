@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.9)
+ * Section Background Admin UI Enhancements (v2.33.10)
  *
  * Features:
  * - Radio button selection (one row at a time) for copying settings
@@ -9,7 +9,7 @@
  * - Section names match ScrollNavigation component (Home, Benefits, etc.)
  * - Color picker automatically hidden when background type is "None"
  * - Hidden add/remove row buttons (auto-populated, not editable)
- * - Fixed column header alignment (prepends headers, hides section_id + remove columns)
+ * - Fixed column alignment (injects headers/cells before background_type column)
  */
 
 (function($) {
@@ -144,17 +144,27 @@
         }
 
         // Add table headers for new columns
-        // Note: ACF creates headers for all fields including hidden ones
-        // The structure is: [Order (hidden)] [Section ID (hidden)] [Other fields...]
-        // We need to inject our headers at the beginning (before section_id which will be hidden)
+        // ACF structure: [Order (hidden)] [Section ID (hidden)] [Background Type] [...]
+        // We inject Section and Preview headers at the start, then hide order and section_id
         const $table = $repeater.find('.acf-table');
         const $thead = $table.find('thead tr');
         if ($thead.length && !$thead.find('.hp-section-header').length) {
-            // Insert at the very beginning of the header row
-            $thead.prepend(`
-                <th class="hp-section-header">Section</th>
-                <th class="hp-preview-header">Preview</th>
-            `);
+            // Find first visible header (Background Type) and insert before it
+            const $firstVisibleHeader = $thead.find('th[data-name="background_type"]');
+
+            if ($firstVisibleHeader.length) {
+                // Insert Section and Preview headers before Background Type
+                $firstVisibleHeader.before(`
+                    <th class="hp-section-header">Section</th>
+                    <th class="hp-preview-header">Preview</th>
+                `);
+            } else {
+                // Fallback: prepend if we can't find background_type
+                $thead.prepend(`
+                    <th class="hp-section-header">Section</th>
+                    <th class="hp-preview-header">Preview</th>
+                `);
+            }
         }
 
         // Add checkbox, section name, and preview to each row
@@ -174,20 +184,33 @@
                 sectionName = `Section ${index}`;
             }
 
-            // Add new first column with radio button + section name
-            const $firstCell = $row.find('td').first();
-            $firstCell.before(`
-                <td class="hp-section-name-cell">
-                    <label style="display: flex; align-items: center; gap: 8px; margin: 0;">
-                        <input type="radio" name="hp-section-select" class="hp-row-radio" />
-                        <span class="hp-section-name">${sectionName}</span>
-                    </label>
-                </td>
-            `);
+            // Find the background_type cell and insert our cells before it
+            const $backgroundTypeCell = $row.find('td[data-name="background_type"]');
 
-            // Add preview column after section name
-            const $nameCell = $row.find('.hp-section-name-cell');
-            $nameCell.after('<td class="hp-preview-cell"><div class="hp-section-bg-preview"></div></td>');
+            if ($backgroundTypeCell.length) {
+                // Insert Section and Preview cells before Background Type cell
+                $backgroundTypeCell.before(`
+                    <td class="hp-section-name-cell">
+                        <label style="display: flex; align-items: center; gap: 8px; margin: 0;">
+                            <input type="radio" name="hp-section-select" class="hp-row-radio" />
+                            <span class="hp-section-name">${sectionName}</span>
+                        </label>
+                    </td>
+                    <td class="hp-preview-cell"><div class="hp-section-bg-preview"></div></td>
+                `);
+            } else {
+                // Fallback: insert at the beginning if we can't find background_type
+                const $firstCell = $row.find('td').first();
+                $firstCell.before(`
+                    <td class="hp-section-name-cell">
+                        <label style="display: flex; align-items: center; gap: 8px; margin: 0;">
+                            <input type="radio" name="hp-section-select" class="hp-row-radio" />
+                            <span class="hp-section-name">${sectionName}</span>
+                        </label>
+                    </td>
+                    <td class="hp-preview-cell"><div class="hp-section-bg-preview"></div></td>
+                `);
+            }
 
             // Initial preview update
             updatePreview($row);
