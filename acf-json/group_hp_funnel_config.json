@@ -4319,15 +4319,15 @@
         },
         {
             "ID": 0,
-            "key": "field_alternate_section_bg",
-            "label": "Alternate Section Backgrounds",
-            "name": "alternate_section_bg",
+            "key": "field_section_background_mode",
+            "label": "Section Background Mode",
+            "name": "section_background_mode",
             "aria-label": "",
             "prefix": "acf",
-            "type": "true_false",
+            "type": "select",
             "value": null,
             "menu_order": 63.5,
-            "instructions": "Apply alternating background colors to sections after the hero for visual separation.",
+            "instructions": "Choose how section backgrounds are applied throughout the funnel.",
             "required": false,
             "id": "",
             "class": "",
@@ -4338,24 +4338,73 @@
                 "class": "",
                 "id": ""
             },
-            "default_value": 0,
-            "ui": 1,
-            "message": "",
-            "ui_on_text": "Enabled",
-            "ui_off_text": "Disabled",
-            "_name": "alternate_section_bg",
+            "choices": {
+                "solid": "Solid Background (Page BG Color)",
+                "alternating": "Alternating Sections (Solid or Gradient)",
+                "all_gradient": "All Sections Gradient"
+            },
+            "default_value": "solid",
+            "return_format": "value",
+            "multiple": 0,
+            "allow_null": 0,
+            "ui": 0,
+            "ajax": 0,
+            "placeholder": "",
+            "_name": "section_background_mode",
             "_valid": 1
         },
         {
             "ID": 0,
-            "key": "field_alternate_bg_color",
-            "label": "Alternate BG Color",
-            "name": "alternate_bg_color",
+            "key": "field_alternating_type",
+            "label": "Alternate Type",
+            "name": "alternating_type",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "radio",
+            "value": null,
+            "menu_order": 63.51,
+            "instructions": "Choose whether alternate sections use a solid color or gradient.",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_section_background_mode",
+                        "operator": "==",
+                        "value": "alternating"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "choices": {
+                "solid": "Solid Color",
+                "gradient": "Gradient"
+            },
+            "default_value": "solid",
+            "return_format": "value",
+            "allow_null": 0,
+            "other_choice": 0,
+            "save_other_choice": 0,
+            "layout": "horizontal",
+            "_name": "alternating_type",
+            "_valid": 1
+        },
+        {
+            "ID": 0,
+            "key": "field_alternating_solid_color",
+            "label": "Alternate Solid Color",
+            "name": "alternating_solid_color",
             "aria-label": "",
             "prefix": "acf",
             "type": "color_picker",
             "value": null,
-            "menu_order": 63.6,
+            "menu_order": 63.52,
             "instructions": "Background color for alternate sections (sections 2, 4, 6, etc. after hero).",
             "required": false,
             "id": "",
@@ -4363,9 +4412,14 @@
             "conditional_logic": [
                 [
                     {
-                        "field": "field_alternate_section_bg",
+                        "field": "field_section_background_mode",
                         "operator": "==",
-                        "value": "1"
+                        "value": "alternating"
+                    },
+                    {
+                        "field": "field_alternating_type",
+                        "operator": "==",
+                        "value": "solid"
                     }
                 ]
             ],
@@ -4378,11 +4432,794 @@
             "default_value": "#1a1a2e",
             "enable_opacity": false,
             "return_format": "string",
-            "_name": "alternate_bg_color",
+            "_name": "alternating_solid_color",
             "_valid": 1,
             "custom_palette_source": "",
             "palette_colors": "",
             "show_color_wheel": true
+        },
+        {
+            "ID": 0,
+            "key": "field_alternating_gradient_type",
+            "label": "Gradient Type",
+            "name": "alternating_gradient_type",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "select",
+            "value": null,
+            "menu_order": 63.53,
+            "instructions": "Type of gradient for alternate sections.",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_section_background_mode",
+                        "operator": "==",
+                        "value": "alternating"
+                    },
+                    {
+                        "field": "field_alternating_type",
+                        "operator": "==",
+                        "value": "gradient"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "25",
+                "class": "",
+                "id": ""
+            },
+            "choices": {
+                "linear": "Linear",
+                "radial": "Radial",
+                "conic": "Conic"
+            },
+            "default_value": "linear",
+            "return_format": "value",
+            "multiple": 0,
+            "allow_null": 0,
+            "ui": 0,
+            "ajax": 0,
+            "placeholder": "",
+            "_name": "alternating_gradient_type",
+            "_valid": 1
+        },
+        {
+            "ID": 0,
+            "key": "field_alternating_gradient_preset",
+            "label": "Gradient Pattern",
+            "name": "alternating_gradient_preset",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "select",
+            "value": null,
+            "menu_order": 63.54,
+            "instructions": "Direction/position of the gradient.",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_section_background_mode",
+                        "operator": "==",
+                        "value": "alternating"
+                    },
+                    {
+                        "field": "field_alternating_type",
+                        "operator": "==",
+                        "value": "gradient"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "25",
+                "class": "",
+                "id": ""
+            },
+            "choices": {
+                "vertical-down": "↓ Vertical Down",
+                "vertical-up": "↑ Vertical Up",
+                "horizontal-right": "→ Horizontal Right",
+                "horizontal-left": "← Horizontal Left",
+                "diagonal-topright": "↗ Diagonal Top Right",
+                "diagonal-topleft": "↖ Diagonal Top Left",
+                "diagonal-bottomright": "↘ Diagonal Bottom Right",
+                "diagonal-bottomleft": "↙ Diagonal Bottom Left",
+                "circle-center": "◉ Circle Center",
+                "circle-top": "◉ Circle Top",
+                "circle-bottom": "◉ Circle Bottom",
+                "circle-left": "◉ Circle Left",
+                "circle-right": "◉ Circle Right",
+                "ellipse-center": "◯ Ellipse Center",
+                "ellipse-top": "◯ Ellipse Top",
+                "ellipse-bottom": "◯ Ellipse Bottom",
+                "ellipse-left": "◯ Ellipse Left",
+                "ellipse-right": "◯ Ellipse Right",
+                "conic-center-0": "⊙ Conic 0°",
+                "conic-center-45": "⊙ Conic 45°",
+                "conic-center-90": "⊙ Conic 90°",
+                "conic-center-135": "⊙ Conic 135°",
+                "conic-center-180": "⊙ Conic 180°",
+                "conic-center-225": "⊙ Conic 225°",
+                "conic-center-270": "⊙ Conic 270°",
+                "conic-center-315": "⊙ Conic 315°"
+            },
+            "default_value": "vertical-down",
+            "return_format": "value",
+            "multiple": 0,
+            "allow_null": 0,
+            "ui": 0,
+            "ajax": 0,
+            "placeholder": "",
+            "_name": "alternating_gradient_preset",
+            "_valid": 1
+        },
+        {
+            "ID": 0,
+            "key": "field_alternating_gradient_color_mode",
+            "label": "Color Mode",
+            "name": "alternating_gradient_color_mode",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "select",
+            "value": null,
+            "menu_order": 63.55,
+            "instructions": "Auto uses alternate color → page background. Manual lets you choose both colors.",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_section_background_mode",
+                        "operator": "==",
+                        "value": "alternating"
+                    },
+                    {
+                        "field": "field_alternating_type",
+                        "operator": "==",
+                        "value": "gradient"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "choices": {
+                "auto": "Auto (Alternate Color → Page BG)",
+                "manual": "Manual (Choose Both Colors)"
+            },
+            "default_value": "auto",
+            "return_format": "value",
+            "multiple": 0,
+            "allow_null": 0,
+            "ui": 0,
+            "ajax": 0,
+            "placeholder": "",
+            "_name": "alternating_gradient_color_mode",
+            "_valid": 1
+        },
+        {
+            "ID": 0,
+            "key": "field_alternating_gradient_start_color",
+            "label": "Gradient Start Color",
+            "name": "alternating_gradient_start_color",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "color_picker",
+            "value": null,
+            "menu_order": 63.56,
+            "instructions": "Starting color of the gradient.",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_section_background_mode",
+                        "operator": "==",
+                        "value": "alternating"
+                    },
+                    {
+                        "field": "field_alternating_type",
+                        "operator": "==",
+                        "value": "gradient"
+                    },
+                    {
+                        "field": "field_alternating_gradient_color_mode",
+                        "operator": "==",
+                        "value": "manual"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "25",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "#1a1a2e",
+            "enable_opacity": false,
+            "return_format": "string",
+            "_name": "alternating_gradient_start_color",
+            "_valid": 1,
+            "custom_palette_source": "",
+            "palette_colors": "",
+            "show_color_wheel": true
+        },
+        {
+            "ID": 0,
+            "key": "field_alternating_gradient_end_color",
+            "label": "Gradient End Color",
+            "name": "alternating_gradient_end_color",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "color_picker",
+            "value": null,
+            "menu_order": 63.57,
+            "instructions": "Ending color of the gradient.",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_section_background_mode",
+                        "operator": "==",
+                        "value": "alternating"
+                    },
+                    {
+                        "field": "field_alternating_type",
+                        "operator": "==",
+                        "value": "gradient"
+                    },
+                    {
+                        "field": "field_alternating_gradient_color_mode",
+                        "operator": "==",
+                        "value": "manual"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "25",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "#121212",
+            "enable_opacity": false,
+            "return_format": "string",
+            "_name": "alternating_gradient_end_color",
+            "_valid": 1,
+            "custom_palette_source": "",
+            "palette_colors": "",
+            "show_color_wheel": true
+        },
+        {
+            "ID": 0,
+            "key": "field_all_gradient_default_type",
+            "label": "Default Gradient Type",
+            "name": "all_gradient_default_type",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "select",
+            "value": null,
+            "menu_order": 63.6,
+            "instructions": "Type of gradient for sections without specific configuration.",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_section_background_mode",
+                        "operator": "==",
+                        "value": "all_gradient"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "25",
+                "class": "",
+                "id": ""
+            },
+            "choices": {
+                "linear": "Linear",
+                "radial": "Radial",
+                "conic": "Conic"
+            },
+            "default_value": "linear",
+            "return_format": "value",
+            "multiple": 0,
+            "allow_null": 0,
+            "ui": 0,
+            "ajax": 0,
+            "placeholder": "",
+            "_name": "all_gradient_default_type",
+            "_valid": 1
+        },
+        {
+            "ID": 0,
+            "key": "field_all_gradient_default_preset",
+            "label": "Default Pattern",
+            "name": "all_gradient_default_preset",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "select",
+            "value": null,
+            "menu_order": 63.61,
+            "instructions": "Direction/position for the default gradient.",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_section_background_mode",
+                        "operator": "==",
+                        "value": "all_gradient"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "25",
+                "class": "",
+                "id": ""
+            },
+            "choices": {
+                "vertical-down": "↓ Vertical Down",
+                "vertical-up": "↑ Vertical Up",
+                "horizontal-right": "→ Horizontal Right",
+                "horizontal-left": "← Horizontal Left",
+                "diagonal-topright": "↗ Diagonal Top Right",
+                "diagonal-topleft": "↖ Diagonal Top Left",
+                "diagonal-bottomright": "↘ Diagonal Bottom Right",
+                "diagonal-bottomleft": "↙ Diagonal Bottom Left",
+                "circle-center": "◉ Circle Center",
+                "circle-top": "◉ Circle Top",
+                "circle-bottom": "◉ Circle Bottom",
+                "circle-left": "◉ Circle Left",
+                "circle-right": "◉ Circle Right",
+                "ellipse-center": "◯ Ellipse Center",
+                "ellipse-top": "◯ Ellipse Top",
+                "ellipse-bottom": "◯ Ellipse Bottom",
+                "ellipse-left": "◯ Ellipse Left",
+                "ellipse-right": "◯ Ellipse Right",
+                "conic-center-0": "⊙ Conic 0°",
+                "conic-center-45": "⊙ Conic 45°",
+                "conic-center-90": "⊙ Conic 90°",
+                "conic-center-135": "⊙ Conic 135°",
+                "conic-center-180": "⊙ Conic 180°",
+                "conic-center-225": "⊙ Conic 225°",
+                "conic-center-270": "⊙ Conic 270°",
+                "conic-center-315": "⊙ Conic 315°"
+            },
+            "default_value": "vertical-down",
+            "return_format": "value",
+            "multiple": 0,
+            "allow_null": 0,
+            "ui": 0,
+            "ajax": 0,
+            "placeholder": "",
+            "_name": "all_gradient_default_preset",
+            "_valid": 1
+        },
+        {
+            "ID": 0,
+            "key": "field_all_gradient_default_color_mode",
+            "label": "Default Color Mode",
+            "name": "all_gradient_default_color_mode",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "select",
+            "value": null,
+            "menu_order": 63.62,
+            "instructions": "Auto uses page background → darker shade. Manual lets you choose both colors.",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_section_background_mode",
+                        "operator": "==",
+                        "value": "all_gradient"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "choices": {
+                "auto": "Auto (Page BG → Darker)",
+                "manual": "Manual (Choose Both Colors)"
+            },
+            "default_value": "auto",
+            "return_format": "value",
+            "multiple": 0,
+            "allow_null": 0,
+            "ui": 0,
+            "ajax": 0,
+            "placeholder": "",
+            "_name": "all_gradient_default_color_mode",
+            "_valid": 1
+        },
+        {
+            "ID": 0,
+            "key": "field_all_gradient_default_start_color",
+            "label": "Default Start Color",
+            "name": "all_gradient_default_start_color",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "color_picker",
+            "value": null,
+            "menu_order": 63.63,
+            "instructions": "Starting color of the default gradient.",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_section_background_mode",
+                        "operator": "==",
+                        "value": "all_gradient"
+                    },
+                    {
+                        "field": "field_all_gradient_default_color_mode",
+                        "operator": "==",
+                        "value": "manual"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "25",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "#121212",
+            "enable_opacity": false,
+            "return_format": "string",
+            "_name": "all_gradient_default_start_color",
+            "_valid": 1,
+            "custom_palette_source": "",
+            "palette_colors": "",
+            "show_color_wheel": true
+        },
+        {
+            "ID": 0,
+            "key": "field_all_gradient_default_end_color",
+            "label": "Default End Color",
+            "name": "all_gradient_default_end_color",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "color_picker",
+            "value": null,
+            "menu_order": 63.64,
+            "instructions": "Ending color of the default gradient.",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_section_background_mode",
+                        "operator": "==",
+                        "value": "all_gradient"
+                    },
+                    {
+                        "field": "field_all_gradient_default_color_mode",
+                        "operator": "==",
+                        "value": "manual"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "25",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "#0a0a0a",
+            "enable_opacity": false,
+            "return_format": "string",
+            "_name": "all_gradient_default_end_color",
+            "_valid": 1,
+            "custom_palette_source": "",
+            "palette_colors": "",
+            "show_color_wheel": true
+        },
+        {
+            "ID": 0,
+            "key": "field_all_gradient_sections",
+            "label": "Per-Section Gradient Overrides",
+            "name": "all_gradient_sections",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "repeater",
+            "value": null,
+            "menu_order": 63.7,
+            "instructions": "Override the default gradient for specific sections. Section 1 = 1st section after hero, Section 2 = 2nd section, etc.",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_section_background_mode",
+                        "operator": "==",
+                        "value": "all_gradient"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "100",
+                "class": "",
+                "id": ""
+            },
+            "layout": "table",
+            "pagination": 0,
+            "min": 0,
+            "max": 0,
+            "collapsed": "field_all_gradient_section_index",
+            "button_label": "Add Section Override",
+            "rows_per_page": 20,
+            "_name": "all_gradient_sections",
+            "_valid": 1,
+            "sub_fields": [
+                {
+                    "ID": 0,
+                    "key": "field_all_gradient_section_index",
+                    "label": "Section #",
+                    "name": "section_index",
+                    "aria-label": "",
+                    "prefix": "acf",
+                    "type": "number",
+                    "value": null,
+                    "menu_order": 0,
+                    "instructions": "",
+                    "required": 1,
+                    "id": "",
+                    "class": "",
+                    "conditional_logic": false,
+                    "parent": "field_all_gradient_sections",
+                    "wrapper": {
+                        "width": "10",
+                        "class": "",
+                        "id": ""
+                    },
+                    "default_value": "",
+                    "min": 1,
+                    "max": "",
+                    "step": 1,
+                    "placeholder": "",
+                    "prepend": "",
+                    "append": "",
+                    "_name": "section_index",
+                    "_valid": 1
+                },
+                {
+                    "ID": 0,
+                    "key": "field_all_gradient_section_type",
+                    "label": "Type",
+                    "name": "gradient_type",
+                    "aria-label": "",
+                    "prefix": "acf",
+                    "type": "select",
+                    "value": null,
+                    "menu_order": 1,
+                    "instructions": "",
+                    "required": false,
+                    "id": "",
+                    "class": "",
+                    "conditional_logic": false,
+                    "parent": "field_all_gradient_sections",
+                    "wrapper": {
+                        "width": "15",
+                        "class": "",
+                        "id": ""
+                    },
+                    "choices": {
+                        "linear": "Linear",
+                        "radial": "Radial",
+                        "conic": "Conic"
+                    },
+                    "default_value": "linear",
+                    "return_format": "value",
+                    "multiple": 0,
+                    "allow_null": 0,
+                    "ui": 0,
+                    "ajax": 0,
+                    "placeholder": "",
+                    "_name": "gradient_type",
+                    "_valid": 1
+                },
+                {
+                    "ID": 0,
+                    "key": "field_all_gradient_section_preset",
+                    "label": "Pattern",
+                    "name": "gradient_preset",
+                    "aria-label": "",
+                    "prefix": "acf",
+                    "type": "select",
+                    "value": null,
+                    "menu_order": 2,
+                    "instructions": "",
+                    "required": false,
+                    "id": "",
+                    "class": "",
+                    "conditional_logic": false,
+                    "parent": "field_all_gradient_sections",
+                    "wrapper": {
+                        "width": "20",
+                        "class": "",
+                        "id": ""
+                    },
+                    "choices": {
+                        "vertical-down": "↓ Vertical Down",
+                        "vertical-up": "↑ Vertical Up",
+                        "horizontal-right": "→ Horizontal Right",
+                        "horizontal-left": "← Horizontal Left",
+                        "diagonal-topright": "↗ Diagonal Top Right",
+                        "diagonal-topleft": "↖ Diagonal Top Left",
+                        "diagonal-bottomright": "↘ Diagonal Bottom Right",
+                        "diagonal-bottomleft": "↙ Diagonal Bottom Left",
+                        "circle-center": "◉ Circle Center",
+                        "circle-top": "◉ Circle Top",
+                        "circle-bottom": "◉ Circle Bottom",
+                        "circle-left": "◉ Circle Left",
+                        "circle-right": "◉ Circle Right",
+                        "ellipse-center": "◯ Ellipse Center",
+                        "ellipse-top": "◯ Ellipse Top",
+                        "ellipse-bottom": "◯ Ellipse Bottom",
+                        "ellipse-left": "◯ Ellipse Left",
+                        "ellipse-right": "◯ Ellipse Right",
+                        "conic-center-0": "⊙ Conic 0°",
+                        "conic-center-45": "⊙ Conic 45°",
+                        "conic-center-90": "⊙ Conic 90°",
+                        "conic-center-135": "⊙ Conic 135°",
+                        "conic-center-180": "⊙ Conic 180°",
+                        "conic-center-225": "⊙ Conic 225°",
+                        "conic-center-270": "⊙ Conic 270°",
+                        "conic-center-315": "⊙ Conic 315°"
+                    },
+                    "default_value": "vertical-down",
+                    "return_format": "value",
+                    "multiple": 0,
+                    "allow_null": 0,
+                    "ui": 0,
+                    "ajax": 0,
+                    "placeholder": "",
+                    "_name": "gradient_preset",
+                    "_valid": 1
+                },
+                {
+                    "ID": 0,
+                    "key": "field_all_gradient_section_color_mode",
+                    "label": "Color Mode",
+                    "name": "color_mode",
+                    "aria-label": "",
+                    "prefix": "acf",
+                    "type": "select",
+                    "value": null,
+                    "menu_order": 3,
+                    "instructions": "",
+                    "required": false,
+                    "id": "",
+                    "class": "",
+                    "conditional_logic": false,
+                    "parent": "field_all_gradient_sections",
+                    "wrapper": {
+                        "width": "15",
+                        "class": "",
+                        "id": ""
+                    },
+                    "choices": {
+                        "auto": "Auto",
+                        "manual": "Manual"
+                    },
+                    "default_value": "auto",
+                    "return_format": "value",
+                    "multiple": 0,
+                    "allow_null": 0,
+                    "ui": 0,
+                    "ajax": 0,
+                    "placeholder": "",
+                    "_name": "color_mode",
+                    "_valid": 1
+                },
+                {
+                    "ID": 0,
+                    "key": "field_all_gradient_section_start_color",
+                    "label": "Start Color",
+                    "name": "gradient_start_color",
+                    "aria-label": "",
+                    "prefix": "acf",
+                    "type": "color_picker",
+                    "value": null,
+                    "menu_order": 4,
+                    "instructions": "",
+                    "required": false,
+                    "id": "",
+                    "class": "",
+                    "conditional_logic": [
+                        [
+                            {
+                                "field": "field_all_gradient_section_color_mode",
+                                "operator": "==",
+                                "value": "manual"
+                            }
+                        ]
+                    ],
+                    "parent": "field_all_gradient_sections",
+                    "wrapper": {
+                        "width": "20",
+                        "class": "",
+                        "id": ""
+                    },
+                    "default_value": "",
+                    "enable_opacity": false,
+                    "return_format": "string",
+                    "_name": "gradient_start_color",
+                    "_valid": 1,
+                    "custom_palette_source": "",
+                    "palette_colors": "",
+                    "show_color_wheel": true
+                },
+                {
+                    "ID": 0,
+                    "key": "field_all_gradient_section_end_color",
+                    "label": "End Color",
+                    "name": "gradient_end_color",
+                    "aria-label": "",
+                    "prefix": "acf",
+                    "type": "color_picker",
+                    "value": null,
+                    "menu_order": 5,
+                    "instructions": "",
+                    "required": false,
+                    "id": "",
+                    "class": "",
+                    "conditional_logic": [
+                        [
+                            {
+                                "field": "field_all_gradient_section_color_mode",
+                                "operator": "==",
+                                "value": "manual"
+                            }
+                        ]
+                    ],
+                    "parent": "field_all_gradient_sections",
+                    "wrapper": {
+                        "width": "20",
+                        "class": "",
+                        "id": ""
+                    },
+                    "default_value": "",
+                    "enable_opacity": false,
+                    "return_format": "string",
+                    "_name": "gradient_end_color",
+                    "_valid": 1,
+                    "custom_palette_source": "",
+                    "palette_colors": "",
+                    "show_color_wheel": true
+                }
+            ]
         },
         {
             "ID": 125226,

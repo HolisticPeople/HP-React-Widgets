@@ -485,9 +485,26 @@ class FunnelExporter
             'background_type' => FunnelConfigLoader::getFieldValue('background_type', $postId),
             'background_image' => self::resolveImageUrl(FunnelConfigLoader::getFieldValue('background_image', $postId)),
             'custom_css' => FunnelConfigLoader::getFieldValue('custom_css', $postId),
-            // Round 2: Alternating backgrounds
-            'alternate_section_bg' => (bool) FunnelConfigLoader::getFieldValue('alternate_section_bg', $postId),
-            'alternate_bg_color' => FunnelConfigLoader::getFieldValue('alternate_bg_color', $postId),
+
+            // NEW: Section background mode (replaces alternate_section_bg)
+            'section_background_mode' => FunnelConfigLoader::getFieldValue('section_background_mode', $postId),
+
+            // Alternating mode fields
+            'alternating_type' => FunnelConfigLoader::getFieldValue('alternating_type', $postId),
+            'alternating_solid_color' => FunnelConfigLoader::getFieldValue('alternating_solid_color', $postId),
+            'alternating_gradient_type' => FunnelConfigLoader::getFieldValue('alternating_gradient_type', $postId),
+            'alternating_gradient_preset' => FunnelConfigLoader::getFieldValue('alternating_gradient_preset', $postId),
+            'alternating_gradient_color_mode' => FunnelConfigLoader::getFieldValue('alternating_gradient_color_mode', $postId),
+            'alternating_gradient_start_color' => FunnelConfigLoader::getFieldValue('alternating_gradient_start_color', $postId),
+            'alternating_gradient_end_color' => FunnelConfigLoader::getFieldValue('alternating_gradient_end_color', $postId),
+
+            // All gradient mode fields
+            'all_gradient_default_type' => FunnelConfigLoader::getFieldValue('all_gradient_default_type', $postId),
+            'all_gradient_default_preset' => FunnelConfigLoader::getFieldValue('all_gradient_default_preset', $postId),
+            'all_gradient_default_color_mode' => FunnelConfigLoader::getFieldValue('all_gradient_default_color_mode', $postId),
+            'all_gradient_default_start_color' => FunnelConfigLoader::getFieldValue('all_gradient_default_start_color', $postId),
+            'all_gradient_default_end_color' => FunnelConfigLoader::getFieldValue('all_gradient_default_end_color', $postId),
+            'all_gradient_sections' => FunnelConfigLoader::getFieldValue('all_gradient_sections', $postId) ?: [],
         ];
     }
 

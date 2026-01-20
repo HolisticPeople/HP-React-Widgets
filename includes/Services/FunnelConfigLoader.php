@@ -737,7 +737,27 @@ class FunnelConfigLoader
         
         // Use custom text accent if override is checked AND a value is set
         $textAccent = ($accentOverride && !empty($customTextAccent)) ? $customTextAccent : $accentColor;
-        
+
+        // Migration logic: Check for legacy alternate section background fields
+        $legacyAlternateBg = (bool) self::getFieldValue('alternate_section_bg', $postId);
+        $legacyAlternateColor = self::getFieldValue('alternate_bg_color', $postId);
+        $sectionBackgroundMode = self::getFieldValue('section_background_mode', $postId);
+
+        // Migrate if legacy fields exist and no new mode is set
+        if ($legacyAlternateBg && !$sectionBackgroundMode) {
+            // Migrate: old alternating → new alternating with solid color
+            update_field('section_background_mode', 'alternating', $postId);
+            update_field('alternating_type', 'solid', $postId);
+            update_field('alternating_solid_color', $legacyAlternateColor ?: '#1a1a2e', $postId);
+
+            // Clean up old fields
+            delete_post_meta($postId, 'alternate_section_bg');
+            delete_post_meta($postId, 'alternate_bg_color');
+
+            // Update local variables after migration
+            $sectionBackgroundMode = 'alternating';
+        }
+
         return [
             // Primary accent color (used for UI accents, buttons, etc.)
             'accent_color'        => $accentColor,
@@ -755,9 +775,26 @@ class FunnelConfigLoader
             'background_type'     => self::getFieldValue('background_type', $postId),
             'background_image'    => self::getFieldValue('background_image', $postId),
             'custom_css'          => self::getFieldValue('custom_css', $postId),
-            // Alternating section backgrounds (Round 2 improvements)
-            'alternate_section_bg'=> (bool) self::getFieldValue('alternate_section_bg', $postId),
-            'alternate_bg_color'  => self::getFieldValue('alternate_bg_color', $postId),
+
+            // NEW: Section background mode (replaces alternate_section_bg)
+            'section_background_mode' => $sectionBackgroundMode ?: 'solid',
+
+            // Alternating mode fields
+            'alternating_type' => self::getFieldValue('alternating_type', $postId),
+            'alternating_solid_color' => self::getFieldValue('alternating_solid_color', $postId),
+            'alternating_gradient_type' => self::getFieldValue('alternating_gradient_type', $postId),
+            'alternating_gradient_preset' => self::getFieldValue('alternating_gradient_preset', $postId),
+            'alternating_gradient_color_mode' => self::getFieldValue('alternating_gradient_color_mode', $postId),
+            'alternating_gradient_start_color' => self::getFieldValue('alternating_gradient_start_color', $postId),
+            'alternating_gradient_end_color' => self::getFieldValue('alternating_gradient_end_color', $postId),
+
+            // All gradient mode fields
+            'all_gradient_default_type' => self::getFieldValue('all_gradient_default_type', $postId),
+            'all_gradient_default_preset' => self::getFieldValue('all_gradient_default_preset', $postId),
+            'all_gradient_default_color_mode' => self::getFieldValue('all_gradient_default_color_mode', $postId),
+            'all_gradient_default_start_color' => self::getFieldValue('all_gradient_default_start_color', $postId),
+            'all_gradient_default_end_color' => self::getFieldValue('all_gradient_default_end_color', $postId),
+            'all_gradient_sections' => self::getFieldValue('all_gradient_sections', $postId) ?: [],
         ];
     }
 
