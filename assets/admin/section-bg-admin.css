@@ -1,7 +1,9 @@
 /**
- * Section Background Admin UI Styles (v2.33.5)
+ * Section Background Admin UI Styles (v2.33.6)
  *
  * Styles for preview rectangles and bulk action buttons
+ * - Radio button selection (single row at a time)
+ * - Hidden numbering column
  */
 
 /* Preview rectangle - 40px × 80px wide rectangle */
@@ -78,6 +80,15 @@
     display: none !important;
 }
 
+/* Hide the ACF order/numbering column */
+[data-key="field_section_backgrounds"] .acf-row-handle.order {
+    display: none !important;
+}
+
+[data-key="field_section_backgrounds"] thead .acf-row-handle.order {
+    display: none !important;
+}
+
 /* Section name cell styling */
 .hp-section-name-cell {
     white-space: nowrap;
@@ -102,7 +113,13 @@
     background: #f5f5f5;
 }
 
-/* Highlight selected rows */
-[data-key="field_section_backgrounds"] .acf-row:has(.hp-row-checkbox:checked) {
+/* Highlight selected row (radio button) */
+[data-key="field_section_backgrounds"] .acf-row:has(.hp-row-radio:checked) {
     background-color: #f0f8ff;
+}
+
+/* Style radio buttons */
+.hp-row-radio {
+    cursor: pointer;
+    margin: 0;
 }

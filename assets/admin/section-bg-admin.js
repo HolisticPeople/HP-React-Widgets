@@ -1,11 +1,13 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.5)
+ * Section Background Admin UI Enhancements (v2.33.6)
  *
  * Features:
- * - Bulk actions (Apply to Selected, Apply to All, Apply to Odd, Apply to Even)
+ * - Radio button selection (one row at a time) for copying settings
+ * - Bulk actions: Apply to Odd, Even, or All sections
  * - Live preview rectangles showing current background in each row
  * - Real-time updates when user changes settings
  * - Section names match ScrollNavigation component (Home, Benefits, etc.)
+ * - Color picker automatically hidden when background type is "None"
  */
 
 (function($) {
@@ -128,13 +130,12 @@
         if (!$('.hp-bulk-actions').length) {
             const bulkActionsHTML = `
                 <div class="hp-bulk-actions">
-                    <label>
-                        <input type="checkbox" class="hp-select-all" /> Select All
+                    <label style="font-weight: 600; margin-right: 15px;">
+                        Select a row to copy, then apply to:
                     </label>
-                    <button type="button" class="button hp-apply-selected">Apply to Selected</button>
-                    <button type="button" class="button hp-apply-all">Apply to All</button>
-                    <button type="button" class="button hp-apply-odd">Apply to Odd (1,3,5,7)</button>
-                    <button type="button" class="button hp-apply-even">Apply to Even (2,4,6,8)</button>
+                    <button type="button" class="button hp-apply-odd">Odd (1,3,5,7)</button>
+                    <button type="button" class="button hp-apply-even">Even (2,4,6,8)</button>
+                    <button type="button" class="button hp-apply-all">All</button>
                 </div>
             `;
             $repeater.before(bulkActionsHTML);
@@ -167,12 +168,12 @@
                 sectionName = `Section ${index}`;
             }
 
-            // Add new first column with checkbox + section name
+            // Add new first column with radio button + section name
             const $firstCell = $row.find('td').first();
             $firstCell.before(`
                 <td class="hp-section-name-cell">
                     <label style="display: flex; align-items: center; gap: 8px; margin: 0;">
-                        <input type="checkbox" class="hp-row-checkbox" />
+                        <input type="radio" name="hp-section-select" class="hp-row-radio" />
                         <span class="hp-section-name">${sectionName}</span>
                     </label>
                 </td>
@@ -218,66 +219,61 @@
      * Initialize bulk action event handlers
      */
     function initBulkActions() {
-        // Select All checkbox
-        $(document).on('change', '.hp-select-all', function() {
-            const checked = $(this).is(':checked');
-            $('.hp-row-checkbox').prop('checked', checked);
-        });
-
-        // Apply to Selected
-        $(document).on('click', '.hp-apply-selected', function() {
+        // Get the selected source row
+        function getSelectedSourceRow() {
             const $repeater = $('[data-key="field_section_backgrounds"]');
             const $allRows = $repeater.find('.acf-row');
-            const $checkedRows = $allRows.filter(function() {
-                return $(this).find('.hp-row-checkbox').is(':checked');
+            const $selectedRow = $allRows.filter(function() {
+                return $(this).find('.hp-row-radio').is(':checked');
             });
 
-            if ($checkedRows.length === 0) {
-                alert('Please select at least one section.');
-                return;
+            if ($selectedRow.length === 0) {
+                alert('Please select a row to copy from.');
+                return null;
             }
 
-            // Use first row as source
-            const $sourceRow = $allRows.first();
-
-            // Copy to all checked rows except source
-            const $targetRows = $checkedRows.not($sourceRow);
-            copyRowSettings($sourceRow, $targetRows);
-        });
+            return $selectedRow.first();
+        }
 
         // Apply to All
         $(document).on('click', '.hp-apply-all', function() {
+            const $sourceRow = getSelectedSourceRow();
+            if (!$sourceRow) return;
+
             const $repeater = $('[data-key="field_section_backgrounds"]');
             const $allRows = $repeater.find('.acf-row');
-            const $sourceRow = $allRows.first();
-            const $targetRows = $allRows.slice(1);
+            const $targetRows = $allRows.not($sourceRow);
 
             copyRowSettings($sourceRow, $targetRows);
         });
 
         // Apply to Odd (1, 3, 5, 7 = sections 2, 4, 6, 8 in 0-indexed rows)
         $(document).on('click', '.hp-apply-odd', function() {
+            const $sourceRow = getSelectedSourceRow();
+            if (!$sourceRow) return;
+
             const $repeater = $('[data-key="field_section_backgrounds"]');
             const $allRows = $repeater.find('.acf-row');
-            const $sourceRow = $allRows.first();
 
-            // Target rows: 2, 4, 6, 8 (0-indexed: 2, 4, 6, 8)
+            // Target rows: 1, 3, 5, 7 (0-indexed: 1, 3, 5, 7) - odd numbered sections
             const $targetRows = $allRows.filter(function(index) {
-                return index === 2 || index === 4 || index === 6 || index === 8;
+                return index === 1 || index === 3 || index === 5 || index === 7;
             });
 
             copyRowSettings($sourceRow, $targetRows);
         });
 
-        // Apply to Even (2, 4, 6, 8 = sections 1, 3, 5, 7 in 0-indexed rows)
+        // Apply to Even (2, 4, 6, 8 = sections 2, 4, 6, 8 in 0-indexed rows)
         $(document).on('click', '.hp-apply-even', function() {
+            const $sourceRow = getSelectedSourceRow();
+            if (!$sourceRow) return;
+
             const $repeater = $('[data-key="field_section_backgrounds"]');
             const $allRows = $repeater.find('.acf-row');
-            const $sourceRow = $allRows.first();
 
-            // Target rows: 1, 3, 5, 7 (0-indexed: 1, 3, 5, 7)
+            // Target rows: 2, 4, 6, 8 (0-indexed: 2, 4, 6, 8) - even numbered sections
             const $targetRows = $allRows.filter(function(index) {
-                return index === 1 || index === 3 || index === 5 || index === 7;
+                return index === 2 || index === 4 || index === 6 || index === 8;
             });
 
             copyRowSettings($sourceRow, $targetRows);
