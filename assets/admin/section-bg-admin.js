@@ -1,13 +1,14 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.6)
+ * Section Background Admin UI Enhancements (v2.33.7)
  *
  * Features:
  * - Radio button selection (one row at a time) for copying settings
- * - Bulk actions: Apply to Odd, Even, or All sections
+ * - Bulk actions: Apply to Odd (starting from Home/0), Even, or All sections
  * - Live preview rectangles showing current background in each row
  * - Real-time updates when user changes settings
  * - Section names match ScrollNavigation component (Home, Benefits, etc.)
  * - Color picker automatically hidden when background type is "None"
+ * - Hidden add/remove row buttons (auto-populated, not editable)
  */
 
 (function($) {
@@ -133,8 +134,8 @@
                     <label style="font-weight: 600; margin-right: 15px;">
                         Select a row to copy, then apply to:
                     </label>
-                    <button type="button" class="button hp-apply-odd">Odd (1,3,5,7)</button>
-                    <button type="button" class="button hp-apply-even">Even (2,4,6,8)</button>
+                    <button type="button" class="button hp-apply-odd">Odd (Home, Science, Offers...)</button>
+                    <button type="button" class="button hp-apply-even">Even (Benefits, Features, Expert...)</button>
                     <button type="button" class="button hp-apply-all">All</button>
                 </div>
             `;
@@ -247,7 +248,7 @@
             copyRowSettings($sourceRow, $targetRows);
         });
 
-        // Apply to Odd (1, 3, 5, 7 = sections 2, 4, 6, 8 in 0-indexed rows)
+        // Apply to Odd (Home/Hero, Science, Offers, Reviews = 0-indexed: 0, 2, 4, 6)
         $(document).on('click', '.hp-apply-odd', function() {
             const $sourceRow = getSelectedSourceRow();
             if (!$sourceRow) return;
@@ -255,15 +256,15 @@
             const $repeater = $('[data-key="field_section_backgrounds"]');
             const $allRows = $repeater.find('.acf-row');
 
-            // Target rows: 1, 3, 5, 7 (0-indexed: 1, 3, 5, 7) - odd numbered sections
+            // Target odd rows starting from 0: Home(0), Science(2), Offers(4), Reviews(6), etc.
             const $targetRows = $allRows.filter(function(index) {
-                return index === 1 || index === 3 || index === 5 || index === 7;
+                return index % 2 === 0;
             });
 
             copyRowSettings($sourceRow, $targetRows);
         });
 
-        // Apply to Even (2, 4, 6, 8 = sections 2, 4, 6, 8 in 0-indexed rows)
+        // Apply to Even (Benefits, Features, Expert = 0-indexed: 1, 3, 5, 7)
         $(document).on('click', '.hp-apply-even', function() {
             const $sourceRow = getSelectedSourceRow();
             if (!$sourceRow) return;
@@ -271,9 +272,9 @@
             const $repeater = $('[data-key="field_section_backgrounds"]');
             const $allRows = $repeater.find('.acf-row');
 
-            // Target rows: 2, 4, 6, 8 (0-indexed: 2, 4, 6, 8) - even numbered sections
+            // Target even rows: Benefits(1), Features(3), Expert(5), etc.
             const $targetRows = $allRows.filter(function(index) {
-                return index === 2 || index === 4 || index === 6 || index === 8;
+                return index % 2 === 1;
             });
 
             copyRowSettings($sourceRow, $targetRows);

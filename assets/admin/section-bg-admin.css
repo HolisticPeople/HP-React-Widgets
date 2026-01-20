@@ -1,9 +1,10 @@
 /**
- * Section Background Admin UI Styles (v2.33.6)
+ * Section Background Admin UI Styles (v2.33.7)
  *
  * Styles for preview rectangles and bulk action buttons
  * - Radio button selection (single row at a time)
- * - Hidden numbering column
+ * - Hidden numbering column and add/remove buttons
+ * - Odd/Even logic starts from Home (index 0)
  */
 
 /* Preview rectangle - 40px × 80px wide rectangle */
@@ -87,6 +88,24 @@
 
 [data-key="field_section_backgrounds"] thead .acf-row-handle.order {
     display: none !important;
+}
+
+/* Hide ACF add/remove row buttons */
+[data-key="field_section_backgrounds"] .acf-actions {
+    display: none !important;
+}
+
+[data-key="field_section_backgrounds"] .acf-row-handle.remove {
+    display: none !important;
+}
+
+/* Fix table header alignment - account for injected columns */
+[data-key="field_section_backgrounds"] thead th:first-child {
+    /* This is now the Section header (injected) */
+}
+
+[data-key="field_section_backgrounds"] thead th:nth-child(2) {
+    /* This is now the Preview header (injected) */
 }
 
 /* Section name cell styling */
