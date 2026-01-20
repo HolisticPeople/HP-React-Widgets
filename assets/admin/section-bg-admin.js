@@ -139,24 +139,47 @@
             $repeater.before(bulkActionsHTML);
         }
 
-        // Add checkbox and preview to each row
-        $repeater.find('.acf-row').each(function() {
+        // Add table headers for new columns
+        const $table = $repeater.find('.acf-table');
+        const $thead = $table.find('thead tr');
+        if ($thead.length && !$thead.find('.hp-section-header').length) {
+            $thead.find('th').first().before(`
+                <th class="hp-section-header">Section</th>
+                <th class="hp-preview-header">Preview</th>
+            `);
+        }
+
+        // Add checkbox, section name, and preview to each row
+        $repeater.find('.acf-row').each(function(index) {
             const $row = $(this);
 
             // Skip if already has checkbox
             if ($row.find('.hp-row-checkbox').length) return;
 
-            // Get section label for display
-            const $sectionLabel = $row.find('[data-name="section_label"] input');
-            const sectionLabel = $sectionLabel.val() || '';
+            // Determine section name
+            let sectionName = '';
+            if (index === 0) {
+                sectionName = 'Hero';
+            } else {
+                // Try to get from funnel configuration section names
+                // This will be populated from server-side data
+                sectionName = `Section ${index}`;
+            }
 
-            // Add checkbox before section_id field
-            const $firstCell = $row.find('[data-name="section_id"]').closest('td');
-            $firstCell.prepend('<input type="checkbox" class="hp-row-checkbox" style="margin-right: 8px;" />');
+            // Add new first column with checkbox + section name
+            const $firstCell = $row.find('td').first();
+            $firstCell.before(`
+                <td class="hp-section-name-cell">
+                    <label style="display: flex; align-items: center; gap: 8px; margin: 0;">
+                        <input type="checkbox" class="hp-row-checkbox" />
+                        <span class="hp-section-name">${sectionName}</span>
+                    </label>
+                </td>
+            `);
 
-            // Add preview after section_label field
-            const $labelCell = $row.find('[data-name="section_label"]').closest('td');
-            $labelCell.append('<div class="hp-section-bg-preview"></div>');
+            // Add preview column after section name
+            const $nameCell = $row.find('.hp-section-name-cell');
+            $nameCell.after('<td class="hp-preview-cell"><div class="hp-section-bg-preview"></div></td>');
 
             // Initial preview update
             updatePreview($row);

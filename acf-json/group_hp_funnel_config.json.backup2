@@ -142,11 +142,7 @@
             "menu_order": 3.6,
             "instructions": "Configure responsive behavior for different screen sizes.",
             "parent": 125087,
-            "wrapper": {
-                "width": "",
-                "class": "",
-                "id": ""
-            },
+            "wrapper": { "width": "", "class": "", "id": "" },
             "placement": "top",
             "endpoint": 0,
             "selected": 0
@@ -159,11 +155,7 @@
             "menu_order": 3.61,
             "instructions": "Check to use custom breakpoint values for this funnel instead of plugin defaults.",
             "parent": 125087,
-            "wrapper": {
-                "width": "50",
-                "class": "",
-                "id": ""
-            },
+            "wrapper": { "width": "50", "class": "", "id": "" },
             "default_value": 0,
             "ui": 1,
             "ui_on_text": "Custom",
@@ -178,19 +170,9 @@
             "instructions": "Screen width where mobile ends and tablet begins.",
             "parent": 125087,
             "conditional_logic": [
-                [
-                    {
-                        "field": "field_responsive_breakpoint_override",
-                        "operator": "==",
-                        "value": "1"
-                    }
-                ]
+                [{ "field": "field_responsive_breakpoint_override", "operator": "==", "value": "1" }]
             ],
-            "wrapper": {
-                "width": "33",
-                "class": "",
-                "id": ""
-            },
+            "wrapper": { "width": "33", "class": "", "id": "" },
             "default_value": 640,
             "placeholder": "640",
             "min": 320,
@@ -205,19 +187,9 @@
             "instructions": "Screen width where tablet ends and laptop begins.",
             "parent": 125087,
             "conditional_logic": [
-                [
-                    {
-                        "field": "field_responsive_breakpoint_override",
-                        "operator": "==",
-                        "value": "1"
-                    }
-                ]
+                [{ "field": "field_responsive_breakpoint_override", "operator": "==", "value": "1" }]
             ],
-            "wrapper": {
-                "width": "33",
-                "class": "",
-                "id": ""
-            },
+            "wrapper": { "width": "33", "class": "", "id": "" },
             "default_value": 1024,
             "placeholder": "1024",
             "min": 640,
@@ -232,19 +204,9 @@
             "instructions": "Screen width where laptop ends and desktop begins.",
             "parent": 125087,
             "conditional_logic": [
-                [
-                    {
-                        "field": "field_responsive_breakpoint_override",
-                        "operator": "==",
-                        "value": "1"
-                    }
-                ]
+                [{ "field": "field_responsive_breakpoint_override", "operator": "==", "value": "1" }]
             ],
-            "wrapper": {
-                "width": "33",
-                "class": "",
-                "id": ""
-            },
+            "wrapper": { "width": "33", "class": "", "id": "" },
             "default_value": 1440,
             "placeholder": "1440",
             "min": 1024,
@@ -258,11 +220,7 @@
             "menu_order": 3.65,
             "instructions": "Maximum width for boxed text content. Leave empty to use plugin default (1400px).",
             "parent": 125087,
-            "wrapper": {
-                "width": "50",
-                "class": "",
-                "id": ""
-            },
+            "wrapper": { "width": "50", "class": "", "id": "" },
             "default_value": "",
             "placeholder": "1400",
             "min": 1000,
@@ -273,14 +231,10 @@
             "label": "Mobile Sticky CTA",
             "name": "mobile_sticky_cta_enabled",
             "type": "true_false",
-            "menu_order": 3.7,
+            "menu_order": 3.70,
             "instructions": "Show a sticky CTA button at the bottom of the screen on mobile devices.",
             "parent": 125087,
-            "wrapper": {
-                "width": "50",
-                "class": "",
-                "id": ""
-            },
+            "wrapper": { "width": "50", "class": "", "id": "" },
             "default_value": 0,
             "ui": 1,
             "ui_on_text": "Enabled",
@@ -295,19 +249,9 @@
             "instructions": "Button text for the sticky mobile CTA.",
             "parent": 125087,
             "conditional_logic": [
-                [
-                    {
-                        "field": "field_mobile_sticky_cta_enabled",
-                        "operator": "==",
-                        "value": "1"
-                    }
-                ]
+                [{ "field": "field_mobile_sticky_cta_enabled", "operator": "==", "value": "1" }]
             ],
-            "wrapper": {
-                "width": "50",
-                "class": "",
-                "id": ""
-            },
+            "wrapper": { "width": "50", "class": "", "id": "" },
             "default_value": "Get Your Kit Now",
             "placeholder": "Get Your Kit Now"
         },
@@ -320,19 +264,9 @@
             "instructions": "Where should the sticky CTA scroll to when clicked?",
             "parent": 125087,
             "conditional_logic": [
-                [
-                    {
-                        "field": "field_mobile_sticky_cta_enabled",
-                        "operator": "==",
-                        "value": "1"
-                    }
-                ]
+                [{ "field": "field_mobile_sticky_cta_enabled", "operator": "==", "value": "1" }]
             ],
-            "wrapper": {
-                "width": "50",
-                "class": "",
-                "id": ""
-            },
+            "wrapper": { "width": "50", "class": "", "id": "" },
             "choices": {
                 "scroll_to_offers": "Scroll to Offers/Products",
                 "scroll_to_checkout": "Scroll to Checkout"
@@ -345,14 +279,10 @@
             "label": "Infographics - Mobile Mode",
             "name": "responsive_infographics_mobile_mode",
             "type": "select",
-            "menu_order": 3.8,
+            "menu_order": 3.80,
             "instructions": "How infographics display on mobile screens.",
             "parent": 125087,
-            "wrapper": {
-                "width": "33",
-                "class": "",
-                "id": ""
-            },
+            "wrapper": { "width": "33", "class": "", "id": "" },
             "choices": {
                 "swipe": "Swipe Panels",
                 "scale": "Scaled Image",
@@ -369,11 +299,7 @@
             "menu_order": 3.81,
             "instructions": "How infographics display on tablet screens.",
             "parent": 125087,
-            "wrapper": {
-                "width": "33",
-                "class": "",
-                "id": ""
-            },
+            "wrapper": { "width": "33", "class": "", "id": "" },
             "choices": {
                 "split_panels": "Split Panels (Top/Bottom)",
                 "scale": "Scaled Image",
@@ -390,11 +316,7 @@
             "menu_order": 3.82,
             "instructions": "How infographics display on desktop screens.",
             "parent": 125087,
-            "wrapper": {
-                "width": "33",
-                "class": "",
-                "id": ""
-            },
+            "wrapper": { "width": "33", "class": "", "id": "" },
             "choices": {
                 "full_image": "Full Image",
                 "scale": "Scaled Image",
@@ -411,40 +333,20 @@
             "menu_order": 3.83,
             "instructions": "",
             "parent": 125087,
-            "wrapper": {
-                "width": "100",
-                "class": "",
-                "id": ""
-            },
+            "wrapper": { "width": "100", "class": "", "id": "" },
             "message": "<div style='background: #fef3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 12px; margin-top: -10px;'><strong>⚠️ Split Panels or Swipe mode selected:</strong> Go to the <strong>Infographics</strong> tab and enable \"Use Mobile-Specific Images\" for each infographic, then upload Title Image, Left Panel Image, and Right Panel Image.</div>",
             "conditional_logic": [
                 [
-                    {
-                        "field": "field_responsive_infographics_mobile_mode",
-                        "operator": "==",
-                        "value": "swipe"
-                    }
+                    { "field": "field_responsive_infographics_mobile_mode", "operator": "==", "value": "swipe" }
                 ],
                 [
-                    {
-                        "field": "field_responsive_infographics_mobile_mode",
-                        "operator": "==",
-                        "value": "split_panels"
-                    }
+                    { "field": "field_responsive_infographics_mobile_mode", "operator": "==", "value": "split_panels" }
                 ],
                 [
-                    {
-                        "field": "field_responsive_infographics_tablet_mode",
-                        "operator": "==",
-                        "value": "split_panels"
-                    }
+                    { "field": "field_responsive_infographics_tablet_mode", "operator": "==", "value": "split_panels" }
                 ],
                 [
-                    {
-                        "field": "field_responsive_infographics_desktop_mode",
-                        "operator": "==",
-                        "value": "split_panels"
-                    }
+                    { "field": "field_responsive_infographics_desktop_mode", "operator": "==", "value": "split_panels" }
                 ]
             ],
             "new_lines": "wpautop",
@@ -458,11 +360,7 @@
             "menu_order": 3.85,
             "instructions": "How testimonials display on mobile screens.",
             "parent": 125087,
-            "wrapper": {
-                "width": "33",
-                "class": "",
-                "id": ""
-            },
+            "wrapper": { "width": "33", "class": "", "id": "" },
             "choices": {
                 "carousel": "Carousel (swipe)",
                 "stacked": "Stacked (vertical)"
@@ -478,11 +376,7 @@
             "menu_order": 3.86,
             "instructions": "How testimonials display on tablet screens.",
             "parent": 125087,
-            "wrapper": {
-                "width": "33",
-                "class": "",
-                "id": ""
-            },
+            "wrapper": { "width": "33", "class": "", "id": "" },
             "choices": {
                 "grid_2col": "2 Column Grid",
                 "carousel": "Carousel"
@@ -498,11 +392,7 @@
             "menu_order": 3.87,
             "instructions": "How testimonials display on desktop screens.",
             "parent": 125087,
-            "wrapper": {
-                "width": "33",
-                "class": "",
-                "id": ""
-            },
+            "wrapper": { "width": "33", "class": "", "id": "" },
             "choices": {
                 "grid_3col": "3 Column Grid",
                 "grid_2col": "2 Column Grid",
@@ -516,14 +406,10 @@
             "label": "Hero - Height Behavior",
             "name": "responsive_hero_height_behavior",
             "type": "select",
-            "menu_order": 3.9,
+            "menu_order": 3.90,
             "instructions": "How the hero section handles its height.",
             "parent": 125087,
-            "wrapper": {
-                "width": "50",
-                "class": "",
-                "id": ""
-            },
+            "wrapper": { "width": "50", "class": "", "id": "" },
             "choices": {
                 "fit_viewport": "Fit Viewport (~80vh)",
                 "scrollable": "Natural Height (scrollable)"
@@ -539,11 +425,7 @@
             "menu_order": 3.91,
             "instructions": "How the products section handles its height.",
             "parent": 125087,
-            "wrapper": {
-                "width": "50",
-                "class": "",
-                "id": ""
-            },
+            "wrapper": { "width": "50", "class": "", "id": "" },
             "choices": {
                 "scrollable": "Natural Height (scrollable)",
                 "fit_viewport": "Fit Viewport (~80vh)"
@@ -2180,7 +2062,7 @@
             "type": "text",
             "value": null,
             "menu_order": 29.1,
-            "instructions": "Subtitle under the main title, e.g., 'The Creator of ILLUMODINEâ„¢'",
+            "instructions": "Subtitle under the main title, e.g., 'The Creator of ILLUMODINE\u00e2\u201e\u00a2'",
             "required": false,
             "id": "",
             "class": "",
@@ -3774,12 +3656,8 @@
                 "class": "",
                 "id": ""
             },
-            "post_type": [
-                "page"
-            ],
-            "post_status": [
-                "publish"
-            ],
+            "post_type": ["page"],
+            "post_status": ["publish"],
             "taxonomy": [],
             "return_format": "id",
             "multiple": 0,
@@ -3810,12 +3688,8 @@
                 "class": "",
                 "id": ""
             },
-            "post_type": [
-                "page"
-            ],
-            "post_status": [
-                "publish"
-            ],
+            "post_type": ["page"],
+            "post_status": ["publish"],
             "taxonomy": [],
             "return_format": "id",
             "multiple": 0,
@@ -4477,13 +4351,63 @@
                 {
                     "ID": 0,
                     "key": "field_section_id",
-                    "label": "Section ID",
+                    "label": "Section",
                     "name": "section_id",
-                    "type": "hidden",
+                    "aria-label": "",
+                    "prefix": "acf",
+                    "type": "text",
+                    "value": null,
                     "menu_order": 0,
+                    "instructions": "Section identifier (auto-populated)",
+                    "required": false,
+                    "id": "",
+                    "class": "",
+                    "conditional_logic": false,
                     "parent": "field_section_backgrounds",
+                    "wrapper": {
+                        "width": "15",
+                        "class": "",
+                        "id": ""
+                    },
                     "default_value": "",
+                    "maxlength": "",
+                    "placeholder": "",
+                    "prepend": "",
+                    "append": "",
+                    "disabled": 1,
+                    "readonly": 0,
                     "_name": "section_id",
+                    "_valid": 1
+                },
+                {
+                    "ID": 0,
+                    "key": "field_section_label",
+                    "label": "Name",
+                    "name": "section_label",
+                    "aria-label": "",
+                    "prefix": "acf",
+                    "type": "text",
+                    "value": null,
+                    "menu_order": 1,
+                    "instructions": "Section display name",
+                    "required": false,
+                    "id": "",
+                    "class": "",
+                    "conditional_logic": false,
+                    "parent": "field_section_backgrounds",
+                    "wrapper": {
+                        "width": "20",
+                        "class": "",
+                        "id": ""
+                    },
+                    "default_value": "",
+                    "maxlength": "",
+                    "placeholder": "",
+                    "prepend": "",
+                    "append": "",
+                    "disabled": 1,
+                    "readonly": 0,
+                    "_name": "section_label",
                     "_valid": 1
                 },
                 {
@@ -4495,7 +4419,7 @@
                     "prefix": "acf",
                     "type": "select",
                     "value": null,
-                    "menu_order": 1,
+                    "menu_order": 2,
                     "instructions": "",
                     "required": false,
                     "id": "",
@@ -4531,7 +4455,7 @@
                     "prefix": "acf",
                     "type": "color_picker",
                     "value": null,
-                    "menu_order": 2,
+                    "menu_order": 3,
                     "instructions": "",
                     "required": false,
                     "id": "",
@@ -4569,7 +4493,7 @@
                     "prefix": "acf",
                     "type": "select",
                     "value": null,
-                    "menu_order": 3,
+                    "menu_order": 4,
                     "instructions": "",
                     "required": false,
                     "id": "",
@@ -4613,7 +4537,7 @@
                     "prefix": "acf",
                     "type": "select",
                     "value": null,
-                    "menu_order": 4,
+                    "menu_order": 5,
                     "instructions": "",
                     "required": false,
                     "id": "",
@@ -4680,7 +4604,7 @@
                     "prefix": "acf",
                     "type": "select",
                     "value": null,
-                    "menu_order": 5,
+                    "menu_order": 6,
                     "instructions": "",
                     "required": false,
                     "id": "",
@@ -4723,7 +4647,7 @@
                     "prefix": "acf",
                     "type": "color_picker",
                     "value": null,
-                    "menu_order": 6,
+                    "menu_order": 7,
                     "instructions": "",
                     "required": false,
                     "id": "",
@@ -4766,7 +4690,7 @@
                     "prefix": "acf",
                     "type": "color_picker",
                     "value": null,
-                    "menu_order": 7,
+                    "menu_order": 8,
                     "instructions": "",
                     "required": false,
                     "id": "",
