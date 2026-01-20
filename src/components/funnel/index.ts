@@ -17,6 +17,7 @@ export { FunnelScience } from './FunnelScience';
 
 // Round 2 Components
 export { ScrollNavigation } from './ScrollNavigation';
+export { NavigationTooltip } from './NavigationTooltip';
 export { FunnelInfographics } from './FunnelInfographics';
 
 // Responsive Components (v2.32.0)
@@ -46,5 +47,6 @@ export type { FunnelFooterProps, FooterLink } from './FunnelFooter';
 export type { FunnelScienceProps, ScienceSection } from './FunnelScience';
 export type { QuoteCategory, ArticleLink } from './FunnelAuthority';
 export type { ScrollNavigationProps } from './ScrollNavigation';
+export type { NavigationTooltipProps } from './NavigationTooltip';
 export type { FunnelInfographicsProps } from './FunnelInfographics';
 export type { StickyCTAProps } from './StickyCTA';

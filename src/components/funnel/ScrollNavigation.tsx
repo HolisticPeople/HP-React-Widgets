@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useSmoothScroll } from '@/hooks/use-smooth-scroll';
 import { useResponsive } from '@/hooks/use-responsive';
+import { NavigationTooltip } from './NavigationTooltip';
 
 export interface ScrollNavigationProps {
   sections?: string[];
@@ -44,6 +45,7 @@ export const ScrollNavigation = ({
   const [sectionInfos, setSectionInfos] = useState<SectionInfo[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const scrollingRef = useRef(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -208,39 +210,52 @@ export const ScrollNavigation = ({
     >
       {sectionInfos.map((info, index) => {
         const isActive = index === activeIndex;
+        const isHovered = hoveredIndex === index;
 
         return (
-          <button
+          <div
             key={info.id}
-            onClick={() => scrollToSection(index)}
-            title={info.name}
-            aria-label={`Go to ${info.name}`}
-            aria-current={isActive ? 'true' : undefined}
             style={{
-              width: '10px',
-              height: '10px',
-              borderRadius: '50%',
-              border: 'none',
-              padding: 0,
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              backgroundColor: isActive ? activeColor : 'rgba(255, 255, 255, 0.3)',
-              boxShadow: isActive ? `0 0 8px ${activeColor}` : 'none',
-              transform: isActive ? 'scale(1.2)' : 'scale(1)',
+              position: 'relative',
             }}
-            onMouseEnter={(e) => {
-              if (!isActive) {
-                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.6)';
-                e.currentTarget.style.transform = 'scale(1.1)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isActive) {
-                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
-                e.currentTarget.style.transform = 'scale(1)';
-              }
-            }}
-          />
+          >
+            <button
+              onClick={() => scrollToSection(index)}
+              aria-label={`Go to ${info.name}`}
+              aria-current={isActive ? 'true' : undefined}
+              style={{
+                width: '10px',
+                height: '10px',
+                borderRadius: '50%',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                backgroundColor: isActive ? activeColor : 'rgba(255, 255, 255, 0.3)',
+                boxShadow: isActive ? `0 0 8px ${activeColor}` : 'none',
+                transform: isActive ? 'scale(1.2)' : 'scale(1)',
+              }}
+              onMouseEnter={(e) => {
+                setHoveredIndex(index);
+                if (!isActive) {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.6)';
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                setHoveredIndex(null);
+                if (!isActive) {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }
+              }}
+            />
+            <NavigationTooltip
+              text={info.name}
+              isVisible={isHovered}
+              accentColor={activeColor}
+            />
+          </div>
         );
       })}
     </nav>
