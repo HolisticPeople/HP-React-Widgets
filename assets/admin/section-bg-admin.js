@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.3)
+ * Section Background Admin UI Enhancements (v2.33.4)
  *
  * Features:
  * - Bulk actions (Apply to Selected, Apply to All, Apply to Odd, Apply to Even)
@@ -74,7 +74,7 @@
         }
 
         if (bgType === 'solid') {
-            const solidColor = $row.find('[data-name="solid_color"] input').val() || '#1a1a2e';
+            const solidColor = $row.find('[data-name="gradient_start_color"] input').val() || '#1a1a2e';
             return solidColor;
         }
 
@@ -88,8 +88,8 @@
                 startColor = $row.find('[data-name="gradient_start_color"] input').val() || '#1a1a2e';
                 endColor = $row.find('[data-name="gradient_end_color"] input').val() || '#121212';
             } else {
-                // Auto mode: use solid_color as fallback
-                startColor = $row.find('[data-name="solid_color"] input').val() || '#1a1a2e';
+                // Auto mode: use gradient_start_color as fallback
+                startColor = $row.find('[data-name="gradient_start_color"] input').val() || '#1a1a2e';
                 // For preview, use a lighter/darker shade for end color
                 endColor = '#121212'; // Approximate page bg color
             }
@@ -192,7 +192,6 @@
     function copyRowSettings($sourceRow, $targetRows) {
         const sourceData = {
             background_type: $sourceRow.find('[data-name="background_type"] select').val(),
-            solid_color: $sourceRow.find('[data-name="solid_color"] input').val(),
             gradient_type: $sourceRow.find('[data-name="gradient_type"] select').val(),
             gradient_preset: $sourceRow.find('[data-name="gradient_preset"] select').val(),
             color_mode: $sourceRow.find('[data-name="color_mode"] select').val(),
@@ -204,7 +203,6 @@
             const $target = $(this);
 
             $target.find('[data-name="background_type"] select').val(sourceData.background_type).trigger('change');
-            $target.find('[data-name="solid_color"] input').val(sourceData.solid_color).trigger('change');
             $target.find('[data-name="gradient_type"] select').val(sourceData.gradient_type).trigger('change');
             $target.find('[data-name="gradient_preset"] select').val(sourceData.gradient_preset).trigger('change');
             $target.find('[data-name="color_mode"] select').val(sourceData.color_mode).trigger('change');

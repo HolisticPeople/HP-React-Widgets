@@ -269,7 +269,7 @@ class FunnelStylingFields
     }
 
     /**
-     * Enqueue section background admin UI enhancements (v2.33.3).
+     * Enqueue section background admin UI enhancements (v2.33.4).
      * Adds bulk actions and live preview to section_backgrounds repeater.
      */
     public static function enqueueSectionBackgroundAdmin(): void

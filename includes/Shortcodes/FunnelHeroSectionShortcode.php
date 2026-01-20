@@ -223,7 +223,7 @@ class FunnelHeroSectionShortcode
             if ($bgType === 'none') {
                 $backgroundMap[$sectionId] = 'transparent';
             } elseif ($bgType === 'solid') {
-                $color = sanitize_hex_color($section['solid_color']) ?: '#1a1a2e';
+                $color = sanitize_hex_color($section['gradient_start_color']) ?: '#1a1a2e';
                 $backgroundMap[$sectionId] = $color;
             } elseif ($bgType === 'gradient') {
                 $gradientCss = \HP_RW\Services\GradientGenerator::generateGradient(
@@ -234,7 +234,7 @@ class FunnelHeroSectionShortcode
                         'gradient_start_color' => $section['gradient_start_color'] ?? '',
                         'gradient_end_color' => $section['gradient_end_color'] ?? '',
                     ],
-                    $section['solid_color'] ?? '#1a1a2e',  // Fallback color for auto mode
+                    $section['gradient_start_color'] ?? '#1a1a2e',  // Fallback color for auto mode
                     $pageBgColor
                 );
                 $backgroundMap[$sectionId] = $gradientCss;

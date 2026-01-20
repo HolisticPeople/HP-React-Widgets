@@ -1850,11 +1850,10 @@ class FunnelConfigLoader
                     'section_id' => $expected['section_id'],
                     'section_label' => $expected['section_label'],
                     'background_type' => 'none',
-                    'solid_color' => '#1a1a2e',
                     'gradient_type' => 'linear',
                     'gradient_preset' => 'vertical-down',
                     'color_mode' => 'auto',
-                    'gradient_start_color' => '',
+                    'gradient_start_color' => '#1a1a2e',
                     'gradient_end_color' => '',
                 ];
                 $updated = true;

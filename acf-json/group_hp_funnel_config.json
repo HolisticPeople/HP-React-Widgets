@@ -4536,44 +4536,6 @@
                 },
                 {
                     "ID": 0,
-                    "key": "field_section_solid_color",
-                    "label": "Solid Color",
-                    "name": "solid_color",
-                    "aria-label": "",
-                    "prefix": "acf",
-                    "type": "color_picker",
-                    "value": null,
-                    "menu_order": 2,
-                    "instructions": "",
-                    "required": false,
-                    "id": "",
-                    "class": "",
-                    "conditional_logic": [
-                        [
-                            {
-                                "field": "field_section_background_type",
-                                "operator": "==",
-                                "value": "solid"
-                            }
-                        ]
-                    ],
-                    "parent": "field_section_backgrounds",
-                    "wrapper": {
-                        "width": "10",
-                        "class": "",
-                        "id": ""
-                    },
-                    "default_value": "#1a1a2e",
-                    "enable_opacity": false,
-                    "return_format": "string",
-                    "_name": "solid_color",
-                    "_valid": 1,
-                    "custom_palette_source": "",
-                    "palette_colors": "",
-                    "show_color_wheel": true
-                },
-                {
-                    "ID": 0,
                     "key": "field_section_gradient_type",
                     "label": "Gradient Type",
                     "name": "gradient_type",
@@ -4729,7 +4691,7 @@
                 {
                     "ID": 0,
                     "key": "field_section_gradient_start_color",
-                    "label": "Start Color",
+                    "label": "Color / Start",
                     "name": "gradient_start_color",
                     "aria-label": "",
                     "prefix": "acf",
@@ -4743,14 +4705,16 @@
                     "conditional_logic": [
                         [
                             {
-                                "field": "field_section_background_type",
+                                "field": "field_background_type",
+                                "operator": "==",
+                                "value": "solid"
+                            }
+                        ],
+                        [
+                            {
+                                "field": "field_background_type",
                                 "operator": "==",
                                 "value": "gradient"
-                            },
-                            {
-                                "field": "field_section_color_mode",
-                                "operator": "==",
-                                "value": "manual"
                             }
                         ]
                     ],
