@@ -1,10 +1,11 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.4)
+ * Section Background Admin UI Enhancements (v2.33.5)
  *
  * Features:
  * - Bulk actions (Apply to Selected, Apply to All, Apply to Odd, Apply to Even)
  * - Live preview rectangles showing current background in each row
  * - Real-time updates when user changes settings
+ * - Section names match ScrollNavigation component (Home, Benefits, etc.)
  */
 
 (function($) {

@@ -284,19 +284,75 @@ class FunnelStylingFields
                 true
             );
 
-            // Pass section names to JavaScript
+            // Pass section names to JavaScript - matches ScrollNavigation.tsx section names
             global $post;
             $sectionNames = [];
             if ($post && $post->ID) {
-                // Get hero title
-                $heroTitle = get_field('hero_title', $post->ID);
-                $sectionNames[] = $heroTitle ?: 'Hero';
+                // Hero section - use "Home" to match scroll navigation
+                $sectionNames[] = 'Home';
 
-                // Get section names from funnel configuration
-                // Check if there's a sections field with names
-                for ($i = 1; $i <= 8; $i++) {
-                    $sectionNames[] = "Section $i"; // Default, will be replaced by actual names if available
+                // Map of section types to their display names (matches KNOWN_SECTION_TYPES in ScrollNavigation.tsx)
+                $sectionTypeMap = [
+                    'benefits'      => 'Benefits',
+                    'science'       => 'Science',
+                    'infographics'  => 'Comparison',
+                    'features'      => 'Features',
+                    'offers'        => 'Offers',
+                    'authority'     => 'Expert',
+                    'testimonials'  => 'Reviews',
+                    'faq'           => 'FAQ',
+                ];
+
+                // Get actual configured sections by checking which have content
+                $configuredSections = [];
+
+                // Check Benefits
+                $benefitsTitle = get_field('hero_benefits_title', $post->ID);
+                if (!empty($benefitsTitle)) {
+                    $configuredSections[] = 'Benefits';
                 }
+
+                // Check Science
+                $scienceTitle = get_field('science_title', $post->ID);
+                if (!empty($scienceTitle)) {
+                    $configuredSections[] = 'Science';
+                }
+
+                // Check Infographics
+                $infographicsTitle = get_field('infographics_title', $post->ID);
+                if (!empty($infographicsTitle)) {
+                    $configuredSections[] = 'Comparison';
+                }
+
+                // Check Features
+                $featuresTitle = get_field('features_title', $post->ID);
+                if (!empty($featuresTitle)) {
+                    $configuredSections[] = 'Features';
+                }
+
+                // Check Offers (always present if funnel exists)
+                $configuredSections[] = 'Offers';
+
+                // Check Authority
+                $authorityTitle = get_field('authority_title', $post->ID);
+                if (!empty($authorityTitle)) {
+                    $configuredSections[] = 'Expert';
+                }
+
+                // Check Testimonials
+                $testimonialsTitle = get_field('testimonials_title', $post->ID);
+                if (!empty($testimonialsTitle)) {
+                    $configuredSections[] = 'Reviews';
+                }
+
+                // Check FAQ
+                $faqTitle = get_field('faq_title', $post->ID);
+                if (!empty($faqTitle)) {
+                    $configuredSections[] = 'FAQ';
+                }
+
+                // Add configured sections to array
+                $sectionNames = array_merge($sectionNames, $configuredSections);
             }
 
             wp_localize_script('hp-rw-section-bg-admin', 'hpSectionBgData', [
