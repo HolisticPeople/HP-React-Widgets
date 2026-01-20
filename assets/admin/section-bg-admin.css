@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Styles (v2.33.16)
+ * Section Background Admin UI Styles (v2.33.17)
  *
  * Styles for preview rectangles and bulk action buttons
  * - Radio button selection (single row at a time)
@@ -183,6 +183,14 @@
 }
 
 /* Add "End Color" header to the last row handle */
+[data-key="field_section_backgrounds"] thead th.acf-row-handle:last-child {
+    display: table-cell !important;
+    width: auto !important;
+    padding: 8px !important;
+    text-align: left !important;
+    visibility: visible !important;
+}
+
 [data-key="field_section_backgrounds"] thead th.acf-row-handle:last-child::before {
     content: "End Color";
     font-weight: 600;
