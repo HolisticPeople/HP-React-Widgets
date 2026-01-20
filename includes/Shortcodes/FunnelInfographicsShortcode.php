@@ -211,12 +211,12 @@ class FunnelInfographicsShortcode
                         element.classList.contains("elementor-widget-wrap") ||
                         element.classList.contains("elementor-column-wrap")
                     )) {
-                        element.style.minHeight = "0";
-                        element.style.height = "auto";
-                        element.style.flex = "none";
+                        element.style.setProperty("min-height", "0", "important");
+                        element.style.setProperty("height", "auto", "important");
+                        element.style.setProperty("flex", "none", "important");
                         if (element.classList.contains("e-con") || element.classList.contains("elementor-section")) {
-                            element.style.justifyContent = "flex-start";
-                            element.style.alignItems = "flex-start";
+                            element.style.setProperty("justify-content", "flex-start", "important");
+                            element.style.setProperty("align-items", "flex-start", "important");
                         }
                     }
                     element = element.parentElement;
