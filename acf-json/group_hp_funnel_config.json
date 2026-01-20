@@ -4479,7 +4479,10 @@
                     "enable_opacity": false,
                     "return_format": "string",
                     "_name": "solid_color",
-                    "_valid": 1
+                    "_valid": 1,
+                    "custom_palette_source": "",
+                    "palette_colors": "",
+                    "show_color_wheel": true
                 },
                 {
                     "ID": 0,
@@ -4673,7 +4676,10 @@
                     "enable_opacity": false,
                     "return_format": "string",
                     "_name": "gradient_start_color",
-                    "_valid": 1
+                    "_valid": 1,
+                    "custom_palette_source": "",
+                    "palette_colors": "",
+                    "show_color_wheel": true
                 },
                 {
                     "ID": 0,
@@ -4713,7 +4719,10 @@
                     "enable_opacity": false,
                     "return_format": "string",
                     "_name": "gradient_end_color",
-                    "_valid": 1
+                    "_valid": 1,
+                    "custom_palette_source": "",
+                    "palette_colors": "",
+                    "show_color_wheel": true
                 }
             ]
         },
