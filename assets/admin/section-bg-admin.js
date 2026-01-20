@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.11)
+ * Section Background Admin UI Enhancements (v2.33.12)
  *
  * Features:
  * - Radio button selection (one row at a time) for copying settings
@@ -147,24 +147,28 @@
         const $table = $repeater.find('.acf-table');
         const $thead = $table.find('thead tr');
         if ($thead.length && !$thead.find('.hp-section-header').length) {
-            // ACF creates: th.order (hidden), th[data-name="section_id"] (hidden), th[data-name="background_type"], ...
-            // We want: th.order (hidden), th[data-name="section_id"] (hidden), th.Section, th.Preview, th[data-name="background_type"], ...
+            // Debug: log current header structure
+            console.log('ACF Table Headers:', $thead.find('th').map(function() {
+                return $(this).attr('class') + ' ' + ($(this).attr('data-name') || '');
+            }).get());
 
-            // Find where to insert - right after section_id header (which gets hidden)
-            const $sectionIdHeader = $thead.find('th[data-name="section_id"]');
+            // Find the first visible header (background_type)
+            const $backgroundTypeHeader = $thead.find('th[data-name="background_type"]');
 
-            if ($sectionIdHeader.length) {
-                // Insert our headers right after section_id (which will be hidden by CSS)
-                $sectionIdHeader.after(`
+            if ($backgroundTypeHeader.length) {
+                // Insert our headers BEFORE background_type header
+                $backgroundTypeHeader.before(`
                     <th class="hp-section-header">Section</th>
                     <th class="hp-preview-header">Preview</th>
                 `);
+                console.log('Headers inserted before background_type');
             } else {
-                // Fallback if structure is different
+                // Fallback
                 $thead.prepend(`
                     <th class="hp-section-header">Section</th>
                     <th class="hp-preview-header">Preview</th>
                 `);
+                console.log('Headers prepended (fallback)');
             }
         }
 
@@ -185,12 +189,12 @@
                 sectionName = `Section ${index}`;
             }
 
-            // Find the section_id cell and insert our cells after it (matching header injection point)
-            const $sectionIdCell = $row.find('td[data-name="section_id"]');
+            // Find the background_type cell and insert our cells BEFORE it (matching header injection point)
+            const $backgroundTypeCell = $row.find('td[data-name="background_type"]');
 
-            if ($sectionIdCell.length) {
-                // Insert Section and Preview cells right after section_id cell (which will be hidden by CSS)
-                $sectionIdCell.after(`
+            if ($backgroundTypeCell.length) {
+                // Insert Section and Preview cells BEFORE background_type cell
+                $backgroundTypeCell.before(`
                     <td class="hp-section-name-cell">
                         <label style="display: flex; align-items: center; gap: 8px; margin: 0;">
                             <input type="radio" name="hp-section-select" class="hp-row-radio" />
@@ -200,7 +204,7 @@
                     <td class="hp-preview-cell"><div class="hp-section-bg-preview"></div></td>
                 `);
             } else {
-                // Fallback: insert at the beginning if we can't find section_id
+                // Fallback: insert at the beginning if we can't find background_type
                 const $firstCell = $row.find('td').first();
                 $firstCell.before(`
                     <td class="hp-section-name-cell">
