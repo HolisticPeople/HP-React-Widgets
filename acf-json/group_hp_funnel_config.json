@@ -4609,6 +4609,49 @@
         },
         {
             "ID": 0,
+            "key": "field_alternating_gradient_base_color",
+            "label": "Alternate Base Color",
+            "name": "alternating_gradient_base_color",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "color_picker",
+            "value": null,
+            "menu_order": 63.551,
+            "instructions": "Base color for alternate sections (used as gradient start in auto mode).",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_section_background_mode",
+                        "operator": "==",
+                        "value": "alternating"
+                    },
+                    {
+                        "field": "field_alternating_type",
+                        "operator": "==",
+                        "value": "gradient"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "#1a1a2e",
+            "enable_opacity": false,
+            "return_format": "string",
+            "_name": "alternating_gradient_base_color",
+            "_valid": 1,
+            "custom_palette_source": "",
+            "palette_colors": "",
+            "show_color_wheel": true
+        },
+        {
+            "ID": 0,
             "key": "field_alternating_gradient_start_color",
             "label": "Gradient Start Color",
             "name": "alternating_gradient_start_color",

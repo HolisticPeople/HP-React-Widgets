@@ -239,7 +239,7 @@ class FunnelHeroSectionShortcode
             $backgroundCss = "background-color: {$background} !important;";
         } else {
             // Gradient - generate CSS
-            $fallbackColor = sanitize_hex_color($config['styling']['alternating_solid_color']) ?: '#1a1a2e';
+            $fallbackColor = sanitize_hex_color($config['styling']['alternating_gradient_base_color']) ?: '#1a1a2e';
             $gradientCss = \HP_RW\Services\GradientGenerator::generateGradient(
                 $gradientMap['config'],
                 $fallbackColor,
@@ -423,8 +423,8 @@ class FunnelHeroSectionShortcode
             // Get gradient for this section (specific override or default)
             var gradient = gradientMap.sections[sectionIndex] || gradientMap.default;
 
-            // Apply gradient via inline style
-            section.style.background = gradient + " !important";
+            // Apply gradient via inline style with !important
+            section.style.setProperty("background", gradient, "important");
             section.setAttribute("data-section-index", sectionIndex);
         });
     }

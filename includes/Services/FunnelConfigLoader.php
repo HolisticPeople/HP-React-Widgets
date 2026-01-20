@@ -785,6 +785,7 @@ class FunnelConfigLoader
             'alternating_gradient_type' => self::getFieldValue('alternating_gradient_type', $postId),
             'alternating_gradient_preset' => self::getFieldValue('alternating_gradient_preset', $postId),
             'alternating_gradient_color_mode' => self::getFieldValue('alternating_gradient_color_mode', $postId),
+            'alternating_gradient_base_color' => self::getFieldValue('alternating_gradient_base_color', $postId),
             'alternating_gradient_start_color' => self::getFieldValue('alternating_gradient_start_color', $postId),
             'alternating_gradient_end_color' => self::getFieldValue('alternating_gradient_end_color', $postId),
 

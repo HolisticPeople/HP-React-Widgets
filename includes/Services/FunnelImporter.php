@@ -691,6 +691,7 @@ class FunnelImporter
             self::setField($postId, 'alternating_gradient_type', $styling['alternating_gradient_type'] ?? null);
             self::setField($postId, 'alternating_gradient_preset', $styling['alternating_gradient_preset'] ?? null);
             self::setField($postId, 'alternating_gradient_color_mode', $styling['alternating_gradient_color_mode'] ?? null);
+            self::setField($postId, 'alternating_gradient_base_color', $styling['alternating_gradient_base_color'] ?? null);
             self::setField($postId, 'alternating_gradient_start_color', $styling['alternating_gradient_start_color'] ?? null);
             self::setField($postId, 'alternating_gradient_end_color', $styling['alternating_gradient_end_color'] ?? null);
 

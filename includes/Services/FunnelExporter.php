@@ -495,6 +495,7 @@ class FunnelExporter
             'alternating_gradient_type' => FunnelConfigLoader::getFieldValue('alternating_gradient_type', $postId),
             'alternating_gradient_preset' => FunnelConfigLoader::getFieldValue('alternating_gradient_preset', $postId),
             'alternating_gradient_color_mode' => FunnelConfigLoader::getFieldValue('alternating_gradient_color_mode', $postId),
+            'alternating_gradient_base_color' => FunnelConfigLoader::getFieldValue('alternating_gradient_base_color', $postId),
             'alternating_gradient_start_color' => FunnelConfigLoader::getFieldValue('alternating_gradient_start_color', $postId),
             'alternating_gradient_end_color' => FunnelConfigLoader::getFieldValue('alternating_gradient_end_color', $postId),
 
