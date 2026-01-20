@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.13)
+ * Section Background Admin UI Enhancements (v2.33.14)
  *
  * Features:
  * - Radio button selection (one row at a time) for copying settings
@@ -147,12 +147,12 @@
         const $table = $repeater.find('.acf-table');
         const $thead = $table.find('thead tr');
         if ($thead.length && !$thead.find('.hp-section-header').length) {
-            // Use ACF's row handle as anchor for stable positioning
-            const $lastHandle = $thead.find('.acf-row-handle').last();
+            // Use ACF's first row handle as anchor (second handle is at the end)
+            const $firstHandle = $thead.find('.acf-row-handle').first();
 
-            if ($lastHandle.length) {
-                // Insert our headers AFTER the last row handle (stable ACF element)
-                $lastHandle.after(`
+            if ($firstHandle.length) {
+                // Insert our headers AFTER the first row handle (stable ACF element)
+                $firstHandle.after(`
                     <th class="hp-section-header">Section</th>
                     <th class="hp-preview-header">Preview</th>
                 `);
@@ -182,12 +182,12 @@
                 sectionName = `Section ${index}`;
             }
 
-            // Use ACF's row handle as anchor for stable positioning (matches header)
-            const $lastHandle = $row.find('.acf-row-handle').last();
+            // Use ACF's first row handle as anchor (matches header positioning)
+            const $firstHandle = $row.find('.acf-row-handle').first();
 
-            if ($lastHandle.length) {
-                // Insert Section and Preview cells AFTER the last row handle
-                $lastHandle.after(`
+            if ($firstHandle.length) {
+                // Insert Section and Preview cells AFTER the first row handle
+                $firstHandle.after(`
                     <td class="hp-section-name-cell">
                         <label style="display: flex; align-items: center; gap: 8px; margin: 0;">
                             <input type="radio" name="hp-section-select" class="hp-row-radio" />
