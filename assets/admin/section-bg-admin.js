@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.14)
+ * Section Background Admin UI Enhancements (v2.33.15)
  *
  * Features:
  * - Radio button selection (one row at a time) for copying settings
@@ -147,21 +147,24 @@
         const $table = $repeater.find('.acf-table');
         const $thead = $table.find('thead tr');
         if ($thead.length && !$thead.find('.hp-section-header').length) {
-            // Use ACF's first row handle as anchor (second handle is at the end)
-            const $firstHandle = $thead.find('.acf-row-handle').first();
+            // Inject BEFORE section_id to avoid alignment issues from hidden column widths
+            const $sectionIdHeader = $thead.find('th[data-name="section_id"]');
 
-            if ($firstHandle.length) {
-                // Insert our headers AFTER the first row handle (stable ACF element)
-                $firstHandle.after(`
+            if ($sectionIdHeader.length) {
+                // Insert our headers BEFORE section_id (which is hidden)
+                $sectionIdHeader.before(`
                     <th class="hp-section-header">Section</th>
                     <th class="hp-preview-header">Preview</th>
                 `);
             } else {
-                // Fallback
-                $thead.prepend(`
-                    <th class="hp-section-header">Section</th>
-                    <th class="hp-preview-header">Preview</th>
-                `);
+                // Fallback: use row handle
+                const $firstHandle = $thead.find('.acf-row-handle').first();
+                if ($firstHandle.length) {
+                    $firstHandle.after(`
+                        <th class="hp-section-header">Section</th>
+                        <th class="hp-preview-header">Preview</th>
+                    `);
+                }
             }
         }
 
@@ -182,12 +185,12 @@
                 sectionName = `Section ${index}`;
             }
 
-            // Use ACF's first row handle as anchor (matches header positioning)
-            const $firstHandle = $row.find('.acf-row-handle').first();
+            // Inject BEFORE section_id cell (matches header positioning)
+            const $sectionIdCell = $row.find('td[data-name="section_id"]');
 
-            if ($firstHandle.length) {
-                // Insert Section and Preview cells AFTER the first row handle
-                $firstHandle.after(`
+            if ($sectionIdCell.length) {
+                // Insert Section and Preview cells BEFORE section_id
+                $sectionIdCell.before(`
                     <td class="hp-section-name-cell">
                         <label style="display: flex; align-items: center; gap: 8px; margin: 0;">
                             <input type="radio" name="hp-section-select" class="hp-row-radio" />
@@ -197,17 +200,19 @@
                     <td class="hp-preview-cell"><div class="hp-section-bg-preview"></div></td>
                 `);
             } else {
-                // Fallback: insert at the beginning
-                const $firstCell = $row.find('td').first();
-                $firstCell.before(`
-                    <td class="hp-section-name-cell">
-                        <label style="display: flex; align-items: center; gap: 8px; margin: 0;">
-                            <input type="radio" name="hp-section-select" class="hp-row-radio" />
-                            <span class="hp-section-name">${sectionName}</span>
-                        </label>
-                    </td>
-                    <td class="hp-preview-cell"><div class="hp-section-bg-preview"></div></td>
-                `);
+                // Fallback: use row handle
+                const $firstHandle = $row.find('.acf-row-handle').first();
+                if ($firstHandle.length) {
+                    $firstHandle.after(`
+                        <td class="hp-section-name-cell">
+                            <label style="display: flex; align-items: center; gap: 8px; margin: 0;">
+                                <input type="radio" name="hp-section-select" class="hp-row-radio" />
+                                <span class="hp-section-name">${sectionName}</span>
+                            </label>
+                        </td>
+                        <td class="hp-preview-cell"><div class="hp-section-bg-preview"></div></td>
+                    `);
+                }
             }
 
             // Force browser table recalculation
