@@ -4484,7 +4484,19 @@
                     "parent": "field_section_backgrounds",
                     "default_value": "",
                     "_name": "section_id",
-                    "_valid": 1
+                    "_valid": 1,
+                    "aria-label": "",
+                    "prefix": "acf",
+                    "required": false,
+                    "id": "",
+                    "class": "",
+                    "conditional_logic": false,
+                    "instructions": "",
+                    "wrapper": {
+                        "width": "",
+                        "class": "",
+                        "id": ""
+                    }
                 },
                 {
                     "ID": 0,
