@@ -204,10 +204,14 @@ class FunnelInfographicsShortcode
         })();
         </script>';
 
+        // Inline styles to prevent Elementor flex issues on mobile
+        $inlineStyle = 'display: block; width: 100%; flex: 0 0 auto; align-self: flex-start;';
+
         return $css . $js . sprintf(
-            '<div id="%s" class="hp-funnel-section hp-funnel-infographics-%s" data-hp-widget="1" data-component="%s" data-props=\'%s\'%s></div>',
+            '<div id="%s" class="hp-funnel-section hp-funnel-infographics-%s" style="%s" data-hp-widget="1" data-component="%s" data-props=\'%s\'%s></div>',
             esc_attr($rootId),
             esc_attr($slug),
+            esc_attr($inlineStyle),
             esc_attr($component),
             esc_attr($propsJson),
             $sectionNameAttr
