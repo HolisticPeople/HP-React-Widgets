@@ -265,7 +265,10 @@ class Plugin
 
         // Initialize Funnel Offer ACF fields
         Admin\FunnelOfferFields::init();
-        
+
+        // Initialize Funnel Styling ACF fields & admin UI
+        Admin\FunnelStylingFields::init();
+
         // Setup ACF Local JSON sync for version control
         self::setupAcfLocalJson();
 
@@ -404,10 +407,17 @@ class Plugin
         // Add custom columns to the funnels list table
         add_filter('manage_' . self::FUNNEL_POST_TYPE . '_posts_columns', [self::class, 'addFunnelColumns']);
         add_action('manage_' . self::FUNNEL_POST_TYPE . '_posts_custom_column', [self::class, 'renderFunnelColumn'], 10, 2);
-        
+
         // Clear cache on save
         add_action('save_post_' . self::FUNNEL_POST_TYPE, [self::class, 'onFunnelSave'], 10, 3);
-        
+
+        // Auto-populate section_backgrounds on funnel save (v2.33.2)
+        add_action('acf/save_post', function($post_id) {
+            if (get_post_type($post_id) === self::FUNNEL_POST_TYPE) {
+                Services\FunnelConfigLoader::autoPopulateSectionBackgrounds($post_id);
+            }
+        }, 20);
+
         // Add rewrite rules for funnel sub-routes (checkout, thankyou, etc.)
         add_action('init', [self::class, 'addFunnelRewriteRules'], 10);
         add_filter('query_vars', [self::class, 'addFunnelQueryVars']);

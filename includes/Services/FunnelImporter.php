@@ -670,38 +670,34 @@ class FunnelImporter
         self::setField($postId, 'background_image', $styling['background_image'] ?? null);
         self::setField($postId, 'custom_css', $styling['custom_css'] ?? null);
 
-        // NEW: Section background mode (replaces alternate_section_bg)
-        // Handle legacy imports: if old format, convert to new format
-        if (isset($styling['alternate_section_bg']) && !isset($styling['section_background_mode'])) {
-            // Legacy import - convert to new structure
+        // v2.33.2: Per-section background configuration (replaces mode-based system)
+        // Handle legacy imports: if old v1 or v2.33.1 format, set old fields and let migration handle conversion
+        if (isset($styling['alternate_section_bg']) && !isset($styling['section_backgrounds'])) {
+            // Legacy v1 import - set old fields, migration will convert on next load
             if (!empty($styling['alternate_section_bg'])) {
                 self::setField($postId, 'section_background_mode', 'alternating');
                 self::setField($postId, 'alternating_type', 'solid');
                 self::setField($postId, 'alternating_solid_color', $styling['alternate_bg_color'] ?? '#1a1a2e');
-            } else {
-                self::setField($postId, 'section_background_mode', 'solid');
             }
-        } else {
-            // New format - import all gradient fields
-            self::setField($postId, 'section_background_mode', $styling['section_background_mode'] ?? 'solid');
-
-            // Alternating mode fields
+        } elseif (isset($styling['section_background_mode']) && !isset($styling['section_backgrounds'])) {
+            // Legacy v2.33.1 import - set old fields, migration will convert on next load
+            self::setField($postId, 'section_background_mode', $styling['section_background_mode']);
             self::setField($postId, 'alternating_type', $styling['alternating_type'] ?? null);
             self::setField($postId, 'alternating_solid_color', $styling['alternating_solid_color'] ?? null);
             self::setField($postId, 'alternating_gradient_type', $styling['alternating_gradient_type'] ?? null);
             self::setField($postId, 'alternating_gradient_preset', $styling['alternating_gradient_preset'] ?? null);
             self::setField($postId, 'alternating_gradient_color_mode', $styling['alternating_gradient_color_mode'] ?? null);
-            self::setField($postId, 'alternating_gradient_base_color', $styling['alternating_gradient_base_color'] ?? null);
             self::setField($postId, 'alternating_gradient_start_color', $styling['alternating_gradient_start_color'] ?? null);
             self::setField($postId, 'alternating_gradient_end_color', $styling['alternating_gradient_end_color'] ?? null);
-
-            // All gradient mode fields
             self::setField($postId, 'all_gradient_default_type', $styling['all_gradient_default_type'] ?? null);
             self::setField($postId, 'all_gradient_default_preset', $styling['all_gradient_default_preset'] ?? null);
             self::setField($postId, 'all_gradient_default_color_mode', $styling['all_gradient_default_color_mode'] ?? null);
             self::setField($postId, 'all_gradient_default_start_color', $styling['all_gradient_default_start_color'] ?? null);
             self::setField($postId, 'all_gradient_default_end_color', $styling['all_gradient_default_end_color'] ?? null);
             self::setField($postId, 'all_gradient_sections', $styling['all_gradient_sections'] ?? []);
+        } else {
+            // v2.33.2+ format - import section_backgrounds directly
+            self::setField($postId, 'section_backgrounds', $styling['section_backgrounds'] ?? []);
         }
     }
 

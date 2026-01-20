@@ -758,6 +758,128 @@ class FunnelConfigLoader
             $sectionBackgroundMode = 'alternating';
         }
 
+        // v2.33.2 Migration: Convert v2.33.1 mode-based structure to per-section structure
+        $sectionBackgrounds = self::getFieldValue('section_backgrounds', $postId);
+
+        if ($sectionBackgroundMode && empty($sectionBackgrounds)) {
+            $migratedBackgrounds = [];
+
+            if ($sectionBackgroundMode === 'alternating') {
+                // Convert alternating mode to per-section
+                $type = self::getFieldValue('alternating_type', $postId);
+                $config = [];
+
+                if ($type === 'solid') {
+                    $config = [
+                        'background_type' => 'solid',
+                        'solid_color' => self::getFieldValue('alternating_solid_color', $postId) ?: '#1a1a2e',
+                    ];
+                } else {
+                    $config = [
+                        'background_type' => 'gradient',
+                        'gradient_type' => self::getFieldValue('alternating_gradient_type', $postId) ?: 'linear',
+                        'gradient_preset' => self::getFieldValue('alternating_gradient_preset', $postId) ?: 'vertical-down',
+                        'color_mode' => self::getFieldValue('alternating_gradient_color_mode', $postId) ?: 'auto',
+                        'gradient_start_color' => self::getFieldValue('alternating_gradient_start_color', $postId) ?: '',
+                        'gradient_end_color' => self::getFieldValue('alternating_gradient_end_color', $postId) ?: '',
+                    ];
+                }
+
+                // Add hero as none
+                $migratedBackgrounds[] = [
+                    'section_id' => 'hero',
+                    'section_label' => 'Hero Section',
+                    'background_type' => 'none',
+                ];
+
+                // Apply to odd-indexed sections (section_1, section_3, section_5, section_7)
+                for ($i = 1; $i <= 8; $i++) {
+                    $isOdd = ($i % 2 === 1);
+                    $row = [
+                        'section_id' => "section_$i",
+                        'section_label' => "Section $i",
+                        'background_type' => $isOdd ? $config['background_type'] : 'none',
+                    ];
+
+                    if ($isOdd) {
+                        $row = array_merge($row, $config);
+                    }
+
+                    $migratedBackgrounds[] = $row;
+                }
+            } elseif ($sectionBackgroundMode === 'all_gradient') {
+                // Convert all_gradient mode to per-section
+                $defaultConfig = [
+                    'background_type' => 'gradient',
+                    'gradient_type' => self::getFieldValue('all_gradient_default_type', $postId) ?: 'linear',
+                    'gradient_preset' => self::getFieldValue('all_gradient_default_preset', $postId) ?: 'vertical-down',
+                    'color_mode' => self::getFieldValue('all_gradient_default_color_mode', $postId) ?: 'auto',
+                    'gradient_start_color' => self::getFieldValue('all_gradient_default_start_color', $postId) ?: '',
+                    'gradient_end_color' => self::getFieldValue('all_gradient_default_end_color', $postId) ?: '',
+                ];
+
+                $overrides = self::getFieldValue('all_gradient_sections', $postId) ?: [];
+                $overrideIndex = [];
+                foreach ($overrides as $override) {
+                    $sectionIndex = (int) ($override['section_index'] ?? 0);
+                    if ($sectionIndex > 0) {
+                        $overrideIndex[$sectionIndex] = [
+                            'background_type' => 'gradient',
+                            'gradient_type' => $override['gradient_type'] ?? 'linear',
+                            'gradient_preset' => $override['gradient_preset'] ?? 'vertical-down',
+                            'color_mode' => $override['color_mode'] ?? 'auto',
+                            'gradient_start_color' => $override['gradient_start_color'] ?? '',
+                            'gradient_end_color' => $override['gradient_end_color'] ?? '',
+                        ];
+                    }
+                }
+
+                // Add hero as none
+                $migratedBackgrounds[] = [
+                    'section_id' => 'hero',
+                    'section_label' => 'Hero Section',
+                    'background_type' => 'none',
+                ];
+
+                // Apply default or override to each section
+                for ($i = 1; $i <= 8; $i++) {
+                    $config = isset($overrideIndex[$i]) ? $overrideIndex[$i] : $defaultConfig;
+                    $migratedBackgrounds[] = array_merge(
+                        [
+                            'section_id' => "section_$i",
+                            'section_label' => "Section $i",
+                        ],
+                        $config
+                    );
+                }
+            }
+
+            // Save migrated data if we created any
+            if (!empty($migratedBackgrounds)) {
+                update_field('section_backgrounds', $migratedBackgrounds, $postId);
+
+                // Clean up old v2.33.1 fields
+                delete_post_meta($postId, 'section_background_mode');
+                delete_post_meta($postId, 'alternating_type');
+                delete_post_meta($postId, 'alternating_solid_color');
+                delete_post_meta($postId, 'alternating_gradient_type');
+                delete_post_meta($postId, 'alternating_gradient_preset');
+                delete_post_meta($postId, 'alternating_gradient_color_mode');
+                delete_post_meta($postId, 'alternating_gradient_base_color');
+                delete_post_meta($postId, 'alternating_gradient_start_color');
+                delete_post_meta($postId, 'alternating_gradient_end_color');
+                delete_post_meta($postId, 'all_gradient_default_type');
+                delete_post_meta($postId, 'all_gradient_default_preset');
+                delete_post_meta($postId, 'all_gradient_default_color_mode');
+                delete_post_meta($postId, 'all_gradient_default_start_color');
+                delete_post_meta($postId, 'all_gradient_default_end_color');
+                delete_post_meta($postId, 'all_gradient_sections');
+
+                // Update local variable
+                $sectionBackgrounds = $migratedBackgrounds;
+            }
+        }
+
         return [
             // Primary accent color (used for UI accents, buttons, etc.)
             'accent_color'        => $accentColor,
@@ -776,26 +898,8 @@ class FunnelConfigLoader
             'background_image'    => self::getFieldValue('background_image', $postId),
             'custom_css'          => self::getFieldValue('custom_css', $postId),
 
-            // NEW: Section background mode (replaces alternate_section_bg)
-            'section_background_mode' => $sectionBackgroundMode ?: 'solid',
-
-            // Alternating mode fields
-            'alternating_type' => self::getFieldValue('alternating_type', $postId),
-            'alternating_solid_color' => self::getFieldValue('alternating_solid_color', $postId),
-            'alternating_gradient_type' => self::getFieldValue('alternating_gradient_type', $postId),
-            'alternating_gradient_preset' => self::getFieldValue('alternating_gradient_preset', $postId),
-            'alternating_gradient_color_mode' => self::getFieldValue('alternating_gradient_color_mode', $postId),
-            'alternating_gradient_base_color' => self::getFieldValue('alternating_gradient_base_color', $postId),
-            'alternating_gradient_start_color' => self::getFieldValue('alternating_gradient_start_color', $postId),
-            'alternating_gradient_end_color' => self::getFieldValue('alternating_gradient_end_color', $postId),
-
-            // All gradient mode fields
-            'all_gradient_default_type' => self::getFieldValue('all_gradient_default_type', $postId),
-            'all_gradient_default_preset' => self::getFieldValue('all_gradient_default_preset', $postId),
-            'all_gradient_default_color_mode' => self::getFieldValue('all_gradient_default_color_mode', $postId),
-            'all_gradient_default_start_color' => self::getFieldValue('all_gradient_default_start_color', $postId),
-            'all_gradient_default_end_color' => self::getFieldValue('all_gradient_default_end_color', $postId),
-            'all_gradient_sections' => self::getFieldValue('all_gradient_sections', $postId) ?: [],
+            // v2.33.2: Per-section background configuration (replaces mode-based system)
+            'section_backgrounds' => $sectionBackgrounds ?: [],
         ];
     }
 
@@ -1698,5 +1802,68 @@ class FunnelConfigLoader
         }
 
         return $result;
+    }
+
+    /**
+     * Auto-populate section_backgrounds repeater with funnel sections.
+     * Called on funnel save to ensure all sections are present in repeater.
+     *
+     * @param int $postId Funnel post ID
+     * @return void
+     */
+    public static function autoPopulateSectionBackgrounds(int $postId): void
+    {
+        // Only run for hp_funnel post type
+        if (get_post_type($postId) !== 'hp_funnel') {
+            return;
+        }
+
+        // Get current section_backgrounds value
+        $sectionBackgrounds = get_field('section_backgrounds', $postId) ?: [];
+
+        // Build expected section list (hero + content sections)
+        $expectedSections = [
+            ['section_id' => 'hero', 'section_label' => 'Hero Section'],
+            ['section_id' => 'section_1', 'section_label' => 'Section 1'],
+            ['section_id' => 'section_2', 'section_label' => 'Section 2'],
+            ['section_id' => 'section_3', 'section_label' => 'Section 3'],
+            ['section_id' => 'section_4', 'section_label' => 'Section 4'],
+            ['section_id' => 'section_5', 'section_label' => 'Section 5'],
+            ['section_id' => 'section_6', 'section_label' => 'Section 6'],
+            ['section_id' => 'section_7', 'section_label' => 'Section 7'],
+            ['section_id' => 'section_8', 'section_label' => 'Section 8'],
+        ];
+
+        // Build index of existing sections
+        $existingIndex = [];
+        foreach ($sectionBackgrounds as $section) {
+            if (isset($section['section_id'])) {
+                $existingIndex[$section['section_id']] = $section;
+            }
+        }
+
+        // Add missing sections with defaults
+        $updated = false;
+        foreach ($expectedSections as $expected) {
+            if (!isset($existingIndex[$expected['section_id']])) {
+                $sectionBackgrounds[] = [
+                    'section_id' => $expected['section_id'],
+                    'section_label' => $expected['section_label'],
+                    'background_type' => 'none',
+                    'solid_color' => '#1a1a2e',
+                    'gradient_type' => 'linear',
+                    'gradient_preset' => 'vertical-down',
+                    'color_mode' => 'auto',
+                    'gradient_start_color' => '',
+                    'gradient_end_color' => '',
+                ];
+                $updated = true;
+            }
+        }
+
+        // Update field if modified
+        if ($updated) {
+            update_field('section_backgrounds', $sectionBackgrounds, $postId);
+        }
     }
 }

@@ -17,11 +17,14 @@ class FunnelStylingFields
         // Fields registered via ACF JSON: group_hp_funnel_config.json
         // add_action('acf/init', [self::class, 'registerColorFieldGroup'], 20);
         // add_action('acf/init', [self::class, 'registerHeroTitleSizeField'], 25);
-        
+
         // Hide original fields from Styling tab (by key, not name, to preserve our local fields)
         add_filter('acf/prepare_field/key=field_accent_color', [self::class, 'hideFunnelField']);
         add_filter('acf/prepare_field/key=field_background_type', [self::class, 'hideFunnelField']);
         add_filter('acf/prepare_field/name=background_color', [self::class, 'hideFunnelField']);
+
+        // v2.33.2: Enqueue section background admin UI enhancements
+        add_action('acf/input/admin_enqueue_scripts', [self::class, 'enqueueSectionBackgroundAdmin']);
     }
 
     /**
@@ -263,6 +266,30 @@ class FunnelStylingFields
             'label_placement' => 'top',
             'instruction_placement' => 'label',
         ]);
+    }
+
+    /**
+     * Enqueue section background admin UI enhancements (v2.33.2).
+     * Adds bulk actions and live preview to section_backgrounds repeater.
+     */
+    public static function enqueueSectionBackgroundAdmin(): void
+    {
+        $screen = get_current_screen();
+        if ($screen && $screen->post_type === 'hp-funnel') {
+            wp_enqueue_script(
+                'hp-rw-section-bg-admin',
+                HP_RW_URL . 'assets/admin/section-bg-admin.js',
+                ['jquery', 'acf-input'],
+                HP_RW_VERSION,
+                true
+            );
+            wp_enqueue_style(
+                'hp-rw-section-bg-admin',
+                HP_RW_URL . 'assets/admin/section-bg-admin.css',
+                [],
+                HP_RW_VERSION
+            );
+        }
     }
 
     /**
