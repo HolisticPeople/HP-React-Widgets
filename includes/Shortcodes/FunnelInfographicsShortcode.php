@@ -204,21 +204,20 @@ class FunnelInfographicsShortcode
                 // Walk up the DOM tree and reset all parent Elementor containers
                 var element = infographic;
                 while (element && element !== document.body) {
+                    // Reset ALL elements, not just Elementor containers
+                    element.style.setProperty("min-height", "0", "important");
+                    element.style.setProperty("height", "auto", "important");
+                    element.style.setProperty("flex", "none", "important");
+                    element.style.setProperty("align-self", "auto", "important");
+
                     if (element.classList && (
                         element.classList.contains("e-con") ||
-                        element.classList.contains("elementor-section") ||
-                        element.classList.contains("elementor-column") ||
-                        element.classList.contains("elementor-widget-wrap") ||
-                        element.classList.contains("elementor-column-wrap")
+                        element.classList.contains("elementor-section")
                     )) {
-                        element.style.setProperty("min-height", "0", "important");
-                        element.style.setProperty("height", "auto", "important");
-                        element.style.setProperty("flex", "none", "important");
-                        if (element.classList.contains("e-con") || element.classList.contains("elementor-section")) {
-                            element.style.setProperty("justify-content", "flex-start", "important");
-                            element.style.setProperty("align-items", "flex-start", "important");
-                        }
+                        element.style.setProperty("justify-content", "flex-start", "important");
+                        element.style.setProperty("align-items", "flex-start", "important");
                     }
+
                     element = element.parentElement;
                 }
             }
