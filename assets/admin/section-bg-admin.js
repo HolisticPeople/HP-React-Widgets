@@ -156,13 +156,13 @@
             // Skip if already has checkbox
             if ($row.find('.hp-row-checkbox').length) return;
 
-            // Determine section name
-            let sectionName = '';
-            if (index === 0) {
+            // Get section name from server-side data or use default
+            let sectionName = 'Section';
+            if (typeof hpSectionBgData !== 'undefined' && hpSectionBgData.sectionNames && hpSectionBgData.sectionNames[index]) {
+                sectionName = hpSectionBgData.sectionNames[index];
+            } else if (index === 0) {
                 sectionName = 'Hero';
             } else {
-                // Try to get from funnel configuration section names
-                // This will be populated from server-side data
                 sectionName = `Section ${index}`;
             }
 

@@ -73,6 +73,28 @@
     padding: 8px;
 }
 
+/* Hide section_id hidden field column completely */
+[data-key="field_section_backgrounds"] [data-name="section_id"] {
+    display: none !important;
+}
+
+/* Move row number column to first position */
+[data-key="field_section_backgrounds"] .acf-row {
+    display: flex;
+}
+
+[data-key="field_section_backgrounds"] .acf-row > .acf-row-handle.order {
+    order: -3;
+}
+
+[data-key="field_section_backgrounds"] .acf-row > .hp-section-name-cell {
+    order: -2;
+}
+
+[data-key="field_section_backgrounds"] .acf-row > .hp-preview-cell {
+    order: -1;
+}
+
 /* Section name cell styling */
 .hp-section-name-cell {
     white-space: nowrap;

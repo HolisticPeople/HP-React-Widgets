@@ -269,7 +269,7 @@ class FunnelStylingFields
     }
 
     /**
-     * Enqueue section background admin UI enhancements (v2.33.2).
+     * Enqueue section background admin UI enhancements (v2.33.3).
      * Adds bulk actions and live preview to section_backgrounds repeater.
      */
     public static function enqueueSectionBackgroundAdmin(): void
@@ -283,6 +283,26 @@ class FunnelStylingFields
                 HP_RW_VERSION,
                 true
             );
+
+            // Pass section names to JavaScript
+            global $post;
+            $sectionNames = [];
+            if ($post && $post->ID) {
+                // Get hero title
+                $heroTitle = get_field('hero_title', $post->ID);
+                $sectionNames[] = $heroTitle ?: 'Hero';
+
+                // Get section names from funnel configuration
+                // Check if there's a sections field with names
+                for ($i = 1; $i <= 8; $i++) {
+                    $sectionNames[] = "Section $i"; // Default, will be replaced by actual names if available
+                }
+            }
+
+            wp_localize_script('hp-rw-section-bg-admin', 'hpSectionBgData', [
+                'sectionNames' => $sectionNames
+            ]);
+
             wp_enqueue_style(
                 'hp-rw-section-bg-admin',
                 HP_RW_URL . 'assets/admin/section-bg-admin.css',

@@ -4493,7 +4493,7 @@
                     "conditional_logic": false,
                     "instructions": "",
                     "wrapper": {
-                        "width": "",
+                        "width": "0",
                         "class": "",
                         "id": ""
                     }
