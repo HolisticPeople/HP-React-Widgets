@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Styles (v2.33.19)
+ * Section Background Admin UI Styles (v2.33.20)
  *
  * Styles for preview rectangles and bulk action buttons
  * - Radio button selection (single row at a time)
@@ -100,16 +100,14 @@
 [data-key="field_section_backgrounds"] thead th.acf-row-handle.remove {
     display: table-cell !important;
     width: auto !important;
-    min-width: 100px !important;
     padding: 8px !important;
-    visibility: visible !important;
     text-align: left !important;
 }
 
 [data-key="field_section_backgrounds"] thead th.acf-row-handle.remove::before {
     content: "End Color";
     font-weight: 600;
-    display: inline-block;
+    display: block;
 }
 
 /* Hide section_id hidden field column with explicit resets */
