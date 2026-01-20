@@ -259,7 +259,7 @@ export const FunnelInfographics = ({
     <section
       className={cn(
         'hp-funnel-infographics hp-funnel-section py-12 md:py-16 px-4',
-        // No flex-related overrides - let natural flow work
+        'relative z-20', // Ensure proper stacking above previous sections
         className
       )}
       // No height overrides - let content determine height naturally
