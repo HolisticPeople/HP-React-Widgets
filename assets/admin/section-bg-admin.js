@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.8)
+ * Section Background Admin UI Enhancements (v2.33.9)
  *
  * Features:
  * - Radio button selection (one row at a time) for copying settings
@@ -9,7 +9,7 @@
  * - Section names match ScrollNavigation component (Home, Benefits, etc.)
  * - Color picker automatically hidden when background type is "None"
  * - Hidden add/remove row buttons (auto-populated, not editable)
- * - Fixed column header alignment (injects headers after hidden section_id column)
+ * - Fixed column header alignment (prepends headers, hides section_id + remove columns)
  */
 
 (function($) {
@@ -146,26 +146,15 @@
         // Add table headers for new columns
         // Note: ACF creates headers for all fields including hidden ones
         // The structure is: [Order (hidden)] [Section ID (hidden)] [Other fields...]
-        // We need to inject our headers after the hidden columns
+        // We need to inject our headers at the beginning (before section_id which will be hidden)
         const $table = $repeater.find('.acf-table');
         const $thead = $table.find('thead tr');
         if ($thead.length && !$thead.find('.hp-section-header').length) {
-            // Find the section_id header (hidden but still exists in DOM)
-            const $sectionIdHeader = $thead.find('th[data-name="section_id"]');
-
-            if ($sectionIdHeader.length) {
-                // Insert after the section_id header
-                $sectionIdHeader.after(`
-                    <th class="hp-section-header">Section</th>
-                    <th class="hp-preview-header">Preview</th>
-                `);
-            } else {
-                // Fallback: insert before first visible column
-                $thead.find('th').first().before(`
-                    <th class="hp-section-header">Section</th>
-                    <th class="hp-preview-header">Preview</th>
-                `);
-            }
+            // Insert at the very beginning of the header row
+            $thead.prepend(`
+                <th class="hp-section-header">Section</th>
+                <th class="hp-preview-header">Preview</th>
+            `);
         }
 
         // Add checkbox, section name, and preview to each row

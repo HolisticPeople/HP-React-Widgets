@@ -1,9 +1,10 @@
 /**
- * Section Background Admin UI Styles (v2.33.8)
+ * Section Background Admin UI Styles (v2.33.9)
  *
  * Styles for preview rectangles and bulk action buttons
  * - Radio button selection (single row at a time)
  * - Hidden numbering column, section_id column, and add/remove buttons
+ * - Hidden remove column header (gray column on right)
  * - Odd/Even logic starts from Home (index 0)
  */
 
@@ -101,6 +102,11 @@
 }
 
 [data-key="field_section_backgrounds"] .acf-row-handle.remove {
+    display: none !important;
+}
+
+/* Hide the remove column header */
+[data-key="field_section_backgrounds"] thead .acf-row-handle.remove {
     display: none !important;
 }
 
