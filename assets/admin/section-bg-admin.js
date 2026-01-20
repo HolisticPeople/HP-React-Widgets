@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.2)
+ * Section Background Admin UI Enhancements (v2.33.3)
  *
  * Features:
  * - Bulk actions (Apply to Selected, Apply to All, Apply to Odd, Apply to Even)
