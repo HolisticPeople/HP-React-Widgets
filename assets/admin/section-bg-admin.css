@@ -1,11 +1,11 @@
 /**
- * Section Background Admin UI Styles (v2.33.12)
+ * Section Background Admin UI Styles (v2.33.13)
  *
  * Styles for preview rectangles and bulk action buttons
  * - Radio button selection (single row at a time)
  * - Hidden numbering column, section_id column, and add/remove buttons
  * - Hidden remove column header (gray column on right)
- * - Columns align by injecting before background_type
+ * - Columns align by injecting after .acf-row-handle (stable ACF anchor)
  * - Odd/Even logic starts from Home (index 0)
  */
 
@@ -71,6 +71,7 @@
 /* Improve table layout for section_backgrounds repeater */
 [data-key="field_section_backgrounds"] .acf-table {
     width: 100%;
+    border-collapse: collapse;
 }
 
 [data-key="field_section_backgrounds"] .acf-table td {
@@ -78,36 +79,35 @@
     padding: 8px;
 }
 
-/* Hide section_id hidden field column completely */
-[data-key="field_section_backgrounds"] [data-name="section_id"] {
-    display: none !important;
-}
-
-/* Hide section_id column header */
-[data-key="field_section_backgrounds"] thead th[data-name="section_id"] {
-    display: none !important;
-}
-
-/* Hide the ACF order/numbering column */
-[data-key="field_section_backgrounds"] .acf-row-handle.order {
-    display: none !important;
-}
-
+/* Hide ACF order/numbering column with explicit resets */
+[data-key="field_section_backgrounds"] .acf-row-handle.order,
 [data-key="field_section_backgrounds"] thead .acf-row-handle.order {
     display: none !important;
+    width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+}
+
+/* Hide ACF remove column with explicit resets */
+[data-key="field_section_backgrounds"] .acf-row-handle.remove,
+[data-key="field_section_backgrounds"] thead .acf-row-handle.remove {
+    display: none !important;
+    width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+}
+
+/* Hide section_id hidden field column with explicit resets */
+[data-key="field_section_backgrounds"] [data-name="section_id"],
+[data-key="field_section_backgrounds"] thead [data-name="section_id"] {
+    display: none !important;
+    width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
 }
 
 /* Hide ACF add/remove row buttons */
 [data-key="field_section_backgrounds"] .acf-actions {
-    display: none !important;
-}
-
-[data-key="field_section_backgrounds"] .acf-row-handle.remove {
-    display: none !important;
-}
-
-/* Hide the remove column header */
-[data-key="field_section_backgrounds"] thead .acf-row-handle.remove {
     display: none !important;
 }
 

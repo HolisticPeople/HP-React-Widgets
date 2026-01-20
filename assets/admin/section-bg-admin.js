@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.12)
+ * Section Background Admin UI Enhancements (v2.33.13)
  *
  * Features:
  * - Radio button selection (one row at a time) for copying settings
@@ -9,7 +9,7 @@
  * - Section names match ScrollNavigation component (Home, Benefits, etc.)
  * - Color picker automatically hidden when background type is "None"
  * - Hidden add/remove row buttons (auto-populated, not editable)
- * - Fixed column alignment (injects headers/cells before background_type column)
+ * - Fixed column alignment (injects headers/cells after .acf-row-handle for stable positioning)
  */
 
 (function($) {
@@ -147,28 +147,21 @@
         const $table = $repeater.find('.acf-table');
         const $thead = $table.find('thead tr');
         if ($thead.length && !$thead.find('.hp-section-header').length) {
-            // Debug: log current header structure
-            console.log('ACF Table Headers:', $thead.find('th').map(function() {
-                return $(this).attr('class') + ' ' + ($(this).attr('data-name') || '');
-            }).get());
+            // Use ACF's row handle as anchor for stable positioning
+            const $lastHandle = $thead.find('.acf-row-handle').last();
 
-            // Find the first visible header (background_type)
-            const $backgroundTypeHeader = $thead.find('th[data-name="background_type"]');
-
-            if ($backgroundTypeHeader.length) {
-                // Insert our headers BEFORE background_type header
-                $backgroundTypeHeader.before(`
+            if ($lastHandle.length) {
+                // Insert our headers AFTER the last row handle (stable ACF element)
+                $lastHandle.after(`
                     <th class="hp-section-header">Section</th>
                     <th class="hp-preview-header">Preview</th>
                 `);
-                console.log('Headers inserted before background_type');
             } else {
                 // Fallback
                 $thead.prepend(`
                     <th class="hp-section-header">Section</th>
                     <th class="hp-preview-header">Preview</th>
                 `);
-                console.log('Headers prepended (fallback)');
             }
         }
 
@@ -189,12 +182,12 @@
                 sectionName = `Section ${index}`;
             }
 
-            // Find the background_type cell and insert our cells BEFORE it (matching header injection point)
-            const $backgroundTypeCell = $row.find('td[data-name="background_type"]');
+            // Use ACF's row handle as anchor for stable positioning (matches header)
+            const $lastHandle = $row.find('.acf-row-handle').last();
 
-            if ($backgroundTypeCell.length) {
-                // Insert Section and Preview cells BEFORE background_type cell
-                $backgroundTypeCell.before(`
+            if ($lastHandle.length) {
+                // Insert Section and Preview cells AFTER the last row handle
+                $lastHandle.after(`
                     <td class="hp-section-name-cell">
                         <label style="display: flex; align-items: center; gap: 8px; margin: 0;">
                             <input type="radio" name="hp-section-select" class="hp-row-radio" />
@@ -204,7 +197,7 @@
                     <td class="hp-preview-cell"><div class="hp-section-bg-preview"></div></td>
                 `);
             } else {
-                // Fallback: insert at the beginning if we can't find background_type
+                // Fallback: insert at the beginning
                 const $firstCell = $row.find('td').first();
                 $firstCell.before(`
                     <td class="hp-section-name-cell">
@@ -216,6 +209,9 @@
                     <td class="hp-preview-cell"><div class="hp-section-bg-preview"></div></td>
                 `);
             }
+
+            // Force browser table recalculation
+            $repeater.find('.acf-table')[0].offsetHeight;
 
             // Initial preview update
             updatePreview($row);
