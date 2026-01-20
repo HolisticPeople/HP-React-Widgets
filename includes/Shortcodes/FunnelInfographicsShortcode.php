@@ -142,76 +142,13 @@ class FunnelInfographicsShortcode
         $rootId = 'hp-funnel-infographics-' . esc_attr($slug) . '-' . $infoIndex . '-' . uniqid();
         $propsJson = wp_json_encode($props);
 
-        // CSS to force parent Elementor containers to shrink to content
-        $css = '<style>
-            @media (max-width: 767px) {
-                /* Target ALL parent Elementor containers containing infographics */
-                .e-con:has(.hp-funnel-infographics-' . esc_attr($slug) . '),
-                .elementor-section:has(.hp-funnel-infographics-' . esc_attr($slug) . '),
-                .elementor-column:has(.hp-funnel-infographics-' . esc_attr($slug) . '),
-                .elementor-widget-shortcode:has(.hp-funnel-infographics-' . esc_attr($slug) . ') {
-                    min-height: 0 !important;
-                    height: auto !important;
-                    flex-grow: 0 !important;
-                    flex-shrink: 1 !important;
-                }
-            }
-        </style>';
-
         // Only include data-section-name if navLabel is not empty
         $sectionNameAttr = !empty($navLabel) ? sprintf(' data-section-name="%s"', esc_attr($navLabel)) : '';
 
-        // JavaScript to forcefully remove Elementor container heights on mobile
-        $js = '<script>
-        (function() {
-            function fixInfographicsContainers() {
-                if (window.innerWidth > 767) return; // Only on mobile
-
-                var infographic = document.querySelector(".hp-funnel-infographics-' . esc_js($slug) . '");
-                if (!infographic) return;
-
-                // Walk up the DOM tree and reset all parent Elementor containers
-                var element = infographic;
-                while (element && element !== document.body) {
-                    // Only reset height-related properties, preserve layout flow
-                    element.style.setProperty("min-height", "0", "important");
-                    element.style.setProperty("height", "auto", "important");
-
-                    // For Elementor containers, ensure they shrink to content
-                    if (element.classList && (
-                        element.classList.contains("e-con") ||
-                        element.classList.contains("elementor-section") ||
-                        element.classList.contains("elementor-column")
-                    )) {
-                        // Remove flex-grow that causes elements to expand
-                        element.style.setProperty("flex-grow", "0", "important");
-                        element.style.setProperty("flex-shrink", "1", "important");
-                    }
-
-                    element = element.parentElement;
-                }
-            }
-
-            if (document.readyState === "loading") {
-                document.addEventListener("DOMContentLoaded", fixInfographicsContainers);
-            } else {
-                fixInfographicsContainers();
-            }
-
-            // Run again after a delay to catch dynamically loaded content
-            setTimeout(fixInfographicsContainers, 500);
-            setTimeout(fixInfographicsContainers, 1500);
-        })();
-        </script>';
-
-        // Inline styles to prevent Elementor flex issues on mobile
-        $inlineStyle = 'display: block; width: 100%; flex: 0 0 auto; align-self: flex-start;';
-
-        return $css . $js . sprintf(
-            '<div id="%s" class="hp-funnel-section hp-funnel-infographics-%s" style="%s" data-hp-widget="1" data-component="%s" data-props=\'%s\'%s></div>',
+        return sprintf(
+            '<div id="%s" class="hp-funnel-section hp-funnel-infographics-%s" data-hp-widget="1" data-component="%s" data-props=\'%s\'%s></div>',
             esc_attr($rootId),
             esc_attr($slug),
-            esc_attr($inlineStyle),
             esc_attr($component),
             esc_attr($propsJson),
             $sectionNameAttr

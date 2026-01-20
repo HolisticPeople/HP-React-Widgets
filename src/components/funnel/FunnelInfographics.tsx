@@ -91,7 +91,7 @@ export const FunnelInfographics = ({
   // Desktop View - Full image (hidden on mobile when using mobile-specific images)
   const renderDesktop = () => (
     <div className={cn(
-      "hp-infographics-desktop relative z-10",
+      "hp-infographics-desktop",
       shouldUseMobileImages ? "hidden md:block" : "" // Show on all devices if not using mobile images
     )}>
       {desktopImage && (
@@ -112,7 +112,7 @@ export const FunnelInfographics = ({
     if (desktopFallback === 'scroll') {
       // Horizontal scroll mode - maintain original size, allow swipe
       return (
-        <div className="hp-infographics-mobile-scroll md:hidden relative z-10">
+        <div className="hp-infographics-mobile-scroll md:hidden">
           <div className="overflow-x-auto -mx-4 px-4 scrollbar-thin scrollbar-thumb-gray-400">
             <img
               src={desktopImage}
@@ -141,7 +141,7 @@ export const FunnelInfographics = ({
 
   // Mobile Stack View - Title + Left + Right stacked vertically
   const renderMobileStack = () => (
-    <div className="hp-infographics-mobile-stack flex flex-col gap-6 md:hidden relative z-10">
+    <div className="hp-infographics-mobile-stack flex flex-col gap-4 md:hidden">
       {titleImage && (
         <img
           src={titleImage}
@@ -177,7 +177,7 @@ export const FunnelInfographics = ({
     ].filter(p => p.src);
 
     return (
-      <div className="hp-infographics-mobile-carousel flex flex-col gap-6 md:hidden relative z-10">
+      <div className="hp-infographics-mobile-carousel flex flex-col gap-4 md:hidden">
         {/* Title image at top */}
         {titleImage && (
           <img
@@ -258,11 +258,9 @@ export const FunnelInfographics = ({
   return (
     <section
       className={cn(
-        'hp-funnel-infographics hp-funnel-section py-12 md:py-16 px-4',
-        'relative z-20', // Ensure proper stacking above previous sections
+        'hp-funnel-infographics hp-funnel-section py-4 md:py-16 px-4',
         className
       )}
-      // No height overrides - let content determine height naturally
       data-effective-mode={effectiveMode}
     >
       <div className="max-w-6xl mx-auto w-full">
