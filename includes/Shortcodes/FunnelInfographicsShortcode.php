@@ -142,49 +142,18 @@ class FunnelInfographicsShortcode
         $rootId = 'hp-funnel-infographics-' . esc_attr($slug) . '-' . $infoIndex . '-' . uniqid();
         $propsJson = wp_json_encode($props);
 
-        // CSS to force parent Elementor containers to shrink to content and prevent flex spacing issues
+        // CSS to force parent Elementor containers to shrink to content
         $css = '<style>
-            /* Target the shortcode widget wrapper */
-            .elementor-widget-shortcode:has(#' . esc_attr($rootId) . '),
-            .elementor-widget-shortcode:has(.hp-funnel-infographics-' . esc_attr($slug) . ') {
-                height: auto !important;
-                min-height: 0 !important;
-                margin: 0 !important;
-                flex: none !important;
-            }
-            /* Target the widget container */
-            .elementor-widget-shortcode:has(#' . esc_attr($rootId) . ') > .elementor-widget-container,
-            .elementor-widget-shortcode:has(.hp-funnel-infographics-' . esc_attr($slug) . ') > .elementor-widget-container {
-                height: auto !important;
-                min-height: 0 !important;
-                margin: 0 !important;
-            }
-            /* Target ALL parent Elementor containers - ultra aggressive on mobile */
             @media (max-width: 767px) {
-                /* Direct parent containers */
-                .e-con:has(> .elementor-widget-shortcode > .elementor-widget-container > .hp-funnel-infographics-' . esc_attr($slug) . '),
-                .elementor-section:has(> .elementor-container > .elementor-column > .elementor-column-wrap > .elementor-widget-wrap > .elementor-widget-shortcode .hp-funnel-infographics-' . esc_attr($slug) . '),
-                .elementor-column:has(> .elementor-column-wrap > .elementor-widget-wrap > .elementor-widget-shortcode .hp-funnel-infographics-' . esc_attr($slug) . '),
-                .elementor-column:has(> .elementor-widget-wrap > .elementor-widget-shortcode .hp-funnel-infographics-' . esc_attr($slug) . ') {
-                    min-height: 0 !important;
-                    height: auto !important;
-                    flex: none !important;
-                }
-                /* Any e-con or section containing infographics */
+                /* Target ALL parent Elementor containers containing infographics */
                 .e-con:has(.hp-funnel-infographics-' . esc_attr($slug) . '),
-                .elementor-section:has(.hp-funnel-infographics-' . esc_attr($slug) . ') {
-                    min-height: 0 !important;
-                    height: auto !important;
-                    flex: none !important;
-                    justify-content: flex-start !important;
-                    align-items: flex-start !important;
-                }
-                /* Column wrappers */
+                .elementor-section:has(.hp-funnel-infographics-' . esc_attr($slug) . '),
                 .elementor-column:has(.hp-funnel-infographics-' . esc_attr($slug) . '),
-                .elementor-column-wrap:has(.hp-funnel-infographics-' . esc_attr($slug) . '),
-                .elementor-widget-wrap:has(.hp-funnel-infographics-' . esc_attr($slug) . ') {
+                .elementor-widget-shortcode:has(.hp-funnel-infographics-' . esc_attr($slug) . ') {
                     min-height: 0 !important;
                     height: auto !important;
+                    flex-grow: 0 !important;
+                    flex-shrink: 1 !important;
                 }
             }
         </style>';
