@@ -204,18 +204,19 @@ class FunnelInfographicsShortcode
                 // Walk up the DOM tree and reset all parent Elementor containers
                 var element = infographic;
                 while (element && element !== document.body) {
-                    // Reset ALL elements, not just Elementor containers
+                    // Only reset height-related properties, preserve layout flow
                     element.style.setProperty("min-height", "0", "important");
                     element.style.setProperty("height", "auto", "important");
-                    element.style.setProperty("flex", "none", "important");
-                    element.style.setProperty("align-self", "auto", "important");
 
+                    // For Elementor containers, ensure they shrink to content
                     if (element.classList && (
                         element.classList.contains("e-con") ||
-                        element.classList.contains("elementor-section")
+                        element.classList.contains("elementor-section") ||
+                        element.classList.contains("elementor-column")
                     )) {
-                        element.style.setProperty("justify-content", "flex-start", "important");
-                        element.style.setProperty("align-items", "flex-start", "important");
+                        // Remove flex-grow that causes elements to expand
+                        element.style.setProperty("flex-grow", "0", "important");
+                        element.style.setProperty("flex-shrink", "1", "important");
                     }
 
                     element = element.parentElement;
