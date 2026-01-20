@@ -210,14 +210,16 @@ class FunnelHeroSectionShortcode
                 $output .= sprintf(
                     '<style>
                     body { overflow-x: hidden !important; }
-                    .hp-funnel-section.hp-alt-bg { 
-                        background-color: %s !important; 
+                    .hp-funnel-section.hp-alt-bg {
+                        background-color: %s !important;
                         width: 100vw !important;
                         position: relative !important;
                         left: 50%% !important;
                         right: 50%% !important;
                         margin-left: -50vw !important;
                         margin-right: -50vw !important;
+                        margin-top: 0 !important;
+                        margin-bottom: 0 !important;
                         padding-left: calc(50vw - 50%%) !important;
                         padding-right: calc(50vw - 50%%) !important;
                         box-sizing: border-box !important;
@@ -233,8 +235,15 @@ class FunnelHeroSectionShortcode
                         right: auto !important;
                         margin-left: 0 !important;
                         margin-right: 0 !important;
+                        margin-top: 0 !important;
+                        margin-bottom: 0 !important;
                         padding-left: 0 !important;
                         padding-right: 0 !important;
+                    }
+                    /* Reset infographics sections to prevent margin/positioning issues */
+                    .hp-funnel-section.hp-funnel-infographics {
+                        margin-top: 0 !important;
+                        margin-bottom: 0 !important;
                     }
                     </style>',
                     $altBgColor

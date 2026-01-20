@@ -142,17 +142,30 @@ class FunnelInfographicsShortcode
         $rootId = 'hp-funnel-infographics-' . esc_attr($slug) . '-' . $infoIndex . '-' . uniqid();
         $propsJson = wp_json_encode($props);
 
-        // CSS to force parent Elementor containers to shrink to content
+        // CSS to force parent Elementor containers to shrink to content and prevent flex spacing issues
         $css = '<style>
+            /* Target the shortcode widget wrapper */
             .elementor-widget-shortcode:has(#' . esc_attr($rootId) . '),
             .elementor-widget-shortcode:has(.hp-funnel-infographics-' . esc_attr($slug) . ') {
                 height: auto !important;
                 min-height: 0 !important;
+                margin: 0 !important;
             }
+            /* Target the widget container */
             .elementor-widget-shortcode:has(#' . esc_attr($rootId) . ') > .elementor-widget-container,
             .elementor-widget-shortcode:has(.hp-funnel-infographics-' . esc_attr($slug) . ') > .elementor-widget-container {
                 height: auto !important;
                 min-height: 0 !important;
+                margin: 0 !important;
+            }
+            /* Target parent Elementor sections/containers on mobile */
+            @media (max-width: 767px) {
+                .e-con:has(.hp-funnel-infographics-' . esc_attr($slug) . '),
+                .elementor-section:has(.hp-funnel-infographics-' . esc_attr($slug) . '),
+                .elementor-column:has(.hp-funnel-infographics-' . esc_attr($slug) . ') {
+                    min-height: 0 !important;
+                    height: auto !important;
+                }
             }
         </style>';
 
