@@ -379,7 +379,7 @@
     }
 
     /**
-     * Initialize color pickers with custom palette from styling colors (v2.33.48)
+     * Initialize color pickers with custom palette from styling colors (v2.33.49)
      */
     function initColorPickers() {
         if (typeof hpSectionBgData === 'undefined' || !hpSectionBgData.stylingColors || hpSectionBgData.stylingColors.length === 0) {
@@ -400,17 +400,26 @@
                 const $picker = $input.closest('.wp-picker-container');
 
                 // Check if palette already added
-                if ($picker.find('.iris-palette[data-hp-palette]').length > 0) {
+                if ($picker.attr('data-hp-palette-added') === 'true') {
                     return; // Already processed
                 }
 
-                // Get the Iris instance and update its options
-                const irisInstance = $input.wpColorPicker('instance');
-                if (irisInstance) {
-                    // Find the iris picker element
+                // Mark as processed
+                $picker.attr('data-hp-palette-added', 'true');
+
+                // Open picker to force Iris initialization, then add palette
+                const $button = $picker.find('.wp-color-result');
+
+                // Temporarily open picker if not already open
+                const wasOpen = $picker.find('.iris-picker').is(':visible');
+                if (!wasOpen) {
+                    $button.trigger('click');
+                }
+
+                // Wait a bit for iris to render, then add palette
+                setTimeout(function() {
                     const $irisPicker = $picker.find('.iris-picker');
 
-                    // Add palette HTML directly to iris picker
                     if ($irisPicker.length && $irisPicker.find('.iris-palette-container').length === 0) {
                         const $paletteContainer = $('<div class="iris-palette-container"></div>');
 
@@ -430,7 +439,12 @@
 
                         $irisPicker.append($paletteContainer);
                     }
-                }
+
+                    // Close picker if it wasn't open before
+                    if (!wasOpen) {
+                        $button.trigger('click');
+                    }
+                }, 50);
             }
         });
     }
