@@ -122,18 +122,18 @@
     }
 
     /**
-     * Add bulk action buttons (v2.33.43 - placed inside ACF field wrapper)
+     * Add bulk action buttons (v2.33.44 - placed inside .acf-input wrapper)
      */
     function addBulkActionButtons() {
         const $repeater = $('[data-key="field_section_backgrounds"]');
         if (!$repeater.length) return;
 
-        // Find the ACF field wrapper (this is what ACF hides/shows with tabs)
-        const $fieldWrapper = $repeater.closest('.acf-field');
-        if (!$fieldWrapper.length) return;
+        // Find the .acf-input wrapper (this is inside .acf-field and gets hidden by ACF)
+        const $inputWrapper = $repeater.closest('.acf-input');
+        if (!$inputWrapper.length) return;
 
-        // Check if already exists inside this field wrapper
-        if ($fieldWrapper.find('.hp-bulk-actions').length > 0) {
+        // Check if already exists inside the input wrapper
+        if ($inputWrapper.find('.hp-bulk-actions').length > 0) {
             return; // Already added
         }
 
@@ -152,9 +152,9 @@
             </div>
         `;
 
-        // Insert inside the field wrapper, before the repeater
-        // This way ACF will hide/show it automatically with the tab
-        $repeater.before(bulkActionsHTML);
+        // Insert at the beginning of .acf-input (before the repeater)
+        // The .acf-input wrapper is what ACF hides when tabs are switched
+        $inputWrapper.prepend(bulkActionsHTML);
     }
 
     /**

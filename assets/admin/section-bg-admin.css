@@ -30,8 +30,8 @@
         50% / 10px 10px;
 }
 
-/* Bulk actions container */
-.hp-bulk-actions {
+/* Bulk actions container - only visible within section_backgrounds field */
+[data-key="field_section_backgrounds"] .hp-bulk-actions {
     margin-bottom: 15px;
     padding: 12px;
     background: #f5f5f5;
