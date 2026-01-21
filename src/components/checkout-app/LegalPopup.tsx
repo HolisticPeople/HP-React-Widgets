@@ -35,6 +35,7 @@ export const LegalPopup = ({
   const [title, setTitle] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isClosing, setIsClosing] = useState(false);
 
   const pageId = type === 'terms' ? tosPageId : privacyPageId;
 
@@ -69,6 +70,7 @@ export const LegalPopup = ({
 
   useEffect(() => {
     if (isOpen) {
+      setIsClosing(false);
       fetchContent();
       // Prevent body scroll when popup is open
       document.body.style.overflow = 'hidden';
@@ -81,31 +83,45 @@ export const LegalPopup = ({
     };
   }, [isOpen, fetchContent]);
 
+  // Handle close with animation
+  const handleClose = useCallback(() => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+    }, 200); // Match the fade-out duration
+  }, [onClose]);
+
   // Handle escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
-        onClose();
+        handleClose();
       }
     };
 
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
+  }, [isOpen, handleClose]);
 
   if (!isOpen) return null;
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200"
-      onClick={onClose}
+      className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 transition-opacity duration-200 ${
+        isClosing ? 'opacity-0' : 'opacity-100'
+      }`}
+      onClick={handleClose}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200" />
-      
+      <div className={`absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity duration-200 ${
+        isClosing ? 'opacity-0' : 'opacity-100'
+      }`} />
+
       {/* Modal */}
       <div
-        className="relative w-full max-w-3xl max-h-[80vh] bg-card rounded-xl shadow-2xl border border-border/50 flex flex-col animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
+        className={`relative w-full max-w-3xl max-h-[80vh] bg-card rounded-xl shadow-2xl border border-border/50 flex flex-col transition-all duration-300 ${
+          isClosing ? 'opacity-0 scale-95 translate-y-4' : 'opacity-100 scale-100 translate-y-0'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -113,7 +129,7 @@ export const LegalPopup = ({
           <h2 className="text-xl font-bold text-accent">{title}</h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="h-11 w-11 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors bg-transparent"
             style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
           >
@@ -188,7 +204,7 @@ export const LegalPopup = ({
         <div className="p-4 border-t border-border/50">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="w-full h-14 rounded-lg font-semibold text-lg transition-colors text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary"
             style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
           >
