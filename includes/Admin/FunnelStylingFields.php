@@ -25,6 +25,9 @@ class FunnelStylingFields
 
         // v2.33.2: Enqueue section background admin UI enhancements
         add_action('acf/input/admin_enqueue_scripts', [self::class, 'enqueueSectionBackgroundAdmin']);
+
+        // v2.33.37: AJAX handler for refreshing section backgrounds
+        add_action('wp_ajax_hp_refresh_section_backgrounds', [self::class, 'ajaxRefreshSectionBackgrounds']);
     }
 
     /**
@@ -269,8 +272,9 @@ class FunnelStylingFields
     }
 
     /**
-     * Enqueue section background admin UI enhancements (v2.33.4).
+     * Enqueue section background admin UI enhancements (v2.33.37).
      * Adds bulk actions and live preview to section_backgrounds repeater.
+     * Now uses section labels from the database instead of detecting from content.
      */
     public static function enqueueSectionBackgroundAdmin(): void
     {
@@ -284,79 +288,22 @@ class FunnelStylingFields
                 true
             );
 
-            // Pass section names to JavaScript - matches ScrollNavigation.tsx section names
+            // Pass section names to JavaScript from section_backgrounds repeater (v2.33.37)
             global $post;
             $sectionNames = [];
             if ($post && $post->ID) {
-                // Hero section - use "Home" to match scroll navigation
-                $sectionNames[] = 'Home';
-
-                // Map of section types to their display names (matches KNOWN_SECTION_TYPES in ScrollNavigation.tsx)
-                $sectionTypeMap = [
-                    'benefits'      => 'Benefits',
-                    'science'       => 'Science',
-                    'infographics'  => 'Comparison',
-                    'features'      => 'Features',
-                    'offers'        => 'Offers',
-                    'authority'     => 'Expert',
-                    'testimonials'  => 'Reviews',
-                    'faq'           => 'FAQ',
-                ];
-
-                // Get actual configured sections by checking which have content
-                $configuredSections = [];
-
-                // Check Benefits
-                $benefitsTitle = get_field('hero_benefits_title', $post->ID);
-                if (!empty($benefitsTitle)) {
-                    $configuredSections[] = 'Benefits';
+                // Get section labels directly from section_backgrounds repeater
+                $sectionBackgrounds = get_field('section_backgrounds', $post->ID);
+                if (is_array($sectionBackgrounds) && !empty($sectionBackgrounds)) {
+                    foreach ($sectionBackgrounds as $section) {
+                        $sectionNames[] = $section['section_label'] ?? 'Section';
+                    }
                 }
-
-                // Check Science
-                $scienceTitle = get_field('science_title', $post->ID);
-                if (!empty($scienceTitle)) {
-                    $configuredSections[] = 'Science';
-                }
-
-                // Check Infographics
-                $infographicsTitle = get_field('infographics_title', $post->ID);
-                if (!empty($infographicsTitle)) {
-                    $configuredSections[] = 'Comparison';
-                }
-
-                // Check Features
-                $featuresTitle = get_field('features_title', $post->ID);
-                if (!empty($featuresTitle)) {
-                    $configuredSections[] = 'Features';
-                }
-
-                // Check Offers (always present if funnel exists)
-                $configuredSections[] = 'Offers';
-
-                // Check Authority
-                $authorityTitle = get_field('authority_title', $post->ID);
-                if (!empty($authorityTitle)) {
-                    $configuredSections[] = 'Expert';
-                }
-
-                // Check Testimonials
-                $testimonialsTitle = get_field('testimonials_title', $post->ID);
-                if (!empty($testimonialsTitle)) {
-                    $configuredSections[] = 'Reviews';
-                }
-
-                // Check FAQ
-                $faqTitle = get_field('faq_title', $post->ID);
-                if (!empty($faqTitle)) {
-                    $configuredSections[] = 'FAQ';
-                }
-
-                // Add configured sections to array
-                $sectionNames = array_merge($sectionNames, $configuredSections);
             }
 
             wp_localize_script('hp-rw-section-bg-admin', 'hpSectionBgData', [
-                'sectionNames' => $sectionNames
+                'sectionNames' => $sectionNames,
+                'refreshNonce' => wp_create_nonce('hp_refresh_sections_' . $post->ID)
             ]);
 
             wp_enqueue_style(
@@ -378,5 +325,40 @@ class FunnelStylingFields
             return false;
         }
         return $field;
+    }
+
+    /**
+     * AJAX handler to refresh section backgrounds (v2.33.37).
+     * Re-syncs the section_backgrounds repeater with actual funnel sections.
+     */
+    public static function ajaxRefreshSectionBackgrounds(): void
+    {
+        // Verify nonce
+        $postId = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
+        $nonce = isset($_POST['nonce']) ? sanitize_text_field($_POST['nonce']) : '';
+
+        if (!$postId || !wp_verify_nonce($nonce, 'hp_refresh_sections_' . $postId)) {
+            wp_send_json_error('Invalid request');
+            return;
+        }
+
+        // Check permissions
+        if (!current_user_can('edit_post', $postId)) {
+            wp_send_json_error('Permission denied');
+            return;
+        }
+
+        // Verify post type
+        if (get_post_type($postId) !== 'hp-funnel') {
+            wp_send_json_error('Invalid post type');
+            return;
+        }
+
+        // Refresh section backgrounds
+        \HP_RW\Services\FunnelConfigLoader::autoPopulateSectionBackgrounds($postId);
+
+        wp_send_json_success([
+            'message' => 'Section backgrounds refreshed successfully'
+        ]);
     }
 }

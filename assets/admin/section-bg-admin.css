@@ -231,3 +231,14 @@
     cursor: pointer;
     margin: 0;
 }
+
+/* Spinning animation for refresh button (v2.33.37) */
+@keyframes hp-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.hp-spin {
+    animation: hp-spin 1s linear infinite;
+    display: inline-block;
+}

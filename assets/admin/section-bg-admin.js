@@ -138,6 +138,10 @@
                     <button type="button" class="button hp-apply-odd">Odd (Home, Science, Offers...)</button>
                     <button type="button" class="button hp-apply-even">Even (Benefits, Features, Expert...)</button>
                     <button type="button" class="button hp-apply-all">All</button>
+                    <span style="margin: 0 15px; color: #ccc;">|</span>
+                    <button type="button" class="button hp-refresh-sections">
+                        <span class="dashicons dashicons-update" style="margin-top: 3px;"></span> Refresh Sections
+                    </button>
                 </div>
             `;
             $repeater.before(bulkActionsHTML);
@@ -312,6 +316,52 @@
             });
 
             copyRowSettings($sourceRow, $targetRows);
+        });
+
+        // Refresh Sections (v2.33.37) - Re-sync section backgrounds with actual funnel sections
+        $(document).on('click', '.hp-refresh-sections', function() {
+            const $button = $(this);
+            const postId = $('#post_ID').val();
+
+            if (!postId) {
+                alert('Unable to determine post ID. Please save the funnel first.');
+                return;
+            }
+
+            if (!confirm('This will sync the section backgrounds table with your current funnel configuration.\n\nSections that are no longer configured will be removed, and new sections will be added.\n\nExisting background settings will be preserved.\n\nContinue?')) {
+                return;
+            }
+
+            // Disable button and show loading state
+            $button.prop('disabled', true);
+            const $icon = $button.find('.dashicons');
+            $icon.addClass('hp-spin');
+
+            // Call AJAX to refresh sections
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'hp_refresh_section_backgrounds',
+                    post_id: postId,
+                    nonce: hpSectionBgData.refreshNonce
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Reload the page to show updated sections
+                        window.location.reload();
+                    } else {
+                        alert('Error: ' + (response.data || 'Unknown error'));
+                        $button.prop('disabled', false);
+                        $icon.removeClass('hp-spin');
+                    }
+                },
+                error: function() {
+                    alert('Failed to refresh sections. Please try again.');
+                    $button.prop('disabled', false);
+                    $icon.removeClass('hp-spin');
+                }
+            });
         });
     }
 

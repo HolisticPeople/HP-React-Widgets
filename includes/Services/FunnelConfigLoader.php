@@ -1805,8 +1805,95 @@ class FunnelConfigLoader
     }
 
     /**
+     * Detect which sections are actually configured in the funnel.
+     * Returns array of section definitions with section_id and section_label.
+     *
+     * @param int $postId Funnel post ID
+     * @return array Array of section definitions [['section_id' => 'hero', 'section_label' => 'Hero'], ...]
+     */
+    public static function detectConfiguredSections(int $postId): array
+    {
+        $sections = [];
+        $sectionIndex = 0;
+
+        // Hero section - always present
+        $sections[] = [
+            'section_id' => 'hero',
+            'section_label' => 'Hero',
+            'section_index' => null, // Hero doesn't get a numbered index
+        ];
+
+        // Map of section types to their detection field and display label
+        $sectionDefinitions = [
+            'benefits' => [
+                'field' => 'hero_benefits_title',
+                'label' => 'Benefits',
+            ],
+            'science' => [
+                'field' => 'science_title',
+                'label' => 'Science',
+            ],
+            'infographics' => [
+                'field' => 'infographics_title',
+                'label' => 'Comparison',
+            ],
+            'features' => [
+                'field' => 'features_title',
+                'label' => 'Features',
+            ],
+            'offers' => [
+                'field' => null, // Always present
+                'label' => 'Offers',
+            ],
+            'authority' => [
+                'field' => 'authority_title',
+                'label' => 'Expert',
+            ],
+            'testimonials' => [
+                'field' => 'testimonials_title',
+                'label' => 'Reviews',
+            ],
+            'faq' => [
+                'field' => 'faq_title',
+                'label' => 'FAQ',
+            ],
+            'cta' => [
+                'field' => 'cta_title',
+                'label' => 'CTA',
+            ],
+        ];
+
+        // Check each section type
+        foreach ($sectionDefinitions as $type => $definition) {
+            $isConfigured = false;
+
+            // Offers section is always present
+            if ($type === 'offers') {
+                $isConfigured = true;
+            } elseif ($definition['field']) {
+                // Check if the section has content
+                $fieldValue = get_field($definition['field'], $postId);
+                $isConfigured = !empty($fieldValue);
+            }
+
+            if ($isConfigured) {
+                $sectionIndex++;
+                $sections[] = [
+                    'section_id' => 'section_' . $sectionIndex,
+                    'section_label' => $definition['label'],
+                    'section_index' => $sectionIndex,
+                    'section_type' => $type,
+                ];
+            }
+        }
+
+        return $sections;
+    }
+
+    /**
      * Auto-populate section_backgrounds repeater with funnel sections.
      * Called on funnel save to ensure all sections are present in repeater.
+     * Now dynamically detects actual configured sections (v2.33.37).
      *
      * @param int $postId Funnel post ID
      * @return void
@@ -1819,36 +1906,32 @@ class FunnelConfigLoader
         }
 
         // Get current section_backgrounds value
-        $sectionBackgrounds = get_field('section_backgrounds', $postId) ?: [];
+        $existingSectionBackgrounds = get_field('section_backgrounds', $postId) ?: [];
 
-        // Build expected section list (hero + content sections)
-        $expectedSections = [
-            ['section_id' => 'hero', 'section_label' => 'Hero Section'],
-            ['section_id' => 'section_1', 'section_label' => 'Section 1'],
-            ['section_id' => 'section_2', 'section_label' => 'Section 2'],
-            ['section_id' => 'section_3', 'section_label' => 'Section 3'],
-            ['section_id' => 'section_4', 'section_label' => 'Section 4'],
-            ['section_id' => 'section_5', 'section_label' => 'Section 5'],
-            ['section_id' => 'section_6', 'section_label' => 'Section 6'],
-            ['section_id' => 'section_7', 'section_label' => 'Section 7'],
-            ['section_id' => 'section_8', 'section_label' => 'Section 8'],
-        ];
-
-        // Build index of existing sections
+        // Build index of existing section configurations by section_id
         $existingIndex = [];
-        foreach ($sectionBackgrounds as $section) {
+        foreach ($existingSectionBackgrounds as $section) {
             if (isset($section['section_id'])) {
                 $existingIndex[$section['section_id']] = $section;
             }
         }
 
-        // Add missing sections with defaults
-        $updated = false;
-        foreach ($expectedSections as $expected) {
-            if (!isset($existingIndex[$expected['section_id']])) {
-                $sectionBackgrounds[] = [
-                    'section_id' => $expected['section_id'],
-                    'section_label' => $expected['section_label'],
+        // Detect which sections are actually configured in this funnel
+        $configuredSections = self::detectConfiguredSections($postId);
+
+        // Build new section_backgrounds array based on configured sections
+        $newSectionBackgrounds = [];
+        foreach ($configuredSections as $section) {
+            $sectionId = $section['section_id'];
+
+            // If this section already has background config, preserve it
+            if (isset($existingIndex[$sectionId])) {
+                $newSectionBackgrounds[] = $existingIndex[$sectionId];
+            } else {
+                // Add new section with default background settings
+                $newSectionBackgrounds[] = [
+                    'section_id' => $sectionId,
+                    'section_label' => $section['section_label'],
                     'background_type' => 'none',
                     'gradient_type' => 'linear',
                     'gradient_preset' => 'vertical-down',
@@ -1856,13 +1939,11 @@ class FunnelConfigLoader
                     'gradient_start_color' => '#1a1a2e',
                     'gradient_end_color' => '',
                 ];
-                $updated = true;
             }
         }
 
-        // Update field if modified
-        if ($updated) {
-            update_field('section_backgrounds', $sectionBackgrounds, $postId);
-        }
+        // Always update the field to sync with current funnel configuration
+        // This removes sections that are no longer configured and adds new ones
+        update_field('section_backgrounds', $newSectionBackgrounds, $postId);
     }
 }
