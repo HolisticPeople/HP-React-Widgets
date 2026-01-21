@@ -122,14 +122,14 @@
     }
 
     /**
-     * Add bulk action buttons (v2.33.44 - placed inside .acf-input wrapper)
+     * Add bulk action buttons (v2.33.46 - placed inside .acf-input wrapper)
      */
     function addBulkActionButtons() {
-        const $repeater = $('[data-key="field_section_backgrounds"]');
-        if (!$repeater.length) return;
+        const $repeaterField = $('[data-key="field_section_backgrounds"]');
+        if (!$repeaterField.length) return;
 
-        // Find the .acf-input wrapper (this is inside .acf-field and gets hidden by ACF)
-        const $inputWrapper = $repeater.closest('.acf-input');
+        // Find the .acf-input wrapper (this is a child of .acf-field, not a parent)
+        const $inputWrapper = $repeaterField.find('.acf-input').first();
         if (!$inputWrapper.length) return;
 
         // Check if already exists inside the input wrapper
