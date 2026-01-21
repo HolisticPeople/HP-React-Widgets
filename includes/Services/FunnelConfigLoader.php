@@ -1900,8 +1900,8 @@ class FunnelConfigLoader
      */
     public static function autoPopulateSectionBackgrounds(int $postId): void
     {
-        // Only run for hp_funnel post type
-        if (get_post_type($postId) !== 'hp_funnel') {
+        // Only run for hp-funnel post type
+        if (get_post_type($postId) !== 'hp-funnel') {
             return;
         }
 
