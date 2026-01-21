@@ -89,21 +89,22 @@ export const LegalPopup = ({
 
       return () => clearTimeout(modalTimer);
     } else if (shouldRender) {
-      // Hide modal first
-      setShowModal(false);
-      // Trigger closing animation for backdrop
-      const closeTimer = setTimeout(() => {
-        setIsClosing(true);
-      }, 100);
+      // Trigger closing animation - modal first
+      setIsClosing(true);
+
+      // Fade out backdrop after modal starts closing
+      const backdropTimer = setTimeout(() => {
+        setShowModal(false);
+      }, 400); // Match modal animation duration
 
       const cleanupTimer = setTimeout(() => {
         setShouldRender(false);
         document.body.style.overflow = '';
         document.body.style.paddingRight = '';
-      }, 600); // 100ms delay + 500ms animation
+      }, 700); // 400ms modal + 300ms backdrop
 
       return () => {
-        clearTimeout(closeTimer);
+        clearTimeout(backdropTimer);
         clearTimeout(cleanupTimer);
       };
     }
@@ -154,9 +155,9 @@ export const LegalPopup = ({
         <div
           className="relative w-full max-w-3xl max-h-[80vh] bg-card rounded-xl shadow-2xl border border-border/50 flex flex-col"
           style={{
-            animation: `slideUp 400ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
-            opacity: 0,
-            transform: 'scale(0.85) translateY(40px)'
+            animation: `${isClosing ? 'slideDown' : 'slideUp'} 400ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
+            opacity: isClosing ? 1 : 0,
+            transform: isClosing ? 'scale(1) translateY(0)' : 'scale(0.85) translateY(40px)'
           }}
           onClick={(e) => e.stopPropagation()}
         >
