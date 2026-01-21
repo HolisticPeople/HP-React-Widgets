@@ -129,34 +129,33 @@
         if (!$repeater.length) return;
 
         // Only add bulk actions if section_backgrounds field is visible (on Styling tab)
-        // ACF hides fields on inactive tabs with display:none on the .acf-field wrapper (v2.33.39)
+        // ACF hides fields on inactive tabs with display:none on the .acf-field wrapper (v2.33.40)
         const $field = $repeater.closest('.acf-field');
         if (!$field.is(':visible')) {
             return;
         }
 
-        // Add bulk action buttons above repeater (only once, check with class not prev)
-        if ($field.find('.hp-bulk-actions').length) {
+        // Add bulk action buttons above repeater (only once)
+        // Check if already exists by looking immediately before the repeater
+        if ($repeater.prev('.hp-bulk-actions').length > 0) {
             return; // Already added
         }
 
-        if (!$repeater.prev('.hp-bulk-actions').length) {
-            const bulkActionsHTML = `
-                <div class="hp-bulk-actions">
-                    <label style="font-weight: 600; margin-right: 15px;">
-                        Select a row to copy, then apply to:
-                    </label>
-                    <button type="button" class="button hp-apply-odd">Odd (Home, Science, Offers...)</button>
-                    <button type="button" class="button hp-apply-even">Even (Benefits, Features, Expert...)</button>
-                    <button type="button" class="button hp-apply-all">All</button>
-                    <span style="margin: 0 15px; color: #ccc;">|</span>
-                    <button type="button" class="button hp-refresh-sections">
-                        <span class="dashicons dashicons-update" style="margin-top: 3px;"></span> Refresh Sections
-                    </button>
-                </div>
-            `;
-            $repeater.before(bulkActionsHTML);
-        }
+        const bulkActionsHTML = `
+            <div class="hp-bulk-actions">
+                <label style="font-weight: 600; margin-right: 15px;">
+                    Select a row to copy, then apply to:
+                </label>
+                <button type="button" class="button hp-apply-odd">Odd (Home, Science, Offers...)</button>
+                <button type="button" class="button hp-apply-even">Even (Benefits, Features, Expert...)</button>
+                <button type="button" class="button hp-apply-all">All</button>
+                <span style="margin: 0 15px; color: #ccc;">|</span>
+                <button type="button" class="button hp-refresh-sections">
+                    <span class="dashicons dashicons-update" style="margin-top: 3px;"></span> Refresh Sections
+                </button>
+            </div>
+        `;
+        $repeater.before(bulkActionsHTML);
 
         // Add table headers for new columns
         const $table = $repeater.find('.acf-table');

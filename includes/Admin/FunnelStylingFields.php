@@ -288,17 +288,69 @@ class FunnelStylingFields
                 true
             );
 
-            // Pass section names to JavaScript from section_backgrounds repeater (v2.33.37)
+            // Pass section names to JavaScript - matches ScrollNavigation.tsx section names (v2.33.40)
             global $post;
             $sectionNames = [];
             if ($post && $post->ID) {
-                // Get section labels directly from section_backgrounds repeater
-                $sectionBackgrounds = get_field('section_backgrounds', $post->ID);
-                if (is_array($sectionBackgrounds) && !empty($sectionBackgrounds)) {
-                    foreach ($sectionBackgrounds as $section) {
-                        $sectionNames[] = $section['section_label'] ?? 'Section';
-                    }
+                // Hero section - use "Hero Section"
+                $sectionNames[] = 'Hero Section';
+
+                // Get actual configured sections by checking which have content
+                $configuredSections = [];
+
+                // Check Benefits
+                $benefitsTitle = get_field('hero_benefits_title', $post->ID);
+                if (!empty($benefitsTitle)) {
+                    $configuredSections[] = 'Benefits';
                 }
+
+                // Check Science
+                $scienceTitle = get_field('science_title', $post->ID);
+                if (!empty($scienceTitle)) {
+                    $configuredSections[] = 'Science';
+                }
+
+                // Check Infographics
+                $infographicsTitle = get_field('infographics_title', $post->ID);
+                if (!empty($infographicsTitle)) {
+                    $configuredSections[] = 'Comparison';
+                }
+
+                // Check Features
+                $featuresTitle = get_field('features_title', $post->ID);
+                if (!empty($featuresTitle)) {
+                    $configuredSections[] = 'Features';
+                }
+
+                // Check Offers (always present if funnel exists)
+                $configuredSections[] = 'Offers';
+
+                // Check Authority
+                $authorityTitle = get_field('authority_title', $post->ID);
+                if (!empty($authorityTitle)) {
+                    $configuredSections[] = 'Expert';
+                }
+
+                // Check Testimonials
+                $testimonialsTitle = get_field('testimonials_title', $post->ID);
+                if (!empty($testimonialsTitle)) {
+                    $configuredSections[] = 'Reviews';
+                }
+
+                // Check FAQ
+                $faqTitle = get_field('faq_title', $post->ID);
+                if (!empty($faqTitle)) {
+                    $configuredSections[] = 'FAQ';
+                }
+
+                // Check CTA
+                $ctaTitle = get_field('cta_title', $post->ID);
+                if (!empty($ctaTitle)) {
+                    $configuredSections[] = 'CTA';
+                }
+
+                // Add configured sections to array
+                $sectionNames = array_merge($sectionNames, $configuredSections);
             }
 
             wp_localize_script('hp-rw-section-bg-admin', 'hpSectionBgData', [
