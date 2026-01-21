@@ -72,15 +72,19 @@ export const LegalPopup = ({
 
   useEffect(() => {
     if (isOpen) {
+      // Calculate scrollbar width BEFORE hiding overflow
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+      // Apply padding first to compensate for scrollbar removal
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+
+      // Then hide overflow (which removes the scrollbar)
+      document.body.style.overflow = 'hidden';
+
       setShouldRender(true);
       setIsClosing(false);
       setShowModal(false);
       fetchContent();
-
-      // Prevent body scroll and compensate for scrollbar width to avoid layout shift
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-      document.body.style.overflow = 'hidden';
-      document.body.style.paddingRight = `${scrollbarWidth}px`;
 
       // Show modal after backdrop starts fading in
       const modalTimer = setTimeout(() => {
