@@ -87,7 +87,7 @@ export const LegalPopup = ({
       const closeTimer = setTimeout(() => {
         setShouldRender(false);
         document.body.style.overflow = '';
-      }, 300); // Match animation duration
+      }, 500); // Match animation duration
       return () => clearTimeout(closeTimer);
     }
 
@@ -120,19 +120,19 @@ export const LegalPopup = ({
   return (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-      style={{ animation: `${isClosing ? 'fadeOut' : 'fadeIn'} 200ms ease-out forwards` }}
+      style={{ animation: `${isClosing ? 'fadeOut' : 'fadeIn'} 400ms ease-in-out forwards` }}
       onClick={handleClose}
     >
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-        style={{ animation: `${isClosing ? 'fadeOut' : 'fadeIn'} 200ms ease-out forwards` }}
+        style={{ animation: `${isClosing ? 'fadeOut' : 'fadeIn'} 400ms ease-in-out forwards` }}
       />
 
       {/* Modal */}
       <div
         className="relative w-full max-w-3xl max-h-[80vh] bg-card rounded-xl shadow-2xl border border-border/50 flex flex-col"
-        style={{ animation: `${isClosing ? 'slideDown' : 'slideUp'} 300ms ease-out forwards` }}
+        style={{ animation: `${isClosing ? 'slideDown' : 'slideUp'} 500ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards` }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -217,7 +217,7 @@ export const LegalPopup = ({
                 @keyframes slideUp {
                   from {
                     opacity: 0;
-                    transform: scale(0.95) translateY(16px);
+                    transform: scale(0.85) translateY(40px);
                   }
                   to {
                     opacity: 1;
@@ -232,7 +232,7 @@ export const LegalPopup = ({
                   }
                   to {
                     opacity: 0;
-                    transform: scale(0.95) translateY(16px);
+                    transform: scale(0.85) translateY(40px);
                   }
                 }
               `}</style>
