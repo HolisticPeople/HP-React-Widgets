@@ -72,18 +72,23 @@ export const LegalPopup = ({
   useEffect(() => {
     if (isOpen) {
       setShouldRender(true);
-      setIsClosing(false);
+      // Start with closing state, then animate in after a brief delay
+      setIsClosing(true);
+      const openTimer = setTimeout(() => {
+        setIsClosing(false);
+      }, 10);
       fetchContent();
       // Prevent body scroll when popup is open
       document.body.style.overflow = 'hidden';
+      return () => clearTimeout(openTimer);
     } else if (shouldRender) {
       // Trigger closing animation
       setIsClosing(true);
-      const timer = setTimeout(() => {
+      const closeTimer = setTimeout(() => {
         setShouldRender(false);
         document.body.style.overflow = '';
       }, 300); // Match animation duration
-      return () => clearTimeout(timer);
+      return () => clearTimeout(closeTimer);
     }
 
     return () => {
