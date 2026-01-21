@@ -129,12 +129,17 @@
         if (!$repeater.length) return;
 
         // Only add bulk actions if section_backgrounds field is visible (on Styling tab)
-        // Check if the repeater or its parent is visible (v2.33.38)
-        if (!$repeater.is(':visible') && !$repeater.closest('.acf-field').is(':visible')) {
+        // ACF hides fields on inactive tabs with display:none on the .acf-field wrapper (v2.33.39)
+        const $field = $repeater.closest('.acf-field');
+        if (!$field.is(':visible')) {
             return;
         }
 
-        // Add bulk action buttons above repeater (only once)
+        // Add bulk action buttons above repeater (only once, check with class not prev)
+        if ($field.find('.hp-bulk-actions').length) {
+            return; // Already added
+        }
+
         if (!$repeater.prev('.hp-bulk-actions').length) {
             const bulkActionsHTML = `
                 <div class="hp-bulk-actions">
@@ -185,11 +190,10 @@
             // Skip if already has checkbox
             if ($row.find('.hp-row-checkbox').length) return;
 
-            // Get section name from section_label field in the row (v2.33.38)
+            // Get section name from server-side data or fallback (v2.33.40 - restored original logic)
             let sectionName = 'Section';
-            const $sectionLabelInput = $row.find('[data-name="section_label"] input');
-            if ($sectionLabelInput.length && $sectionLabelInput.val()) {
-                sectionName = $sectionLabelInput.val();
+            if (typeof hpSectionBgData !== 'undefined' && hpSectionBgData.sectionNames && hpSectionBgData.sectionNames[index]) {
+                sectionName = hpSectionBgData.sectionNames[index];
             } else if (index === 0) {
                 sectionName = 'Hero';
             } else {
