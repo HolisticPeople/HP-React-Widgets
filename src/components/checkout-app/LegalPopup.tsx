@@ -37,6 +37,7 @@ export const LegalPopup = ({
   const [error, setError] = useState<string | null>(null);
   const [isClosing, setIsClosing] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const pageId = type === 'terms' ? tosPageId : privacyPageId;
 
@@ -72,11 +73,8 @@ export const LegalPopup = ({
   useEffect(() => {
     if (isOpen) {
       setShouldRender(true);
-      // Start with closing state, then animate in after a brief delay
-      setIsClosing(true);
-      const openTimer = setTimeout(() => {
-        setIsClosing(false);
-      }, 10);
+      setIsClosing(false);
+      setShowModal(false);
       fetchContent();
 
       // Prevent body scroll and compensate for scrollbar width to avoid layout shift
@@ -84,16 +82,30 @@ export const LegalPopup = ({
       document.body.style.overflow = 'hidden';
       document.body.style.paddingRight = `${scrollbarWidth}px`;
 
-      return () => clearTimeout(openTimer);
+      // Show modal after backdrop starts fading in
+      const modalTimer = setTimeout(() => {
+        setShowModal(true);
+      }, 150);
+
+      return () => clearTimeout(modalTimer);
     } else if (shouldRender) {
-      // Trigger closing animation
-      setIsClosing(true);
+      // Hide modal first
+      setShowModal(false);
+      // Trigger closing animation for backdrop
       const closeTimer = setTimeout(() => {
+        setIsClosing(true);
+      }, 100);
+
+      const cleanupTimer = setTimeout(() => {
         setShouldRender(false);
         document.body.style.overflow = '';
         document.body.style.paddingRight = '';
-      }, 500); // Match animation duration
-      return () => clearTimeout(closeTimer);
+      }, 600); // 100ms delay + 500ms animation
+
+      return () => {
+        clearTimeout(closeTimer);
+        clearTimeout(cleanupTimer);
+      };
     }
 
     return () => {
@@ -126,31 +138,28 @@ export const LegalPopup = ({
   return (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-      style={{
-        animation: `${isClosing ? 'fadeOut' : 'fadeIn'} 400ms ease-in-out forwards`,
-        opacity: isClosing ? 1 : 0
-      }}
       onClick={handleClose}
     >
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         style={{
-          animation: `${isClosing ? 'fadeOut' : 'fadeIn'} 400ms ease-in-out forwards`,
-          opacity: isClosing ? 1 : 0
+          animation: `${isClosing ? 'fadeOut' : 'fadeIn'} 300ms ease-out forwards`,
+          opacity: 0
         }}
       />
 
       {/* Modal */}
-      <div
-        className="relative w-full max-w-3xl max-h-[80vh] bg-card rounded-xl shadow-2xl border border-border/50 flex flex-col"
-        style={{
-          animation: `${isClosing ? 'slideDown' : 'slideUp'} 500ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
-          opacity: isClosing ? 1 : 0,
-          transform: isClosing ? 'scale(1) translateY(0)' : 'scale(0.85) translateY(40px)'
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
+      {showModal && (
+        <div
+          className="relative w-full max-w-3xl max-h-[80vh] bg-card rounded-xl shadow-2xl border border-border/50 flex flex-col"
+          style={{
+            animation: `slideUp 400ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
+            opacity: 0,
+            transform: 'scale(0.85) translateY(40px)'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border/50">
           <h2 className="text-xl font-bold text-accent">{title}</h2>
@@ -272,6 +281,7 @@ export const LegalPopup = ({
           </button>
         </div>
       </div>
+      )}
     </div>
   );
 };
