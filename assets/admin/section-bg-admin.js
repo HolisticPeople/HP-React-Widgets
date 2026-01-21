@@ -122,14 +122,18 @@
     }
 
     /**
-     * Add bulk action buttons (v2.33.41 - separated from preview/checkbox logic)
+     * Add bulk action buttons (v2.33.43 - placed inside ACF field wrapper)
      */
     function addBulkActionButtons() {
         const $repeater = $('[data-key="field_section_backgrounds"]');
         if (!$repeater.length) return;
 
-        // Check if already exists
-        if ($repeater.prev('.hp-bulk-actions').length > 0) {
+        // Find the ACF field wrapper (this is what ACF hides/shows with tabs)
+        const $fieldWrapper = $repeater.closest('.acf-field');
+        if (!$fieldWrapper.length) return;
+
+        // Check if already exists inside this field wrapper
+        if ($fieldWrapper.find('.hp-bulk-actions').length > 0) {
             return; // Already added
         }
 
@@ -147,6 +151,9 @@
                 </button>
             </div>
         `;
+
+        // Insert inside the field wrapper, before the repeater
+        // This way ACF will hide/show it automatically with the tab
         $repeater.before(bulkActionsHTML);
     }
 
