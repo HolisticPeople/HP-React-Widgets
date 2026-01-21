@@ -119,21 +119,20 @@ export const LegalPopup = ({
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 transition-opacity duration-200 ${
-        isClosing ? 'opacity-0' : 'opacity-100'
-      }`}
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      style={{ animation: `${isClosing ? 'fadeOut' : 'fadeIn'} 200ms ease-out forwards` }}
       onClick={handleClose}
     >
       {/* Backdrop */}
-      <div className={`absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity duration-200 ${
-        isClosing ? 'opacity-0' : 'opacity-100'
-      }`} />
+      <div
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        style={{ animation: `${isClosing ? 'fadeOut' : 'fadeIn'} 200ms ease-out forwards` }}
+      />
 
       {/* Modal */}
       <div
-        className={`relative w-full max-w-3xl max-h-[80vh] bg-card rounded-xl shadow-2xl border border-border/50 flex flex-col transition-all duration-300 ${
-          isClosing ? 'opacity-0 scale-95 translate-y-4' : 'opacity-100 scale-100 translate-y-0'
-        }`}
+        className="relative w-full max-w-3xl max-h-[80vh] bg-card rounded-xl shadow-2xl border border-border/50 flex flex-col"
+        style={{ animation: `${isClosing ? 'slideDown' : 'slideUp'} 300ms ease-out forwards` }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -202,6 +201,39 @@ export const LegalPopup = ({
                 }
                 .legal-popup-content::-webkit-scrollbar-thumb:hover {
                   background: hsl(var(--accent));
+                }
+
+                /* Animation keyframes */
+                @keyframes fadeIn {
+                  from { opacity: 0; }
+                  to { opacity: 1; }
+                }
+
+                @keyframes fadeOut {
+                  from { opacity: 1; }
+                  to { opacity: 0; }
+                }
+
+                @keyframes slideUp {
+                  from {
+                    opacity: 0;
+                    transform: scale(0.95) translateY(16px);
+                  }
+                  to {
+                    opacity: 1;
+                    transform: scale(1) translateY(0);
+                  }
+                }
+
+                @keyframes slideDown {
+                  from {
+                    opacity: 1;
+                    transform: scale(1) translateY(0);
+                  }
+                  to {
+                    opacity: 0;
+                    transform: scale(0.95) translateY(16px);
+                  }
                 }
               `}</style>
               <div 
