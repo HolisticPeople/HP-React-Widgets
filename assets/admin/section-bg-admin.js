@@ -412,7 +412,7 @@
      */
     if (typeof acf !== 'undefined') {
         acf.addAction('ready', function() {
-            // Only add previews/checkboxes, NOT bulk actions (those are added on tab show)
+            addBulkActionButtons();
             addPreviewsAndCheckboxes();
             initBulkActions();
             initLivePreview();
@@ -421,15 +421,6 @@
         // Re-initialize when repeater rows are added
         acf.addAction('append', function($el) {
             if ($el.closest('[data-key="field_section_backgrounds"]').length) {
-                addPreviewsAndCheckboxes();
-            }
-        });
-
-        // Add bulk actions only when Styling tab is shown (v2.33.41)
-        // Listen for tab changes on the field group level
-        acf.addAction('show_field', function($field) {
-            if ($field.data('key') === 'field_section_backgrounds') {
-                addBulkActionButtons();
                 addPreviewsAndCheckboxes();
             }
         });
