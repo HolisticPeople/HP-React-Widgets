@@ -36,6 +36,7 @@ export const LegalPopup = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isClosing, setIsClosing] = useState(false);
+  const [shouldRender, setShouldRender] = useState(false);
 
   const pageId = type === 'terms' ? tosPageId : privacyPageId;
 
@@ -70,25 +71,31 @@ export const LegalPopup = ({
 
   useEffect(() => {
     if (isOpen) {
+      setShouldRender(true);
       setIsClosing(false);
       fetchContent();
       // Prevent body scroll when popup is open
       document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
+    } else if (shouldRender) {
+      // Trigger closing animation
+      setIsClosing(true);
+      const timer = setTimeout(() => {
+        setShouldRender(false);
+        document.body.style.overflow = '';
+      }, 300); // Match animation duration
+      return () => clearTimeout(timer);
     }
 
     return () => {
-      document.body.style.overflow = '';
+      if (!isOpen && !shouldRender) {
+        document.body.style.overflow = '';
+      }
     };
-  }, [isOpen, fetchContent]);
+  }, [isOpen, fetchContent, shouldRender]);
 
   // Handle close with animation
   const handleClose = useCallback(() => {
-    setIsClosing(true);
-    setTimeout(() => {
-      onClose();
-    }, 200); // Match the fade-out duration
+    onClose();
   }, [onClose]);
 
   // Handle escape key
@@ -103,7 +110,7 @@ export const LegalPopup = ({
     return () => window.removeEventListener('keydown', handleEscape);
   }, [isOpen, handleClose]);
 
-  if (!isOpen) return null;
+  if (!shouldRender) return null;
 
   return (
     <div
