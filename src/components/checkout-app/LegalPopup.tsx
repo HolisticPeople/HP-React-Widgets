@@ -122,7 +122,7 @@ export const LegalPopup = ({
         </div>
         
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 legal-popup-content">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <LoaderIcon className="w-8 h-8 text-accent" />
@@ -159,20 +159,20 @@ export const LegalPopup = ({
                   color: hsl(var(--accent)) !important;
                 }
 
-                /* Dark scrollbar styling */
-                .legal-content-wrapper::-webkit-scrollbar {
+                /* Dark scrollbar styling for the scrolling container */
+                .legal-popup-content::-webkit-scrollbar {
                   width: 12px;
                 }
-                .legal-content-wrapper::-webkit-scrollbar-track {
+                .legal-popup-content::-webkit-scrollbar-track {
                   background: hsl(var(--card));
                   border-radius: 6px;
                 }
-                .legal-content-wrapper::-webkit-scrollbar-thumb {
+                .legal-popup-content::-webkit-scrollbar-thumb {
                   background: hsl(var(--border));
                   border-radius: 6px;
                   border: 2px solid hsl(var(--card));
                 }
-                .legal-content-wrapper::-webkit-scrollbar-thumb:hover {
+                .legal-popup-content::-webkit-scrollbar-thumb:hover {
                   background: hsl(var(--accent));
                 }
               `}</style>
