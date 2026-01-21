@@ -379,7 +379,43 @@
     }
 
     /**
-     * Initialize color pickers with custom palette from styling colors (v2.33.49)
+     * Add palette to a specific color picker (v2.33.50)
+     */
+    function addPaletteToPicker($input) {
+        if (typeof hpSectionBgData === 'undefined' || !hpSectionBgData.stylingColors || hpSectionBgData.stylingColors.length === 0) {
+            return;
+        }
+
+        const $picker = $input.closest('.wp-picker-container');
+        const $irisPicker = $picker.find('.iris-picker');
+
+        // Check if palette already exists
+        if ($irisPicker.find('.iris-palette-container').length > 0) {
+            return; // Already added
+        }
+
+        const palette = hpSectionBgData.stylingColors.map(item => item.color);
+        const $paletteContainer = $('<div class="iris-palette-container"></div>');
+
+        palette.forEach((color, index) => {
+            const $swatch = $('<a class="iris-palette" tabindex="0" data-hp-palette="true"></a>')
+                .css('background-color', color)
+                .attr('data-color', color)
+                .attr('title', hpSectionBgData.stylingColors[index].label);
+
+            $swatch.on('click', function(e) {
+                e.preventDefault();
+                $input.iris('color', $(this).attr('data-color'));
+            });
+
+            $paletteContainer.append($swatch);
+        });
+
+        $irisPicker.append($paletteContainer);
+    }
+
+    /**
+     * Initialize color picker event handlers (v2.33.50)
      */
     function initColorPickers() {
         if (typeof hpSectionBgData === 'undefined' || !hpSectionBgData.stylingColors || hpSectionBgData.stylingColors.length === 0) {
@@ -388,64 +424,16 @@
 
         const $repeater = $('[data-key="field_section_backgrounds"]');
 
-        // Build palette array from styling colors
-        const palette = hpSectionBgData.stylingColors.map(item => item.color);
+        // Add event handler for when color picker opens
+        $repeater.on('click', '[data-name="gradient_start_color"] .wp-color-result, [data-name="gradient_end_color"] .wp-color-result', function() {
+            const $button = $(this);
+            const $picker = $button.closest('.wp-picker-container');
+            const $input = $picker.find('input.wp-color-picker');
 
-        // Find all color picker inputs in the section backgrounds repeater
-        $repeater.find('[data-name="gradient_start_color"] input, [data-name="gradient_end_color"] input').each(function() {
-            const $input = $(this);
-
-            // Only process if wpColorPicker is already initialized by ACF
-            if ($input.hasClass('wp-color-picker')) {
-                const $picker = $input.closest('.wp-picker-container');
-
-                // Check if palette already added
-                if ($picker.attr('data-hp-palette-added') === 'true') {
-                    return; // Already processed
-                }
-
-                // Mark as processed
-                $picker.attr('data-hp-palette-added', 'true');
-
-                // Open picker to force Iris initialization, then add palette
-                const $button = $picker.find('.wp-color-result');
-
-                // Temporarily open picker if not already open
-                const wasOpen = $picker.find('.iris-picker').is(':visible');
-                if (!wasOpen) {
-                    $button.trigger('click');
-                }
-
-                // Wait a bit for iris to render, then add palette
-                setTimeout(function() {
-                    const $irisPicker = $picker.find('.iris-picker');
-
-                    if ($irisPicker.length && $irisPicker.find('.iris-palette-container').length === 0) {
-                        const $paletteContainer = $('<div class="iris-palette-container"></div>');
-
-                        palette.forEach((color, index) => {
-                            const $swatch = $('<a class="iris-palette" tabindex="0" data-hp-palette="true"></a>')
-                                .css('background-color', color)
-                                .attr('data-color', color)
-                                .attr('title', hpSectionBgData.stylingColors[index].label);
-
-                            $swatch.on('click', function(e) {
-                                e.preventDefault();
-                                $input.iris('color', $(this).attr('data-color'));
-                            });
-
-                            $paletteContainer.append($swatch);
-                        });
-
-                        $irisPicker.append($paletteContainer);
-                    }
-
-                    // Close picker if it wasn't open before
-                    if (!wasOpen) {
-                        $button.trigger('click');
-                    }
-                }, 50);
-            }
+            // Add palette after a short delay to ensure iris picker is rendered
+            setTimeout(function() {
+                addPaletteToPicker($input);
+            }, 50);
         });
     }
 
