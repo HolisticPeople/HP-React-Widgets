@@ -75,21 +75,13 @@ export const LegalPopup = ({
       // Calculate scrollbar width BEFORE hiding overflow
       const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
 
-      // Store original styles
-      const originalBodyOverflow = document.body.style.overflow;
-      const originalBodyPaddingRight = document.body.style.paddingRight;
-      const originalHtmlOverflow = document.documentElement.style.overflow;
-      const originalHtmlPaddingRight = document.documentElement.style.paddingRight;
-
-      // Apply padding to both body and html to compensate for scrollbar removal
+      // Apply padding only to body to compensate for scrollbar removal
       if (scrollbarWidth > 0) {
         document.body.style.paddingRight = `${scrollbarWidth}px`;
-        document.documentElement.style.paddingRight = `${scrollbarWidth}px`;
       }
 
       // Then hide overflow (which removes the scrollbar)
       document.body.style.overflow = 'hidden';
-      document.documentElement.style.overflow = 'hidden';
 
       setShouldRender(true);
       setIsClosing(false);
@@ -115,8 +107,6 @@ export const LegalPopup = ({
         setShouldRender(false);
         document.body.style.overflow = '';
         document.body.style.paddingRight = '';
-        document.documentElement.style.overflow = '';
-        document.documentElement.style.paddingRight = '';
       }, 700); // 400ms modal + 300ms backdrop
 
       return () => {
@@ -129,8 +119,6 @@ export const LegalPopup = ({
       if (!isOpen && !shouldRender) {
         document.body.style.overflow = '';
         document.body.style.paddingRight = '';
-        document.documentElement.style.overflow = '';
-        document.documentElement.style.paddingRight = '';
       }
     };
   }, [isOpen, fetchContent, shouldRender]);
