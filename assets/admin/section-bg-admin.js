@@ -122,21 +122,13 @@
     }
 
     /**
-     * Add preview rectangle and checkbox to each repeater row
+     * Add bulk action buttons (v2.33.41 - separated from preview/checkbox logic)
      */
-    function addPreviewsAndCheckboxes() {
+    function addBulkActionButtons() {
         const $repeater = $('[data-key="field_section_backgrounds"]');
         if (!$repeater.length) return;
 
-        // Only add bulk actions if section_backgrounds field is visible (on Styling tab)
-        // ACF hides fields on inactive tabs with display:none on the .acf-field wrapper (v2.33.40)
-        const $field = $repeater.closest('.acf-field');
-        if (!$field.is(':visible')) {
-            return;
-        }
-
-        // Add bulk action buttons above repeater (only once)
-        // Check if already exists by looking immediately before the repeater
+        // Check if already exists
         if ($repeater.prev('.hp-bulk-actions').length > 0) {
             return; // Already added
         }
@@ -156,6 +148,14 @@
             </div>
         `;
         $repeater.before(bulkActionsHTML);
+    }
+
+    /**
+     * Add preview rectangle and checkbox to each repeater row
+     */
+    function addPreviewsAndCheckboxes() {
+        const $repeater = $('[data-key="field_section_backgrounds"]');
+        if (!$repeater.length) return;
 
         // Add table headers for new columns
         const $table = $repeater.find('.acf-table');
@@ -412,6 +412,7 @@
      */
     if (typeof acf !== 'undefined') {
         acf.addAction('ready', function() {
+            // Only add previews/checkboxes, NOT bulk actions (those are added on tab show)
             addPreviewsAndCheckboxes();
             initBulkActions();
             initLivePreview();
@@ -424,9 +425,11 @@
             }
         });
 
-        // Re-initialize when tab is shown (v2.33.38)
-        acf.addAction('show', function($field) {
+        // Add bulk actions only when Styling tab is shown (v2.33.41)
+        // Listen for tab changes on the field group level
+        acf.addAction('show_field', function($field) {
             if ($field.data('key') === 'field_section_backgrounds') {
+                addBulkActionButtons();
                 addPreviewsAndCheckboxes();
             }
         });

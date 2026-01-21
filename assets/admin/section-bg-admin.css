@@ -110,11 +110,15 @@
     display: block;
 }
 
-/* Hide section_id hidden field column with explicit resets */
+/* Hide section_id and section_label hidden field columns with explicit resets */
 [data-key="field_section_backgrounds"] [data-name="section_id"],
 [data-key="field_section_backgrounds"] thead [data-name="section_id"],
 [data-key="field_section_backgrounds"] th[data-name="section_id"],
-[data-key="field_section_backgrounds"] td[data-name="section_id"] {
+[data-key="field_section_backgrounds"] td[data-name="section_id"],
+[data-key="field_section_backgrounds"] [data-name="section_label"],
+[data-key="field_section_backgrounds"] thead [data-name="section_label"],
+[data-key="field_section_backgrounds"] th[data-name="section_label"],
+[data-key="field_section_backgrounds"] td[data-name="section_label"] {
     display: none !important;
     width: 0 !important;
     min-width: 0 !important;
