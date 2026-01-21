@@ -78,8 +78,12 @@ export const LegalPopup = ({
         setIsClosing(false);
       }, 10);
       fetchContent();
-      // Prevent body scroll when popup is open
+
+      // Prevent body scroll and compensate for scrollbar width to avoid layout shift
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
       document.body.style.overflow = 'hidden';
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+
       return () => clearTimeout(openTimer);
     } else if (shouldRender) {
       // Trigger closing animation
@@ -87,6 +91,7 @@ export const LegalPopup = ({
       const closeTimer = setTimeout(() => {
         setShouldRender(false);
         document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
       }, 500); // Match animation duration
       return () => clearTimeout(closeTimer);
     }
@@ -94,6 +99,7 @@ export const LegalPopup = ({
     return () => {
       if (!isOpen && !shouldRender) {
         document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
       }
     };
   }, [isOpen, fetchContent, shouldRender]);
@@ -129,7 +135,10 @@ export const LegalPopup = ({
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-        style={{ animation: `${isClosing ? 'fadeOut' : 'fadeIn'} 400ms ease-in-out forwards` }}
+        style={{
+          animation: `${isClosing ? 'fadeOut' : 'fadeIn'} 400ms ease-in-out forwards`,
+          opacity: isClosing ? 1 : 0
+        }}
       />
 
       {/* Modal */}
