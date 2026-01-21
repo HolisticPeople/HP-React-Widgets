@@ -379,6 +379,51 @@
     }
 
     /**
+     * Initialize color pickers with custom palette from styling colors (v2.33.47)
+     */
+    function initColorPickers() {
+        if (typeof hpSectionBgData === 'undefined' || !hpSectionBgData.stylingColors || hpSectionBgData.stylingColors.length === 0) {
+            return;
+        }
+
+        const $repeater = $('[data-key="field_section_backgrounds"]');
+
+        // Build palette array from styling colors
+        const palette = hpSectionBgData.stylingColors.map(item => item.color);
+
+        // Find all color picker inputs in the section backgrounds repeater
+        $repeater.find('[data-name="gradient_start_color"] input, [data-name="gradient_end_color"] input').each(function() {
+            const $input = $(this);
+
+            // Check if wpColorPicker is already initialized
+            if ($input.hasClass('wp-color-picker')) {
+                // Destroy existing picker
+                $input.wpColorPicker('destroy');
+            }
+
+            // Re-initialize with custom palette
+            $input.wpColorPicker({
+                palettes: palette,
+                change: function(event, ui) {
+                    // Trigger preview update
+                    const $row = $(this).closest('.acf-row');
+                    updatePreview($row);
+                }
+            });
+
+            // Add tooltips to palette colors
+            const $picker = $input.closest('.wp-picker-container');
+            const $paletteButtons = $picker.find('.iris-palette');
+
+            $paletteButtons.each(function(index) {
+                if (hpSectionBgData.stylingColors[index]) {
+                    $(this).attr('title', hpSectionBgData.stylingColors[index].label);
+                }
+            });
+        });
+    }
+
+    /**
      * Initialize live preview updates on field changes
      */
     function initLivePreview() {
@@ -423,12 +468,16 @@
             addPreviewsAndCheckboxes();
             initBulkActions();
             initLivePreview();
+            // Initialize color pickers with custom palette (small delay to ensure ACF color pickers are ready)
+            setTimeout(initColorPickers, 100);
         });
 
         // Re-initialize when repeater rows are added
         acf.addAction('append', function($el) {
             if ($el.closest('[data-key="field_section_backgrounds"]').length) {
                 addPreviewsAndCheckboxes();
+                // Re-initialize color pickers for new rows
+                setTimeout(initColorPickers, 100);
             }
         });
     }

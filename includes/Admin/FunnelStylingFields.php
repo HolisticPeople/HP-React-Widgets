@@ -288,9 +288,11 @@ class FunnelStylingFields
                 true
             );
 
-            // Pass section names to JavaScript - matches ScrollNavigation.tsx section names (v2.33.40)
+            // Pass section names and styling colors to JavaScript (v2.33.47)
             global $post;
             $sectionNames = [];
+            $stylingColors = [];
+
             if ($post && $post->ID) {
                 // Hero section - use "Hero Section"
                 $sectionNames[] = 'Hero Section';
@@ -351,10 +353,33 @@ class FunnelStylingFields
 
                 // Add configured sections to array
                 $sectionNames = array_merge($sectionNames, $configuredSections);
+
+                // Get styling colors for color picker palette
+                $colorFields = [
+                    'text_color_accent' => 'Text Accent',
+                    'text_color_basic' => 'Basic Text',
+                    'text_color_note' => 'Note Text',
+                    'text_color_discount' => 'Discount Text',
+                    'page_bg_color' => 'Page BG Color',
+                    'card_bg_color' => 'Card Background',
+                    'input_bg_color' => 'Input Background',
+                    'border_color' => 'Border Color'
+                ];
+
+                foreach ($colorFields as $fieldName => $label) {
+                    $color = get_field($fieldName, $post->ID);
+                    if (!empty($color)) {
+                        $stylingColors[] = [
+                            'color' => $color,
+                            'label' => $label
+                        ];
+                    }
+                }
             }
 
             wp_localize_script('hp-rw-section-bg-admin', 'hpSectionBgData', [
                 'sectionNames' => $sectionNames,
+                'stylingColors' => $stylingColors,
                 'refreshNonce' => wp_create_nonce('hp_refresh_sections_' . $post->ID)
             ]);
 
