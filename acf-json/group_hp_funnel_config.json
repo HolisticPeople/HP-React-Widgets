@@ -4500,6 +4500,30 @@
                 },
                 {
                     "ID": 0,
+                    "key": "field_section_label",
+                    "label": "Section Label",
+                    "name": "section_label",
+                    "type": "hidden",
+                    "menu_order": 0,
+                    "parent": "field_section_backgrounds",
+                    "default_value": "",
+                    "_name": "section_label",
+                    "_valid": 1,
+                    "aria-label": "",
+                    "prefix": "acf",
+                    "required": false,
+                    "id": "",
+                    "class": "",
+                    "conditional_logic": false,
+                    "instructions": "",
+                    "wrapper": {
+                        "width": "0",
+                        "class": "",
+                        "id": ""
+                    }
+                },
+                {
+                    "ID": 0,
                     "key": "field_section_background_type",
                     "label": "Background Type",
                     "name": "background_type",

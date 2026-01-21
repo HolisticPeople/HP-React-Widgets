@@ -128,8 +128,14 @@
         const $repeater = $('[data-key="field_section_backgrounds"]');
         if (!$repeater.length) return;
 
-        // Add bulk action buttons above repeater
-        if (!$('.hp-bulk-actions').length) {
+        // Only add bulk actions if section_backgrounds field is visible (on Styling tab)
+        // Check if the repeater or its parent is visible (v2.33.38)
+        if (!$repeater.is(':visible') && !$repeater.closest('.acf-field').is(':visible')) {
+            return;
+        }
+
+        // Add bulk action buttons above repeater (only once)
+        if (!$repeater.prev('.hp-bulk-actions').length) {
             const bulkActionsHTML = `
                 <div class="hp-bulk-actions">
                     <label style="font-weight: 600; margin-right: 15px;">
@@ -179,10 +185,11 @@
             // Skip if already has checkbox
             if ($row.find('.hp-row-checkbox').length) return;
 
-            // Get section name from server-side data or use default
+            // Get section name from section_label field in the row (v2.33.38)
             let sectionName = 'Section';
-            if (typeof hpSectionBgData !== 'undefined' && hpSectionBgData.sectionNames && hpSectionBgData.sectionNames[index]) {
-                sectionName = hpSectionBgData.sectionNames[index];
+            const $sectionLabelInput = $row.find('[data-name="section_label"] input');
+            if ($sectionLabelInput.length && $sectionLabelInput.val()) {
+                sectionName = $sectionLabelInput.val();
             } else if (index === 0) {
                 sectionName = 'Hero';
             } else {
@@ -318,17 +325,13 @@
             copyRowSettings($sourceRow, $targetRows);
         });
 
-        // Refresh Sections (v2.33.37) - Re-sync section backgrounds with actual funnel sections
+        // Refresh Sections (v2.33.38) - Re-sync section backgrounds with actual funnel sections
         $(document).on('click', '.hp-refresh-sections', function() {
             const $button = $(this);
             const postId = $('#post_ID').val();
 
             if (!postId) {
                 alert('Unable to determine post ID. Please save the funnel first.');
-                return;
-            }
-
-            if (!confirm('This will sync the section backgrounds table with your current funnel configuration.\n\nSections that are no longer configured will be removed, and new sections will be added.\n\nExisting background settings will be preserved.\n\nContinue?')) {
                 return;
             }
 
@@ -414,6 +417,13 @@
         // Re-initialize when repeater rows are added
         acf.addAction('append', function($el) {
             if ($el.closest('[data-key="field_section_backgrounds"]').length) {
+                addPreviewsAndCheckboxes();
+            }
+        });
+
+        // Re-initialize when tab is shown (v2.33.38)
+        acf.addAction('show', function($field) {
+            if ($field.data('key') === 'field_section_backgrounds') {
                 addPreviewsAndCheckboxes();
             }
         });
