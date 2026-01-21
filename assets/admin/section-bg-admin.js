@@ -379,7 +379,7 @@
     }
 
     /**
-     * Initialize color pickers with custom palette from styling colors (v2.33.47)
+     * Initialize color pickers with custom palette from styling colors (v2.33.48)
      */
     function initColorPickers() {
         if (typeof hpSectionBgData === 'undefined' || !hpSectionBgData.stylingColors || hpSectionBgData.stylingColors.length === 0) {
@@ -395,31 +395,43 @@
         $repeater.find('[data-name="gradient_start_color"] input, [data-name="gradient_end_color"] input').each(function() {
             const $input = $(this);
 
-            // Check if wpColorPicker is already initialized
+            // Only process if wpColorPicker is already initialized by ACF
             if ($input.hasClass('wp-color-picker')) {
-                // Destroy existing picker
-                $input.wpColorPicker('destroy');
+                const $picker = $input.closest('.wp-picker-container');
+
+                // Check if palette already added
+                if ($picker.find('.iris-palette[data-hp-palette]').length > 0) {
+                    return; // Already processed
+                }
+
+                // Get the Iris instance and update its options
+                const irisInstance = $input.wpColorPicker('instance');
+                if (irisInstance) {
+                    // Find the iris picker element
+                    const $irisPicker = $picker.find('.iris-picker');
+
+                    // Add palette HTML directly to iris picker
+                    if ($irisPicker.length && $irisPicker.find('.iris-palette-container').length === 0) {
+                        const $paletteContainer = $('<div class="iris-palette-container"></div>');
+
+                        palette.forEach((color, index) => {
+                            const $swatch = $('<a class="iris-palette" tabindex="0" data-hp-palette="true"></a>')
+                                .css('background-color', color)
+                                .attr('data-color', color)
+                                .attr('title', hpSectionBgData.stylingColors[index].label);
+
+                            $swatch.on('click', function(e) {
+                                e.preventDefault();
+                                $input.iris('color', $(this).attr('data-color'));
+                            });
+
+                            $paletteContainer.append($swatch);
+                        });
+
+                        $irisPicker.append($paletteContainer);
+                    }
+                }
             }
-
-            // Re-initialize with custom palette
-            $input.wpColorPicker({
-                palettes: palette,
-                change: function(event, ui) {
-                    // Trigger preview update
-                    const $row = $(this).closest('.acf-row');
-                    updatePreview($row);
-                }
-            });
-
-            // Add tooltips to palette colors
-            const $picker = $input.closest('.wp-picker-container');
-            const $paletteButtons = $picker.find('.iris-palette');
-
-            $paletteButtons.each(function(index) {
-                if (hpSectionBgData.stylingColors[index]) {
-                    $(this).attr('title', hpSectionBgData.stylingColors[index].label);
-                }
-            });
         });
     }
 
