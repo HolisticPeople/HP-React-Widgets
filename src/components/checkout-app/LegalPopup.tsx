@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
 const CloseIcon = () => (
-  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <line x1="18" y1="6" x2="6" y2="18" />
     <line x1="6" y1="6" x2="18" y2="18" />
   </svg>
@@ -96,16 +96,16 @@ export const LegalPopup = ({
   if (!isOpen) return null;
 
   return (
-    <div 
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200"
       onClick={onClose}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200" />
       
       {/* Modal */}
-      <div 
-        className="relative w-full max-w-3xl max-h-[80vh] bg-card rounded-xl shadow-2xl border border-border/50 flex flex-col"
+      <div
+        className="relative w-full max-w-3xl max-h-[80vh] bg-card rounded-xl shadow-2xl border border-border/50 flex flex-col animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -114,7 +114,7 @@ export const LegalPopup = ({
           <button
             type="button"
             onClick={onClose}
-            className="h-10 w-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors bg-transparent"
+            className="h-11 w-11 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors bg-transparent"
             style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
           >
             <CloseIcon />
@@ -158,6 +158,23 @@ export const LegalPopup = ({
                 .legal-content-wrapper a {
                   color: hsl(var(--accent)) !important;
                 }
+
+                /* Dark scrollbar styling */
+                .legal-content-wrapper::-webkit-scrollbar {
+                  width: 12px;
+                }
+                .legal-content-wrapper::-webkit-scrollbar-track {
+                  background: hsl(var(--card));
+                  border-radius: 6px;
+                }
+                .legal-content-wrapper::-webkit-scrollbar-thumb {
+                  background: hsl(var(--border));
+                  border-radius: 6px;
+                  border: 2px solid hsl(var(--card));
+                }
+                .legal-content-wrapper::-webkit-scrollbar-thumb:hover {
+                  background: hsl(var(--accent));
+                }
               `}</style>
               <div 
                 className="legal-content-wrapper prose prose-invert max-w-none"
@@ -172,7 +189,7 @@ export const LegalPopup = ({
           <button
             type="button"
             onClick={onClose}
-            className="w-full h-12 rounded-lg font-semibold text-base transition-colors text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary"
+            className="w-full h-14 rounded-lg font-semibold text-lg transition-colors text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary"
             style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
           >
             Close
