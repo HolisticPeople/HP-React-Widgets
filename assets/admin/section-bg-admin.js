@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.54)
+ * Section Background Admin UI Enhancements (v2.33.56)
  *
  * Features:
  * - Radio button selection (one row at a time) for copying settings
@@ -379,7 +379,7 @@
     }
 
     /**
-     * Get colors from the styling section in the DOM (v2.33.54)
+     * Get colors from the styling section in the DOM (v2.33.56)
      */
     function getStylingColorsFromDOM() {
         const colorFields = [
@@ -399,9 +399,8 @@
             // Try finding by data-name attribute
             let $field = $(`.acf-field[data-name="${name}"]`);
             
-            // If not found, try finding by data-key (more reliable if name is localized or changed)
+            // If not found, try finding by data-key
             if (!$field.length) {
-                // Common keys from the JSON
                 const keys = {
                     'accent_color': 'field_accent_color_local',
                     'text_color_accent': 'field_text_color_accent',
@@ -419,11 +418,12 @@
             }
 
             if ($field.length) {
-                const $input = $field.find('input.wp-color-picker');
+                // Find any input inside that looks like a color picker
+                const $input = $field.find('input.wp-color-picker, input[type="text"]').first();
                 if ($input.length && $input.val()) {
                     colors.push({
                         color: $input.val(),
-                        label: $field.find('label').first().text().replace(':', '').trim() || name
+                        label: $field.find('label').first().text().replace(/[:\*]/g, '').trim() || name
                     });
                 }
             }
@@ -438,8 +438,8 @@
     }
 
     /**
-     * Initialize color pickers with custom palette from styling colors (v2.33.54)
-     * Now more robustly handles existing and new fields
+     * Initialize color pickers with custom palette from styling colors (v2.33.56)
+     * Handles both initial load and appended rows without doubling
      */
     function initColorPickers() {
         const stylingColors = getStylingColorsFromDOM();
@@ -448,23 +448,48 @@
         const palette = stylingColors.map(item => item.color);
         const $repeater = $('[data-key="field_section_backgrounds"]');
         
-        // Find all color picker inputs in the section backgrounds repeater
         $repeater.find('[data-name="gradient_start_color"] input, [data-name="gradient_end_color"] input').each(function() {
             const $input = $(this);
+            const $container = $input.closest('.acf-input');
             
-            // If it's already a wpColorPicker, we need to update its settings
+            // Skip if already processed by us
+            if ($input.attr('data-hp-picker-fixed') === 'true') {
+                return;
+            }
+
+            // Mark as processed
+            $input.attr('data-hp-picker-fixed', 'true');
+
+            // If wpColorPicker is already initialized (standard ACF behavior)
             if ($input.hasClass('wp-color-picker')) {
-                // Update the iris palette directly if possible
-                try {
-                    const iris = $input.data('wpWpColorPicker');
-                    if (iris && iris.iris) {
-                        // This is the cleanest way to update palette without re-initializing
-                        // But iris doesn't always support live palette updates easily
-                    }
-                } catch (e) {}
+                const currentColor = $input.val();
                 
-                // Fallback: mark and handle via click
-                $input.closest('.wp-picker-container').attr('data-hp-ready', 'true');
+                // CRITICAL: To avoid doubling, we MUST find the existing container and remove it
+                // wpColorPicker('destroy') should do this, but sometimes ACF's wrapper is stubborn
+                const $existingPicker = $input.closest('.wp-picker-container');
+                
+                if ($existingPicker.length) {
+                    // Destroy the picker
+                    $input.wpColorPicker('destroy');
+                    // Ensure the container is gone (ACF's wrapper might remain)
+                    $existingPicker.remove();
+                    // Re-append the input to its original parent if it was removed
+                    if (!$input.parent().length) {
+                        $container.append($input);
+                    }
+                }
+
+                // Re-initialize with our palette
+                $input.wpColorPicker({
+                    palettes: palette,
+                    change: function(event, ui) {
+                        const $row = $(this).closest('.acf-row');
+                        updatePreview($row);
+                    }
+                });
+                
+                // Restore value
+                $input.val(currentColor).trigger('change');
             }
         });
     }
@@ -509,60 +534,14 @@
      * Initialize on ACF ready
      */
     if (typeof acf !== 'undefined') {
-        // Filter color picker arguments before initialization (v2.33.54)
-        acf.add_filter('color_picker_args', function(args, field) {
-            const fieldName = field.get('name') || '';
-            const fieldKey = field.get('key') || '';
-            
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'section-bg-admin.js:color_picker_args',message:'Checking field',data:{name: fieldName, key: fieldKey},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H'})}).catch(()=>{});
-            // #endregion
-
-            // Check if this is one of our section background color fields (by name or key)
-            const isOurField = 
-                fieldName.includes('gradient_start_color') || 
-                fieldName.includes('gradient_end_color') ||
-                fieldKey === 'field_section_gradient_start_color' ||
-                fieldKey === 'field_section_gradient_end_color';
-
-            if (isOurField) {
-                const stylingColors = getStylingColorsFromDOM();
-                if (stylingColors.length > 0) {
-                    args.palettes = stylingColors.map(item => item.color);
-                    
-                    // #region agent log
-                    fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'section-bg-admin.js:acf.color_picker_args',message:'Palettes set via ACF filter',data:{field: fieldName, palettes: args.palettes},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'G'})}).catch(()=>{});
-                    // #endregion
-                }
-            }
-            return args;
-        });
-
-        // Inject tooltips and handle palette updates when the picker is clicked (v2.33.54)
-        // This is a fallback/enhancement for pickers that were already initialized
+        // Inject tooltips when the picker is clicked (v2.33.56)
         $(document).on('click', '.wp-picker-container .wp-color-result', function() {
             const $button = $(this);
             const $container = $button.closest('.wp-picker-container');
-            const $input = $container.find('input.wp-color-picker');
             
-            // Check if this is one of our fields
-            const name = $input.attr('name') || '';
-            if (!name.includes('gradient_start_color') && !name.includes('gradient_end_color')) {
-                return;
-            }
-
             // Wait for iris to render
             setTimeout(function() {
                 const stylingColors = getStylingColorsFromDOM();
-                const $paletteContainer = $container.find('.iris-palette-container');
-                
-                if (!$paletteContainer.length) return;
-
-                // Re-build palette if colors changed or if it's missing
-                const palette = stylingColors.map(item => item.color);
-                
-                // We can't easily force iris to re-render the palette without re-init
-                // but we can at least update the tooltips on existing buttons
                 const $paletteButtons = $container.find('.iris-palette');
                 
                 $paletteButtons.each(function() {
@@ -592,7 +571,7 @@
             addPreviewsAndCheckboxes();
             initBulkActions();
             initLivePreview();
-            // Initialize color pickers with custom palette (longer delay to ensure ACF color pickers are ready)
+            // Initialize color pickers with custom palette
             setTimeout(initColorPickers, 500);
         });
 
