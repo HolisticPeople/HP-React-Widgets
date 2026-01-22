@@ -1805,85 +1805,122 @@ class FunnelConfigLoader
     }
 
     /**
-     * Detect which sections are actually configured in the funnel.
-     * Returns array of section definitions with section_id and section_label.
+     * Detect which sections are actually configured in the funnel and in what order.
+     * Parses the post_content to find hp_funnel_* shortcodes (v2.33.68).
      *
      * @param int $postId Funnel post ID
-     * @return array Array of section definitions [['section_id' => 'hero', 'section_label' => 'Hero'], ...]
+     * @return array Array of section definitions
      */
     public static function detectConfiguredSections(int $postId): array
     {
+        $post = get_post($postId);
+        if (!$post) return [];
+
+        $content = $post->post_content;
+        
+        // If content is empty but it's an Elementor page, try to get Elementor data
+        if (empty($content) && get_post_meta($postId, '_elementor_data', true)) {
+            // Elementor stores data as JSON in _elementor_data
+            // Parsing this is complex, so we'll fallback to detection via config as secondary
+        }
+
+        // Map of shortcode tags to their labels and types
+        $shortcodeMap = [
+            'hp_funnel_hero_section' => ['label' => 'Hero', 'type' => 'hero'],
+            'hp_funnel_benefits'     => ['label' => 'Benefits', 'type' => 'benefits'],
+            'hp_funnel_science'      => ['label' => 'Science', 'type' => 'science'],
+            'hp_funnel_infographics' => ['label' => 'Comparison', 'type' => 'infographics'],
+            'hp_funnel_features'     => ['label' => 'Features', 'type' => 'features'],
+            'hp_funnel_products'     => ['label' => 'Offers', 'type' => 'offers'],
+            'hp_funnel_authority'    => ['label' => 'Expert', 'type' => 'authority'],
+            'hp_funnel_testimonials' => ['label' => 'Reviews', 'type' => 'testimonials'],
+            'hp_funnel_faq'          => ['label' => 'FAQ', 'type' => 'faq'],
+            'hp_funnel_cta'          => ['label' => 'CTA', 'type' => 'cta'],
+        ];
+
         $sections = [];
-        $sectionIndex = 0;
+        $foundTypes = [];
 
-        // Hero section - always present
-        $sections[] = [
-            'section_id' => 'hero',
-            'section_label' => 'Hero',
-            'section_index' => null, // Hero doesn't get a numbered index
-        ];
-
-        // Map of section types to their detection field and display label
-        $sectionDefinitions = [
-            'benefits' => [
-                'field' => 'hero_benefits_title',
-                'label' => 'Benefits',
-            ],
-            'science' => [
-                'field' => 'science_title',
-                'label' => 'Science',
-            ],
-            'infographics' => [
-                'field' => 'infographics_title',
-                'label' => 'Comparison',
-            ],
-            'features' => [
-                'field' => 'features_title',
-                'label' => 'Features',
-            ],
-            'offers' => [
-                'field' => null, // Always present
-                'label' => 'Offers',
-            ],
-            'authority' => [
-                'field' => 'authority_title',
-                'label' => 'Expert',
-            ],
-            'testimonials' => [
-                'field' => 'testimonials_title',
-                'label' => 'Reviews',
-            ],
-            'faq' => [
-                'field' => 'faq_title',
-                'label' => 'FAQ',
-            ],
-            'cta' => [
-                'field' => 'cta_title',
-                'label' => 'CTA',
-            ],
-        ];
-
-        // Check each section type
-        foreach ($sectionDefinitions as $type => $definition) {
-            $isConfigured = false;
-
-            // Offers section is always present
-            if ($type === 'offers') {
-                $isConfigured = true;
-            } elseif ($definition['field']) {
-                // Check if the section has content
-                $fieldValue = get_field($definition['field'], $postId);
-                $isConfigured = !empty($fieldValue);
+        // 1. Try to find shortcodes in content to establish order
+        $pattern = '/\[(hp_funnel_[a-z0-9_]+)/';
+        if (preg_match_all($pattern, $content, $matches)) {
+            foreach ($matches[1] as $tag) {
+                if (isset($shortcodeMap[$tag])) {
+                    $type = $shortcodeMap[$tag]['type'];
+                    // Avoid duplicate sections of the same type if they appear twice
+                    if (in_array($type, $foundTypes)) continue;
+                    
+                    $foundTypes[] = $type;
+                    
+                    if ($type === 'hero') {
+                        $sections[] = [
+                            'section_id' => 'hero',
+                            'section_label' => 'Hero Section',
+                            'section_index' => null,
+                            'section_type' => 'hero'
+                        ];
+                    } else {
+                        $sections[] = [
+                            'section_id' => 'section_placeholder', // Will fix indices later
+                            'section_label' => $shortcodeMap[$tag]['label'],
+                            'section_type' => $type
+                        ];
+                    }
+                }
             }
+        }
 
-            if ($isConfigured) {
+        // 2. If no sections found via content (or not using shortcodes directly),
+        // fallback to the hardcoded detection logic but preserve the old order for compatibility
+        if (empty($sections)) {
+            $sections[] = [
+                'section_id' => 'hero',
+                'section_label' => 'Hero Section',
+                'section_index' => null,
+                'section_type' => 'hero'
+            ];
+
+            $fallbackOrder = [
+                'benefits', 'science', 'infographics', 'features', 'offers',
+                'authority', 'testimonials', 'faq', 'cta'
+            ];
+
+            $sectionDefinitions = [
+                'benefits' => ['field' => 'hero_benefits_title', 'label' => 'Benefits'],
+                'science' => ['field' => 'science_title', 'label' => 'Science'],
+                'infographics' => ['field' => 'infographics_title', 'label' => 'Comparison'],
+                'features' => ['field' => 'features_title', 'label' => 'Features'],
+                'offers' => ['field' => null, 'label' => 'Offers'],
+                'authority' => ['field' => 'authority_title', 'label' => 'Expert'],
+                'testimonials' => ['field' => 'testimonials_title', 'label' => 'Reviews'],
+                'faq' => ['field' => 'faq_title', 'label' => 'FAQ'],
+                'cta' => ['field' => 'cta_title', 'label' => 'CTA'],
+            ];
+
+            foreach ($fallbackOrder as $type) {
+                $definition = $sectionDefinitions[$type];
+                $isConfigured = false;
+                if ($type === 'offers' || ($definition['field'] && !empty(get_field($definition['field'], $postId)))) {
+                    $isConfigured = true;
+                }
+
+                if ($isConfigured) {
+                    $sections[] = [
+                        'section_id' => 'section_placeholder',
+                        'section_label' => $definition['label'],
+                        'section_type' => $type
+                    ];
+                }
+            }
+        }
+
+        // 3. Assign proper indices based on the final order
+        $sectionIndex = 0;
+        foreach ($sections as &$section) {
+            if ($section['section_id'] === 'section_placeholder') {
                 $sectionIndex++;
-                $sections[] = [
-                    'section_id' => 'section_' . $sectionIndex,
-                    'section_label' => $definition['label'],
-                    'section_index' => $sectionIndex,
-                    'section_type' => $type,
-                ];
+                $section['section_id'] = 'section_' . $sectionIndex;
+                $section['section_index'] = $sectionIndex;
             }
         }
 
@@ -1893,7 +1930,7 @@ class FunnelConfigLoader
     /**
      * Auto-populate section_backgrounds repeater with funnel sections.
      * Called on funnel save to ensure all sections are present in repeater.
-     * Now dynamically detects actual configured sections (v2.33.37).
+     * Now dynamically detects actual configured sections and preserves settings by type (v2.33.68).
      *
      * @param int $postId Funnel post ID
      * @return void
@@ -1908,11 +1945,18 @@ class FunnelConfigLoader
         // Get current section_backgrounds value
         $existingSectionBackgrounds = get_field('section_backgrounds', $postId) ?: [];
 
-        // Build index of existing section configurations by section_id
-        $existingIndex = [];
+        // Build index of existing section configurations by section_type (preferred) and section_label (fallback)
+        $typeIndex = [];
+        $labelIndex = [];
         foreach ($existingSectionBackgrounds as $section) {
-            if (isset($section['section_id'])) {
-                $existingIndex[$section['section_id']] = $section;
+            $type = $section['section_type'] ?? null;
+            if ($type) {
+                $typeIndex[$type] = $section;
+            }
+            
+            $label = $section['section_label'] ?? null;
+            if ($label) {
+                $labelIndex[$label] = $section;
             }
         }
 
@@ -1922,16 +1966,33 @@ class FunnelConfigLoader
         // Build new section_backgrounds array based on configured sections
         $newSectionBackgrounds = [];
         foreach ($configuredSections as $section) {
-            $sectionId = $section['section_id'];
+            $type = $section['section_type'];
+            $label = $section['section_label'];
+            $existing = null;
 
-            // If this section already has background config, preserve it
-            if (isset($existingIndex[$sectionId])) {
-                $newSectionBackgrounds[] = $existingIndex[$sectionId];
+            // Try matching by type first
+            if (isset($typeIndex[$type])) {
+                $existing = $typeIndex[$type];
+            } 
+            // Fallback to matching by label (for legacy data)
+            elseif (isset($labelIndex[$label])) {
+                $existing = $labelIndex[$label];
+            }
+
+            if ($existing) {
+                // Preserve settings but update the section_id and index to match current order
+                $existing['section_id'] = $section['section_id'];
+                $existing['section_label'] = $section['section_label'];
+                $existing['section_index'] = $section['section_index'];
+                $existing['section_type'] = $type; // Ensure type is stored for future matching
+                $newSectionBackgrounds[] = $existing;
             } else {
                 // Add new section with default background settings
                 $newSectionBackgrounds[] = [
-                    'section_id' => $sectionId,
+                    'section_id' => $section['section_id'],
                     'section_label' => $section['section_label'],
+                    'section_index' => $section['section_index'],
+                    'section_type' => $type,
                     'background_type' => 'none',
                     'gradient_type' => 'linear',
                     'gradient_preset' => 'vertical-down',
@@ -1943,7 +2004,6 @@ class FunnelConfigLoader
         }
 
         // Always update the field to sync with current funnel configuration
-        // This removes sections that are no longer configured and adds new ones
         update_field('section_backgrounds', $newSectionBackgrounds, $postId);
     }
 }
