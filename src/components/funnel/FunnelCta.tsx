@@ -1,5 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useResponsive } from '@/hooks/use-responsive';
+import { useHeightBehavior, HeightBehavior } from '@/hooks/use-height-behavior';
+import { smoothScrollTo } from '@/hooks/use-smooth-scroll';
 
 export interface FunnelCtaProps {
   title?: string;
@@ -14,6 +17,9 @@ export interface FunnelCtaProps {
   backgroundStyle?: 'gradient' | 'solid' | 'transparent';
   alignment?: 'center' | 'left';
   className?: string;
+  // Responsive settings (v2.32.9)
+  heightBehavior?: HeightBehavior | { mobile?: HeightBehavior; tablet?: HeightBehavior; desktop?: HeightBehavior };
+  hideOnMobileIfStickyCta?: boolean; // Hide this section if sticky CTA is active
 }
 
 export const FunnelCta = ({
@@ -29,7 +35,21 @@ export const FunnelCta = ({
   backgroundStyle = 'gradient',
   alignment = 'center',
   className,
+  heightBehavior = 'fit_viewport',
+  hideOnMobileIfStickyCta = true, // By default, hide on mobile when sticky CTA is active
 }: FunnelCtaProps) => {
+  // Responsive hooks
+  const { isMobile } = useResponsive();
+  const { className: heightClassName, style: heightStyle } = useHeightBehavior(heightBehavior);
+  
+  // Hide on mobile if sticky CTA is active (detected by style tag presence)
+  const stickyCTAActive = typeof document !== 'undefined' && 
+    document.getElementById('hp-sticky-cta-hide-section-ctas') !== null;
+  
+  if (isMobile && hideOnMobileIfStickyCta && stickyCTAActive) {
+    return null;
+  }
+  
   // Handle CTA button click based on behavior
   const handleCtaClick = () => {
     if (buttonBehavior === 'checkout') {
@@ -45,7 +65,7 @@ export const FunnelCta = ({
                            document.querySelector('.hp-funnel-products') ||
                            document.querySelector('[data-section="offers"]');
       if (offersSection) {
-        offersSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        smoothScrollTo(offersSection as HTMLElement, { offset: -20 });
       } else {
         // Fallback: navigate to checkout if no offers section found
         window.location.href = checkoutUrl || buttonUrl;
@@ -62,10 +82,12 @@ export const FunnelCta = ({
   return (
     <section
       className={cn(
-        'hp-funnel-cta py-20 px-4',
+        'hp-funnel-cta hp-funnel-section py-20 px-4',
         bgClasses[backgroundStyle],
+        heightClassName,
         className
       )}
+      style={heightStyle}
     >
       <div
         className={cn(

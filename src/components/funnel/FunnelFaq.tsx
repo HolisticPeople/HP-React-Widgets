@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useHeightBehavior, HeightBehavior } from '@/hooks/use-height-behavior';
 
 const ChevronIcon = ({ open }: { open: boolean }) => (
   <svg
@@ -27,6 +28,8 @@ export interface FunnelFaqProps {
   faqs: FaqItem[];
   allowMultiple?: boolean;
   className?: string;
+  // Responsive settings (v2.32.9)
+  heightBehavior?: HeightBehavior | { mobile?: HeightBehavior; tablet?: HeightBehavior; desktop?: HeightBehavior };
 }
 
 export const FunnelFaq = ({
@@ -35,7 +38,9 @@ export const FunnelFaq = ({
   faqs,
   allowMultiple = false,
   className,
+  heightBehavior = 'scrollable', // FAQ is typically scrollable content
 }: FunnelFaqProps) => {
+  const { className: heightClassName, style: heightStyle } = useHeightBehavior(heightBehavior);
   const [openItems, setOpenItems] = useState<Set<number>>(new Set());
 
   const toggleItem = (index: number) => {
@@ -56,9 +61,11 @@ export const FunnelFaq = ({
   return (
     <section
       className={cn(
-        'hp-funnel-faq py-20 px-4 bg-gradient-to-b from-background to-secondary/10',
+        'hp-funnel-faq hp-funnel-section py-20 px-4 bg-gradient-to-b from-background to-secondary/10',
+        heightClassName,
         className
       )}
+      style={heightStyle}
     >
       <div className="max-w-3xl mx-auto">
         {/* Section Header */}

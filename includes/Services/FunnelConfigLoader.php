@@ -614,9 +614,111 @@ class FunnelConfigLoader
                 'meta_description'   => self::getFieldValue('seo_meta_description', $postId),
                 'cornerstone_content' => (bool) self::getFieldValue('seo_cornerstone_content', $postId),
             ],
+            
+            // Responsive settings (v2.32.0)
+            'responsive' => self::extractResponsiveConfig($postId),
         ];
 
         return $config;
+    }
+
+    /**
+     * Extract responsive configuration including per-breakpoint modes and mobile settings.
+     *
+     * @param int $postId Post ID
+     * @return array Responsive configuration
+     */
+    private static function extractResponsiveConfig(int $postId): array
+    {
+        // Get plugin-wide defaults
+        $pluginDefaults = \HP_RW\Plugin::get_responsive_settings();
+        
+        // Check if funnel has breakpoint overrides
+        $hasOverrides = (bool) self::getFieldValue('responsive_breakpoint_override', $postId);
+        
+        // Breakpoint values (use overrides or plugin defaults)
+        $breakpoints = [
+            'tablet'  => $hasOverrides 
+                ? (int) (self::getFieldValue('responsive_breakpoint_tablet', $postId) ?: $pluginDefaults['breakpoint_tablet'])
+                : $pluginDefaults['breakpoint_tablet'],
+            'laptop'  => $hasOverrides 
+                ? (int) (self::getFieldValue('responsive_breakpoint_laptop', $postId) ?: $pluginDefaults['breakpoint_laptop'])
+                : $pluginDefaults['breakpoint_laptop'],
+            'desktop' => $hasOverrides 
+                ? (int) (self::getFieldValue('responsive_breakpoint_desktop', $postId) ?: $pluginDefaults['breakpoint_desktop'])
+                : $pluginDefaults['breakpoint_desktop'],
+        ];
+        
+        // Content max-width
+        $contentMaxWidth = (int) (self::getFieldValue('responsive_content_max_width', $postId) ?: $pluginDefaults['content_max_width']);
+        
+        // Scroll settings
+        $scrollSettings = [
+            'enable_smooth_scroll' => self::getFieldValue('responsive_enable_smooth_scroll', $postId) ?? $pluginDefaults['enable_smooth_scroll'],
+            'scroll_duration'      => (int) (self::getFieldValue('responsive_scroll_duration', $postId) ?: $pluginDefaults['scroll_duration']),
+            'scroll_easing'        => self::getFieldValue('responsive_scroll_easing', $postId) ?: $pluginDefaults['scroll_easing'],
+            'enable_scroll_snap'   => (bool) self::getFieldValue('responsive_enable_scroll_snap', $postId),
+        ];
+        
+        // Mobile settings
+        $mobileSettings = [
+            'sticky_cta_enabled'         => (bool) self::getFieldValue('mobile_sticky_cta_enabled', $postId),
+            'sticky_cta_text'            => self::getFieldValue('mobile_sticky_cta_text', $postId) ?: 'Get Your Kit Now',
+            'sticky_cta_target'          => self::getFieldValue('mobile_sticky_cta_target', $postId) ?: 'scroll_to_offers',
+            'enable_skeleton_placeholders' => (bool) self::getFieldValue('mobile_enable_skeleton_placeholders', $postId),
+            'reduce_animations'          => (bool) self::getFieldValue('mobile_reduce_animations', $postId),
+        ];
+        
+        // Per-section responsive settings
+        $sectionSettings = [
+            'hero' => [
+                'height_behavior'   => self::getFieldValue('responsive_hero_height_behavior', $postId) ?: 'fit_viewport',
+                'mobile_image_position' => self::getFieldValue('responsive_hero_mobile_image_position', $postId) ?: 'below',
+                'mobile_title_size' => self::getFieldValue('responsive_hero_mobile_title_size', $postId) ?: 'md',
+            ],
+            'infographics' => [
+                'height_behavior' => self::getFieldValue('responsive_infographics_height_behavior', $postId) ?: 'scrollable',
+                'mobile_mode'     => self::getFieldValue('responsive_infographics_mobile_mode', $postId) ?: 'swipe',
+                'tablet_mode'     => self::getFieldValue('responsive_infographics_tablet_mode', $postId) ?: 'split_panels',
+                'desktop_mode'    => self::getFieldValue('responsive_infographics_desktop_mode', $postId) ?: 'full_image',
+            ],
+            'testimonials' => [
+                'height_behavior' => self::getFieldValue('responsive_testimonials_height_behavior', $postId) ?: 'scrollable',
+                'mobile_mode'     => self::getFieldValue('responsive_testimonials_mobile_mode', $postId) ?: 'carousel',
+                'tablet_mode'     => self::getFieldValue('responsive_testimonials_tablet_mode', $postId) ?: 'grid_2col',
+                'desktop_mode'    => self::getFieldValue('responsive_testimonials_desktop_mode', $postId) ?: 'grid_3col',
+            ],
+            'products' => [
+                'height_behavior' => self::getFieldValue('responsive_products_height_behavior', $postId) ?: 'scrollable',
+            ],
+            'benefits' => [
+                'height_behavior' => self::getFieldValue('responsive_benefits_height_behavior', $postId) ?: 'fit_viewport',
+            ],
+            'features' => [
+                'height_behavior' => self::getFieldValue('responsive_features_height_behavior', $postId) ?: 'scrollable',
+            ],
+            'authority' => [
+                'height_behavior' => self::getFieldValue('responsive_authority_height_behavior', $postId) ?: 'fit_viewport',
+            ],
+            'science' => [
+                'height_behavior' => self::getFieldValue('responsive_science_height_behavior', $postId) ?: 'scrollable',
+            ],
+            'faq' => [
+                'height_behavior' => self::getFieldValue('responsive_faq_height_behavior', $postId) ?: 'scrollable',
+            ],
+            'cta' => [
+                'height_behavior' => self::getFieldValue('responsive_cta_height_behavior', $postId) ?: 'fit_viewport',
+            ],
+        ];
+        
+        return [
+            'breakpoint_overrides' => $hasOverrides,
+            'breakpoints'          => $breakpoints,
+            'content_max_width'    => $contentMaxWidth,
+            'scroll_settings'      => $scrollSettings,
+            'mobile_settings'      => $mobileSettings,
+            'sections'             => $sectionSettings,
+        ];
     }
 
     /**
@@ -635,7 +737,149 @@ class FunnelConfigLoader
         
         // Use custom text accent if override is checked AND a value is set
         $textAccent = ($accentOverride && !empty($customTextAccent)) ? $customTextAccent : $accentColor;
-        
+
+        // Migration logic: Check for legacy alternate section background fields
+        $legacyAlternateBg = (bool) self::getFieldValue('alternate_section_bg', $postId);
+        $legacyAlternateColor = self::getFieldValue('alternate_bg_color', $postId);
+        $sectionBackgroundMode = self::getFieldValue('section_background_mode', $postId);
+
+        // Migrate if legacy fields exist and no new mode is set
+        if ($legacyAlternateBg && !$sectionBackgroundMode) {
+            // Migrate: old alternating → new alternating with solid color
+            update_field('section_background_mode', 'alternating', $postId);
+            update_field('alternating_type', 'solid', $postId);
+            update_field('alternating_solid_color', $legacyAlternateColor ?: '#1a1a2e', $postId);
+
+            // Clean up old fields
+            delete_post_meta($postId, 'alternate_section_bg');
+            delete_post_meta($postId, 'alternate_bg_color');
+
+            // Update local variables after migration
+            $sectionBackgroundMode = 'alternating';
+        }
+
+        // v2.33.2 Migration: Convert v2.33.1 mode-based structure to per-section structure
+        $sectionBackgrounds = self::getFieldValue('section_backgrounds', $postId);
+
+        if ($sectionBackgroundMode && empty($sectionBackgrounds)) {
+            $migratedBackgrounds = [];
+
+            if ($sectionBackgroundMode === 'alternating') {
+                // Convert alternating mode to per-section
+                $type = self::getFieldValue('alternating_type', $postId);
+                $config = [];
+
+                if ($type === 'solid') {
+                    $config = [
+                        'background_type' => 'solid',
+                        'solid_color' => self::getFieldValue('alternating_solid_color', $postId) ?: '#1a1a2e',
+                    ];
+                } else {
+                    $config = [
+                        'background_type' => 'gradient',
+                        'gradient_type' => self::getFieldValue('alternating_gradient_type', $postId) ?: 'linear',
+                        'gradient_preset' => self::getFieldValue('alternating_gradient_preset', $postId) ?: 'vertical-down',
+                        'color_mode' => self::getFieldValue('alternating_gradient_color_mode', $postId) ?: 'auto',
+                        'gradient_start_color' => self::getFieldValue('alternating_gradient_start_color', $postId) ?: '',
+                        'gradient_end_color' => self::getFieldValue('alternating_gradient_end_color', $postId) ?: '',
+                    ];
+                }
+
+                // Add hero as none
+                $migratedBackgrounds[] = [
+                    'section_id' => 'hero',
+                    'section_label' => 'Hero Section',
+                    'background_type' => 'none',
+                ];
+
+                // Apply to odd-indexed sections (section_1, section_3, section_5, section_7)
+                for ($i = 1; $i <= 8; $i++) {
+                    $isOdd = ($i % 2 === 1);
+                    $row = [
+                        'section_id' => "section_$i",
+                        'section_label' => "Section $i",
+                        'background_type' => $isOdd ? $config['background_type'] : 'none',
+                    ];
+
+                    if ($isOdd) {
+                        $row = array_merge($row, $config);
+                    }
+
+                    $migratedBackgrounds[] = $row;
+                }
+            } elseif ($sectionBackgroundMode === 'all_gradient') {
+                // Convert all_gradient mode to per-section
+                $defaultConfig = [
+                    'background_type' => 'gradient',
+                    'gradient_type' => self::getFieldValue('all_gradient_default_type', $postId) ?: 'linear',
+                    'gradient_preset' => self::getFieldValue('all_gradient_default_preset', $postId) ?: 'vertical-down',
+                    'color_mode' => self::getFieldValue('all_gradient_default_color_mode', $postId) ?: 'auto',
+                    'gradient_start_color' => self::getFieldValue('all_gradient_default_start_color', $postId) ?: '',
+                    'gradient_end_color' => self::getFieldValue('all_gradient_default_end_color', $postId) ?: '',
+                ];
+
+                $overrides = self::getFieldValue('all_gradient_sections', $postId) ?: [];
+                $overrideIndex = [];
+                foreach ($overrides as $override) {
+                    $sectionIndex = (int) ($override['section_index'] ?? 0);
+                    if ($sectionIndex > 0) {
+                        $overrideIndex[$sectionIndex] = [
+                            'background_type' => 'gradient',
+                            'gradient_type' => $override['gradient_type'] ?? 'linear',
+                            'gradient_preset' => $override['gradient_preset'] ?? 'vertical-down',
+                            'color_mode' => $override['color_mode'] ?? 'auto',
+                            'gradient_start_color' => $override['gradient_start_color'] ?? '',
+                            'gradient_end_color' => $override['gradient_end_color'] ?? '',
+                        ];
+                    }
+                }
+
+                // Add hero as none
+                $migratedBackgrounds[] = [
+                    'section_id' => 'hero',
+                    'section_label' => 'Hero Section',
+                    'background_type' => 'none',
+                ];
+
+                // Apply default or override to each section
+                for ($i = 1; $i <= 8; $i++) {
+                    $config = isset($overrideIndex[$i]) ? $overrideIndex[$i] : $defaultConfig;
+                    $migratedBackgrounds[] = array_merge(
+                        [
+                            'section_id' => "section_$i",
+                            'section_label' => "Section $i",
+                        ],
+                        $config
+                    );
+                }
+            }
+
+            // Save migrated data if we created any
+            if (!empty($migratedBackgrounds)) {
+                update_field('section_backgrounds', $migratedBackgrounds, $postId);
+
+                // Clean up old v2.33.1 fields
+                delete_post_meta($postId, 'section_background_mode');
+                delete_post_meta($postId, 'alternating_type');
+                delete_post_meta($postId, 'alternating_solid_color');
+                delete_post_meta($postId, 'alternating_gradient_type');
+                delete_post_meta($postId, 'alternating_gradient_preset');
+                delete_post_meta($postId, 'alternating_gradient_color_mode');
+                delete_post_meta($postId, 'alternating_gradient_base_color');
+                delete_post_meta($postId, 'alternating_gradient_start_color');
+                delete_post_meta($postId, 'alternating_gradient_end_color');
+                delete_post_meta($postId, 'all_gradient_default_type');
+                delete_post_meta($postId, 'all_gradient_default_preset');
+                delete_post_meta($postId, 'all_gradient_default_color_mode');
+                delete_post_meta($postId, 'all_gradient_default_start_color');
+                delete_post_meta($postId, 'all_gradient_default_end_color');
+                delete_post_meta($postId, 'all_gradient_sections');
+
+                // Update local variable
+                $sectionBackgrounds = $migratedBackgrounds;
+            }
+        }
+
         return [
             // Primary accent color (used for UI accents, buttons, etc.)
             'accent_color'        => $accentColor,
@@ -653,9 +897,9 @@ class FunnelConfigLoader
             'background_type'     => self::getFieldValue('background_type', $postId),
             'background_image'    => self::getFieldValue('background_image', $postId),
             'custom_css'          => self::getFieldValue('custom_css', $postId),
-            // Alternating section backgrounds (Round 2 improvements)
-            'alternate_section_bg'=> (bool) self::getFieldValue('alternate_section_bg', $postId),
-            'alternate_bg_color'  => self::getFieldValue('alternate_bg_color', $postId),
+
+            // v2.33.2: Per-section background configuration (replaces mode-based system)
+            'section_backgrounds' => $sectionBackgrounds ?: [],
         ];
     }
 
@@ -1558,5 +1802,488 @@ class FunnelConfigLoader
         }
 
         return $result;
+    }
+
+    /**
+     * Map shortcode names to section types.
+     * Used for parsing page content and generating stable occurrence IDs.
+     */
+    private const SHORTCODE_TYPE_MAP = [
+        'hp_funnel_hero_section' => 'hero',
+        'hp_funnel_benefits'     => 'benefits',
+        'hp_funnel_products'     => 'offers',
+        'hp_funnel_features'     => 'features',
+        'hp_funnel_authority'    => 'authority',
+        'hp_funnel_testimonials' => 'testimonials',
+        'hp_funnel_faq'          => 'faq',
+        'hp_funnel_cta'          => 'cta',
+        'hp_funnel_science'      => 'science',
+        'hp_funnel_infographics' => 'infographics',
+    ];
+
+    /**
+     * Section type labels for admin display.
+     */
+    private const SECTION_LABELS = [
+        'hero'         => 'Hero',
+        'benefits'     => 'Benefits',
+        'offers'       => 'Offers',
+        'features'     => 'Features',
+        'authority'    => 'Expert',
+        'testimonials' => 'Reviews',
+        'faq'          => 'FAQ',
+        'cta'          => 'CTA',
+        'science'      => 'Science',
+        'infographics' => 'Comparison',
+    ];
+
+    /**
+     * Detect which sections are actually configured in the funnel.
+     * Uses occurrence-based stable IDs (v2.33.72).
+     * 
+     * Parses page content (Elementor data or post_content) to detect
+     * the actual order of shortcodes, then generates stable IDs like
+     * "hero_1", "benefits_1", "infographics_1", "infographics_2", etc.
+     *
+     * @param int $postId Funnel post ID
+     * @return array Array of section definitions with occurrence-based IDs
+     */
+    public static function detectConfiguredSections(int $postId): array
+    {
+        // Try to parse page content for actual shortcode order
+        $shortcodesInOrder = self::parsePageShortcodes($postId);
+
+        // If we found shortcodes in the content, use them
+        if (!empty($shortcodesInOrder)) {
+            return self::buildSectionsFromShortcodes($shortcodesInOrder, $postId);
+        }
+
+        // Fallback: Use field-based detection with occurrence counting
+        return self::buildSectionsFromFields($postId);
+    }
+
+    /**
+     * Parse page content to extract shortcodes in order.
+     * Handles both Elementor pages and classic WordPress content.
+     * 
+     * For funnel posts (hp-funnel), checks the linked landing page first (v2.33.74).
+     *
+     * @param int $postId Post ID
+     * @return array Array of ['type' => string, 'atts' => array] in order
+     */
+    private static function parsePageShortcodes(int $postId): array
+    {
+        $shortcodes = [];
+        $post = get_post($postId);
+        if (!$post) {
+            return [];
+        }
+
+        // For funnel CPT, check linked landing page first
+        $targetPostId = $postId;
+        if ($post->post_type === 'hp-funnel') {
+            $landingPageId = get_field('funnel_landing_page', $postId);
+            if (!empty($landingPageId)) {
+                $targetPostId = (int) $landingPageId;
+            }
+        }
+
+        // Strategy 1: Parse Elementor data from target post
+        $elementorData = get_post_meta($targetPostId, '_elementor_data', true);
+        if (!empty($elementorData)) {
+            $decoded = is_string($elementorData) ? json_decode($elementorData, true) : $elementorData;
+            if (is_array($decoded)) {
+                $shortcodes = self::extractShortcodesFromElementor($decoded);
+            }
+        }
+
+        // Strategy 2: Parse post_content for shortcodes from target post
+        if (empty($shortcodes)) {
+            $targetPost = ($targetPostId !== $postId) ? get_post($targetPostId) : $post;
+            if ($targetPost && !empty($targetPost->post_content)) {
+                $shortcodes = self::extractShortcodesFromContent($targetPost->post_content);
+            }
+        }
+
+        return $shortcodes;
+    }
+
+    /**
+     * Recursively extract shortcodes from Elementor data structure.
+     *
+     * @param array $elements Elementor elements array
+     * @return array Array of shortcode info
+     */
+    private static function extractShortcodesFromElementor(array $elements): array
+    {
+        $shortcodes = [];
+
+        foreach ($elements as $element) {
+            // Check for shortcode widget
+            if (isset($element['widgetType']) && $element['widgetType'] === 'shortcode') {
+                $shortcodeText = $element['settings']['shortcode'] ?? '';
+                if (!empty($shortcodeText)) {
+                    $parsed = self::parseShortcodeString($shortcodeText);
+                    if ($parsed) {
+                        $shortcodes[] = $parsed;
+                    }
+                }
+            }
+
+            // Check for text editor with shortcodes
+            if (isset($element['widgetType']) && $element['widgetType'] === 'text-editor') {
+                $content = $element['settings']['editor'] ?? '';
+                $contentShortcodes = self::extractShortcodesFromContent($content);
+                $shortcodes = array_merge($shortcodes, $contentShortcodes);
+            }
+
+            // Recurse into nested elements
+            if (!empty($element['elements']) && is_array($element['elements'])) {
+                $nested = self::extractShortcodesFromElementor($element['elements']);
+                $shortcodes = array_merge($shortcodes, $nested);
+            }
+        }
+
+        return $shortcodes;
+    }
+
+    /**
+     * Extract shortcodes from post content string.
+     *
+     * @param string $content Post content
+     * @return array Array of shortcode info
+     */
+    private static function extractShortcodesFromContent(string $content): array
+    {
+        $shortcodes = [];
+
+        // Match all hp_funnel_* shortcodes
+        $pattern = '/\[hp_funnel_(\w+)([^\]]*)\]/';
+        preg_match_all($pattern, $content, $matches, PREG_SET_ORDER);
+
+        foreach ($matches as $match) {
+            $shortcodeName = 'hp_funnel_' . $match[1];
+            $attsString = trim($match[2]);
+
+            // Skip non-section shortcodes (styles, header, footer, scroll_navigation)
+            if (!isset(self::SHORTCODE_TYPE_MAP[$shortcodeName])) {
+                continue;
+            }
+
+            $atts = shortcode_parse_atts($attsString);
+            $shortcodes[] = [
+                'shortcode' => $shortcodeName,
+                'type'      => self::SHORTCODE_TYPE_MAP[$shortcodeName],
+                'atts'      => is_array($atts) ? $atts : [],
+            ];
+        }
+
+        return $shortcodes;
+    }
+
+    /**
+     * Parse a single shortcode string into type and attributes.
+     *
+     * @param string $shortcodeString e.g. "[hp_funnel_benefits funnel=\"illumodine\"]"
+     * @return array|null Parsed info or null if not a section shortcode
+     */
+    private static function parseShortcodeString(string $shortcodeString): ?array
+    {
+        $pattern = '/\[hp_funnel_(\w+)([^\]]*)\]/';
+        if (preg_match($pattern, $shortcodeString, $match)) {
+            $shortcodeName = 'hp_funnel_' . $match[1];
+            
+            // Skip non-section shortcodes
+            if (!isset(self::SHORTCODE_TYPE_MAP[$shortcodeName])) {
+                return null;
+            }
+
+            $attsString = trim($match[2]);
+            $atts = shortcode_parse_atts($attsString);
+
+            return [
+                'shortcode' => $shortcodeName,
+                'type'      => self::SHORTCODE_TYPE_MAP[$shortcodeName],
+                'atts'      => is_array($atts) ? $atts : [],
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Build sections array from parsed shortcodes.
+     * Generates occurrence-based stable IDs (v2.33.73).
+     * 
+     * For infographics, uses the `info` parameter as the stable identifier
+     * so infographics_1 always refers to info="1", infographics_2 to info="2", etc.
+     *
+     * @param array $shortcodes Array of parsed shortcodes in order
+     * @param int $postId Post ID for infographic labels
+     * @return array Section definitions
+     */
+    private static function buildSectionsFromShortcodes(array $shortcodes, int $postId): array
+    {
+        $sections = [];
+        $typeOccurrences = [];
+
+        foreach ($shortcodes as $sc) {
+            $type = $sc['type'];
+
+            // Determine label
+            $label = self::SECTION_LABELS[$type] ?? ucfirst($type);
+
+            // For infographics, use the `info` parameter as the identifier
+            // This ensures infographics_1 always maps to [hp_funnel_infographics info="1"]
+            if ($type === 'infographics') {
+                $infoIndex = isset($sc['atts']['info']) ? (int) $sc['atts']['info'] : 1;
+                
+                // Generate stable ID based on info parameter, not occurrence
+                $stableId = 'infographics_' . $infoIndex;
+                
+                // Get label from ACF data
+                $rows = get_field('funnel_infographics', $postId);
+                if (is_array($rows) && isset($rows[$infoIndex - 1])) {
+                    $row = $rows[$infoIndex - 1];
+                    if (!empty($row['info_nav_label'])) {
+                        $label = $row['info_nav_label'];
+                    } elseif (!empty($row['info_name'])) {
+                        $label = $row['info_name'];
+                    }
+                }
+                
+                $sections[] = [
+                    'section_id'    => $stableId,
+                    'section_label' => $label,
+                    'section_type'  => $type,
+                    'info_index'    => $infoIndex,
+                ];
+            } else {
+                // For non-infographics, use occurrence-based IDs
+                if (!isset($typeOccurrences[$type])) {
+                    $typeOccurrences[$type] = 0;
+                }
+                $typeOccurrences[$type]++;
+                $occurrence = $typeOccurrences[$type];
+
+                $stableId = $type . '_' . $occurrence;
+
+                $sections[] = [
+                    'section_id'    => $stableId,
+                    'section_label' => $label,
+                    'section_type'  => $type,
+                    'occurrence'    => $occurrence,
+                ];
+            }
+        }
+
+        return $sections;
+    }
+
+    /**
+     * Fallback: Build sections from ACF fields when page content parsing fails.
+     * Uses occurrence-based IDs for consistency (v2.33.73).
+     *
+     * @param int $postId Funnel post ID
+     * @return array Array of section definitions
+     */
+    private static function buildSectionsFromFields(int $postId): array
+    {
+        $sections = [];
+        $typeOccurrences = [];
+
+        // Helper to add a section with occurrence tracking
+        $addSection = function(string $type, string $label = null, ?int $infoIndex = null) use (&$sections, &$typeOccurrences) {
+            if (!isset($typeOccurrences[$type])) {
+                $typeOccurrences[$type] = 0;
+            }
+            $typeOccurrences[$type]++;
+            $occurrence = $typeOccurrences[$type];
+
+            $section = [
+                'section_id'    => $type . '_' . $occurrence,
+                'section_label' => $label ?? (self::SECTION_LABELS[$type] ?? ucfirst($type)),
+                'section_type'  => $type,
+                'occurrence'    => $occurrence,
+            ];
+
+            // For infographics, store info_index and use it for section_id
+            if ($infoIndex !== null) {
+                $section['section_id'] = $type . '_' . $infoIndex;
+                $section['info_index'] = $infoIndex;
+            }
+
+            $sections[] = $section;
+        };
+
+        // Hero section - always present
+        $addSection('hero', 'Hero Section');
+
+        // Check each section type based on fields
+        $sectionChecks = [
+            'benefits'     => 'hero_benefits_title',
+            'infographics' => 'funnel_infographics',
+            'offers'       => null, // Always present
+            'features'     => 'features_title',
+            'authority'    => 'authority_title',
+            'science'      => 'science_title',
+            'testimonials' => 'testimonials_title',
+            'faq'          => 'faq_title',
+            'cta'          => 'cta_title',
+        ];
+
+        foreach ($sectionChecks as $type => $field) {
+            $isConfigured = false;
+
+            if ($type === 'offers') {
+                $isConfigured = true;
+            } elseif ($field) {
+                $fieldValue = get_field($field, $postId);
+                $isConfigured = !empty($fieldValue);
+            }
+
+            if ($isConfigured) {
+                // Special handling for Infographics - use 1-based index for stable ID
+                if ($type === 'infographics') {
+                    $rows = get_field('funnel_infographics', $postId);
+                    if (is_array($rows)) {
+                        foreach ($rows as $idx => $row) {
+                            $infoIndex = $idx + 1; // 1-based index
+                            $label = !empty($row['info_nav_label']) 
+                                ? $row['info_nav_label'] 
+                                : (!empty($row['info_name']) ? $row['info_name'] : 'Comparison');
+                            $addSection('infographics', $label, $infoIndex);
+                        }
+                    }
+                } else {
+                    $addSection($type);
+                }
+            }
+        }
+
+        return $sections;
+    }
+
+    /**
+     * Auto-populate section_backgrounds repeater with funnel sections.
+     * Called on funnel save to ensure all sections are present in repeater.
+     * Uses occurrence-based stable IDs for reliable matching (v2.33.72).
+     *
+     * @param int $postId Funnel post ID
+     * @return void
+     */
+    public static function autoPopulateSectionBackgrounds(int $postId): void
+    {
+        // Only run for hp-funnel post type
+        if (get_post_type($postId) !== 'hp-funnel') {
+            return;
+        }
+
+        // Get current section_backgrounds value
+        $existingSectionBackgrounds = get_field('section_backgrounds', $postId) ?: [];
+
+        // Build index of existing configurations by stable ID (primary) and fallbacks
+        $existingByStableId = [];
+        $existingByTypePlusOccurrence = [];
+        $existingByLegacyId = [];
+
+        foreach ($existingSectionBackgrounds as $section) {
+            $sectionId = $section['section_id'] ?? null;
+            $type = $section['section_type'] ?? null;
+            $occurrence = $section['occurrence'] ?? null;
+
+            // Primary: Index by section_id (which should be stable ID like "benefits_1")
+            if ($sectionId) {
+                $existingByStableId[$sectionId] = $section;
+            }
+
+            // Secondary: Index by type + occurrence
+            if ($type && $occurrence) {
+                $existingByTypePlusOccurrence[$type . '_' . $occurrence] = $section;
+            }
+
+            // Legacy: Support old section_N format for migration
+            if ($sectionId && preg_match('/^section_(\d+)$/', $sectionId)) {
+                $existingByLegacyId[$sectionId] = $section;
+            }
+        }
+
+        // Detect configured sections in the NEW order with stable IDs
+        $configuredSections = self::detectConfiguredSections($postId);
+
+        // Track which legacy sections have been used (for migration)
+        $usedLegacySections = [];
+
+        // Build new section_backgrounds array
+        $newSectionBackgrounds = [];
+        foreach ($configuredSections as $section) {
+            $stableId = $section['section_id'];
+            $type = $section['section_type'];
+            $occurrence = $section['occurrence'] ?? null;
+            $infoIndex = $section['info_index'] ?? null; // For infographics
+            $label = $section['section_label'];
+            
+            $existing = null;
+
+            // Priority 1: Match by exact stable ID (e.g., "benefits_1", "infographics_2")
+            if (isset($existingByStableId[$stableId])) {
+                $existing = $existingByStableId[$stableId];
+            }
+            // Priority 2: Match by type + occurrence key
+            elseif (isset($existingByTypePlusOccurrence[$stableId])) {
+                $existing = $existingByTypePlusOccurrence[$stableId];
+            }
+            // Priority 3: Legacy migration - match by type in old section_N entries
+            else {
+                foreach ($existingByLegacyId as $legacyId => $legacySection) {
+                    if (in_array($legacyId, $usedLegacySections)) {
+                        continue;
+                    }
+                    $legacyType = $legacySection['section_type'] ?? null;
+                    if ($legacyType === $type) {
+                        $existing = $legacySection;
+                        $usedLegacySections[] = $legacyId;
+                        break;
+                    }
+                }
+            }
+
+            // Build base section data
+            $newSection = [
+                'section_id'           => $stableId,
+                'section_label'        => $label,
+                'section_type'         => $type,
+            ];
+            
+            // Add occurrence or info_index as appropriate
+            if ($infoIndex !== null) {
+                $newSection['info_index'] = $infoIndex;
+            } elseif ($occurrence !== null) {
+                $newSection['occurrence'] = $occurrence;
+            }
+
+            if ($existing) {
+                // Preserve background settings
+                $newSection['background_type']      = $existing['background_type'] ?? 'none';
+                $newSection['gradient_type']        = $existing['gradient_type'] ?? 'linear';
+                $newSection['gradient_preset']      = $existing['gradient_preset'] ?? 'vertical-down';
+                $newSection['color_mode']           = $existing['color_mode'] ?? 'auto';
+                $newSection['gradient_start_color'] = $existing['gradient_start_color'] ?? '#1a1a2e';
+                $newSection['gradient_end_color']   = $existing['gradient_end_color'] ?? '';
+            } else {
+                // Default background settings for new sections
+                $newSection['background_type']      = 'none';
+                $newSection['gradient_type']        = 'linear';
+                $newSection['gradient_preset']      = 'vertical-down';
+                $newSection['color_mode']           = 'auto';
+                $newSection['gradient_start_color'] = '#1a1a2e';
+                $newSection['gradient_end_color']   = '';
+            }
+            
+            $newSectionBackgrounds[] = $newSection;
+        }
+
+        // Save the synced settings
+        update_field('section_backgrounds', $newSectionBackgrounds, $postId);
     }
 }

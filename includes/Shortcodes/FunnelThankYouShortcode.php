@@ -50,9 +50,9 @@ class FunnelThankYouShortcode
             return '<div class="hp-funnel-error" style="padding: 20px; background: #fee; color: #c00; border: 1px solid #c00; border-radius: 4px;">Funnel not found or inactive. Please check the funnel slug/ID.</div>';
         }
 
-        // Get order info from URL params
-        $orderId = isset($_GET['orderId']) ? absint($_GET['orderId']) : null;
-        $piId = isset($_GET['piId']) ? sanitize_text_field($_GET['piId']) : null;
+        // Get order info from URL params (support both snake_case and camelCase)
+        $orderId = isset($_GET['order_id']) ? absint($_GET['order_id']) : (isset($_GET['orderId']) ? absint($_GET['orderId']) : null);
+        $piId = isset($_GET['pi_id']) ? sanitize_text_field($_GET['pi_id']) : (isset($_GET['piId']) ? sanitize_text_field($_GET['piId']) : null);
         
         // Check if upsell was already accepted/skipped
         $upsellAccepted = isset($_GET['upsellAccepted']);

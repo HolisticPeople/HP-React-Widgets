@@ -142,37 +142,17 @@ class FunnelInfographicsShortcode
         $rootId = 'hp-funnel-infographics-' . esc_attr($slug) . '-' . $infoIndex . '-' . uniqid();
         $propsJson = wp_json_encode($props);
 
-        // CSS to force parent Elementor containers to shrink to content
-        $css = '<style>
-            .elementor-widget-shortcode:has(#' . esc_attr($rootId) . '),
-            .elementor-widget-shortcode:has(.hp-funnel-infographics-' . esc_attr($slug) . ') {
-                height: auto !important;
-                min-height: 0 !important;
-            }
-            .elementor-widget-shortcode:has(#' . esc_attr($rootId) . ') > .elementor-widget-container,
-            .elementor-widget-shortcode:has(.hp-funnel-infographics-' . esc_attr($slug) . ') > .elementor-widget-container {
-                height: auto !important;
-                min-height: 0 !important;
-            }
-            @media (max-width: 767px) {
-                .elementor-widget-shortcode:has(#' . esc_attr($rootId) . '),
-                .elementor-widget-shortcode:has(.hp-funnel-infographics-' . esc_attr($slug) . ') {
-                    height: auto !important;
-                    min-height: 0 !important;
-                    flex: 0 0 auto !important;
-                }
-            }
-        </style>';
-
         // Only include data-section-name if navLabel is not empty
         $sectionNameAttr = !empty($navLabel) ? sprintf(' data-section-name="%s"', esc_attr($navLabel)) : '';
 
-        return $css . sprintf(
-            '<div id="%s" class="hp-funnel-section hp-funnel-infographics-%s" data-hp-widget="1" data-component="%s" data-props=\'%s\'%s style="min-height:auto;height:auto;align-self:start;"></div>',
+        // Add data-info-index for background matching (v2.33.73)
+        return sprintf(
+            '<div id="%s" class="hp-funnel-section hp-funnel-infographics-%s" data-hp-widget="1" data-component="%s" data-props=\'%s\' data-info-index="%d"%s></div>',
             esc_attr($rootId),
             esc_attr($slug),
             esc_attr($component),
             esc_attr($propsJson),
+            $infoIndex,
             $sectionNameAttr
         );
     }

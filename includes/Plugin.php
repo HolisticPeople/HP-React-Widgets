@@ -22,6 +22,28 @@ class Plugin
     private const OPTION_SHORTCODE_DESCRIPTIONS = 'hp_rw_shortcode_descriptions';
 
     /**
+     * Option name used to store responsive settings (breakpoints, max-width, scroll).
+     */
+    private const OPTION_RESPONSIVE_SETTINGS = 'hp_rw_responsive_settings';
+
+    /**
+     * Default responsive settings.
+     */
+    private const DEFAULT_RESPONSIVE_SETTINGS = [
+        // Breakpoint pixel values
+        'breakpoint_tablet'  => 640,   // Mobile ends, tablet starts
+        'breakpoint_laptop'  => 1024,  // Tablet ends, laptop starts
+        'breakpoint_desktop' => 1440,  // Laptop ends, desktop starts
+        // Content max-width for boxed text areas
+        'content_max_width'  => 1400,  // Default max-width in pixels (range: 1000-1600)
+        // Scroll settings
+        'enable_smooth_scroll' => true,
+        'scroll_duration'      => 800,   // ms
+        'scroll_easing'        => 'ease-out-cubic', // ease-out-cubic, ease-out-quad, linear
+        'enable_scroll_snap'   => false, // Experimental
+    ];
+
+    /**
      * Registry of all shortcodes this plugin can provide.
      *
      * New shortcodes should be added here so they automatically appear
@@ -243,7 +265,10 @@ class Plugin
 
         // Initialize Funnel Offer ACF fields
         Admin\FunnelOfferFields::init();
-        
+
+        // Initialize Funnel Styling ACF fields & admin UI
+        Admin\FunnelStylingFields::init();
+
         // Setup ACF Local JSON sync for version control
         self::setupAcfLocalJson();
 
@@ -382,10 +407,17 @@ class Plugin
         // Add custom columns to the funnels list table
         add_filter('manage_' . self::FUNNEL_POST_TYPE . '_posts_columns', [self::class, 'addFunnelColumns']);
         add_action('manage_' . self::FUNNEL_POST_TYPE . '_posts_custom_column', [self::class, 'renderFunnelColumn'], 10, 2);
-        
+
         // Clear cache on save
         add_action('save_post_' . self::FUNNEL_POST_TYPE, [self::class, 'onFunnelSave'], 10, 3);
-        
+
+        // Auto-populate section_backgrounds on funnel save (v2.33.2)
+        add_action('acf/save_post', function($post_id) {
+            if (get_post_type($post_id) === self::FUNNEL_POST_TYPE) {
+                Services\FunnelConfigLoader::autoPopulateSectionBackgrounds($post_id);
+            }
+        }, 20);
+
         // Add rewrite rules for funnel sub-routes (checkout, thankyou, etc.)
         add_action('init', [self::class, 'addFunnelRewriteRules'], 10);
         add_filter('query_vars', [self::class, 'addFunnelQueryVars']);
@@ -405,7 +437,14 @@ class Plugin
             'top'
         );
         
-        // Pattern: /express-shop/{funnel_slug}/thankyou/
+        // Pattern: /express-shop/{funnel_slug}/thank-you/ (with hyphen - matches SPA URL)
+        add_rewrite_rule(
+            '^express-shop/([^/]+)/thank-you/?$',
+            'index.php?hp_funnel_route=thankyou&hp_funnel_slug=$matches[1]',
+            'top'
+        );
+        
+        // Legacy pattern without hyphen (for backwards compatibility)
         add_rewrite_rule(
             '^express-shop/([^/]+)/thankyou/?$',
             'index.php?hp_funnel_route=thankyou&hp_funnel_slug=$matches[1]',
@@ -612,6 +651,11 @@ class Plugin
             
             // v2.7.3+: Flush rewrite rules for new funnel sub-routes
             if (version_compare($storedVersion, '2.7.3', '<')) {
+                flush_rewrite_rules(false);
+            }
+            
+            // v2.34.0+: Flush rewrite rules for /thank-you/ hyphenated URL support
+            if (version_compare($storedVersion, '2.34.0', '<')) {
                 flush_rewrite_rules(false);
             }
             
@@ -826,6 +870,57 @@ class Plugin
     public static function set_shortcode_descriptions(array $descriptions): void
     {
         update_option(self::OPTION_SHORTCODE_DESCRIPTIONS, $descriptions);
+    }
+
+    /**
+     * Get responsive settings (breakpoints, max-width, scroll settings).
+     *
+     * @return array Responsive settings merged with defaults
+     */
+    public static function get_responsive_settings(): array
+    {
+        $stored = get_option(self::OPTION_RESPONSIVE_SETTINGS, []);
+        
+        if (!is_array($stored)) {
+            $stored = [];
+        }
+        
+        // Merge with defaults to ensure all keys exist
+        return array_merge(self::DEFAULT_RESPONSIVE_SETTINGS, $stored);
+    }
+
+    /**
+     * Persist responsive settings.
+     *
+     * @param array $settings Responsive settings to save
+     */
+    public static function set_responsive_settings(array $settings): void
+    {
+        // Sanitize and validate values
+        $sanitized = [
+            'breakpoint_tablet'    => max(320, min(1200, absint($settings['breakpoint_tablet'] ?? 640))),
+            'breakpoint_laptop'    => max(640, min(1600, absint($settings['breakpoint_laptop'] ?? 1024))),
+            'breakpoint_desktop'   => max(1024, min(2560, absint($settings['breakpoint_desktop'] ?? 1440))),
+            'content_max_width'    => max(1000, min(1600, absint($settings['content_max_width'] ?? 1400))),
+            'enable_smooth_scroll' => !empty($settings['enable_smooth_scroll']),
+            'scroll_duration'      => max(200, min(2000, absint($settings['scroll_duration'] ?? 800))),
+            'scroll_easing'        => in_array($settings['scroll_easing'] ?? '', ['ease-out-cubic', 'ease-out-quad', 'linear'], true) 
+                                       ? $settings['scroll_easing'] 
+                                       : 'ease-out-cubic',
+            'enable_scroll_snap'   => !empty($settings['enable_scroll_snap']),
+        ];
+        
+        update_option(self::OPTION_RESPONSIVE_SETTINGS, $sanitized);
+    }
+
+    /**
+     * Get default responsive settings.
+     *
+     * @return array Default responsive settings
+     */
+    public static function get_default_responsive_settings(): array
+    {
+        return self::DEFAULT_RESPONSIVE_SETTINGS;
     }
 
     /**

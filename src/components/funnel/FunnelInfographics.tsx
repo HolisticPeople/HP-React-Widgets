@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useResponsive } from '@/hooks/use-responsive';
+import { useHeightBehavior, HeightBehavior } from '@/hooks/use-height-behavior';
 import {
   Carousel,
   CarouselContent,
@@ -31,6 +33,12 @@ export interface FunnelInfographicsProps {
   mobileLayout?: 'stack' | 'carousel';
   altText?: string;
   className?: string;
+  // Responsive settings (v2.32.11)
+  heightBehavior?: HeightBehavior | { mobile?: HeightBehavior; tablet?: HeightBehavior; desktop?: HeightBehavior };
+  // Per-breakpoint display modes
+  mobileMode?: 'split_panels' | 'swipe' | 'scale' | 'hide';
+  tabletMode?: 'split_panels' | 'swipe' | 'scale' | 'full_image';
+  desktopMode?: 'full_image' | 'scale';
 }
 
 export const FunnelInfographics = ({
@@ -44,8 +52,21 @@ export const FunnelInfographics = ({
   mobileLayout = 'stack',
   altText = 'Infographic comparison',
   className,
+  heightBehavior = 'scrollable', // Infographics typically scrollable
+  mobileMode = 'split_panels',
+  tabletMode = 'scale',
+  desktopMode = 'full_image',
 }: FunnelInfographicsProps) => {
   const isMobile = useIsMobile();
+  const { breakpoint, isTablet } = useResponsive();
+  const { className: heightClassName, style: heightStyle } = useHeightBehavior(heightBehavior);
+  
+  // Determine effective mode based on breakpoint
+  const effectiveMode = breakpoint === 'mobile' 
+    ? mobileMode 
+    : breakpoint === 'tablet' 
+      ? tabletMode 
+      : desktopMode;
   const [api, setApi] = React.useState<CarouselApi>();
   const [current, setCurrent] = React.useState(0);
   const [count, setCount] = React.useState(0);
@@ -238,10 +259,9 @@ export const FunnelInfographics = ({
     <section
       className={cn(
         'hp-funnel-infographics hp-funnel-section py-4 md:py-16 px-4',
-        'min-h-0 h-auto flex-none self-start',
         className
       )}
-      style={{ minHeight: 'auto', height: 'auto' }}
+      data-effective-mode={effectiveMode}
     >
       <div className="max-w-6xl mx-auto w-full">
         {/* Optional section title */}

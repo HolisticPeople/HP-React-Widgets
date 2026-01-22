@@ -1,5 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { useResponsive } from '@/hooks/use-responsive';
+import { useHeightBehavior, HeightBehavior } from '@/hooks/use-height-behavior';
 
 // Icon components
 const CheckIcon = () => (
@@ -61,6 +63,11 @@ export interface FunnelFeaturesProps {
   columns?: 2 | 3 | 4;
   layout?: 'cards' | 'list' | 'grid';
   className?: string;
+  // Responsive settings (v2.32.9)
+  heightBehavior?: HeightBehavior | { mobile?: HeightBehavior; tablet?: HeightBehavior; desktop?: HeightBehavior };
+  mobileColumns?: 1 | 2;
+  tabletColumns?: 2 | 3;
+  desktopColumns?: 2 | 3 | 4;
 }
 
 export const FunnelFeatures = ({
@@ -70,7 +77,22 @@ export const FunnelFeatures = ({
   columns = 3,
   layout = 'cards',
   className,
+  heightBehavior = 'scrollable', // Features has variable content, use scrollable
+  mobileColumns = 1,
+  tabletColumns = 2,
+  desktopColumns,
 }: FunnelFeaturesProps) => {
+  // Responsive hooks
+  const { breakpoint } = useResponsive();
+  const { className: heightClassName, style: heightStyle } = useHeightBehavior(heightBehavior);
+  
+  // Determine effective columns based on breakpoint
+  const effectiveColumns = breakpoint === 'mobile' 
+    ? mobileColumns 
+    : breakpoint === 'tablet' 
+      ? tabletColumns 
+      : (desktopColumns || columns);
+  
   const gridCols = {
     2: 'md:grid-cols-2',
     3: 'md:grid-cols-2 lg:grid-cols-3',
@@ -80,9 +102,11 @@ export const FunnelFeatures = ({
   return (
     <section
       className={cn(
-        'hp-funnel-features py-20 px-4 bg-gradient-to-b from-background to-secondary/10',
+        'hp-funnel-features hp-funnel-section py-20 px-4 bg-gradient-to-b from-background to-secondary/10',
+        heightClassName,
         className
       )}
+      style={heightStyle}
     >
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}
@@ -101,9 +125,9 @@ export const FunnelFeatures = ({
           </div>
         )}
 
-        {/* Features Grid */}
+        {/* Features Grid - uses responsive column settings */}
         {layout === 'cards' && (
-          <div className={cn('grid gap-8', gridCols[columns])}>
+          <div className={cn('grid gap-8', gridCols[effectiveColumns as 2|3|4] || gridCols[columns])}>
             {features.map((feature, index) => {
               const IconComponent = iconMap[feature.icon || 'check'] || CheckIcon;
 

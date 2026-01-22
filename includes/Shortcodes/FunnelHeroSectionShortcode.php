@@ -196,87 +196,173 @@ class FunnelHeroSectionShortcode
      * @param array $styling Styling config
      * @return string HTML
      */
+    /**
+     * Render widget with per-section backgrounds (v2.33.2 simplified architecture).
+     * Replaces the mode-based system with direct per-section configuration.
+     */
     private function renderWidgetWithAlternatingBg(array $config, array $props, array $styling): string
     {
         $slug = $config['slug'];
         $output = '';
-        
-        // Add alternating background CSS and JS if enabled
-        if (!empty($config['styling']['alternate_section_bg']) && !empty($config['styling']['alternate_bg_color'])) {
-            $altBgColor = sanitize_hex_color($config['styling']['alternate_bg_color']);
-            if ($altBgColor) {
-                // CSS for alternate sections - full width background
-                // Also hide horizontal overflow on body to prevent scrollbar
-                $output .= sprintf(
-                    '<style>
-                    body { overflow-x: hidden !important; }
-                    .hp-funnel-section.hp-alt-bg { 
-                        background-color: %s !important; 
-                        width: 100vw !important;
-                        position: relative !important;
-                        left: 50%% !important;
-                        right: 50%% !important;
-                        margin-left: -50vw !important;
-                        margin-right: -50vw !important;
-                        padding-left: calc(50vw - 50%%) !important;
-                        padding-right: calc(50vw - 50%%) !important;
-                        box-sizing: border-box !important;
-                    }
-                    /* Ensure hero, header, footer sections are never styled as alternate */
-                    .hp-funnel-section.hp-funnel-hero-section.hp-alt-bg,
-                    .hp-funnel-section[class*="hp-funnel-hero-section-"].hp-alt-bg,
-                    .hp-funnel-section[class*="hp-funnel-header"].hp-alt-bg,
-                    .hp-funnel-section[class*="hp-funnel-footer"].hp-alt-bg {
-                        background-color: transparent !important;
-                        width: auto !important;
-                        left: auto !important;
-                        right: auto !important;
-                        margin-left: 0 !important;
-                        margin-right: 0 !important;
-                        padding-left: 0 !important;
-                        padding-right: 0 !important;
-                    }
-                    </style>',
-                    $altBgColor
+
+        $sectionBackgrounds = $config['styling']['section_backgrounds'] ?? [];
+
+        // If no section backgrounds configured, render widget only
+        if (empty($sectionBackgrounds)) {
+            return $this->renderWidget('FunnelHeroSection', $slug, $props, $styling);
+        }
+
+        $pageBgColor = sanitize_hex_color($config['styling']['page_bg_color']) ?: '#121212';
+
+        // Build section background map: section_id => CSS background value
+        $backgroundMap = [];
+        foreach ($sectionBackgrounds as $section) {
+            $sectionId = $section['section_id'];
+            $bgType = $section['background_type'] ?? 'none';
+
+            if ($bgType === 'none') {
+                $backgroundMap[$sectionId] = 'transparent';
+            } elseif ($bgType === 'solid') {
+                $color = sanitize_hex_color($section['gradient_start_color']) ?: '#1a1a2e';
+                $backgroundMap[$sectionId] = $color;
+            } elseif ($bgType === 'gradient') {
+                $gradientCss = \HP_RW\Services\GradientGenerator::generateGradient(
+                    [
+                        'gradient_type' => $section['gradient_type'] ?? 'linear',
+                        'gradient_preset' => $section['gradient_preset'] ?? 'vertical-down',
+                        'color_mode' => $section['color_mode'] ?? 'auto',
+                        'gradient_start_color' => $section['gradient_start_color'] ?? '',
+                        'gradient_end_color' => $section['gradient_end_color'] ?? '',
+                    ],
+                    $section['gradient_start_color'] ?? '#1a1a2e',  // Fallback color for auto mode
+                    $pageBgColor
                 );
-                
-                // JS to apply the class to alternate sections (skip hero, header, footer sections)
-                // First content section gets alt bg, then every other section
-                $output .= '<script>
-(function() {
-    function applyAltBg() {
-        var sections = document.querySelectorAll(".hp-funnel-section");
-        var sectionCount = 0;
-        
-        sections.forEach(function(section) {
-            var className = section.className;
-            var isHero = section.classList.contains("hp-funnel-hero-section") || 
-                         className.includes("hp-funnel-hero-section-");
-            var isHeader = className.includes("hp-funnel-header");
-            var isFooter = className.includes("hp-funnel-footer");
-            
-            if (isHero || isHeader || isFooter) {
-                return;
-            }
-            if (sectionCount % 2 === 0) {
-                section.classList.add("hp-alt-bg");
-            }
-            sectionCount++;
-        });
-    }
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", applyAltBg);
-    } else {
-        setTimeout(applyAltBg, 100);
-    }
-})();
-</script>';
+                $backgroundMap[$sectionId] = $gradientCss;
             }
         }
-        
-        // Render the widget
+
+        // Generate CSS for full-width backgrounds
+        $output .= '<style>
+        body { overflow-x: hidden !important; }
+        .hp-funnel-section.hp-has-bg {
+            width: 100vw !important;
+            position: relative !important;
+            left: 50% !important;
+            right: 50% !important;
+            margin-left: -50vw !important;
+            margin-right: -50vw !important;
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+            padding-left: calc(50vw - 50%) !important;
+            padding-right: calc(50vw - 50%) !important;
+            box-sizing: border-box !important;
+        }
+        /* Reset infographics sections to prevent margin/positioning issues */
+        .hp-funnel-section.hp-funnel-infographics {
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+        }
+        </style>';
+
+        // Generate JavaScript to apply backgrounds using occurrence-based IDs (v2.33.73)
+        // For infographics, uses data-info-index attribute for stable mapping
+        $backgroundMapJson = wp_json_encode($backgroundMap);
+        $output .= sprintf(
+            '<script>
+(function() {
+    var backgroundMap = %s;
+
+    // Map CSS class patterns to section types (must match PHP FunnelConfigLoader::SHORTCODE_TYPE_MAP)
+    var classToType = {
+        "hp-funnel-hero-section": "hero",
+        "hp-funnel-benefits": "benefits",
+        "hp-funnel-products": "offers",
+        "hp-funnel-features": "features",
+        "hp-funnel-authority": "authority",
+        "hp-funnel-testimonials": "testimonials",
+        "hp-funnel-faq": "faq",
+        "hp-funnel-cta": "cta",
+        "hp-funnel-science": "science",
+        "hp-funnel-infographics": "infographics"
+    };
+
+    function detectSectionType(section) {
+        var className = section.className;
+        for (var pattern in classToType) {
+            // Check if class contains the pattern (handles hp-funnel-products-{slug} etc.)
+            if (className.indexOf(pattern) !== -1) {
+                return classToType[pattern];
+            }
+        }
+        return null;
+    }
+
+    function applyBackgrounds() {
+        var sections = document.querySelectorAll(".hp-funnel-section");
+        var typeOccurrences = {};
+
+        sections.forEach(function(section) {
+            var className = section.className;
+            
+            // Skip header and footer
+            if (className.indexOf("hp-funnel-header") !== -1 || 
+                className.indexOf("hp-funnel-footer") !== -1) {
+                return;
+            }
+
+            // Detect section type from CSS class
+            var sectionType = detectSectionType(section);
+            if (!sectionType) {
+                return;
+            }
+
+            var stableId;
+            
+            // For infographics, use data-info-index attribute for stable ID
+            if (sectionType === "infographics") {
+                var infoIndex = section.getAttribute("data-info-index");
+                if (infoIndex) {
+                    stableId = "infographics_" + infoIndex;
+                } else {
+                    // Fallback to occurrence-based if no data attribute
+                    if (!typeOccurrences[sectionType]) {
+                        typeOccurrences[sectionType] = 0;
+                    }
+                    typeOccurrences[sectionType]++;
+                    stableId = sectionType + "_" + typeOccurrences[sectionType];
+                }
+            } else {
+                // For other types, use occurrence-based IDs
+                if (!typeOccurrences[sectionType]) {
+                    typeOccurrences[sectionType] = 0;
+                }
+                typeOccurrences[sectionType]++;
+                stableId = sectionType + "_" + typeOccurrences[sectionType];
+            }
+
+            var background = backgroundMap[stableId];
+
+            if (background && background !== "transparent") {
+                section.classList.add("hp-has-bg");
+                section.style.setProperty("background", background, "important");
+            }
+            
+            // Always set the data attribute for debugging/inspection
+            section.setAttribute("data-section-id", stableId);
+        });
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", applyBackgrounds);
+    } else {
+        setTimeout(applyBackgrounds, 100);
+    }
+})();
+</script>',
+            $backgroundMapJson
+        );
+
         $output .= $this->renderWidget('FunnelHeroSection', $slug, $props, $styling);
-        
         return $output;
     }
 }

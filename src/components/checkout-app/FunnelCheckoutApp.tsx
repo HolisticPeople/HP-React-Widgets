@@ -4,6 +4,8 @@ import { ProcessingStep } from './steps/ProcessingStep';
 import { UpsellStep } from './steps/UpsellStep';
 import { ThankYouStep } from './steps/ThankYouStep';
 import { useCheckoutApi } from './hooks/useCheckoutApi';
+import { useResponsive } from '@/hooks/use-responsive';
+import { cn } from '@/lib/utils';
 import type { 
   CheckoutStep as CheckoutStepType, 
   FunnelCheckoutAppConfig, 
@@ -112,6 +114,68 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
   // API hook
   const api = useCheckoutApi({ apiBase, funnelId, funnelName });
 
+  // Track if we've done URL-based initialization
+  const hasInitializedFromUrl = useRef(false);
+
+  // On mount: Check URL for thank-you state restoration
+  // This allows the page to be refreshed and still show the correct step
+  useEffect(() => {
+    if (hasInitializedFromUrl.current) return;
+    hasInitializedFromUrl.current = true;
+    
+    const path = window.location.pathname;
+    const params = new URLSearchParams(window.location.search);
+    
+    // Check if we're on the thank-you URL
+    if (path.includes('/thank-you')) {
+      const urlOrderId = parseInt(params.get('order_id') || '0', 10);
+      const urlPiId = params.get('pi_id') || '';
+      
+      if (urlOrderId || urlPiId) {
+        // Restore state from URL
+        if (urlOrderId) setOrderId(urlOrderId);
+        if (urlPiId) setPaymentIntentId(urlPiId);
+        setCurrentStep('thankyou');
+        
+        // Fetch order summary
+        api.getOrderSummary(urlOrderId || undefined, urlPiId || undefined)
+          .then(summary => {
+            if (summary) setOrderSummary(summary);
+          })
+          .catch(err => {
+            console.error('[FunnelCheckoutApp] Failed to restore order summary:', err);
+          });
+      }
+    }
+    // Check if we're on the upsell URL
+    else if (path.includes('/upsell')) {
+      const urlOrderId = parseInt(params.get('order_id') || '0', 10);
+      const urlPiId = params.get('pi_id') || '';
+      
+      if (urlOrderId || urlPiId) {
+        if (urlOrderId) setOrderId(urlOrderId);
+        if (urlPiId) setPaymentIntentId(urlPiId);
+        
+        // If we have upsells, show upsell step, otherwise go to thank you
+        if (showUpsell && upsellOffers.length > 0) {
+          setCurrentStep('upsell');
+        } else {
+          setCurrentStep('thankyou');
+        }
+        
+        // Fetch order summary
+        api.getOrderSummary(urlOrderId || undefined, urlPiId || undefined)
+          .then(summary => {
+            if (summary) setOrderSummary(summary);
+          })
+          .catch(err => {
+            console.error('[FunnelCheckoutApp] Failed to restore order summary:', err);
+          });
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Get the selected offer
   const selectedOffer = useMemo(
     () => offers.find(o => o.id === selectedOfferId) as Offer | undefined,
@@ -125,25 +189,40 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
   
   // Update browser URL when step changes (Round 2 improvement for Google Merchant Center)
   // This creates a canonical thank-you URL at /express-shop/{slug}/thank-you/
+  // For thank-you step, include order_id and pi_id in URL for refresh support
   useEffect(() => {
     if (!funnelSlug) return;
     
     const basePath = `/express-shop/${funnelSlug}`;
     let newPath = basePath + '/checkout/';
+    let newSearch = '';
     
     if (currentStep === 'thankyou') {
       newPath = basePath + '/thank-you/';
+      // Include order identifiers in URL for refresh support
+      const params = new URLSearchParams();
+      if (orderId) params.set('order_id', String(orderId));
+      if (paymentIntentId) params.set('pi_id', paymentIntentId);
+      newSearch = params.toString() ? '?' + params.toString() : '';
     } else if (currentStep === 'upsell') {
       newPath = basePath + '/upsell/';
+      // Also include order info for upsell step
+      const params = new URLSearchParams();
+      if (orderId) params.set('order_id', String(orderId));
+      if (paymentIntentId) params.set('pi_id', paymentIntentId);
+      newSearch = params.toString() ? '?' + params.toString() : '';
     } else if (currentStep === 'processing') {
       newPath = basePath + '/processing/';
     }
     
-    // Only update if path is different from current
-    if (window.location.pathname !== newPath) {
-      window.history.replaceState({ step: currentStep }, '', newPath);
+    const fullUrl = newPath + newSearch;
+    const currentFullPath = window.location.pathname + window.location.search;
+    
+    // Only update if URL is different from current
+    if (currentFullPath !== fullUrl) {
+      window.history.replaceState({ step: currentStep, orderId, piId: paymentIntentId }, '', fullUrl);
     }
-  }, [currentStep, funnelSlug]);
+  }, [currentStep, funnelSlug, orderId, paymentIntentId]);
 
   // Handle offer selection change - reset kit selection and quantity ONLY when changing offers
   const handleOfferSelect = useCallback((offerId: string) => {
@@ -446,8 +525,9 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
 
   return (
     <div 
-      className="hp-funnel-checkout-app min-h-screen bg-background"
+      className="hp-funnel-checkout-app hp-funnel-section hp-funnel-checkout min-h-screen bg-background"
       style={rootStyle}
+      data-section-type="checkout"
     >
       {/* Logo Header */}
       {logoUrl && (

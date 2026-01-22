@@ -1,6 +1,9 @@
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useResponsive } from '@/hooks/use-responsive';
+import { useHeightBehavior, HeightBehavior } from '@/hooks/use-height-behavior';
+import { smoothScrollTo } from '@/hooks/use-smooth-scroll';
 
 const CheckIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -35,6 +38,11 @@ export interface FunnelProductsProps {
   backgroundColor?: string;
   backgroundGradient?: string;
   className?: string;
+  // Responsive settings (v2.32.10)
+  heightBehavior?: HeightBehavior | { mobile?: HeightBehavior; tablet?: HeightBehavior; desktop?: HeightBehavior };
+  mobileLayout?: 'stacked' | 'compact' | 'carousel';
+  tabletColumns?: 1 | 2;
+  desktopColumns?: 2 | 3 | 4;
 }
 
 export const FunnelProducts = ({
@@ -49,7 +57,22 @@ export const FunnelProducts = ({
   backgroundColor,
   backgroundGradient,
   className,
+  heightBehavior = 'scrollable', // Products section often needs scrolling
+  mobileLayout = 'stacked',
+  tabletColumns = 2,
+  desktopColumns = 3,
 }: FunnelProductsProps) => {
+  // Responsive hooks
+  const { breakpoint, isMobile, isTablet } = useResponsive();
+  const { className: heightClassName, style: heightStyle } = useHeightBehavior(heightBehavior);
+  
+  // Determine effective columns based on breakpoint
+  const effectiveColumns = isMobile 
+    ? 1 // Mobile always single column for stacked/compact
+    : isTablet 
+      ? tabletColumns 
+      : desktopColumns;
+  
   const handleProductClick = (product: FunnelProduct) => {
     const url = product.ctaUrl || defaultCtaUrl;
 
@@ -72,7 +95,7 @@ export const FunnelProducts = ({
         new CustomEvent('hp_funnel_offer_select', { detail: { offerId: product.id, sku: product.sku } })
       );
 
-      checkoutNode.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      smoothScrollTo(checkoutNode, { offset: -20 });
       return;
     }
 
@@ -85,16 +108,19 @@ export const FunnelProducts = ({
     }
   };
 
-  const gridCols = {
+  // Extended grid column options for responsive support
+  const gridCols: Record<number, string> = {
     1: 'max-w-md mx-auto',
     2: 'md:grid-cols-2',
     3: 'md:grid-cols-2 lg:grid-cols-3',
+    4: 'md:grid-cols-2 lg:grid-cols-4',
   };
 
-  const columnClass = gridCols[Math.min(products.length, 3) as 1 | 2 | 3];
+  // Use effectiveColumns for responsive behavior
+  const columnClass = gridCols[Math.min(effectiveColumns, 4)] || gridCols[3];
 
-  // Build background style
-  const bgStyle: React.CSSProperties = {};
+  // Build background style, merge with height behavior
+  const bgStyle: React.CSSProperties = { ...heightStyle };
   if (backgroundColor) {
     bgStyle.backgroundColor = backgroundColor;
   } else if (backgroundGradient) {
@@ -105,6 +131,7 @@ export const FunnelProducts = ({
     <section
       className={cn(
         'hp-funnel-products hp-funnel-section py-20 px-4',
+        heightClassName,
         className
       )}
       style={bgStyle}

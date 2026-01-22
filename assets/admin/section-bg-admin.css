@@ -1,0 +1,248 @@
+/**
+ * Section Background Admin UI Styles (v2.33.20)
+ *
+ * Styles for preview rectangles and bulk action buttons
+ * - Radio button selection (single row at a time)
+ * - Hidden numbering column, section_id column, and add/remove buttons
+ * - Hidden remove column header (gray column on right)
+ * - Columns align by injecting after .acf-row-handle (stable ACF anchor)
+ * - Odd/Even logic starts from Home (index 0)
+ */
+
+/* Preview rectangle - 40px × 80px wide rectangle */
+.hp-section-bg-preview {
+    width: 80px;
+    height: 40px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    display: block;
+    margin: 0 auto;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Transparent pattern for background_type='none' */
+.hp-section-bg-preview.transparent {
+    background:
+        repeating-conic-gradient(
+            #eee 0% 25%,
+            transparent 0% 50%
+        )
+        50% / 10px 10px;
+}
+
+/* Bulk actions container - only visible within section_backgrounds field */
+[data-key="field_section_backgrounds"] .hp-bulk-actions {
+    margin-bottom: 15px;
+    padding: 12px;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.hp-bulk-actions label {
+    font-weight: 600;
+    margin: 0;
+    cursor: pointer;
+}
+
+.hp-bulk-actions input[type="checkbox"] {
+    margin-right: 5px;
+}
+
+.hp-bulk-actions button {
+    margin: 0;
+}
+
+.hp-bulk-actions button.button {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+/* Row checkbox styling */
+.hp-row-checkbox {
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+/* Improve table layout for section_backgrounds repeater */
+[data-key="field_section_backgrounds"] .acf-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+[data-key="field_section_backgrounds"] .acf-table td {
+    vertical-align: middle;
+    padding: 8px;
+}
+
+/* Hide ACF order/numbering column with explicit resets */
+[data-key="field_section_backgrounds"] .acf-row-handle.order,
+[data-key="field_section_backgrounds"] thead .acf-row-handle.order {
+    display: none !important;
+    width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+}
+
+/* Hide ACF remove column in body rows only */
+[data-key="field_section_backgrounds"] tbody .acf-row-handle.remove {
+    display: none !important;
+    width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+}
+
+/* Show remove column in header for "End Color" label */
+[data-key="field_section_backgrounds"] thead th.acf-row-handle.remove {
+    display: table-cell !important;
+    width: auto !important;
+    padding: 8px !important;
+    text-align: left !important;
+}
+
+[data-key="field_section_backgrounds"] thead th.acf-row-handle.remove::before {
+    content: "End Color";
+    font-weight: 600;
+    display: block;
+}
+
+/* Hide section_id and section_label hidden field columns with explicit resets */
+[data-key="field_section_backgrounds"] [data-name="section_id"],
+[data-key="field_section_backgrounds"] thead [data-name="section_id"],
+[data-key="field_section_backgrounds"] th[data-name="section_id"],
+[data-key="field_section_backgrounds"] td[data-name="section_id"],
+[data-key="field_section_backgrounds"] [data-name="section_label"],
+[data-key="field_section_backgrounds"] thead [data-name="section_label"],
+[data-key="field_section_backgrounds"] th[data-name="section_label"],
+[data-key="field_section_backgrounds"] td[data-name="section_label"] {
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+}
+
+/* Hide ACF add/remove row buttons */
+[data-key="field_section_backgrounds"] .acf-actions {
+    display: none !important;
+}
+
+/* WORKAROUND: Hide our injected headers and shift ACF headers left visually */
+[data-key="field_section_backgrounds"] thead .hp-section-header,
+[data-key="field_section_backgrounds"] thead .hp-preview-header {
+    display: none !important;
+}
+
+/* Shift header labels: Show "Section" on section_id column */
+[data-key="field_section_backgrounds"] thead th[data-name="section_id"] label {
+    display: none;
+}
+[data-key="field_section_backgrounds"] thead th[data-name="section_id"]::before {
+    content: "Section";
+    font-weight: 600;
+}
+
+/* Shift header labels: Show "Preview" on background_type column */
+[data-key="field_section_backgrounds"] thead th[data-name="background_type"] label {
+    display: none;
+}
+[data-key="field_section_backgrounds"] thead th[data-name="background_type"]::before {
+    content: "Preview";
+    font-weight: 600;
+}
+
+/* Shift remaining headers left by one column */
+[data-key="field_section_backgrounds"] thead th[data-name="gradient_type"] label {
+    display: none;
+}
+[data-key="field_section_backgrounds"] thead th[data-name="gradient_type"]::before {
+    content: "Background Type";
+    font-weight: 600;
+}
+
+[data-key="field_section_backgrounds"] thead th[data-name="gradient_preset"] label {
+    display: none;
+}
+[data-key="field_section_backgrounds"] thead th[data-name="gradient_preset"]::before {
+    content: "Gradient Type";
+    font-weight: 600;
+}
+
+[data-key="field_section_backgrounds"] thead th[data-name="color_mode"] label {
+    display: none;
+}
+[data-key="field_section_backgrounds"] thead th[data-name="color_mode"]::before {
+    content: "Gradient Pattern";
+    font-weight: 600;
+}
+
+[data-key="field_section_backgrounds"] thead th[data-name="gradient_start_color"] label {
+    display: none;
+}
+[data-key="field_section_backgrounds"] thead th[data-name="gradient_start_color"]::before {
+    content: "Color Mode";
+    font-weight: 600;
+}
+
+[data-key="field_section_backgrounds"] thead th[data-name="gradient_end_color"] label {
+    display: none;
+}
+[data-key="field_section_backgrounds"] thead th[data-name="gradient_end_color"]::before {
+    content: "Color / Start";
+    font-weight: 600;
+}
+
+/* "End Color" header is now handled by .acf-row-handle.remove above */
+
+/* Section name cell styling */
+.hp-section-name-cell {
+    white-space: nowrap;
+    min-width: 120px;
+}
+
+.hp-section-name {
+    font-weight: 600;
+    color: #23282d;
+}
+
+/* Preview cell styling */
+.hp-preview-cell {
+    width: 100px;
+    text-align: center;
+}
+
+/* Table header styling */
+.hp-section-header,
+.hp-preview-header {
+    font-weight: 600;
+    background: #f5f5f5;
+}
+
+/* Highlight selected row (radio button) */
+[data-key="field_section_backgrounds"] .acf-row:has(.hp-row-radio:checked) {
+    background-color: #f0f8ff;
+}
+
+/* Style radio buttons */
+.hp-row-radio {
+    cursor: pointer;
+    margin: 0;
+}
+
+/* Spinning animation for refresh button (v2.33.37) */
+@keyframes hp-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.hp-spin {
+    animation: hp-spin 1s linear infinite;
+    display: inline-block;
+}

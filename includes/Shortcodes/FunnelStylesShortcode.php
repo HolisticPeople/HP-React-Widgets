@@ -2,6 +2,7 @@
 namespace HP_RW\Shortcodes;
 
 use HP_RW\Services\FunnelConfigLoader;
+use HP_RW\AssetLoader;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -321,7 +322,45 @@ class FunnelStylesShortcode
         // Add body class via inline script (runs immediately)
         $output .= "<script>(function(){document.body.classList.add('hp-funnel-{$slug}');})();</script>";
 
+        // Render StickyCTA widget if enabled (v2.32.5)
+        $output .= $this->maybeRenderStickyCta($config);
+
         return $output;
+    }
+
+    /**
+     * Render StickyCTA widget if enabled in funnel config.
+     * 
+     * @param array $config Funnel config
+     * @return string HTML widget or empty string
+     */
+    private function maybeRenderStickyCta(array $config): string
+    {
+        $responsive = $config['responsive'] ?? [];
+        $mobileSettings = $responsive['mobile_settings'] ?? [];
+        
+        // Check if sticky CTA is enabled
+        if (empty($mobileSettings['sticky_cta_enabled'])) {
+            return '';
+        }
+        
+        // Ensure React bundle is loaded
+        AssetLoader::enqueue_bundle();
+        
+        $props = [
+            'text' => $mobileSettings['sticky_cta_text'] ?: 'Get Your Kit Now',
+            'target' => $mobileSettings['sticky_cta_target'] ?: 'scroll_to_offers',
+            'backgroundColor' => $config['styling']['accent_color'] ?? '#D4A853',
+            'textColor' => $config['styling']['page_bg_color'] ?? '#1a1a1a',
+        ];
+        
+        $rootId = 'hp-sticky-cta-' . esc_attr($config['slug']);
+        
+        return sprintf(
+            '<div id="%s" data-hp-widget="1" data-component="StickyCTA" data-props="%s"></div>',
+            esc_attr($rootId),
+            esc_attr(wp_json_encode($props))
+        );
     }
 
     /**

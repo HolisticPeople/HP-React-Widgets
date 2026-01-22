@@ -1,6 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
+import { useHeightBehavior, HeightBehavior } from '@/hooks/use-height-behavior';
 
 // Icon components - Extended for Round 2
 const CheckIcon = () => (
@@ -108,6 +109,8 @@ export interface FunnelBenefitsProps {
   backgroundGradient?: string;
   className?: string;
   enableCategories?: boolean; // Round 2: Enable categorized column layout
+  // Responsive settings (v2.32.0)
+  heightBehavior?: HeightBehavior | { mobile?: HeightBehavior; tablet?: HeightBehavior; desktop?: HeightBehavior };
 }
 
 export const FunnelBenefits = ({
@@ -121,7 +124,11 @@ export const FunnelBenefits = ({
   backgroundGradient,
   className,
   enableCategories = false,
+  heightBehavior = 'scrollable', // Changed from fit_viewport - overflow issues on mobile
 }: FunnelBenefitsProps) => {
+  // Responsive hooks
+  const { className: heightClassName, style: heightStyle } = useHeightBehavior(heightBehavior);
+  
   // Normalize benefits to always be objects
   const normalizedBenefits: Benefit[] = benefits.map((b) =>
     typeof b === 'string' ? { text: b, icon: defaultIcon } : b
@@ -195,9 +202,10 @@ export const FunnelBenefits = ({
     <section
       className={cn(
         'hp-funnel-benefits hp-funnel-section py-20 px-4',
+        heightClassName,
         className
       )}
-      style={bgStyle}
+      style={{ ...bgStyle, ...heightStyle }}
     >
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}

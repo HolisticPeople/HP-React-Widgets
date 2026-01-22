@@ -1,6 +1,9 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { useResponsive } from '@/hooks/use-responsive';
+import { useHeightBehavior, HeightBehavior } from '@/hooks/use-height-behavior';
+import { smoothScrollTo } from '@/hooks/use-smooth-scroll';
 
 const QuoteIcon = () => (
   <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor" opacity={0.5}>
@@ -43,6 +46,9 @@ export interface FunnelAuthorityProps {
   featuredOfferId?: string;
   layout?: 'side-by-side' | 'centered' | 'card' | 'illumodine';
   className?: string;
+  // Responsive settings (v2.32.9)
+  heightBehavior?: HeightBehavior | { mobile?: HeightBehavior; tablet?: HeightBehavior; desktop?: HeightBehavior };
+  mobileLayout?: 'stacked' | 'centered'; // Mobile always stacks, but can be centered
 }
 
 export const FunnelAuthority = ({
@@ -62,7 +68,13 @@ export const FunnelAuthority = ({
   featuredOfferId,
   layout = 'side-by-side',
   className,
+  heightBehavior = 'scrollable', // Authority often has long content, use scrollable
+  mobileLayout = 'stacked',
 }: FunnelAuthorityProps) => {
+  // Responsive hooks
+  const { isMobile } = useResponsive();
+  const { className: heightClassName, style: heightStyle } = useHeightBehavior(heightBehavior);
+  
   // Normalize quotes to always be objects
   const normalizedQuotes = quotes.map((q) =>
     typeof q === 'string' ? { text: q } : q
@@ -86,7 +98,7 @@ export const FunnelAuthority = ({
         || document.querySelector('[data-section="offers"]')
         || document.querySelector('[data-component="FunnelProducts"]');
       if (offersSection) {
-        offersSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        smoothScrollTo(offersSection as HTMLElement, { offset: -20 });
       } else {
         // Fallback to checkout if no offers section
         window.location.href = checkoutUrl || ctaUrl || '#checkout';
@@ -97,9 +109,11 @@ export const FunnelAuthority = ({
   return (
     <section
       className={cn(
-        'hp-funnel-authority py-20 px-4 bg-gradient-to-br from-secondary/20 via-background to-primary/10',
+        'hp-funnel-authority hp-funnel-section py-20 px-4 bg-gradient-to-br from-secondary/20 via-background to-primary/10',
+        heightClassName,
         className
       )}
+      style={heightStyle}
     >
       <div className="max-w-6xl mx-auto">
         {/* Section Title */}

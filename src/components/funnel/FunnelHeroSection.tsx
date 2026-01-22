@@ -1,6 +1,9 @@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ScrollNavigation } from './ScrollNavigation';
+import { useResponsive } from '@/hooks/use-responsive';
+import { useHeightBehavior, HeightBehavior } from '@/hooks/use-height-behavior';
+import { smoothScrollTo } from '@/hooks/use-smooth-scroll';
 
 export interface FunnelHeroSectionProps {
   // Content
@@ -31,6 +34,11 @@ export interface FunnelHeroSectionProps {
   minHeight?: string;
   titleSize?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'; // Title size modifier
   
+  // Responsive settings (v2.32.0)
+  heightBehavior?: HeightBehavior | { mobile?: HeightBehavior; tablet?: HeightBehavior; desktop?: HeightBehavior };
+  mobileImagePosition?: 'below' | 'above' | 'hidden'; // Image position on mobile
+  mobileTitleSize?: 'sm' | 'md' | 'lg'; // Override title size on mobile
+  
   // Scroll navigation (rendered automatically when enabled)
   enableScrollNavigation?: boolean;
   
@@ -38,12 +46,12 @@ export interface FunnelHeroSectionProps {
 }
 
 // Title size mapping with CSS values (to override WordPress theme CSS)
-const titleSizes: Record<string, { mobile: string; desktop: string }> = {
-  'sm': { mobile: '1.875rem', desktop: '2.25rem' },    // 30px → 36px
-  'md': { mobile: '2.25rem', desktop: '3rem' },        // 36px → 48px
-  'lg': { mobile: '3rem', desktop: '3.75rem' },        // 48px → 60px
-  'xl': { mobile: '3.75rem', desktop: '4.5rem' },      // 60px → 72px
-  '2xl': { mobile: '4.5rem', desktop: '6rem' },        // 72px → 96px
+const titleSizes: Record<string, { mobile: string; tablet: string; desktop: string }> = {
+  'sm': { mobile: '1.5rem', tablet: '1.875rem', desktop: '2.25rem' },     // 24px → 30px → 36px
+  'md': { mobile: '1.875rem', tablet: '2.25rem', desktop: '3rem' },       // 30px → 36px → 48px
+  'lg': { mobile: '2.25rem', tablet: '3rem', desktop: '3.75rem' },        // 36px → 48px → 60px
+  'xl': { mobile: '2.5rem', tablet: '3.75rem', desktop: '4.5rem' },       // 40px → 60px → 72px
+  '2xl': { mobile: '3rem', tablet: '4.5rem', desktop: '6rem' },           // 48px → 72px → 96px
 };
 
 export const FunnelHeroSection = ({
@@ -69,9 +77,24 @@ export const FunnelHeroSection = ({
   imagePosition = 'right',
   minHeight = '600px',
   titleSize = 'xl', // Default to xl (matches reference funnel)
+  heightBehavior = 'scrollable', // Changed from fit_viewport - overflow issues on mobile
+  mobileImagePosition = 'below',
+  mobileTitleSize,
   enableScrollNavigation = false,
   className,
 }: FunnelHeroSectionProps) => {
+  // Responsive hooks
+  const { isMobile, isTablet, breakpoint } = useResponsive();
+  const { className: heightClassName, style: heightStyle, isFitViewport } = useHeightBehavior(heightBehavior);
+  
+  // Determine effective title size based on breakpoint
+  const effectiveTitleSize = isMobile && mobileTitleSize ? mobileTitleSize : titleSize;
+  const titleSizeValue = breakpoint === 'mobile' 
+    ? titleSizes[effectiveTitleSize]?.mobile 
+    : breakpoint === 'tablet'
+      ? titleSizes[effectiveTitleSize]?.tablet
+      : titleSizes[effectiveTitleSize]?.desktop || titleSizes['xl'].desktop;
+  
   // Handle CTA button click based on behavior
   const handleCtaClick = () => {
     if (ctaBehavior === 'checkout') {
@@ -82,20 +105,27 @@ export const FunnelHeroSection = ({
         ? `${url}${separator}offer=${featuredOfferId}` 
         : url;
     } else {
-      // Scroll to offers section (default behavior)
+      // Scroll to offers section using smooth scroll
       const offersSection = document.getElementById('hp-funnel-offers') || 
                            document.querySelector('.hp-funnel-products') ||
                            document.querySelector('[data-section="offers"]');
       if (offersSection) {
-        offersSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        smoothScrollTo(offersSection as HTMLElement, { offset: -20 });
       } else {
         // Fallback: navigate to checkout if no offers section found
         window.location.href = checkoutUrl || ctaUrl;
       }
     }
   };
+  
+  // Should we show image based on mobile settings?
+  const showImage = heroImage && imagePosition !== 'background' && 
+    !(isMobile && mobileImagePosition === 'hidden');
+  
+  // Custom styles including height behavior
   const customStyles: React.CSSProperties = {
-    minHeight,
+    ...heightStyle,
+    ...(isFitViewport ? {} : { minHeight }),
   };
   
   if (accentColor) {
@@ -112,6 +142,7 @@ export const FunnelHeroSection = ({
     <section
       className={cn(
         'hp-funnel-hero-section hp-funnel-section relative overflow-hidden flex items-center',
+        heightClassName,
         className
       )}
       style={customStyles}
@@ -166,8 +197,8 @@ export const FunnelHeroSection = ({
       <div className="relative w-full max-w-7xl mx-auto px-4 py-16">
         <div
           className={cn(
-            'grid gap-12 items-center',
-            hasImage && 'md:grid-cols-2',
+            'grid gap-8 md:gap-12 items-center',
+            showImage && 'md:grid-cols-2',
             imagePosition === 'left' && 'md:flex-row-reverse'
           )}
         >
@@ -183,7 +214,7 @@ export const FunnelHeroSection = ({
             <h1 
               className="font-bold text-accent drop-shadow-[0_0_30px_hsl(45_95%_60%/0.5)]"
               style={{ 
-                fontSize: titleSizes[titleSize]?.desktop || titleSizes['xl'].desktop,
+                fontSize: titleSizeValue,
                 lineHeight: 1.1,
               }}
             >
@@ -234,18 +265,23 @@ export const FunnelHeroSection = ({
             </div>
           </div>
 
-          {/* Hero Image (side position) */}
-          {hasImage && (
+          {/* Hero Image (side position) - respects mobile visibility and ordering */}
+          {showImage && (
             <div
               className={cn(
                 'relative flex justify-center items-center',
-                imagePosition === 'left' && 'md:order-1'
+                // Desktop: respect imagePosition setting
+                imagePosition === 'left' && 'md:order-1',
+                // Mobile: use mobileImagePosition for ordering
+                isMobile && mobileImagePosition === 'above' && 'order-first',
+                isMobile && mobileImagePosition === 'below' && 'order-last'
               )}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-accent/20 via-primary/30 to-accent/20 rounded-full blur-3xl scale-75" />
               <img
                 src={heroImage}
                 alt={heroImageAlt}
+                loading="lazy"
                 className="relative w-full max-w-md h-auto drop-shadow-[0_0_40px_hsl(45_95%_60%/0.6)]"
               />
             </div>

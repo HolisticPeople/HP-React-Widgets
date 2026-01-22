@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
 const CloseIcon = () => (
-  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <line x1="18" y1="6" x2="6" y2="18" />
     <line x1="6" y1="6" x2="18" y2="18" />
   </svg>
@@ -35,6 +35,9 @@ export const LegalPopup = ({
   const [title, setTitle] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isClosing, setIsClosing] = useState(false);
+  const [shouldRender, setShouldRender] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const pageId = type === 'terms' ? tosPageId : privacyPageId;
 
@@ -58,7 +61,10 @@ export const LegalPopup = ({
         throw new Error('Failed to load content');
       }
       const data = await response.json();
-      setTitle(data.title?.rendered || (type === 'terms' ? 'Terms of Service' : 'Privacy Policy'));
+      const decodedTitle = data.title?.rendered 
+        ? decodeHtmlEntities(data.title.rendered) 
+        : (type === 'terms' ? 'Terms of Service' : 'Privacy Policy');
+      setTitle(decodedTitle);
       setContent(data.content?.rendered || '');
     } catch (err) {
       setError('Unable to load content. Please try again later.');
@@ -67,54 +73,116 @@ export const LegalPopup = ({
     }
   }, [pageId, type, apiBase]);
 
+  const decodeHtmlEntities = (html: string) => {
+    const txt = document.createElement("textarea");
+    txt.innerHTML = html;
+    return txt.value;
+  };
+
   useEffect(() => {
     if (isOpen) {
-      fetchContent();
-      // Prevent body scroll when popup is open
+      // Calculate scrollbar width BEFORE hiding overflow
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+      // Apply padding only to body to compensate for scrollbar removal
+      if (scrollbarWidth > 0) {
+        document.body.style.paddingRight = `${scrollbarWidth}px`;
+      }
+
+      // Then hide overflow (which removes the scrollbar)
       document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
+
+      setShouldRender(true);
+      setIsClosing(false);
+      setShowModal(false);
+      fetchContent();
+
+      // Show modal after backdrop starts fading in
+      const modalTimer = setTimeout(() => {
+        setShowModal(true);
+      }, 150);
+
+      return () => clearTimeout(modalTimer);
+    } else if (shouldRender) {
+      // Trigger closing animation - modal first
+      setIsClosing(true);
+
+      // Fade out backdrop after modal starts closing
+      const backdropTimer = setTimeout(() => {
+        setShowModal(false);
+      }, 400); // Match modal animation duration
+
+      const cleanupTimer = setTimeout(() => {
+        setShouldRender(false);
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+      }, 700); // 400ms modal + 300ms backdrop
+
+      return () => {
+        clearTimeout(backdropTimer);
+        clearTimeout(cleanupTimer);
+      };
     }
 
     return () => {
-      document.body.style.overflow = '';
+      if (!isOpen && !shouldRender) {
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+      }
     };
-  }, [isOpen, fetchContent]);
+  }, [isOpen, fetchContent, shouldRender]);
+
+  // Handle close with animation
+  const handleClose = useCallback(() => {
+    onClose();
+  }, [onClose]);
 
   // Handle escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
-        onClose();
+        handleClose();
       }
     };
 
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
+  }, [isOpen, handleClose]);
 
-  if (!isOpen) return null;
+  if (!shouldRender) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-      onClick={onClose}
+      onClick={handleClose}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-      
+      <div
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        style={{
+          animation: `${isClosing ? 'fadeOut' : 'fadeIn'} 300ms ease-out forwards`,
+          opacity: 0
+        }}
+      />
+
       {/* Modal */}
-      <div 
-        className="relative w-full max-w-3xl max-h-[80vh] bg-card rounded-xl shadow-2xl border border-border/50 flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
+      {showModal && (
+        <div
+          className="relative w-full max-w-3xl max-h-[80vh] bg-card rounded-xl shadow-2xl border border-border/50 flex flex-col"
+          style={{
+            animation: `${isClosing ? 'slideDown' : 'slideUp'} 400ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
+            opacity: isClosing ? 1 : 0,
+            transform: isClosing ? 'scale(1) translateY(0)' : 'scale(0.85) translateY(40px)'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border/50">
           <h2 className="text-xl font-bold text-accent">{title}</h2>
           <button
             type="button"
-            onClick={onClose}
-            className="h-10 w-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors bg-transparent"
+            onClick={handleClose}
+            className="h-11 w-11 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors bg-transparent"
             style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
           >
             <CloseIcon />
@@ -122,7 +190,7 @@ export const LegalPopup = ({
         </div>
         
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 legal-popup-content">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <LoaderIcon className="w-8 h-8 text-accent" />
@@ -158,6 +226,56 @@ export const LegalPopup = ({
                 .legal-content-wrapper a {
                   color: hsl(var(--accent)) !important;
                 }
+
+                /* Dark scrollbar styling for the scrolling container */
+                .legal-popup-content::-webkit-scrollbar {
+                  width: 12px;
+                }
+                .legal-popup-content::-webkit-scrollbar-track {
+                  background: hsl(var(--card));
+                  border-radius: 6px;
+                }
+                .legal-popup-content::-webkit-scrollbar-thumb {
+                  background: hsl(var(--border));
+                  border-radius: 6px;
+                  border: 2px solid hsl(var(--card));
+                }
+                .legal-popup-content::-webkit-scrollbar-thumb:hover {
+                  background: hsl(var(--accent));
+                }
+
+                /* Animation keyframes */
+                @keyframes fadeIn {
+                  from { opacity: 0; }
+                  to { opacity: 1; }
+                }
+
+                @keyframes fadeOut {
+                  from { opacity: 1; }
+                  to { opacity: 0; }
+                }
+
+                @keyframes slideUp {
+                  from {
+                    opacity: 0;
+                    transform: scale(0.85) translateY(40px);
+                  }
+                  to {
+                    opacity: 1;
+                    transform: scale(1) translateY(0);
+                  }
+                }
+
+                @keyframes slideDown {
+                  from {
+                    opacity: 1;
+                    transform: scale(1) translateY(0);
+                  }
+                  to {
+                    opacity: 0;
+                    transform: scale(0.85) translateY(40px);
+                  }
+                }
               `}</style>
               <div 
                 className="legal-content-wrapper prose prose-invert max-w-none"
@@ -171,14 +289,15 @@ export const LegalPopup = ({
         <div className="p-4 border-t border-border/50">
           <button
             type="button"
-            onClick={onClose}
-            className="w-full h-12 rounded-lg font-semibold text-base transition-colors text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary"
+            onClick={handleClose}
+            className="w-full h-14 rounded-lg font-semibold text-lg transition-colors text-muted-foreground hover:text-foreground bg-secondary/50 hover:bg-secondary"
             style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
           >
             Close
           </button>
         </div>
       </div>
+      )}
     </div>
   );
 };

@@ -37,6 +37,25 @@ class SettingsPage
         $savedNotice = '';
         $errorNotice = '';
 
+        // Handle responsive settings submission.
+        if (isset($_POST['hp_rw_responsive_submitted'])) {
+            check_admin_referer('hp_rw_responsive_settings');
+
+            $responsiveSettings = [
+                'breakpoint_tablet'    => isset($_POST['breakpoint_tablet']) ? absint($_POST['breakpoint_tablet']) : 640,
+                'breakpoint_laptop'    => isset($_POST['breakpoint_laptop']) ? absint($_POST['breakpoint_laptop']) : 1024,
+                'breakpoint_desktop'   => isset($_POST['breakpoint_desktop']) ? absint($_POST['breakpoint_desktop']) : 1440,
+                'content_max_width'    => isset($_POST['content_max_width']) ? absint($_POST['content_max_width']) : 1400,
+                'enable_smooth_scroll' => isset($_POST['enable_smooth_scroll']),
+                'scroll_duration'      => isset($_POST['scroll_duration']) ? absint($_POST['scroll_duration']) : 800,
+                'scroll_easing'        => isset($_POST['scroll_easing']) ? sanitize_text_field($_POST['scroll_easing']) : 'ease-out-cubic',
+                'enable_scroll_snap'   => isset($_POST['enable_scroll_snap']),
+            ];
+
+            Plugin::set_responsive_settings($responsiveSettings);
+            $savedNotice = '<div class="notice notice-success is-dismissible"><p>Responsive settings saved.</p></div>';
+        }
+
         // Handle enable/disable submission.
         if (isset($_POST['hp_rw_settings_submitted'])) {
             check_admin_referer('hp_rw_settings');
@@ -259,6 +278,145 @@ class SettingsPage
                 <p>
                     <button type="submit" class="button button-primary">
                         <?php echo esc_html('Save Changes'); ?>
+                    </button>
+                </p>
+            </form>
+
+            <hr />
+
+            <?php
+            // Responsive Settings Section
+            $responsiveSettings = Plugin::get_responsive_settings();
+            $defaults = Plugin::get_default_responsive_settings();
+            ?>
+            <h2><?php echo esc_html('Responsive Settings'); ?></h2>
+            <p class="description">
+                <?php echo esc_html('Configure breakpoint values and scroll behavior for funnel sections. These are plugin-wide defaults that can be overridden per-funnel.'); ?>
+            </p>
+
+            <form method="post" style="max-width: 900px;">
+                <?php wp_nonce_field('hp_rw_responsive_settings'); ?>
+                <input type="hidden" name="hp_rw_responsive_submitted" value="1" />
+
+                <h3><?php echo esc_html('Breakpoints'); ?></h3>
+                <p class="description" style="margin-bottom: 15px;">
+                    <?php echo esc_html('Define the pixel values where each screen size begins. Mobile is always 0 to Tablet breakpoint.'); ?>
+                </p>
+
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th scope="row">
+                            <label for="breakpoint_tablet"><?php echo esc_html('Tablet starts at (px)'); ?></label>
+                        </th>
+                        <td>
+                            <input type="number" name="breakpoint_tablet" id="breakpoint_tablet" 
+                                   value="<?php echo esc_attr($responsiveSettings['breakpoint_tablet']); ?>" 
+                                   min="320" max="1200" step="1" class="small-text" />
+                            <span class="description"><?php echo esc_html('Default: ' . $defaults['breakpoint_tablet'] . 'px. Mobile: 0-' . ($responsiveSettings['breakpoint_tablet'] - 1) . 'px'); ?></span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="breakpoint_laptop"><?php echo esc_html('Laptop starts at (px)'); ?></label>
+                        </th>
+                        <td>
+                            <input type="number" name="breakpoint_laptop" id="breakpoint_laptop" 
+                                   value="<?php echo esc_attr($responsiveSettings['breakpoint_laptop']); ?>" 
+                                   min="640" max="1600" step="1" class="small-text" />
+                            <span class="description"><?php echo esc_html('Default: ' . $defaults['breakpoint_laptop'] . 'px. Tablet: ' . $responsiveSettings['breakpoint_tablet'] . '-' . ($responsiveSettings['breakpoint_laptop'] - 1) . 'px'); ?></span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="breakpoint_desktop"><?php echo esc_html('Desktop starts at (px)'); ?></label>
+                        </th>
+                        <td>
+                            <input type="number" name="breakpoint_desktop" id="breakpoint_desktop" 
+                                   value="<?php echo esc_attr($responsiveSettings['breakpoint_desktop']); ?>" 
+                                   min="1024" max="2560" step="1" class="small-text" />
+                            <span class="description"><?php echo esc_html('Default: ' . $defaults['breakpoint_desktop'] . 'px. Laptop: ' . $responsiveSettings['breakpoint_laptop'] . '-' . ($responsiveSettings['breakpoint_desktop'] - 1) . 'px'); ?></span>
+                        </td>
+                    </tr>
+                </table>
+
+                <h3><?php echo esc_html('Content Layout'); ?></h3>
+
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th scope="row">
+                            <label for="content_max_width"><?php echo esc_html('Content Max Width (px)'); ?></label>
+                        </th>
+                        <td>
+                            <input type="number" name="content_max_width" id="content_max_width" 
+                                   value="<?php echo esc_attr($responsiveSettings['content_max_width']); ?>" 
+                                   min="1000" max="1600" step="50" class="small-text" />
+                            <span class="description"><?php echo esc_html('Default: ' . $defaults['content_max_width'] . 'px. Max width for boxed text content on desktop/laptop.'); ?></span>
+                        </td>
+                    </tr>
+                </table>
+
+                <h3><?php echo esc_html('Scroll Behavior'); ?></h3>
+
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th scope="row">
+                            <label for="enable_smooth_scroll"><?php echo esc_html('Enable Smooth Scroll'); ?></label>
+                        </th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="enable_smooth_scroll" id="enable_smooth_scroll" 
+                                       value="1" <?php checked($responsiveSettings['enable_smooth_scroll']); ?> />
+                                <?php echo esc_html('Apply easing animation when scrolling between sections'); ?>
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="scroll_duration"><?php echo esc_html('Scroll Duration (ms)'); ?></label>
+                        </th>
+                        <td>
+                            <input type="number" name="scroll_duration" id="scroll_duration" 
+                                   value="<?php echo esc_attr($responsiveSettings['scroll_duration']); ?>" 
+                                   min="200" max="2000" step="50" class="small-text" />
+                            <span class="description"><?php echo esc_html('Default: ' . $defaults['scroll_duration'] . 'ms. Duration of scroll animation.'); ?></span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="scroll_easing"><?php echo esc_html('Scroll Easing'); ?></label>
+                        </th>
+                        <td>
+                            <select name="scroll_easing" id="scroll_easing">
+                                <option value="ease-out-cubic" <?php selected($responsiveSettings['scroll_easing'], 'ease-out-cubic'); ?>>
+                                    <?php echo esc_html('Ease Out Cubic (fast start, slow landing)'); ?>
+                                </option>
+                                <option value="ease-out-quad" <?php selected($responsiveSettings['scroll_easing'], 'ease-out-quad'); ?>>
+                                    <?php echo esc_html('Ease Out Quad (gentler deceleration)'); ?>
+                                </option>
+                                <option value="linear" <?php selected($responsiveSettings['scroll_easing'], 'linear'); ?>>
+                                    <?php echo esc_html('Linear (constant speed)'); ?>
+                                </option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="enable_scroll_snap"><?php echo esc_html('Enable Scroll Snap'); ?></label>
+                        </th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="enable_scroll_snap" id="enable_scroll_snap" 
+                                       value="1" <?php checked($responsiveSettings['enable_scroll_snap']); ?> />
+                                <?php echo esc_html('Experimental: Snap to section boundaries when scrolling'); ?>
+                            </label>
+                            <p class="description"><?php echo esc_html('Uses CSS scroll-snap with proximity mode. May affect natural scrolling feel.'); ?></p>
+                        </td>
+                    </tr>
+                </table>
+
+                <p>
+                    <button type="submit" class="button button-primary">
+                        <?php echo esc_html('Save Responsive Settings'); ?>
                     </button>
                 </p>
             </form>

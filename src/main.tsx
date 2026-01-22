@@ -28,6 +28,7 @@ import {
   FunnelScience,
   ScrollNavigation,
   FunnelInfographics,
+  StickyCTA,
 } from '@/components/funnel'
 
 // Navigation components
@@ -78,6 +79,7 @@ widgetRegistry.FunnelFooter = FunnelFooter;
 widgetRegistry.FunnelScience = FunnelScience;
 widgetRegistry.FunnelInfographics = FunnelInfographics;
 widgetRegistry.ScrollNavigation = ScrollNavigation;
+widgetRegistry.StickyCTA = StickyCTA;
 
 // Navigation components
 widgetRegistry.HpMenu = HpMenu;
