@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.58)
+ * Section Background Admin UI Enhancements (v2.33.59)
  *
  * Features:
  * - Radio button selection (one row at a time) for copying settings
@@ -379,41 +379,19 @@
     }
 
     /**
-     * Get colors from the styling section in the DOM (v2.33.58)
+     * Get colors from the styling section in the DOM (v2.33.59)
      */
     function getStylingColorsFromDOM() {
         const colorFields = [
-            'accent_color',
-            'text_color_accent',
-            'text_color_basic',
-            'text_color_note',
-            'text_color_discount',
-            'page_bg_color',
-            'card_bg_color',
-            'input_bg_color',
-            'border_color'
+            'accent_color', 'text_color_accent', 'text_color_basic', 'text_color_note',
+            'text_color_discount', 'page_bg_color', 'card_bg_color', 'input_bg_color', 'border_color'
         ];
         
         let colors = [];
         colorFields.forEach(name => {
-            let $field = $(`.acf-field[data-name="${name}"]`);
-            if (!$field.length) {
-                const keys = {
-                    'accent_color': 'field_accent_color_local',
-                    'text_color_accent': 'field_text_color_accent',
-                    'text_color_basic': 'field_text_color_basic',
-                    'text_color_note': 'field_text_color_note',
-                    'text_color_discount': 'field_text_color_discount',
-                    'page_bg_color': 'field_page_bg_color',
-                    'card_bg_color': 'field_card_bg_color',
-                    'input_bg_color': 'field_input_bg_color',
-                    'border_color': 'field_border_color'
-                };
-                if (keys[name]) $field = $(`.acf-field[data-key="${keys[name]}"]`);
-            }
-
+            const $field = $(`.acf-field[data-name="${name}"], .acf-field[data-key="field_${name}_local"]`);
             if ($field.length) {
-                const $input = $field.find('input[type="text"], input.wp-color-picker').first();
+                const $input = $field.find('input[type="text"]').first();
                 if ($input.length && $input.val()) {
                     colors.push({
                         color: $input.val().toLowerCase(),
@@ -426,50 +404,15 @@
         if (colors.length === 0 && typeof hpSectionBgData !== 'undefined' && hpSectionBgData.stylingColors) {
             colors = hpSectionBgData.stylingColors.map(c => ({ color: c.color.toLowerCase(), label: c.label }));
         }
-        
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'section-bg-admin.js:getStylingColorsFromDOM',message:'Colors found',data:{count: colors.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'I'})}).catch(()=>{});
-        // #endregion
-
         return colors;
     }
 
     /**
-     * Initialize color pickers with custom palette from styling colors (v2.33.58)
+     * Initialize color pickers with custom palette from styling colors (v2.33.59)
+     * Simplified: No longer re-initializes to avoid doubling.
      */
     function initColorPickers() {
-        const stylingColors = getStylingColorsFromDOM();
-        if (stylingColors.length === 0) return;
-
-        const palette = stylingColors.map(item => item.color);
-        const $repeater = $('[data-key="field_section_backgrounds"]');
-        
-        $repeater.find('[data-name="gradient_start_color"] input, [data-name="gradient_end_color"] input').each(function() {
-            const $input = $(this);
-            
-            // Skip if already has our palette
-            if ($input.data('hp-palette-applied')) return;
-
-            // Mark as applied
-            $input.data('hp-palette-applied', true);
-
-            // Destroy existing picker and cleanup container to prevent doubling
-            const $container = $input.closest('.wp-picker-container');
-            if ($container.length) {
-                try { $input.wpColorPicker('destroy'); } catch(e) {}
-                $container.after($input);
-                $container.remove();
-            }
-
-            // Initialize with our options
-            $input.wpColorPicker({
-                palettes: palette,
-                change: function(event, ui) {
-                    const $row = $(this).closest('.acf-row');
-                    updatePreview($row);
-                }
-            });
-        });
+        // Handled by ACF filter and click listeners
     }
 
     /**
@@ -512,36 +455,47 @@
      * Initialize on ACF ready
      */
     if (typeof acf !== 'undefined') {
-        // Inject tooltips when the picker is clicked (v2.33.56)
+        // Native ACF filter to set palettes WITHOUT doubling pickers (v2.33.59)
+        acf.add_filter('color_picker_args', function(args, field) {
+            // Get field name from field object or $el
+            const name = field.get('name') || field.$el.find('input').attr('name') || '';
+            
+            // Check if it's one of our gradient colors in the repeater
+            if (name.indexOf('gradient_start_color') !== -1 || name.indexOf('gradient_end_color') !== -1) {
+                const stylingColors = getStylingColorsFromDOM();
+                if (stylingColors.length > 0) {
+                    args.palettes = stylingColors.map(c => c.color);
+                }
+            }
+            return args;
+        });
+
+        // Inject tooltips on click (v2.33.59)
         $(document).on('click', '.wp-picker-container .wp-color-result', function() {
             const $button = $(this);
             const $container = $button.closest('.wp-picker-container');
             
-            // Wait for iris to render
             setTimeout(function() {
                 const stylingColors = getStylingColorsFromDOM();
-                const $paletteButtons = $container.find('.iris-palette');
-                
-                $paletteButtons.each(function() {
+                $container.find('.iris-palette').each(function() {
                     const $paletteBtn = $(this);
+                    // Iris stores the color in a data attribute or we can get it from background
                     const color = $paletteBtn.data('color') || $paletteBtn.css('background-color');
                     if (!color) return;
-                    
-                    // Convert rgb to hex for comparison if needed
-                    let hexColor = color;
-                    if (color.startsWith('rgb')) {
+
+                    // Convert to hex for comparison
+                    let hex = color;
+                    if (color.indexOf('rgb') !== -1) {
                         const rgb = color.match(/\d+/g);
-                        if (rgb) {
-                            hexColor = '#' + ((1 << 24) + (parseInt(rgb[0]) << 16) + (parseInt(rgb[1]) << 8) + parseInt(rgb[2])).toString(16).slice(1);
-                        }
+                        hex = '#' + ((1 << 24) + (parseInt(rgb[0]) << 16) + (parseInt(rgb[1]) << 8) + parseInt(rgb[2])).toString(16).slice(1);
                     }
-                    
-                    const match = stylingColors.find(c => c.color.toLowerCase() === hexColor.toLowerCase());
+
+                    const match = stylingColors.find(c => c.color.toLowerCase() === hex.toLowerCase());
                     if (match) {
                         $paletteBtn.attr('title', match.label);
                     }
                 });
-            }, 100);
+            }, 50);
         });
 
         acf.addAction('ready', function() {
@@ -549,16 +503,12 @@
             addPreviewsAndCheckboxes();
             initBulkActions();
             initLivePreview();
-            // Initialize color pickers with custom palette
-            setTimeout(initColorPickers, 500);
         });
 
         // Re-initialize when repeater rows are added
         acf.addAction('append', function($el) {
             if ($el.closest('[data-key="field_section_backgrounds"]').length) {
                 addPreviewsAndCheckboxes();
-                // Re-initialize color pickers for new rows
-                setTimeout(initColorPickers, 500);
             }
         });
     }
