@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.68)
+ * Section Background Admin UI Enhancements (v2.33.69)
  *
  * Features:
  * - Radio button selection (one row at a time) for copying settings
