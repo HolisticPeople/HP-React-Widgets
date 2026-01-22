@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.52)
+ * Section Background Admin UI Enhancements (v2.33.53)
  *
  * Features:
  * - Radio button selection (one row at a time) for copying settings
@@ -379,84 +379,53 @@
     }
 
     /**
-     * Initialize color pickers with custom palette from styling colors (v2.33.51)
+     * Get colors from the styling section in the DOM (v2.33.53)
      */
-    function initColorPickers() {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'section-bg-admin.js:386',message:'initColorPickers called',data:{hpSectionBgData: typeof hpSectionBgData !== 'undefined' ? hpSectionBgData : 'undefined'},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
-
-        if (typeof hpSectionBgData === 'undefined' || !hpSectionBgData.stylingColors || hpSectionBgData.stylingColors.length === 0) {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'section-bg-admin.js:391',message:'initColorPickers: stylingColors missing or empty',data:{hpSectionBgData: typeof hpSectionBgData !== 'undefined' ? hpSectionBgData : 'undefined'},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-            // #endregion
-            return;
-        }
-
-        const $repeater = $('[data-key="field_section_backgrounds"]');
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'section-bg-admin.js:397',message:'initColorPickers: repeater found',data:{repeaterLength: $repeater.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
-        // #endregion
-
-        // Build palette array from styling colors
-        const palette = hpSectionBgData.stylingColors.map(item => item.color);
-
-        // Find all color picker inputs in the section backgrounds repeater
-        $repeater.find('[data-name="gradient_start_color"] input, [data-name="gradient_end_color"] input').each(function() {
-            const $input = $(this);
-
-            // Check if wpColorPicker is already initialized by ACF
-            if ($input.hasClass('wp-color-picker')) {
-                const $picker = $input.closest('.wp-picker-container');
-
-                // Check if we've already processed this picker
-                if ($picker.attr('data-hp-palette-init') === 'true') {
-                    return; // Already processed
-                }
-
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'section-bg-admin.js:415',message:'initColorPickers: processing input',data:{inputId: $input.attr('id'), inputName: $input.attr('name')},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
-                // #endregion
-
-                // Mark as processed
-                $picker.attr('data-hp-palette-init', 'true');
-
-                // Get current color value
-                const currentColor = $input.val();
-
-                // Destroy existing picker
-                $input.wpColorPicker('destroy');
-
-                // Re-initialize with custom palette
-                $input.wpColorPicker({
-                    palettes: palette,
-                    change: function(event, ui) {
-                        // Trigger preview update
-                        const $row = $(this).closest('.acf-row');
-                        updatePreview($row);
-                    }
-                });
-
-                // Restore the color value
-                $input.val(currentColor);
-
-                // Add tooltips to palette colors after a short delay
-                setTimeout(function() {
-                    const $newPicker = $input.closest('.wp-picker-container');
-                    const $paletteButtons = $newPicker.find('.iris-palette');
-
-                    // #region agent log
-                    fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'section-bg-admin.js:446',message:'initColorPickers: adding tooltips',data:{paletteButtonsCount: $paletteButtons.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
-                    // #endregion
-
-                    $paletteButtons.each(function(index) {
-                        if (hpSectionBgData.stylingColors[index]) {
-                            $(this).attr('title', hpSectionBgData.stylingColors[index].label);
-                        }
+    function getStylingColorsFromDOM() {
+        const colorFields = [
+            'accent_color',
+            'text_color_accent',
+            'text_color_basic',
+            'text_color_note',
+            'text_color_discount',
+            'page_bg_color',
+            'card_bg_color',
+            'input_bg_color',
+            'border_color'
+        ];
+        
+        let colors = [];
+        colorFields.forEach(name => {
+            const $field = $(`.acf-field[data-name="${name}"]`);
+            if ($field.length) {
+                const $input = $field.find('input.wp-color-picker');
+                if ($input.length && $input.val()) {
+                    colors.push({
+                        color: $input.val(),
+                        label: $field.find('label').first().text().replace(':', '').trim() || name
                     });
-                }, 100);
+                }
             }
         });
+        
+        // Fallback to localized data if DOM is empty
+        if (colors.length === 0 && typeof hpSectionBgData !== 'undefined' && hpSectionBgData.stylingColors) {
+            colors = hpSectionBgData.stylingColors;
+        }
+        
+        return colors;
+    }
+
+    /**
+     * Initialize color pickers with custom palette from styling colors (v2.33.53)
+     * Simplified: now uses acf.add_filter for cleaner integration
+     */
+    function initColorPickers() {
+        // Log for debugging
+        fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'section-bg-admin.js:initColorPickers',message:'initColorPickers standard run',timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'F'})}).catch(()=>{});
+
+        // The heavy lifting is now done by acf.add_filter('color_picker_args') below
+        // This function remains for any manual initialization needed or for append actions
     }
 
     /**
@@ -499,6 +468,46 @@
      * Initialize on ACF ready
      */
     if (typeof acf !== 'undefined') {
+        // Filter color picker arguments before initialization (v2.33.53)
+        acf.add_filter('color_picker_args', function(args, field) {
+            const fieldName = field.get('name');
+            // Check if this is one of our section background color fields
+            if (fieldName === 'gradient_start_color' || fieldName === 'gradient_end_color') {
+                const stylingColors = getStylingColorsFromDOM();
+                if (stylingColors.length > 0) {
+                    args.palettes = stylingColors.map(item => item.color);
+                    
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'section-bg-admin.js:acf.color_picker_args',message:'Palettes set via ACF filter',data:{palettes: args.palettes},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'G'})}).catch(()=>{});
+                    // #endregion
+                }
+            }
+            return args;
+        });
+
+        // Add tooltips when the picker is opened (v2.33.53)
+        $(document).on('click', '.wp-picker-container .wp-color-result', function() {
+            const $button = $(this);
+            const $container = $button.closest('.wp-picker-container');
+            
+            // Wait for iris to render
+            setTimeout(function() {
+                const stylingColors = getStylingColorsFromDOM();
+                const $paletteButtons = $container.find('.iris-palette');
+                
+                $paletteButtons.each(function() {
+                    const $paletteBtn = $(this);
+                    const color = $paletteBtn.data('color');
+                    if (!color) return;
+                    
+                    const match = stylingColors.find(c => c.color.toLowerCase() === color.toLowerCase());
+                    if (match) {
+                        $paletteBtn.attr('title', match.label);
+                    }
+                });
+            }, 50);
+        });
+
         acf.addAction('ready', function() {
             addBulkActionButtons();
             addPreviewsAndCheckboxes();
