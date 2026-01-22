@@ -1865,6 +1865,8 @@ class FunnelConfigLoader
     /**
      * Parse page content to extract shortcodes in order.
      * Handles both Elementor pages and classic WordPress content.
+     * 
+     * For funnel posts (hp-funnel), checks the linked landing page first (v2.33.74).
      *
      * @param int $postId Post ID
      * @return array Array of ['type' => string, 'atts' => array] in order
@@ -1877,8 +1879,17 @@ class FunnelConfigLoader
             return [];
         }
 
-        // Strategy 1: Parse Elementor data
-        $elementorData = get_post_meta($postId, '_elementor_data', true);
+        // For funnel CPT, check linked landing page first
+        $targetPostId = $postId;
+        if ($post->post_type === 'hp-funnel') {
+            $landingPageId = get_field('funnel_landing_page', $postId);
+            if (!empty($landingPageId)) {
+                $targetPostId = (int) $landingPageId;
+            }
+        }
+
+        // Strategy 1: Parse Elementor data from target post
+        $elementorData = get_post_meta($targetPostId, '_elementor_data', true);
         if (!empty($elementorData)) {
             $decoded = is_string($elementorData) ? json_decode($elementorData, true) : $elementorData;
             if (is_array($decoded)) {
@@ -1886,9 +1897,12 @@ class FunnelConfigLoader
             }
         }
 
-        // Strategy 2: Parse post_content for shortcodes
-        if (empty($shortcodes) && !empty($post->post_content)) {
-            $shortcodes = self::extractShortcodesFromContent($post->post_content);
+        // Strategy 2: Parse post_content for shortcodes from target post
+        if (empty($shortcodes)) {
+            $targetPost = ($targetPostId !== $postId) ? get_post($targetPostId) : $post;
+            if ($targetPost && !empty($targetPost->post_content)) {
+                $shortcodes = self::extractShortcodesFromContent($targetPost->post_content);
+            }
         }
 
         return $shortcodes;

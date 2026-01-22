@@ -68,6 +68,38 @@
             "_valid": 1
         },
         {
+            "key": "field_funnel_landing_page",
+            "label": "Landing Page",
+            "name": "funnel_landing_page",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "post_object",
+            "value": null,
+            "menu_order": 2.5,
+            "instructions": "Select the Elementor page/template that displays this funnel. Used to detect section order for background styling.",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": false,
+            "parent": 125087,
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "post_type": ["page", "elementor_library"],
+            "post_status": ["publish"],
+            "taxonomy": "",
+            "return_format": "id",
+            "multiple": 0,
+            "allow_null": 1,
+            "bidirectional": 0,
+            "ui": 1,
+            "bidirectional_target": [],
+            "_name": "funnel_landing_page",
+            "_valid": 1
+        },
+        {
             "ID": 125164,
             "key": "field_stripe_mode",
             "label": "Stripe Mode",
