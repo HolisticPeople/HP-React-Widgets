@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.62)
+ * Section Background Admin UI Enhancements (v2.33.63)
  *
  * Features:
  * - Radio button selection (one row at a time) for copying settings
@@ -379,7 +379,7 @@
     }
 
     /**
-     * Get colors from the styling section in the DOM (v2.33.61)
+     * Get colors from the styling section in the DOM (v2.33.63)
      */
     function getStylingColorsFromDOM() {
         const colorFields = [
@@ -394,7 +394,8 @@
             if ($field.length) {
                 // Find ANY input that contains a hex code (could be picker or text)
                 const $input = $field.find('input').filter(function() {
-                    return $(this).val() && $(this).val().indexOf('#') === 0;
+                    const val = $(this).val();
+                    return val && typeof val === 'string' && val.indexOf('#') === 0;
                 }).first();
 
                 if ($input.length) {
@@ -413,8 +414,8 @@
     }
 
     /**
-     * Initialize color pickers with custom palette from styling colors (v2.33.62)
-     * Robust cleanup to prevent doubling.
+     * Initialize color pickers with custom palette from styling colors (v2.33.63)
+     * Nuclear option for doubling: removes all existing containers and re-builds.
      */
     function initColorPickers() {
         const stylingColors = getStylingColorsFromDOM();
@@ -423,27 +424,36 @@
         
         $repeater.find('[data-name="gradient_start_color"], [data-name="gradient_end_color"]').each(function() {
             const $field = $(this);
-            const $input = $field.find('input[type="text"], input[type="hidden"]').filter('.wp-color-picker, [name*="gradient_"]').first();
+            const $acfInput = $field.find('.acf-input').first();
             
-            if (!$input.length) return;
+            // Find all inputs in this field
+            const $inputs = $field.find('input').filter(function() {
+                const name = $(this).attr('name') || '';
+                return name.indexOf('gradient_') !== -1;
+            });
 
-            // If already has our specific marker, skip
-            if ($input.attr('data-hp-picker-v2') === 'true') return;
-            $input.attr('data-hp-picker-v2', 'true');
+            if (!$inputs.length) return;
 
-            // CRITICAL: Aggressively remove ANY existing picker containers in this field
-            $field.find('.wp-picker-container').remove();
-            
-            // Re-append input to field if it was inside a removed container
-            if (!$field.find($input).length) {
-                $field.find('.acf-input').append($input);
-            }
+            // Mark as processed to avoid loops
+            if ($field.data('hp-init-v3')) return;
+            $field.data('hp-init-v3', true);
 
-            // Ensure classes are clean
-            $input.removeClass('wp-color-picker-initialized').addClass('wp-color-picker');
+            // 1. Get the value from the first input
+            const val = $inputs.first().val();
+            const name = $inputs.first().attr('name');
 
-            // Initialize with our palette
-            $input.wpColorPicker({
+            // 2. Nuclear Cleanup: Remove everything inside .acf-input
+            $acfInput.empty();
+
+            // 3. Re-create a clean input element
+            const $newInput = $('<input type="text" class="wp-color-picker" />')
+                .attr('name', name)
+                .val(val);
+
+            $acfInput.append($newInput);
+
+            // 4. Initialize the picker
+            $newInput.wpColorPicker({
                 palettes: palette,
                 change: function(event, ui) {
                     const $row = $(this).closest('.acf-row');
@@ -452,15 +462,18 @@
             });
         });
 
-        // Also fix the upper section if it's broken
+        // Fix upper section if broken (raw hex showing)
         $('.acf-field[data-type="color_picker"]').each(function() {
             const $field = $(this);
-            const $input = $field.find('input').first();
-            if ($input.length && !$input.closest('.wp-picker-container').length && ($input.val().indexOf('#') === 0 || $input.attr('type') === 'text')) {
-                if (!$input.attr('data-hp-init')) {
-                    $input.attr('data-hp-init', 'true');
-                    $input.wpColorPicker();
-                }
+            if ($field.closest('[data-key="field_section_backgrounds"]').length) return; // Skip repeater fields handled above
+            
+            const $input = $field.find('input').filter(function() {
+                const val = $(this).val();
+                return val && typeof val === 'string' && val.indexOf('#') === 0;
+            }).first();
+
+            if ($input.length && !$field.find('.wp-picker-container').length) {
+                $input.wpColorPicker();
             }
         });
     }
@@ -507,7 +520,7 @@
     if (typeof acf !== 'undefined') {
         // Inject tooltips on click (v2.33.62)
 
-        // Inject tooltips on click (v2.33.62)
+        // Inject tooltips on click (v2.33.63)
         $(document).on('click', '.wp-picker-container .wp-color-result', function() {
             const $button = $(this);
             const $container = $button.closest('.wp-picker-container');
@@ -516,19 +529,20 @@
                 const stylingColors = getStylingColorsFromDOM();
                 $container.find('.iris-palette').each(function() {
                     const $paletteBtn = $(this);
-                    const bgColor = $paletteBtn.css('background-color'); // This is usually rgb(...)
-                    if (!bgColor) return;
-
-                    // Convert rgb to hex for comparison
-                    let hex = bgColor;
-                    if (bgColor.indexOf('rgb') !== -1) {
-                        const parts = bgColor.match(/\d+/g);
-                        if (parts) {
-                            hex = '#' + ((1 << 24) + (parseInt(parts[0]) << 16) + (parseInt(parts[1]) << 8) + parseInt(parts[2])).toString(16).slice(1);
+                    
+                    // Try data-color first, then background-color
+                    let color = $paletteBtn.data('color');
+                    if (!color) {
+                        const bg = $paletteBtn.css('background-color');
+                        if (bg && bg.indexOf('rgb') !== -1) {
+                            const rgb = bg.match(/\d+/g);
+                            color = '#' + ((1 << 24) + (parseInt(rgb[0]) << 16) + (parseInt(rgb[1]) << 8) + parseInt(rgb[2])).toString(16).slice(1);
                         }
                     }
+                    
+                    if (!color) return;
 
-                    const match = stylingColors.find(c => c.color.toLowerCase() === hex.toLowerCase());
+                    const match = stylingColors.find(c => c.color.toLowerCase() === color.toLowerCase());
                     if (match) {
                         $paletteBtn.attr('title', match.label);
                     }
