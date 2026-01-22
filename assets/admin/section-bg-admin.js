@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.20)
+ * Section Background Admin UI Enhancements (v2.33.52)
  *
  * Features:
  * - Radio button selection (one row at a time) for copying settings
@@ -382,11 +382,21 @@
      * Initialize color pickers with custom palette from styling colors (v2.33.51)
      */
     function initColorPickers() {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'section-bg-admin.js:386',message:'initColorPickers called',data:{hpSectionBgData: typeof hpSectionBgData !== 'undefined' ? hpSectionBgData : 'undefined'},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+
         if (typeof hpSectionBgData === 'undefined' || !hpSectionBgData.stylingColors || hpSectionBgData.stylingColors.length === 0) {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'section-bg-admin.js:391',message:'initColorPickers: stylingColors missing or empty',data:{hpSectionBgData: typeof hpSectionBgData !== 'undefined' ? hpSectionBgData : 'undefined'},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+            // #endregion
             return;
         }
 
         const $repeater = $('[data-key="field_section_backgrounds"]');
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'section-bg-admin.js:397',message:'initColorPickers: repeater found',data:{repeaterLength: $repeater.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
+        // #endregion
 
         // Build palette array from styling colors
         const palette = hpSectionBgData.stylingColors.map(item => item.color);
@@ -403,6 +413,10 @@
                 if ($picker.attr('data-hp-palette-init') === 'true') {
                     return; // Already processed
                 }
+
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'section-bg-admin.js:415',message:'initColorPickers: processing input',data:{inputId: $input.attr('id'), inputName: $input.attr('name')},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+                // #endregion
 
                 // Mark as processed
                 $picker.attr('data-hp-palette-init', 'true');
@@ -430,6 +444,10 @@
                 setTimeout(function() {
                     const $newPicker = $input.closest('.wp-picker-container');
                     const $paletteButtons = $newPicker.find('.iris-palette');
+
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'section-bg-admin.js:446',message:'initColorPickers: adding tooltips',data:{paletteButtonsCount: $paletteButtons.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
+                    // #endregion
 
                     $paletteButtons.each(function(index) {
                         if (hpSectionBgData.stylingColors[index]) {
@@ -486,8 +504,8 @@
             addPreviewsAndCheckboxes();
             initBulkActions();
             initLivePreview();
-            // Initialize color pickers with custom palette (small delay to ensure ACF color pickers are ready)
-            setTimeout(initColorPickers, 100);
+            // Initialize color pickers with custom palette (longer delay to ensure ACF color pickers are ready)
+            setTimeout(initColorPickers, 500);
         });
 
         // Re-initialize when repeater rows are added
@@ -495,7 +513,7 @@
             if ($el.closest('[data-key="field_section_backgrounds"]').length) {
                 addPreviewsAndCheckboxes();
                 // Re-initialize color pickers for new rows
-                setTimeout(initColorPickers, 100);
+                setTimeout(initColorPickers, 500);
             }
         });
     }

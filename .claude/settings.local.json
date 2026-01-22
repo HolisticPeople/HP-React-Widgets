@@ -7,7 +7,9 @@
       "Bash(test:*)",
       "Bash(node:*)",
       "Bash(npm run build:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(cd c:DEVWC PluginsMy PluginsHP-React-Widgets)",
+      "Bash(ssh kinsta-staging:*)"
     ]
   }
 }
