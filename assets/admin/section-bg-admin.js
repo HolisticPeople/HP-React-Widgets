@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.61)
+ * Section Background Admin UI Enhancements (v2.33.62)
  *
  * Features:
  * - Radio button selection (one row at a time) for copying settings
@@ -413,33 +413,36 @@
     }
 
     /**
-     * Initialize color pickers with custom palette from styling colors (v2.33.61)
-     * Robust: Detects ACF state and re-inits ONLY if palette is missing.
+     * Initialize color pickers with custom palette from styling colors (v2.33.62)
+     * Robust cleanup to prevent doubling.
      */
     function initColorPickers() {
         const stylingColors = getStylingColorsFromDOM();
         const palette = stylingColors.map(item => item.color);
         const $repeater = $('[data-key="field_section_backgrounds"]');
         
-        $repeater.find('[data-name="gradient_start_color"] input, [data-name="gradient_end_color"] input').each(function() {
-            const $input = $(this);
-            const $container = $input.closest('.wp-picker-container');
+        $repeater.find('[data-name="gradient_start_color"], [data-name="gradient_end_color"]').each(function() {
+            const $field = $(this);
+            const $input = $field.find('input[type="text"], input[type="hidden"]').filter('.wp-color-picker, [name*="gradient_"]').first();
             
-            // If already initialized by us or ACF
-            if ($container.length) {
-                // Check if it already has palette buttons. If yes, skip to avoid doubling.
-                if ($container.find('.iris-palette').length > 0) {
-                    return;
-                }
-                
-                // If it's a picker but missing palettes, we must destroy and re-init properly
-                // ACF's picker is already there, calling wpColorPicker again causes doubling.
-                // We MUST destroy the container first.
-                $input.wpColorPicker('destroy');
-                $container.remove();
+            if (!$input.length) return;
+
+            // If already has our specific marker, skip
+            if ($input.attr('data-hp-picker-v2') === 'true') return;
+            $input.attr('data-hp-picker-v2', 'true');
+
+            // CRITICAL: Aggressively remove ANY existing picker containers in this field
+            $field.find('.wp-picker-container').remove();
+            
+            // Re-append input to field if it was inside a removed container
+            if (!$field.find($input).length) {
+                $field.find('.acf-input').append($input);
             }
 
-            // (Re)initialize with our palette
+            // Ensure classes are clean
+            $input.removeClass('wp-color-picker-initialized').addClass('wp-color-picker');
+
+            // Initialize with our palette
             $input.wpColorPicker({
                 palettes: palette,
                 change: function(event, ui) {
@@ -453,8 +456,11 @@
         $('.acf-field[data-type="color_picker"]').each(function() {
             const $field = $(this);
             const $input = $field.find('input').first();
-            if ($input.length && !$input.closest('.wp-picker-container').length && $input.val().indexOf('#') === 0) {
-                $input.wpColorPicker();
+            if ($input.length && !$input.closest('.wp-picker-container').length && ($input.val().indexOf('#') === 0 || $input.attr('type') === 'text')) {
+                if (!$input.attr('data-hp-init')) {
+                    $input.attr('data-hp-init', 'true');
+                    $input.wpColorPicker();
+                }
             }
         });
     }
@@ -499,45 +505,30 @@
      * Initialize on ACF ready
      */
     if (typeof acf !== 'undefined') {
-        // Native ACF filter to set palettes WITHOUT doubling pickers (v2.33.59)
-        acf.add_filter('color_picker_args', function(args, field) {
-            // Get field name from field object or $el
-            const name = field.get('name') || field.$el.find('input').attr('name') || '';
-            
-            // Check if it's one of our gradient colors in the repeater
-            if (name.indexOf('gradient_start_color') !== -1 || name.indexOf('gradient_end_color') !== -1) {
-                const stylingColors = getStylingColorsFromDOM();
-                if (stylingColors.length > 0) {
-                    args.palettes = stylingColors.map(c => c.color);
-                }
-            }
-            return args;
-        });
+        // Inject tooltips on click (v2.33.62)
 
-        // Inject tooltips on click (v2.33.61)
+        // Inject tooltips on click (v2.33.62)
         $(document).on('click', '.wp-picker-container .wp-color-result', function() {
             const $button = $(this);
             const $container = $button.closest('.wp-picker-container');
             
-            // Re-init tooltips after a short delay to allow Iris to render
             setTimeout(function() {
                 const stylingColors = getStylingColorsFromDOM();
                 $container.find('.iris-palette').each(function() {
                     const $paletteBtn = $(this);
-                    
-                    // Get color from Iris data or background
-                    let color = $paletteBtn.data('color');
-                    if (!color) {
-                        const bg = $paletteBtn.css('background-color');
-                        if (bg && bg.indexOf('rgb') !== -1) {
-                            const rgb = bg.match(/\d+/g);
-                            color = '#' + ((1 << 24) + (parseInt(rgb[0]) << 16) + (parseInt(rgb[1]) << 8) + parseInt(rgb[2])).toString(16).slice(1);
+                    const bgColor = $paletteBtn.css('background-color'); // This is usually rgb(...)
+                    if (!bgColor) return;
+
+                    // Convert rgb to hex for comparison
+                    let hex = bgColor;
+                    if (bgColor.indexOf('rgb') !== -1) {
+                        const parts = bgColor.match(/\d+/g);
+                        if (parts) {
+                            hex = '#' + ((1 << 24) + (parseInt(parts[0]) << 16) + (parseInt(parts[1]) << 8) + parseInt(parts[2])).toString(16).slice(1);
                         }
                     }
-                    
-                    if (!color) return;
 
-                    const match = stylingColors.find(c => c.color.toLowerCase() === color.toLowerCase());
+                    const match = stylingColors.find(c => c.color.toLowerCase() === hex.toLowerCase());
                     if (match) {
                         $paletteBtn.attr('title', match.label);
                     }
