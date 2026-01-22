@@ -61,7 +61,10 @@ export const LegalPopup = ({
         throw new Error('Failed to load content');
       }
       const data = await response.json();
-      setTitle(data.title?.rendered || (type === 'terms' ? 'Terms of Service' : 'Privacy Policy'));
+      const decodedTitle = data.title?.rendered 
+        ? decodeHtmlEntities(data.title.rendered) 
+        : (type === 'terms' ? 'Terms of Service' : 'Privacy Policy');
+      setTitle(decodedTitle);
       setContent(data.content?.rendered || '');
     } catch (err) {
       setError('Unable to load content. Please try again later.');
@@ -69,6 +72,12 @@ export const LegalPopup = ({
       setIsLoading(false);
     }
   }, [pageId, type, apiBase]);
+
+  const decodeHtmlEntities = (html: string) => {
+    const txt = document.createElement("textarea");
+    txt.innerHTML = html;
+    return txt.value;
+  };
 
   useEffect(() => {
     if (isOpen) {
