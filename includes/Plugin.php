@@ -437,7 +437,14 @@ class Plugin
             'top'
         );
         
-        // Pattern: /express-shop/{funnel_slug}/thankyou/
+        // Pattern: /express-shop/{funnel_slug}/thank-you/ (with hyphen - matches SPA URL)
+        add_rewrite_rule(
+            '^express-shop/([^/]+)/thank-you/?$',
+            'index.php?hp_funnel_route=thankyou&hp_funnel_slug=$matches[1]',
+            'top'
+        );
+        
+        // Legacy pattern without hyphen (for backwards compatibility)
         add_rewrite_rule(
             '^express-shop/([^/]+)/thankyou/?$',
             'index.php?hp_funnel_route=thankyou&hp_funnel_slug=$matches[1]',
