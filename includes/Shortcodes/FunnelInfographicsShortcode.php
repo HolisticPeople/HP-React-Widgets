@@ -145,12 +145,14 @@ class FunnelInfographicsShortcode
         // Only include data-section-name if navLabel is not empty
         $sectionNameAttr = !empty($navLabel) ? sprintf(' data-section-name="%s"', esc_attr($navLabel)) : '';
 
+        // Add data-info-index for background matching (v2.33.73)
         return sprintf(
-            '<div id="%s" class="hp-funnel-section hp-funnel-infographics-%s" data-hp-widget="1" data-component="%s" data-props=\'%s\'%s></div>',
+            '<div id="%s" class="hp-funnel-section hp-funnel-infographics-%s" data-hp-widget="1" data-component="%s" data-props=\'%s\' data-info-index="%d"%s></div>',
             esc_attr($rootId),
             esc_attr($slug),
             esc_attr($component),
             esc_attr($propsJson),
+            $infoIndex,
             $sectionNameAttr
         );
     }

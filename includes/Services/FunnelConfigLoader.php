@@ -1999,7 +1999,10 @@ class FunnelConfigLoader
 
     /**
      * Build sections array from parsed shortcodes.
-     * Generates occurrence-based stable IDs.
+     * Generates occurrence-based stable IDs (v2.33.73).
+     * 
+     * For infographics, uses the `info` parameter as the stable identifier
+     * so infographics_1 always refers to info="1", infographics_2 to info="2", etc.
      *
      * @param array $shortcodes Array of parsed shortcodes in order
      * @param int $postId Post ID for infographic labels
@@ -2013,22 +2016,18 @@ class FunnelConfigLoader
         foreach ($shortcodes as $sc) {
             $type = $sc['type'];
 
-            // Increment occurrence counter for this type
-            if (!isset($typeOccurrences[$type])) {
-                $typeOccurrences[$type] = 0;
-            }
-            $typeOccurrences[$type]++;
-            $occurrence = $typeOccurrences[$type];
-
-            // Generate stable ID (e.g., "benefits_1", "infographics_2")
-            $stableId = $type . '_' . $occurrence;
-
             // Determine label
             $label = self::SECTION_LABELS[$type] ?? ucfirst($type);
 
-            // For infographics, try to get a more specific label
+            // For infographics, use the `info` parameter as the identifier
+            // This ensures infographics_1 always maps to [hp_funnel_infographics info="1"]
             if ($type === 'infographics') {
-                $infoIndex = isset($sc['atts']['info']) ? (int) $sc['atts']['info'] : $occurrence;
+                $infoIndex = isset($sc['atts']['info']) ? (int) $sc['atts']['info'] : 1;
+                
+                // Generate stable ID based on info parameter, not occurrence
+                $stableId = 'infographics_' . $infoIndex;
+                
+                // Get label from ACF data
                 $rows = get_field('funnel_infographics', $postId);
                 if (is_array($rows) && isset($rows[$infoIndex - 1])) {
                     $row = $rows[$infoIndex - 1];
@@ -2038,18 +2037,30 @@ class FunnelConfigLoader
                         $label = $row['info_name'];
                     }
                 }
-                // Append occurrence if multiple
-                if ($occurrence > 1 || count(array_filter($shortcodes, fn($s) => $s['type'] === 'infographics')) > 1) {
-                    $label .= ' #' . $occurrence;
+                
+                $sections[] = [
+                    'section_id'    => $stableId,
+                    'section_label' => $label,
+                    'section_type'  => $type,
+                    'info_index'    => $infoIndex,
+                ];
+            } else {
+                // For non-infographics, use occurrence-based IDs
+                if (!isset($typeOccurrences[$type])) {
+                    $typeOccurrences[$type] = 0;
                 }
-            }
+                $typeOccurrences[$type]++;
+                $occurrence = $typeOccurrences[$type];
 
-            $sections[] = [
-                'section_id'    => $stableId,
-                'section_label' => $label,
-                'section_type'  => $type,
-                'occurrence'    => $occurrence,
-            ];
+                $stableId = $type . '_' . $occurrence;
+
+                $sections[] = [
+                    'section_id'    => $stableId,
+                    'section_label' => $label,
+                    'section_type'  => $type,
+                    'occurrence'    => $occurrence,
+                ];
+            }
         }
 
         return $sections;
@@ -2057,7 +2068,7 @@ class FunnelConfigLoader
 
     /**
      * Fallback: Build sections from ACF fields when page content parsing fails.
-     * Uses occurrence-based IDs for consistency.
+     * Uses occurrence-based IDs for consistency (v2.33.73).
      *
      * @param int $postId Funnel post ID
      * @return array Array of section definitions
@@ -2068,19 +2079,27 @@ class FunnelConfigLoader
         $typeOccurrences = [];
 
         // Helper to add a section with occurrence tracking
-        $addSection = function(string $type, string $label = null) use (&$sections, &$typeOccurrences) {
+        $addSection = function(string $type, string $label = null, ?int $infoIndex = null) use (&$sections, &$typeOccurrences) {
             if (!isset($typeOccurrences[$type])) {
                 $typeOccurrences[$type] = 0;
             }
             $typeOccurrences[$type]++;
             $occurrence = $typeOccurrences[$type];
 
-            $sections[] = [
+            $section = [
                 'section_id'    => $type . '_' . $occurrence,
                 'section_label' => $label ?? (self::SECTION_LABELS[$type] ?? ucfirst($type)),
                 'section_type'  => $type,
                 'occurrence'    => $occurrence,
             ];
+
+            // For infographics, store info_index and use it for section_id
+            if ($infoIndex !== null) {
+                $section['section_id'] = $type . '_' . $infoIndex;
+                $section['info_index'] = $infoIndex;
+            }
+
+            $sections[] = $section;
         };
 
         // Hero section - always present
@@ -2110,18 +2129,16 @@ class FunnelConfigLoader
             }
 
             if ($isConfigured) {
-                // Special handling for Infographics which might be multiple
+                // Special handling for Infographics - use 1-based index for stable ID
                 if ($type === 'infographics') {
                     $rows = get_field('funnel_infographics', $postId);
                     if (is_array($rows)) {
                         foreach ($rows as $idx => $row) {
+                            $infoIndex = $idx + 1; // 1-based index
                             $label = !empty($row['info_nav_label']) 
                                 ? $row['info_nav_label'] 
                                 : (!empty($row['info_name']) ? $row['info_name'] : 'Comparison');
-                            if (count($rows) > 1) {
-                                $label .= ' #' . ($idx + 1);
-                            }
-                            $addSection('infographics', $label);
+                            $addSection('infographics', $label, $infoIndex);
                         }
                     }
                 } else {
@@ -2188,12 +2205,13 @@ class FunnelConfigLoader
         foreach ($configuredSections as $section) {
             $stableId = $section['section_id'];
             $type = $section['section_type'];
-            $occurrence = $section['occurrence'] ?? 1;
+            $occurrence = $section['occurrence'] ?? null;
+            $infoIndex = $section['info_index'] ?? null; // For infographics
             $label = $section['section_label'];
             
             $existing = null;
 
-            // Priority 1: Match by exact stable ID (e.g., "benefits_1")
+            // Priority 1: Match by exact stable ID (e.g., "benefits_1", "infographics_2")
             if (isset($existingByStableId[$stableId])) {
                 $existing = $existingByStableId[$stableId];
             }
@@ -2216,36 +2234,39 @@ class FunnelConfigLoader
                 }
             }
 
+            // Build base section data
+            $newSection = [
+                'section_id'           => $stableId,
+                'section_label'        => $label,
+                'section_type'         => $type,
+            ];
+            
+            // Add occurrence or info_index as appropriate
+            if ($infoIndex !== null) {
+                $newSection['info_index'] = $infoIndex;
+            } elseif ($occurrence !== null) {
+                $newSection['occurrence'] = $occurrence;
+            }
+
             if ($existing) {
-                // Preserve background settings but update IDs to new stable format
-                $newSection = [
-                    'section_id'           => $stableId,
-                    'section_label'        => $label,
-                    'section_type'         => $type,
-                    'occurrence'           => $occurrence,
-                    'background_type'      => $existing['background_type'] ?? 'none',
-                    'gradient_type'        => $existing['gradient_type'] ?? 'linear',
-                    'gradient_preset'      => $existing['gradient_preset'] ?? 'vertical-down',
-                    'color_mode'           => $existing['color_mode'] ?? 'auto',
-                    'gradient_start_color' => $existing['gradient_start_color'] ?? '#1a1a2e',
-                    'gradient_end_color'   => $existing['gradient_end_color'] ?? '',
-                ];
-                $newSectionBackgrounds[] = $newSection;
+                // Preserve background settings
+                $newSection['background_type']      = $existing['background_type'] ?? 'none';
+                $newSection['gradient_type']        = $existing['gradient_type'] ?? 'linear';
+                $newSection['gradient_preset']      = $existing['gradient_preset'] ?? 'vertical-down';
+                $newSection['color_mode']           = $existing['color_mode'] ?? 'auto';
+                $newSection['gradient_start_color'] = $existing['gradient_start_color'] ?? '#1a1a2e';
+                $newSection['gradient_end_color']   = $existing['gradient_end_color'] ?? '';
             } else {
                 // Default background settings for new sections
-                $newSectionBackgrounds[] = [
-                    'section_id'           => $stableId,
-                    'section_label'        => $label,
-                    'section_type'         => $type,
-                    'occurrence'           => $occurrence,
-                    'background_type'      => 'none',
-                    'gradient_type'        => 'linear',
-                    'gradient_preset'      => 'vertical-down',
-                    'color_mode'           => 'auto',
-                    'gradient_start_color' => '#1a1a2e',
-                    'gradient_end_color'   => '',
-                ];
+                $newSection['background_type']      = 'none';
+                $newSection['gradient_type']        = 'linear';
+                $newSection['gradient_preset']      = 'vertical-down';
+                $newSection['color_mode']           = 'auto';
+                $newSection['gradient_start_color'] = '#1a1a2e';
+                $newSection['gradient_end_color']   = '';
             }
+            
+            $newSectionBackgrounds[] = $newSection;
         }
 
         // Save the synced settings

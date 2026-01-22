@@ -264,7 +264,8 @@ class FunnelHeroSectionShortcode
         }
         </style>';
 
-        // Generate JavaScript to apply backgrounds using occurrence-based IDs (v2.33.72)
+        // Generate JavaScript to apply backgrounds using occurrence-based IDs (v2.33.73)
+        // For infographics, uses data-info-index attribute for stable mapping
         $backgroundMapJson = wp_json_encode($backgroundMap);
         $output .= sprintf(
             '<script>
@@ -315,15 +316,30 @@ class FunnelHeroSectionShortcode
                 return;
             }
 
-            // Track occurrence for this type
-            if (!typeOccurrences[sectionType]) {
-                typeOccurrences[sectionType] = 0;
+            var stableId;
+            
+            // For infographics, use data-info-index attribute for stable ID
+            if (sectionType === "infographics") {
+                var infoIndex = section.getAttribute("data-info-index");
+                if (infoIndex) {
+                    stableId = "infographics_" + infoIndex;
+                } else {
+                    // Fallback to occurrence-based if no data attribute
+                    if (!typeOccurrences[sectionType]) {
+                        typeOccurrences[sectionType] = 0;
+                    }
+                    typeOccurrences[sectionType]++;
+                    stableId = sectionType + "_" + typeOccurrences[sectionType];
+                }
+            } else {
+                // For other types, use occurrence-based IDs
+                if (!typeOccurrences[sectionType]) {
+                    typeOccurrences[sectionType] = 0;
+                }
+                typeOccurrences[sectionType]++;
+                stableId = sectionType + "_" + typeOccurrences[sectionType];
             }
-            typeOccurrences[sectionType]++;
-            var occurrence = typeOccurrences[sectionType];
 
-            // Build stable ID (e.g., "hero_1", "offers_1", "infographics_2")
-            var stableId = sectionType + "_" + occurrence;
             var background = backgroundMap[stableId];
 
             if (background && background !== "transparent") {
