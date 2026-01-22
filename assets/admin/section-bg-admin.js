@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.56)
+ * Section Background Admin UI Enhancements (v2.33.58)
  *
  * Features:
  * - Radio button selection (one row at a time) for copying settings
@@ -379,7 +379,7 @@
     }
 
     /**
-     * Get colors from the styling section in the DOM (v2.33.56)
+     * Get colors from the styling section in the DOM (v2.33.58)
      */
     function getStylingColorsFromDOM() {
         const colorFields = [
@@ -396,10 +396,7 @@
         
         let colors = [];
         colorFields.forEach(name => {
-            // Try finding by data-name attribute
             let $field = $(`.acf-field[data-name="${name}"]`);
-            
-            // If not found, try finding by data-key
             if (!$field.length) {
                 const keys = {
                     'accent_color': 'field_accent_color_local',
@@ -412,34 +409,33 @@
                     'input_bg_color': 'field_input_bg_color',
                     'border_color': 'field_border_color'
                 };
-                if (keys[name]) {
-                    $field = $(`.acf-field[data-key="${keys[name]}"]`);
-                }
+                if (keys[name]) $field = $(`.acf-field[data-key="${keys[name]}"]`);
             }
 
             if ($field.length) {
-                // Find any input inside that looks like a color picker
-                const $input = $field.find('input.wp-color-picker, input[type="text"]').first();
+                const $input = $field.find('input[type="text"], input.wp-color-picker').first();
                 if ($input.length && $input.val()) {
                     colors.push({
-                        color: $input.val(),
+                        color: $input.val().toLowerCase(),
                         label: $field.find('label').first().text().replace(/[:\*]/g, '').trim() || name
                     });
                 }
             }
         });
         
-        // Fallback to localized data if DOM is empty
         if (colors.length === 0 && typeof hpSectionBgData !== 'undefined' && hpSectionBgData.stylingColors) {
-            colors = hpSectionBgData.stylingColors;
+            colors = hpSectionBgData.stylingColors.map(c => ({ color: c.color.toLowerCase(), label: c.label }));
         }
         
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'section-bg-admin.js:getStylingColorsFromDOM',message:'Colors found',data:{count: colors.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'I'})}).catch(()=>{});
+        // #endregion
+
         return colors;
     }
 
     /**
-     * Initialize color pickers with custom palette from styling colors (v2.33.56)
-     * Handles both initial load and appended rows without doubling
+     * Initialize color pickers with custom palette from styling colors (v2.33.58)
      */
     function initColorPickers() {
         const stylingColors = getStylingColorsFromDOM();
@@ -450,47 +446,29 @@
         
         $repeater.find('[data-name="gradient_start_color"] input, [data-name="gradient_end_color"] input').each(function() {
             const $input = $(this);
-            const $container = $input.closest('.acf-input');
             
-            // Skip if already processed by us
-            if ($input.attr('data-hp-picker-fixed') === 'true') {
-                return;
+            // Skip if already has our palette
+            if ($input.data('hp-palette-applied')) return;
+
+            // Mark as applied
+            $input.data('hp-palette-applied', true);
+
+            // Destroy existing picker and cleanup container to prevent doubling
+            const $container = $input.closest('.wp-picker-container');
+            if ($container.length) {
+                try { $input.wpColorPicker('destroy'); } catch(e) {}
+                $container.after($input);
+                $container.remove();
             }
 
-            // Mark as processed
-            $input.attr('data-hp-picker-fixed', 'true');
-
-            // If wpColorPicker is already initialized (standard ACF behavior)
-            if ($input.hasClass('wp-color-picker')) {
-                const currentColor = $input.val();
-                
-                // CRITICAL: To avoid doubling, we MUST find the existing container and remove it
-                // wpColorPicker('destroy') should do this, but sometimes ACF's wrapper is stubborn
-                const $existingPicker = $input.closest('.wp-picker-container');
-                
-                if ($existingPicker.length) {
-                    // Destroy the picker
-                    $input.wpColorPicker('destroy');
-                    // Ensure the container is gone (ACF's wrapper might remain)
-                    $existingPicker.remove();
-                    // Re-append the input to its original parent if it was removed
-                    if (!$input.parent().length) {
-                        $container.append($input);
-                    }
+            // Initialize with our options
+            $input.wpColorPicker({
+                palettes: palette,
+                change: function(event, ui) {
+                    const $row = $(this).closest('.acf-row');
+                    updatePreview($row);
                 }
-
-                // Re-initialize with our palette
-                $input.wpColorPicker({
-                    palettes: palette,
-                    change: function(event, ui) {
-                        const $row = $(this).closest('.acf-row');
-                        updatePreview($row);
-                    }
-                });
-                
-                // Restore value
-                $input.val(currentColor).trigger('change');
-            }
+            });
         });
     }
 
