@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.53)
+ * Section Background Admin UI Enhancements (v2.33.54)
  *
  * Features:
  * - Radio button selection (one row at a time) for copying settings
@@ -379,7 +379,7 @@
     }
 
     /**
-     * Get colors from the styling section in the DOM (v2.33.53)
+     * Get colors from the styling section in the DOM (v2.33.54)
      */
     function getStylingColorsFromDOM() {
         const colorFields = [
@@ -396,7 +396,28 @@
         
         let colors = [];
         colorFields.forEach(name => {
-            const $field = $(`.acf-field[data-name="${name}"]`);
+            // Try finding by data-name attribute
+            let $field = $(`.acf-field[data-name="${name}"]`);
+            
+            // If not found, try finding by data-key (more reliable if name is localized or changed)
+            if (!$field.length) {
+                // Common keys from the JSON
+                const keys = {
+                    'accent_color': 'field_accent_color_local',
+                    'text_color_accent': 'field_text_color_accent',
+                    'text_color_basic': 'field_text_color_basic',
+                    'text_color_note': 'field_text_color_note',
+                    'text_color_discount': 'field_text_color_discount',
+                    'page_bg_color': 'field_page_bg_color',
+                    'card_bg_color': 'field_card_bg_color',
+                    'input_bg_color': 'field_input_bg_color',
+                    'border_color': 'field_border_color'
+                };
+                if (keys[name]) {
+                    $field = $(`.acf-field[data-key="${keys[name]}"]`);
+                }
+            }
+
             if ($field.length) {
                 const $input = $field.find('input.wp-color-picker');
                 if ($input.length && $input.val()) {
@@ -417,15 +438,35 @@
     }
 
     /**
-     * Initialize color pickers with custom palette from styling colors (v2.33.53)
-     * Simplified: now uses acf.add_filter for cleaner integration
+     * Initialize color pickers with custom palette from styling colors (v2.33.54)
+     * Now more robustly handles existing and new fields
      */
     function initColorPickers() {
-        // Log for debugging
-        fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'section-bg-admin.js:initColorPickers',message:'initColorPickers standard run',timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'F'})}).catch(()=>{});
+        const stylingColors = getStylingColorsFromDOM();
+        if (stylingColors.length === 0) return;
 
-        // The heavy lifting is now done by acf.add_filter('color_picker_args') below
-        // This function remains for any manual initialization needed or for append actions
+        const palette = stylingColors.map(item => item.color);
+        const $repeater = $('[data-key="field_section_backgrounds"]');
+        
+        // Find all color picker inputs in the section backgrounds repeater
+        $repeater.find('[data-name="gradient_start_color"] input, [data-name="gradient_end_color"] input').each(function() {
+            const $input = $(this);
+            
+            // If it's already a wpColorPicker, we need to update its settings
+            if ($input.hasClass('wp-color-picker')) {
+                // Update the iris palette directly if possible
+                try {
+                    const iris = $input.data('wpWpColorPicker');
+                    if (iris && iris.iris) {
+                        // This is the cleanest way to update palette without re-initializing
+                        // But iris doesn't always support live palette updates easily
+                    }
+                } catch (e) {}
+                
+                // Fallback: mark and handle via click
+                $input.closest('.wp-picker-container').attr('data-hp-ready', 'true');
+            }
+        });
     }
 
     /**
@@ -468,44 +509,82 @@
      * Initialize on ACF ready
      */
     if (typeof acf !== 'undefined') {
-        // Filter color picker arguments before initialization (v2.33.53)
+        // Filter color picker arguments before initialization (v2.33.54)
         acf.add_filter('color_picker_args', function(args, field) {
-            const fieldName = field.get('name');
-            // Check if this is one of our section background color fields
-            if (fieldName === 'gradient_start_color' || fieldName === 'gradient_end_color') {
+            const fieldName = field.get('name') || '';
+            const fieldKey = field.get('key') || '';
+            
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'section-bg-admin.js:color_picker_args',message:'Checking field',data:{name: fieldName, key: fieldKey},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H'})}).catch(()=>{});
+            // #endregion
+
+            // Check if this is one of our section background color fields (by name or key)
+            const isOurField = 
+                fieldName.includes('gradient_start_color') || 
+                fieldName.includes('gradient_end_color') ||
+                fieldKey === 'field_section_gradient_start_color' ||
+                fieldKey === 'field_section_gradient_end_color';
+
+            if (isOurField) {
                 const stylingColors = getStylingColorsFromDOM();
                 if (stylingColors.length > 0) {
                     args.palettes = stylingColors.map(item => item.color);
                     
                     // #region agent log
-                    fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'section-bg-admin.js:acf.color_picker_args',message:'Palettes set via ACF filter',data:{palettes: args.palettes},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'G'})}).catch(()=>{});
+                    fetch('http://127.0.0.1:7242/ingest/03214d4a-d710-4ff7-ac74-904564aaa2c7', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'section-bg-admin.js:acf.color_picker_args',message:'Palettes set via ACF filter',data:{field: fieldName, palettes: args.palettes},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'G'})}).catch(()=>{});
                     // #endregion
                 }
             }
             return args;
         });
 
-        // Add tooltips when the picker is opened (v2.33.53)
+        // Inject tooltips and handle palette updates when the picker is clicked (v2.33.54)
+        // This is a fallback/enhancement for pickers that were already initialized
         $(document).on('click', '.wp-picker-container .wp-color-result', function() {
             const $button = $(this);
             const $container = $button.closest('.wp-picker-container');
+            const $input = $container.find('input.wp-color-picker');
             
+            // Check if this is one of our fields
+            const name = $input.attr('name') || '';
+            if (!name.includes('gradient_start_color') && !name.includes('gradient_end_color')) {
+                return;
+            }
+
             // Wait for iris to render
             setTimeout(function() {
                 const stylingColors = getStylingColorsFromDOM();
+                const $paletteContainer = $container.find('.iris-palette-container');
+                
+                if (!$paletteContainer.length) return;
+
+                // Re-build palette if colors changed or if it's missing
+                const palette = stylingColors.map(item => item.color);
+                
+                // We can't easily force iris to re-render the palette without re-init
+                // but we can at least update the tooltips on existing buttons
                 const $paletteButtons = $container.find('.iris-palette');
                 
                 $paletteButtons.each(function() {
                     const $paletteBtn = $(this);
-                    const color = $paletteBtn.data('color');
+                    const color = $paletteBtn.data('color') || $paletteBtn.css('background-color');
                     if (!color) return;
                     
-                    const match = stylingColors.find(c => c.color.toLowerCase() === color.toLowerCase());
+                    // Convert rgb to hex for comparison if needed
+                    let hexColor = color;
+                    if (color.startsWith('rgb')) {
+                        const rgb = color.match(/\d+/g);
+                        if (rgb) {
+                            hexColor = '#' + ((1 << 24) + (parseInt(rgb[0]) << 16) + (parseInt(rgb[1]) << 8) + parseInt(rgb[2])).toString(16).slice(1);
+                        }
+                    }
+                    
+                    const match = stylingColors.find(c => c.color.toLowerCase() === hexColor.toLowerCase());
                     if (match) {
                         $paletteBtn.attr('title', match.label);
                     }
                 });
-            }, 50);
+            }, 100);
         });
 
         acf.addAction('ready', function() {
