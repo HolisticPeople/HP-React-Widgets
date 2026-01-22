@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.64)
+ * Section Background Admin UI Enhancements (v2.33.65)
  *
  * Features:
  * - Radio button selection (one row at a time) for copying settings
@@ -414,23 +414,23 @@
     }
 
     /**
-     * Initialize color pickers with custom palette from styling colors (v2.33.64)
-     * Nuclear option for all color pickers: removes all existing containers and re-builds.
+     * Initialize color pickers with custom palette from styling colors (v2.33.65)
+     * Robust cleanup: ensures exactly one picker exists and tooltips are applied.
      */
     function initColorPickers() {
         const stylingColors = getStylingColorsFromDOM();
         const palette = stylingColors.map(item => item.color);
         
-        // Target ALL color picker fields on the page to ensure consistency and no doubling
+        // Target ALL color picker fields on the page
         $('.acf-field[data-type="color_picker"]').each(function() {
             const $field = $(this);
             const $acfInput = $field.find('.acf-input').first();
             
             // Skip if already processed in this run
-            if ($field.data('hp-init-v4')) return;
-            $field.data('hp-init-v4', true);
+            if ($field.data('hp-init-v5')) return;
+            $field.data('hp-init-v5', true);
 
-            // Find the original input (it might be inside a doubled picker container)
+            // Find the original input
             const $originalInput = $field.find('input[type="text"], input[type="hidden"]').filter(function() {
                 const name = $(this).attr('name') || '';
                 return name.indexOf('acf[') === 0;
@@ -441,7 +441,7 @@
             const val = $originalInput.val();
             const name = $originalInput.attr('name');
 
-            // Nuclear Cleanup: Remove EVERYTHING inside .acf-input
+            // Nuclear Cleanup: Clear the input container entirely
             $acfInput.empty();
 
             // Re-create a clean input element
@@ -451,21 +451,26 @@
 
             $acfInput.append($newInput);
 
-            // Initialize the picker with custom palettes for background fields
+            // Initialize the picker
             const isBgField = name.indexOf('gradient_') !== -1;
             const pickerArgs = {
+                palettes: isBgField && palette.length > 0 ? palette : true,
                 change: function(event, ui) {
                     const $row = $(this).closest('.acf-row');
                     if ($row.length) updatePreview($row);
                 }
             };
 
-            // Only background fields get the custom palette suggestions
-            if (isBgField && palette.length > 0) {
-                pickerArgs.palettes = palette;
-            }
-
             $newInput.wpColorPicker(pickerArgs);
+        });
+
+        // Disable search in gradient select dropdowns (v2.33.65)
+        $('[data-key="field_section_backgrounds"] select').each(function() {
+            $(this).attr('data-minimum-results-for-search', 'Infinity');
+            // If already initialized by select2, we need to update it
+            if ($(this).data('select2')) {
+                $(this).select2({ minimumResultsForSearch: Infinity });
+            }
         });
     }
 
@@ -511,42 +516,28 @@
     if (typeof acf !== 'undefined') {
         // Inject tooltips on click (v2.33.62)
 
-        // Inject tooltips on click (v2.33.64)
+        // Inject tooltips on click (v2.33.65)
         $(document).on('click', '.wp-picker-container .wp-color-result', function() {
             const $button = $(this);
             const $container = $button.closest('.wp-picker-container');
             
-            // Re-init tooltips after a short delay to allow Iris to render
+            // Wait for Iris to render
             setTimeout(function() {
                 const stylingColors = getStylingColorsFromDOM();
+                const $paletteButtons = $container.find('.iris-palette');
                 
-                // Find palette buttons in the current container
-                $container.find('.iris-palette').each(function() {
-                    const $paletteBtn = $(this);
-                    
-                    // Iris buttons are anchors with background-color
-                    const bgColor = $paletteBtn.css('background-color');
-                    if (!bgColor) return;
-
-                    // Convert rgb(...) to hex
-                    let hex = bgColor;
-                    if (bgColor.indexOf('rgb') !== -1) {
-                        const parts = bgColor.match(/\d+/g);
-                        if (parts && parts.length >= 3) {
-                            hex = '#' + ((1 << 24) + (parseInt(parts[0]) << 16) + (parseInt(parts[1]) << 8) + parseInt(parts[2])).toString(16).slice(1).toLowerCase();
+                // If this is a background field, use the indexed matching which is most reliable
+                const $input = $container.find('input.wp-color-picker');
+                const name = $input.attr('name') || '';
+                
+                if (name.indexOf('gradient_') !== -1) {
+                    $paletteButtons.each(function(index) {
+                        if (stylingColors[index]) {
+                            $(this).attr('title', stylingColors[index].label);
                         }
-                    }
-                    
-                    // Match with styling colors
-                    const match = stylingColors.find(c => c.color.toLowerCase() === hex);
-                    if (match) {
-                        // Set title for native tooltip
-                        $paletteBtn.attr('title', match.label);
-                        // Also add as data attribute just in case
-                        $paletteBtn.attr('data-title', match.label);
-                    }
-                });
-            }, 150); // Slightly longer delay for stability
+                    });
+                }
+            }, 100);
         });
 
         acf.addAction('ready', function() {
