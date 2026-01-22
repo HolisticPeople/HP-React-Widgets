@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.63)
+ * Section Background Admin UI Enhancements (v2.33.64)
  *
  * Features:
  * - Radio button selection (one row at a time) for copying settings
@@ -414,67 +414,58 @@
     }
 
     /**
-     * Initialize color pickers with custom palette from styling colors (v2.33.63)
-     * Nuclear option for doubling: removes all existing containers and re-builds.
+     * Initialize color pickers with custom palette from styling colors (v2.33.64)
+     * Nuclear option for all color pickers: removes all existing containers and re-builds.
      */
     function initColorPickers() {
         const stylingColors = getStylingColorsFromDOM();
         const palette = stylingColors.map(item => item.color);
-        const $repeater = $('[data-key="field_section_backgrounds"]');
         
-        $repeater.find('[data-name="gradient_start_color"], [data-name="gradient_end_color"]').each(function() {
+        // Target ALL color picker fields on the page to ensure consistency and no doubling
+        $('.acf-field[data-type="color_picker"]').each(function() {
             const $field = $(this);
             const $acfInput = $field.find('.acf-input').first();
             
-            // Find all inputs in this field
-            const $inputs = $field.find('input').filter(function() {
+            // Skip if already processed in this run
+            if ($field.data('hp-init-v4')) return;
+            $field.data('hp-init-v4', true);
+
+            // Find the original input (it might be inside a doubled picker container)
+            const $originalInput = $field.find('input[type="text"], input[type="hidden"]').filter(function() {
                 const name = $(this).attr('name') || '';
-                return name.indexOf('gradient_') !== -1;
-            });
+                return name.indexOf('acf[') === 0;
+            }).first();
 
-            if (!$inputs.length) return;
+            if (!$originalInput.length) return;
 
-            // Mark as processed to avoid loops
-            if ($field.data('hp-init-v3')) return;
-            $field.data('hp-init-v3', true);
+            const val = $originalInput.val();
+            const name = $originalInput.attr('name');
 
-            // 1. Get the value from the first input
-            const val = $inputs.first().val();
-            const name = $inputs.first().attr('name');
-
-            // 2. Nuclear Cleanup: Remove everything inside .acf-input
+            // Nuclear Cleanup: Remove EVERYTHING inside .acf-input
             $acfInput.empty();
 
-            // 3. Re-create a clean input element
+            // Re-create a clean input element
             const $newInput = $('<input type="text" class="wp-color-picker" />')
                 .attr('name', name)
                 .val(val);
 
             $acfInput.append($newInput);
 
-            // 4. Initialize the picker
-            $newInput.wpColorPicker({
-                palettes: palette,
+            // Initialize the picker with custom palettes for background fields
+            const isBgField = name.indexOf('gradient_') !== -1;
+            const pickerArgs = {
                 change: function(event, ui) {
                     const $row = $(this).closest('.acf-row');
-                    updatePreview($row);
+                    if ($row.length) updatePreview($row);
                 }
-            });
-        });
+            };
 
-        // Fix upper section if broken (raw hex showing)
-        $('.acf-field[data-type="color_picker"]').each(function() {
-            const $field = $(this);
-            if ($field.closest('[data-key="field_section_backgrounds"]').length) return; // Skip repeater fields handled above
-            
-            const $input = $field.find('input').filter(function() {
-                const val = $(this).val();
-                return val && typeof val === 'string' && val.indexOf('#') === 0;
-            }).first();
-
-            if ($input.length && !$field.find('.wp-picker-container').length) {
-                $input.wpColorPicker();
+            // Only background fields get the custom palette suggestions
+            if (isBgField && palette.length > 0) {
+                pickerArgs.palettes = palette;
             }
+
+            $newInput.wpColorPicker(pickerArgs);
         });
     }
 
@@ -520,34 +511,42 @@
     if (typeof acf !== 'undefined') {
         // Inject tooltips on click (v2.33.62)
 
-        // Inject tooltips on click (v2.33.63)
+        // Inject tooltips on click (v2.33.64)
         $(document).on('click', '.wp-picker-container .wp-color-result', function() {
             const $button = $(this);
             const $container = $button.closest('.wp-picker-container');
             
+            // Re-init tooltips after a short delay to allow Iris to render
             setTimeout(function() {
                 const stylingColors = getStylingColorsFromDOM();
+                
+                // Find palette buttons in the current container
                 $container.find('.iris-palette').each(function() {
                     const $paletteBtn = $(this);
                     
-                    // Try data-color first, then background-color
-                    let color = $paletteBtn.data('color');
-                    if (!color) {
-                        const bg = $paletteBtn.css('background-color');
-                        if (bg && bg.indexOf('rgb') !== -1) {
-                            const rgb = bg.match(/\d+/g);
-                            color = '#' + ((1 << 24) + (parseInt(rgb[0]) << 16) + (parseInt(rgb[1]) << 8) + parseInt(rgb[2])).toString(16).slice(1);
+                    // Iris buttons are anchors with background-color
+                    const bgColor = $paletteBtn.css('background-color');
+                    if (!bgColor) return;
+
+                    // Convert rgb(...) to hex
+                    let hex = bgColor;
+                    if (bgColor.indexOf('rgb') !== -1) {
+                        const parts = bgColor.match(/\d+/g);
+                        if (parts && parts.length >= 3) {
+                            hex = '#' + ((1 << 24) + (parseInt(parts[0]) << 16) + (parseInt(parts[1]) << 8) + parseInt(parts[2])).toString(16).slice(1).toLowerCase();
                         }
                     }
                     
-                    if (!color) return;
-
-                    const match = stylingColors.find(c => c.color.toLowerCase() === color.toLowerCase());
+                    // Match with styling colors
+                    const match = stylingColors.find(c => c.color.toLowerCase() === hex);
                     if (match) {
+                        // Set title for native tooltip
                         $paletteBtn.attr('title', match.label);
+                        // Also add as data attribute just in case
+                        $paletteBtn.attr('data-title', match.label);
                     }
                 });
-            }, 100);
+            }, 150); // Slightly longer delay for stability
         });
 
         acf.addAction('ready', function() {
