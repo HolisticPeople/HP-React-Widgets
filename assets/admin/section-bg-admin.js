@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.65)
+ * Section Background Admin UI Enhancements (v2.33.66)
  *
  * Features:
  * - Radio button selection (one row at a time) for copying settings
@@ -414,8 +414,8 @@
     }
 
     /**
-     * Initialize color pickers with custom palette from styling colors (v2.33.65)
-     * Robust cleanup: ensures exactly one picker exists and tooltips are applied.
+     * Initialize color pickers with custom palette from styling colors (v2.33.66)
+     * Nuclear option: ensures exactly one picker exists and tooltips are matched.
      */
     function initColorPickers() {
         const stylingColors = getStylingColorsFromDOM();
@@ -427,8 +427,8 @@
             const $acfInput = $field.find('.acf-input').first();
             
             // Skip if already processed in this run
-            if ($field.data('hp-init-v5')) return;
-            $field.data('hp-init-v5', true);
+            if ($field.data('hp-init-v6')) return;
+            $field.data('hp-init-v6', true);
 
             // Find the original input
             const $originalInput = $field.find('input[type="text"], input[type="hidden"]').filter(function() {
@@ -464,10 +464,9 @@
             $newInput.wpColorPicker(pickerArgs);
         });
 
-        // Disable search in gradient select dropdowns (v2.33.65)
+        // Disable search in gradient select dropdowns
         $('[data-key="field_section_backgrounds"] select').each(function() {
             $(this).attr('data-minimum-results-for-search', 'Infinity');
-            // If already initialized by select2, we need to update it
             if ($(this).data('select2')) {
                 $(this).select2({ minimumResultsForSearch: Infinity });
             }
@@ -516,28 +515,35 @@
     if (typeof acf !== 'undefined') {
         // Inject tooltips on click (v2.33.62)
 
-        // Inject tooltips on click (v2.33.65)
-        $(document).on('click', '.wp-picker-container .wp-color-result', function() {
-            const $button = $(this);
-            const $container = $button.closest('.wp-picker-container');
+        // Persistent Tooltips: Inject on hover to bypass any Iris/ACF timing issues (v2.33.66)
+        $(document).on('mouseenter', '.iris-palette', function() {
+            const $paletteBtn = $(this);
             
-            // Wait for Iris to render
-            setTimeout(function() {
-                const stylingColors = getStylingColorsFromDOM();
-                const $paletteButtons = $container.find('.iris-palette');
-                
-                // If this is a background field, use the indexed matching which is most reliable
-                const $input = $container.find('input.wp-color-picker');
-                const name = $input.attr('name') || '';
-                
-                if (name.indexOf('gradient_') !== -1) {
-                    $paletteButtons.each(function(index) {
-                        if (stylingColors[index]) {
-                            $(this).attr('title', stylingColors[index].label);
-                        }
-                    });
+            // Skip if already has title
+            if ($paletteBtn.attr('title')) return;
+
+            const stylingColors = getStylingColorsFromDOM();
+            if (stylingColors.length === 0) return;
+
+            // Get color from Iris data or background-color
+            let color = $paletteBtn.data('color');
+            if (!color) {
+                const bg = $paletteBtn.css('background-color');
+                if (bg && bg.indexOf('rgb') !== -1) {
+                    const parts = bg.match(/\d+/g);
+                    if (parts && parts.length >= 3) {
+                        color = '#' + ((1 << 24) + (parseInt(parts[0]) << 16) + (parseInt(parts[1]) << 8) + parseInt(parts[2])).toString(16).slice(1).toLowerCase();
+                    }
                 }
-            }, 100);
+            }
+            
+            if (!color) return;
+
+            // Find match in styling colors
+            const match = stylingColors.find(c => c.color.toLowerCase() === color.toLowerCase());
+            if (match) {
+                $paletteBtn.attr('title', match.label);
+            }
         });
 
         acf.addAction('ready', function() {
