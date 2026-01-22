@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.66)
+ * Section Background Admin UI Enhancements (v2.33.67)
  *
  * Features:
  * - Radio button selection (one row at a time) for copying settings
@@ -379,7 +379,7 @@
     }
 
     /**
-     * Get colors from the styling section in the DOM (v2.33.63)
+     * Get colors from the styling section in the DOM (v2.33.67)
      */
     function getStylingColorsFromDOM() {
         const colorFields = [
@@ -414,7 +414,7 @@
     }
 
     /**
-     * Initialize color pickers with custom palette from styling colors (v2.33.66)
+     * Initialize color pickers with custom palette from styling colors (v2.33.67)
      * Nuclear option: ensures exactly one picker exists and tooltips are matched.
      */
     function initColorPickers() {
@@ -513,8 +513,6 @@
      * Initialize on ACF ready
      */
     if (typeof acf !== 'undefined') {
-        // Inject tooltips on click (v2.33.62)
-
         // Persistent Tooltips: Inject on hover to bypass any Iris/ACF timing issues (v2.33.66)
         $(document).on('mouseenter', '.iris-palette', function() {
             const $paletteBtn = $(this);
