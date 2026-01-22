@@ -1806,7 +1806,7 @@ class FunnelConfigLoader
 
     /**
      * Detect which sections are actually configured in the funnel.
-     * Restored to robust detection via ACF fields while matching landing page order (v2.33.69).
+     * Matches the actual order on the landing page (v2.33.70).
      *
      * @param int $postId Funnel post ID
      * @return array Array of section definitions
@@ -1814,8 +1814,9 @@ class FunnelConfigLoader
     public static function detectConfiguredSections(int $postId): array
     {
         $sections = [];
-        
-        // 1. Hero section - always present
+        $sectionIndex = 0;
+
+        // Hero section - always present
         $sections[] = [
             'section_id' => 'hero',
             'section_label' => 'Hero Section',
@@ -1823,28 +1824,55 @@ class FunnelConfigLoader
             'section_type' => 'hero'
         ];
 
-        // 2. Map sections in the order they appear on the actual landing page
-        $pageOrder = [
-            'benefits'     => ['field' => 'hero_benefits_title', 'label' => 'Benefits'],
-            'infographics' => ['field' => 'funnel_infographics', 'label' => 'Infographics'], // Detection for any infographics
-            'offers'       => ['field' => null, 'label' => 'Offers'], // Always present
-            'features'     => ['field' => 'features_title', 'label' => 'Features'],
-            'authority'    => ['field' => 'authority_title', 'label' => 'Expert'],
-            'science'      => ['field' => 'science_title', 'label' => 'Science'],
-            'testimonials' => ['field' => 'testimonials_title', 'label' => 'Reviews'],
-            'faq'          => ['field' => 'faq_title', 'label' => 'FAQ'],
-            'cta'          => ['field' => 'cta_title', 'label' => 'CTA'],
+        // Map of section types in the CORRECT landing page order
+        $sectionDefinitions = [
+            'benefits' => [
+                'field' => 'hero_benefits_title',
+                'label' => 'Benefits',
+            ],
+            'infographics' => [
+                'field' => 'funnel_infographics',
+                'label' => 'Comparison',
+            ],
+            'offers' => [
+                'field' => null, // Always present
+                'label' => 'Offers',
+            ],
+            'features' => [
+                'field' => 'features_title',
+                'label' => 'Features',
+            ],
+            'authority' => [
+                'field' => 'authority_title',
+                'label' => 'Expert',
+            ],
+            'science' => [
+                'field' => 'science_title',
+                'label' => 'Science',
+            ],
+            'testimonials' => [
+                'field' => 'testimonials_title',
+                'label' => 'Reviews',
+            ],
+            'faq' => [
+                'field' => 'faq_title',
+                'label' => 'FAQ',
+            ],
+            'cta' => [
+                'field' => 'cta_title',
+                'label' => 'CTA',
+            ],
         ];
 
-        $sectionIndex = 0;
-        foreach ($pageOrder as $type => $definition) {
+        // Check each section type
+        foreach ($sectionDefinitions as $type => $definition) {
             $isConfigured = false;
-            
+
             if ($type === 'offers') {
                 $isConfigured = true;
             } elseif ($definition['field']) {
-                $val = get_field($definition['field'], $postId);
-                $isConfigured = !empty($val);
+                $fieldValue = get_field($definition['field'], $postId);
+                $isConfigured = !empty($fieldValue);
             }
 
             if ($isConfigured) {
@@ -1870,7 +1898,7 @@ class FunnelConfigLoader
                         'section_id' => 'section_' . $sectionIndex,
                         'section_label' => $definition['label'],
                         'section_index' => $sectionIndex,
-                        'section_type' => $type
+                        'section_type' => $type,
                     ];
                 }
             }
@@ -1882,7 +1910,7 @@ class FunnelConfigLoader
     /**
      * Auto-populate section_backgrounds repeater with funnel sections.
      * Called on funnel save to ensure all sections are present in repeater.
-     * Now dynamically detects actual configured sections and preserves settings by type (v2.33.68).
+     * Robust matching logic to preserve settings when order changes (v2.33.70).
      *
      * @param int $postId Funnel post ID
      * @return void
@@ -1897,49 +1925,46 @@ class FunnelConfigLoader
         // Get current section_backgrounds value
         $existingSectionBackgrounds = get_field('section_backgrounds', $postId) ?: [];
 
-        // Build index of existing section configurations by section_type (preferred) and section_label (fallback)
-        $typeIndex = [];
-        $labelIndex = [];
+        // Build index of existing configurations by type and label for robust matching
+        $existingIndex = [];
         foreach ($existingSectionBackgrounds as $section) {
             $type = $section['section_type'] ?? null;
-            if ($type) {
-                $typeIndex[$type] = $section;
-            }
-            
             $label = $section['section_label'] ?? null;
+            
+            if ($type) {
+                $existingIndex['type_' . $type] = $section;
+            }
             if ($label) {
-                $labelIndex[$label] = $section;
+                $existingIndex['label_' . $label] = $section;
             }
         }
 
-        // Detect which sections are actually configured in this funnel
+        // Detect configured sections in the NEW order
         $configuredSections = self::detectConfiguredSections($postId);
 
-        // Build new section_backgrounds array based on configured sections
+        // Build new section_backgrounds array
         $newSectionBackgrounds = [];
         foreach ($configuredSections as $section) {
             $type = $section['section_type'];
             $label = $section['section_label'];
             $existing = null;
 
-            // Try matching by type first
-            if (isset($typeIndex[$type])) {
-                $existing = $typeIndex[$type];
-            } 
-            // Fallback to matching by label (for legacy data)
-            elseif (isset($labelIndex[$label])) {
-                $existing = $labelIndex[$label];
+            // Try matching by type first, then label
+            if (isset($existingIndex['type_' . $type])) {
+                $existing = $existingIndex['type_' . $type];
+            } elseif (isset($existingIndex['label_' . $label])) {
+                $existing = $existingIndex['label_' . $label];
             }
 
             if ($existing) {
-                // Preserve settings but update the section_id and index to match current order
+                // Preserve settings but update the IDs and labels to match current structure
                 $existing['section_id'] = $section['section_id'];
                 $existing['section_label'] = $section['section_label'];
                 $existing['section_index'] = $section['section_index'];
-                $existing['section_type'] = $type; // Ensure type is stored for future matching
+                $existing['section_type'] = $type;
                 $newSectionBackgrounds[] = $existing;
             } else {
-                // Add new section with default background settings
+                // Default background settings for new sections
                 $newSectionBackgrounds[] = [
                     'section_id' => $section['section_id'],
                     'section_label' => $section['section_label'],
@@ -1955,7 +1980,7 @@ class FunnelConfigLoader
             }
         }
 
-        // Always update the field to sync with current funnel configuration
+        // Save the synced settings
         update_field('section_backgrounds', $newSectionBackgrounds, $postId);
     }
 }
