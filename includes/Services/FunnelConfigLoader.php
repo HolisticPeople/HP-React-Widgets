@@ -1805,73 +1805,307 @@ class FunnelConfigLoader
     }
 
     /**
+     * Map shortcode names to section types.
+     * Used for parsing page content and generating stable occurrence IDs.
+     */
+    private const SHORTCODE_TYPE_MAP = [
+        'hp_funnel_hero_section' => 'hero',
+        'hp_funnel_benefits'     => 'benefits',
+        'hp_funnel_products'     => 'offers',
+        'hp_funnel_features'     => 'features',
+        'hp_funnel_authority'    => 'authority',
+        'hp_funnel_testimonials' => 'testimonials',
+        'hp_funnel_faq'          => 'faq',
+        'hp_funnel_cta'          => 'cta',
+        'hp_funnel_science'      => 'science',
+        'hp_funnel_infographics' => 'infographics',
+    ];
+
+    /**
+     * Section type labels for admin display.
+     */
+    private const SECTION_LABELS = [
+        'hero'         => 'Hero',
+        'benefits'     => 'Benefits',
+        'offers'       => 'Offers',
+        'features'     => 'Features',
+        'authority'    => 'Expert',
+        'testimonials' => 'Reviews',
+        'faq'          => 'FAQ',
+        'cta'          => 'CTA',
+        'science'      => 'Science',
+        'infographics' => 'Comparison',
+    ];
+
+    /**
      * Detect which sections are actually configured in the funnel.
-     * Matches the actual order on the landing page (v2.33.70).
+     * Uses occurrence-based stable IDs (v2.33.72).
+     * 
+     * Parses page content (Elementor data or post_content) to detect
+     * the actual order of shortcodes, then generates stable IDs like
+     * "hero_1", "benefits_1", "infographics_1", "infographics_2", etc.
+     *
+     * @param int $postId Funnel post ID
+     * @return array Array of section definitions with occurrence-based IDs
+     */
+    public static function detectConfiguredSections(int $postId): array
+    {
+        // Try to parse page content for actual shortcode order
+        $shortcodesInOrder = self::parsePageShortcodes($postId);
+
+        // If we found shortcodes in the content, use them
+        if (!empty($shortcodesInOrder)) {
+            return self::buildSectionsFromShortcodes($shortcodesInOrder, $postId);
+        }
+
+        // Fallback: Use field-based detection with occurrence counting
+        return self::buildSectionsFromFields($postId);
+    }
+
+    /**
+     * Parse page content to extract shortcodes in order.
+     * Handles both Elementor pages and classic WordPress content.
+     *
+     * @param int $postId Post ID
+     * @return array Array of ['type' => string, 'atts' => array] in order
+     */
+    private static function parsePageShortcodes(int $postId): array
+    {
+        $shortcodes = [];
+        $post = get_post($postId);
+        if (!$post) {
+            return [];
+        }
+
+        // Strategy 1: Parse Elementor data
+        $elementorData = get_post_meta($postId, '_elementor_data', true);
+        if (!empty($elementorData)) {
+            $decoded = is_string($elementorData) ? json_decode($elementorData, true) : $elementorData;
+            if (is_array($decoded)) {
+                $shortcodes = self::extractShortcodesFromElementor($decoded);
+            }
+        }
+
+        // Strategy 2: Parse post_content for shortcodes
+        if (empty($shortcodes) && !empty($post->post_content)) {
+            $shortcodes = self::extractShortcodesFromContent($post->post_content);
+        }
+
+        return $shortcodes;
+    }
+
+    /**
+     * Recursively extract shortcodes from Elementor data structure.
+     *
+     * @param array $elements Elementor elements array
+     * @return array Array of shortcode info
+     */
+    private static function extractShortcodesFromElementor(array $elements): array
+    {
+        $shortcodes = [];
+
+        foreach ($elements as $element) {
+            // Check for shortcode widget
+            if (isset($element['widgetType']) && $element['widgetType'] === 'shortcode') {
+                $shortcodeText = $element['settings']['shortcode'] ?? '';
+                if (!empty($shortcodeText)) {
+                    $parsed = self::parseShortcodeString($shortcodeText);
+                    if ($parsed) {
+                        $shortcodes[] = $parsed;
+                    }
+                }
+            }
+
+            // Check for text editor with shortcodes
+            if (isset($element['widgetType']) && $element['widgetType'] === 'text-editor') {
+                $content = $element['settings']['editor'] ?? '';
+                $contentShortcodes = self::extractShortcodesFromContent($content);
+                $shortcodes = array_merge($shortcodes, $contentShortcodes);
+            }
+
+            // Recurse into nested elements
+            if (!empty($element['elements']) && is_array($element['elements'])) {
+                $nested = self::extractShortcodesFromElementor($element['elements']);
+                $shortcodes = array_merge($shortcodes, $nested);
+            }
+        }
+
+        return $shortcodes;
+    }
+
+    /**
+     * Extract shortcodes from post content string.
+     *
+     * @param string $content Post content
+     * @return array Array of shortcode info
+     */
+    private static function extractShortcodesFromContent(string $content): array
+    {
+        $shortcodes = [];
+
+        // Match all hp_funnel_* shortcodes
+        $pattern = '/\[hp_funnel_(\w+)([^\]]*)\]/';
+        preg_match_all($pattern, $content, $matches, PREG_SET_ORDER);
+
+        foreach ($matches as $match) {
+            $shortcodeName = 'hp_funnel_' . $match[1];
+            $attsString = trim($match[2]);
+
+            // Skip non-section shortcodes (styles, header, footer, scroll_navigation)
+            if (!isset(self::SHORTCODE_TYPE_MAP[$shortcodeName])) {
+                continue;
+            }
+
+            $atts = shortcode_parse_atts($attsString);
+            $shortcodes[] = [
+                'shortcode' => $shortcodeName,
+                'type'      => self::SHORTCODE_TYPE_MAP[$shortcodeName],
+                'atts'      => is_array($atts) ? $atts : [],
+            ];
+        }
+
+        return $shortcodes;
+    }
+
+    /**
+     * Parse a single shortcode string into type and attributes.
+     *
+     * @param string $shortcodeString e.g. "[hp_funnel_benefits funnel=\"illumodine\"]"
+     * @return array|null Parsed info or null if not a section shortcode
+     */
+    private static function parseShortcodeString(string $shortcodeString): ?array
+    {
+        $pattern = '/\[hp_funnel_(\w+)([^\]]*)\]/';
+        if (preg_match($pattern, $shortcodeString, $match)) {
+            $shortcodeName = 'hp_funnel_' . $match[1];
+            
+            // Skip non-section shortcodes
+            if (!isset(self::SHORTCODE_TYPE_MAP[$shortcodeName])) {
+                return null;
+            }
+
+            $attsString = trim($match[2]);
+            $atts = shortcode_parse_atts($attsString);
+
+            return [
+                'shortcode' => $shortcodeName,
+                'type'      => self::SHORTCODE_TYPE_MAP[$shortcodeName],
+                'atts'      => is_array($atts) ? $atts : [],
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Build sections array from parsed shortcodes.
+     * Generates occurrence-based stable IDs.
+     *
+     * @param array $shortcodes Array of parsed shortcodes in order
+     * @param int $postId Post ID for infographic labels
+     * @return array Section definitions
+     */
+    private static function buildSectionsFromShortcodes(array $shortcodes, int $postId): array
+    {
+        $sections = [];
+        $typeOccurrences = [];
+
+        foreach ($shortcodes as $sc) {
+            $type = $sc['type'];
+
+            // Increment occurrence counter for this type
+            if (!isset($typeOccurrences[$type])) {
+                $typeOccurrences[$type] = 0;
+            }
+            $typeOccurrences[$type]++;
+            $occurrence = $typeOccurrences[$type];
+
+            // Generate stable ID (e.g., "benefits_1", "infographics_2")
+            $stableId = $type . '_' . $occurrence;
+
+            // Determine label
+            $label = self::SECTION_LABELS[$type] ?? ucfirst($type);
+
+            // For infographics, try to get a more specific label
+            if ($type === 'infographics') {
+                $infoIndex = isset($sc['atts']['info']) ? (int) $sc['atts']['info'] : $occurrence;
+                $rows = get_field('funnel_infographics', $postId);
+                if (is_array($rows) && isset($rows[$infoIndex - 1])) {
+                    $row = $rows[$infoIndex - 1];
+                    if (!empty($row['info_nav_label'])) {
+                        $label = $row['info_nav_label'];
+                    } elseif (!empty($row['info_name'])) {
+                        $label = $row['info_name'];
+                    }
+                }
+                // Append occurrence if multiple
+                if ($occurrence > 1 || count(array_filter($shortcodes, fn($s) => $s['type'] === 'infographics')) > 1) {
+                    $label .= ' #' . $occurrence;
+                }
+            }
+
+            $sections[] = [
+                'section_id'    => $stableId,
+                'section_label' => $label,
+                'section_type'  => $type,
+                'occurrence'    => $occurrence,
+            ];
+        }
+
+        return $sections;
+    }
+
+    /**
+     * Fallback: Build sections from ACF fields when page content parsing fails.
+     * Uses occurrence-based IDs for consistency.
      *
      * @param int $postId Funnel post ID
      * @return array Array of section definitions
      */
-    public static function detectConfiguredSections(int $postId): array
+    private static function buildSectionsFromFields(int $postId): array
     {
         $sections = [];
-        $sectionIndex = 0;
+        $typeOccurrences = [];
+
+        // Helper to add a section with occurrence tracking
+        $addSection = function(string $type, string $label = null) use (&$sections, &$typeOccurrences) {
+            if (!isset($typeOccurrences[$type])) {
+                $typeOccurrences[$type] = 0;
+            }
+            $typeOccurrences[$type]++;
+            $occurrence = $typeOccurrences[$type];
+
+            $sections[] = [
+                'section_id'    => $type . '_' . $occurrence,
+                'section_label' => $label ?? (self::SECTION_LABELS[$type] ?? ucfirst($type)),
+                'section_type'  => $type,
+                'occurrence'    => $occurrence,
+            ];
+        };
 
         // Hero section - always present
-        $sections[] = [
-            'section_id' => 'hero',
-            'section_label' => 'Hero Section',
-            'section_index' => null,
-            'section_type' => 'hero'
+        $addSection('hero', 'Hero Section');
+
+        // Check each section type based on fields
+        $sectionChecks = [
+            'benefits'     => 'hero_benefits_title',
+            'infographics' => 'funnel_infographics',
+            'offers'       => null, // Always present
+            'features'     => 'features_title',
+            'authority'    => 'authority_title',
+            'science'      => 'science_title',
+            'testimonials' => 'testimonials_title',
+            'faq'          => 'faq_title',
+            'cta'          => 'cta_title',
         ];
 
-        // Map of section types in the CORRECT landing page order
-        $sectionDefinitions = [
-            'benefits' => [
-                'field' => 'hero_benefits_title',
-                'label' => 'Benefits',
-            ],
-            'infographics' => [
-                'field' => 'funnel_infographics',
-                'label' => 'Comparison',
-            ],
-            'offers' => [
-                'field' => null, // Always present
-                'label' => 'Offers',
-            ],
-            'features' => [
-                'field' => 'features_title',
-                'label' => 'Features',
-            ],
-            'authority' => [
-                'field' => 'authority_title',
-                'label' => 'Expert',
-            ],
-            'science' => [
-                'field' => 'science_title',
-                'label' => 'Science',
-            ],
-            'testimonials' => [
-                'field' => 'testimonials_title',
-                'label' => 'Reviews',
-            ],
-            'faq' => [
-                'field' => 'faq_title',
-                'label' => 'FAQ',
-            ],
-            'cta' => [
-                'field' => 'cta_title',
-                'label' => 'CTA',
-            ],
-        ];
-
-        // Check each section type
-        foreach ($sectionDefinitions as $type => $definition) {
+        foreach ($sectionChecks as $type => $field) {
             $isConfigured = false;
 
             if ($type === 'offers') {
                 $isConfigured = true;
-            } elseif ($definition['field']) {
-                $fieldValue = get_field($definition['field'], $postId);
+            } elseif ($field) {
+                $fieldValue = get_field($field, $postId);
                 $isConfigured = !empty($fieldValue);
             }
 
@@ -1881,25 +2115,17 @@ class FunnelConfigLoader
                     $rows = get_field('funnel_infographics', $postId);
                     if (is_array($rows)) {
                         foreach ($rows as $idx => $row) {
-                            $sectionIndex++;
-                            $label = !empty($row['info_nav_label']) ? $row['info_nav_label'] : (!empty($row['info_name']) ? $row['info_name'] : 'Comparison');
-                            $sections[] = [
-                                'section_id' => 'section_' . $sectionIndex,
-                                'section_label' => $label,
-                                'section_index' => $sectionIndex,
-                                'section_type' => 'infographics',
-                                'infographic_index' => $idx
-                            ];
+                            $label = !empty($row['info_nav_label']) 
+                                ? $row['info_nav_label'] 
+                                : (!empty($row['info_name']) ? $row['info_name'] : 'Comparison');
+                            if (count($rows) > 1) {
+                                $label .= ' #' . ($idx + 1);
+                            }
+                            $addSection('infographics', $label);
                         }
                     }
                 } else {
-                    $sectionIndex++;
-                    $sections[] = [
-                        'section_id' => 'section_' . $sectionIndex,
-                        'section_label' => $definition['label'],
-                        'section_index' => $sectionIndex,
-                        'section_type' => $type,
-                    ];
+                    $addSection($type);
                 }
             }
         }
@@ -1910,7 +2136,7 @@ class FunnelConfigLoader
     /**
      * Auto-populate section_backgrounds repeater with funnel sections.
      * Called on funnel save to ensure all sections are present in repeater.
-     * Robust matching logic to preserve settings when order changes (v2.33.70).
+     * Uses occurrence-based stable IDs for reliable matching (v2.33.72).
      *
      * @param int $postId Funnel post ID
      * @return void
@@ -1925,57 +2151,99 @@ class FunnelConfigLoader
         // Get current section_backgrounds value
         $existingSectionBackgrounds = get_field('section_backgrounds', $postId) ?: [];
 
-        // Build index of existing configurations by type and label for robust matching
-        $existingIndex = [];
+        // Build index of existing configurations by stable ID (primary) and fallbacks
+        $existingByStableId = [];
+        $existingByTypePlusOccurrence = [];
+        $existingByLegacyId = [];
+
         foreach ($existingSectionBackgrounds as $section) {
+            $sectionId = $section['section_id'] ?? null;
             $type = $section['section_type'] ?? null;
-            $label = $section['section_label'] ?? null;
-            
-            if ($type) {
-                $existingIndex['type_' . $type] = $section;
+            $occurrence = $section['occurrence'] ?? null;
+
+            // Primary: Index by section_id (which should be stable ID like "benefits_1")
+            if ($sectionId) {
+                $existingByStableId[$sectionId] = $section;
             }
-            if ($label) {
-                $existingIndex['label_' . $label] = $section;
+
+            // Secondary: Index by type + occurrence
+            if ($type && $occurrence) {
+                $existingByTypePlusOccurrence[$type . '_' . $occurrence] = $section;
+            }
+
+            // Legacy: Support old section_N format for migration
+            if ($sectionId && preg_match('/^section_(\d+)$/', $sectionId)) {
+                $existingByLegacyId[$sectionId] = $section;
             }
         }
 
-        // Detect configured sections in the NEW order
+        // Detect configured sections in the NEW order with stable IDs
         $configuredSections = self::detectConfiguredSections($postId);
+
+        // Track which legacy sections have been used (for migration)
+        $usedLegacySections = [];
 
         // Build new section_backgrounds array
         $newSectionBackgrounds = [];
         foreach ($configuredSections as $section) {
+            $stableId = $section['section_id'];
             $type = $section['section_type'];
+            $occurrence = $section['occurrence'] ?? 1;
             $label = $section['section_label'];
+            
             $existing = null;
 
-            // Try matching by type first, then label
-            if (isset($existingIndex['type_' . $type])) {
-                $existing = $existingIndex['type_' . $type];
-            } elseif (isset($existingIndex['label_' . $label])) {
-                $existing = $existingIndex['label_' . $label];
+            // Priority 1: Match by exact stable ID (e.g., "benefits_1")
+            if (isset($existingByStableId[$stableId])) {
+                $existing = $existingByStableId[$stableId];
+            }
+            // Priority 2: Match by type + occurrence key
+            elseif (isset($existingByTypePlusOccurrence[$stableId])) {
+                $existing = $existingByTypePlusOccurrence[$stableId];
+            }
+            // Priority 3: Legacy migration - match by type in old section_N entries
+            else {
+                foreach ($existingByLegacyId as $legacyId => $legacySection) {
+                    if (in_array($legacyId, $usedLegacySections)) {
+                        continue;
+                    }
+                    $legacyType = $legacySection['section_type'] ?? null;
+                    if ($legacyType === $type) {
+                        $existing = $legacySection;
+                        $usedLegacySections[] = $legacyId;
+                        break;
+                    }
+                }
             }
 
             if ($existing) {
-                // Preserve settings but update the IDs and labels to match current structure
-                $existing['section_id'] = $section['section_id'];
-                $existing['section_label'] = $section['section_label'];
-                $existing['section_index'] = $section['section_index'];
-                $existing['section_type'] = $type;
-                $newSectionBackgrounds[] = $existing;
+                // Preserve background settings but update IDs to new stable format
+                $newSection = [
+                    'section_id'           => $stableId,
+                    'section_label'        => $label,
+                    'section_type'         => $type,
+                    'occurrence'           => $occurrence,
+                    'background_type'      => $existing['background_type'] ?? 'none',
+                    'gradient_type'        => $existing['gradient_type'] ?? 'linear',
+                    'gradient_preset'      => $existing['gradient_preset'] ?? 'vertical-down',
+                    'color_mode'           => $existing['color_mode'] ?? 'auto',
+                    'gradient_start_color' => $existing['gradient_start_color'] ?? '#1a1a2e',
+                    'gradient_end_color'   => $existing['gradient_end_color'] ?? '',
+                ];
+                $newSectionBackgrounds[] = $newSection;
             } else {
                 // Default background settings for new sections
                 $newSectionBackgrounds[] = [
-                    'section_id' => $section['section_id'],
-                    'section_label' => $section['section_label'],
-                    'section_index' => $section['section_index'],
-                    'section_type' => $type,
-                    'background_type' => 'none',
-                    'gradient_type' => 'linear',
-                    'gradient_preset' => 'vertical-down',
-                    'color_mode' => 'auto',
+                    'section_id'           => $stableId,
+                    'section_label'        => $label,
+                    'section_type'         => $type,
+                    'occurrence'           => $occurrence,
+                    'background_type'      => 'none',
+                    'gradient_type'        => 'linear',
+                    'gradient_preset'      => 'vertical-down',
+                    'color_mode'           => 'auto',
                     'gradient_start_color' => '#1a1a2e',
-                    'gradient_end_color' => '',
+                    'gradient_end_color'   => '',
                 ];
             }
         }

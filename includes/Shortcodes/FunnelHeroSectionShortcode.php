@@ -264,45 +264,75 @@ class FunnelHeroSectionShortcode
         }
         </style>';
 
-        // Generate JavaScript to apply backgrounds
+        // Generate JavaScript to apply backgrounds using occurrence-based IDs (v2.33.72)
         $backgroundMapJson = wp_json_encode($backgroundMap);
         $output .= sprintf(
             '<script>
 (function() {
     var backgroundMap = %s;
 
-    function applyBackgrounds() {
-        // Apply hero background
-        var heroSection = document.querySelector(".hp-funnel-hero-section");
-        if (heroSection && backgroundMap["hero"] && backgroundMap["hero"] !== "transparent") {
-            heroSection.classList.add("hp-has-bg");
-            heroSection.style.setProperty("background", backgroundMap["hero"], "important");
-        }
+    // Map CSS class patterns to section types (must match PHP FunnelConfigLoader::SHORTCODE_TYPE_MAP)
+    var classToType = {
+        "hp-funnel-hero-section": "hero",
+        "hp-funnel-benefits": "benefits",
+        "hp-funnel-products": "offers",
+        "hp-funnel-features": "features",
+        "hp-funnel-authority": "authority",
+        "hp-funnel-testimonials": "testimonials",
+        "hp-funnel-faq": "faq",
+        "hp-funnel-cta": "cta",
+        "hp-funnel-science": "science",
+        "hp-funnel-infographics": "infographics"
+    };
 
-        // Apply section backgrounds
+    function detectSectionType(section) {
+        var className = section.className;
+        for (var pattern in classToType) {
+            // Check if class contains the pattern (handles hp-funnel-products-{slug} etc.)
+            if (className.indexOf(pattern) !== -1) {
+                return classToType[pattern];
+            }
+        }
+        return null;
+    }
+
+    function applyBackgrounds() {
         var sections = document.querySelectorAll(".hp-funnel-section");
-        var sectionIndex = 0;
+        var typeOccurrences = {};
 
         sections.forEach(function(section) {
             var className = section.className;
-            var isHero = section.classList.contains("hp-funnel-hero-section") ||
-                         className.includes("hp-funnel-hero-section-");
-            var isHeader = className.includes("hp-funnel-header");
-            var isFooter = className.includes("hp-funnel-footer");
-
-            if (isHero || isHeader || isFooter) {
-                return; // Skip hero/header/footer (hero handled separately above)
+            
+            // Skip header and footer
+            if (className.indexOf("hp-funnel-header") !== -1 || 
+                className.indexOf("hp-funnel-footer") !== -1) {
+                return;
             }
 
-            sectionIndex++;
-            var sectionId = "section_" + sectionIndex;
-            var background = backgroundMap[sectionId];
+            // Detect section type from CSS class
+            var sectionType = detectSectionType(section);
+            if (!sectionType) {
+                return;
+            }
+
+            // Track occurrence for this type
+            if (!typeOccurrences[sectionType]) {
+                typeOccurrences[sectionType] = 0;
+            }
+            typeOccurrences[sectionType]++;
+            var occurrence = typeOccurrences[sectionType];
+
+            // Build stable ID (e.g., "hero_1", "offers_1", "infographics_2")
+            var stableId = sectionType + "_" + occurrence;
+            var background = backgroundMap[stableId];
 
             if (background && background !== "transparent") {
                 section.classList.add("hp-has-bg");
                 section.style.setProperty("background", background, "important");
-                section.setAttribute("data-section-id", sectionId);
             }
+            
+            // Always set the data attribute for debugging/inspection
+            section.setAttribute("data-section-id", stableId);
         });
     }
 

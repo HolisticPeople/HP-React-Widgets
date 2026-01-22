@@ -272,9 +272,9 @@ class FunnelStylingFields
     }
 
     /**
-     * Enqueue section background admin UI enhancements (v2.33.37).
+     * Enqueue section background admin UI enhancements (v2.33.72).
      * Adds bulk actions and live preview to section_backgrounds repeater.
-     * Now uses section labels from the database instead of detecting from content.
+     * Uses FunnelConfigLoader::detectConfiguredSections for consistent naming.
      */
     public static function enqueueSectionBackgroundAdmin(): void
     {
@@ -288,71 +288,19 @@ class FunnelStylingFields
                 true
             );
 
-            // Pass section names and styling colors to JavaScript (v2.33.47)
+            // Pass section names and styling colors to JavaScript (v2.33.72)
             global $post;
             $sectionNames = [];
             $stylingColors = [];
 
             if ($post && $post->ID) {
-                // Hero section - use "Hero Section"
-                $sectionNames[] = 'Hero Section';
-
-                // Get actual configured sections by checking which have content
-                $configuredSections = [];
-
-                // Check Benefits
-                $benefitsTitle = get_field('hero_benefits_title', $post->ID);
-                if (!empty($benefitsTitle)) {
-                    $configuredSections[] = 'Benefits';
+                // Use FunnelConfigLoader to get consistent section detection
+                if (class_exists('\HP_RW\Services\FunnelConfigLoader')) {
+                    $sections = \HP_RW\Services\FunnelConfigLoader::detectConfiguredSections($post->ID);
+                    foreach ($sections as $section) {
+                        $sectionNames[] = $section['section_label'];
+                    }
                 }
-
-                // Check Science
-                $scienceTitle = get_field('science_title', $post->ID);
-                if (!empty($scienceTitle)) {
-                    $configuredSections[] = 'Science';
-                }
-
-                // Check Infographics
-                $infographicsTitle = get_field('infographics_title', $post->ID);
-                if (!empty($infographicsTitle)) {
-                    $configuredSections[] = 'Comparison';
-                }
-
-                // Check Features
-                $featuresTitle = get_field('features_title', $post->ID);
-                if (!empty($featuresTitle)) {
-                    $configuredSections[] = 'Features';
-                }
-
-                // Check Offers (always present if funnel exists)
-                $configuredSections[] = 'Offers';
-
-                // Check Authority
-                $authorityTitle = get_field('authority_title', $post->ID);
-                if (!empty($authorityTitle)) {
-                    $configuredSections[] = 'Expert';
-                }
-
-                // Check Testimonials
-                $testimonialsTitle = get_field('testimonials_title', $post->ID);
-                if (!empty($testimonialsTitle)) {
-                    $configuredSections[] = 'Reviews';
-                }
-
-                // Check FAQ
-                $faqTitle = get_field('faq_title', $post->ID);
-                if (!empty($faqTitle)) {
-                    $configuredSections[] = 'FAQ';
-                }
-
-                // Check CTA
-                $ctaTitle = get_field('cta_title', $post->ID);
-                if (!empty($ctaTitle)) {
-                    $configuredSections[] = 'CTA';
-                }
-
-                // Add configured sections to array
-                $sectionNames = array_merge($sectionNames, $configuredSections);
 
                 // Get styling colors for color picker palette
                 $colorFields = [
@@ -380,7 +328,7 @@ class FunnelStylingFields
             wp_localize_script('hp-rw-section-bg-admin', 'hpSectionBgData', [
                 'sectionNames' => $sectionNames,
                 'stylingColors' => $stylingColors,
-                'refreshNonce' => wp_create_nonce('hp_refresh_sections_' . $post->ID)
+                'refreshNonce' => wp_create_nonce('hp_refresh_sections_' . ($post ? $post->ID : 0))
             ]);
 
             wp_enqueue_style(
