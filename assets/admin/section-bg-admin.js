@@ -1,5 +1,5 @@
 /**
- * Section Background Admin UI Enhancements (v2.33.59)
+ * Section Background Admin UI Enhancements (v2.33.60)
  *
  * Features:
  * - Radio button selection (one row at a time) for copying settings
@@ -408,11 +408,31 @@
     }
 
     /**
-     * Initialize color pickers with custom palette from styling colors (v2.33.59)
-     * Simplified: No longer re-initializes to avoid doubling.
+     * Initialize color pickers with custom palette from styling colors (v2.33.60)
+     * Handles both initial load and appended rows without doubling
      */
     function initColorPickers() {
-        // Handled by ACF filter and click listeners
+        const stylingColors = getStylingColorsFromDOM();
+        const palette = stylingColors.map(item => item.color);
+        const $repeater = $('[data-key="field_section_backgrounds"]');
+        
+        $repeater.find('[data-name="gradient_start_color"] input, [data-name="gradient_end_color"] input').each(function() {
+            const $input = $(this);
+            
+            // If already initialized by us or ACF (has the picker container), skip
+            if ($input.closest('.wp-picker-container').length) {
+                return;
+            }
+
+            // (Re)initialize with our palette
+            $input.wpColorPicker({
+                palettes: palette,
+                change: function(event, ui) {
+                    const $row = $(this).closest('.acf-row');
+                    updatePreview($row);
+                }
+            });
+        });
     }
 
     /**
@@ -503,12 +523,15 @@
             addPreviewsAndCheckboxes();
             initBulkActions();
             initLivePreview();
+            // Ensure color pickers are initialized
+            setTimeout(initColorPickers, 500);
         });
 
         // Re-initialize when repeater rows are added
         acf.addAction('append', function($el) {
             if ($el.closest('[data-key="field_section_backgrounds"]').length) {
                 addPreviewsAndCheckboxes();
+                setTimeout(initColorPickers, 500);
             }
         });
     }
