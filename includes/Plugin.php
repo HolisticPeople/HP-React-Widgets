@@ -654,6 +654,11 @@ class Plugin
                 flush_rewrite_rules(false);
             }
             
+            // v2.33.77+: Flush rewrite rules for /thank-you/ hyphenated URL support
+            if (version_compare($storedVersion, '2.33.77', '<')) {
+                flush_rewrite_rules(false);
+            }
+            
             // Update stored version
             update_option('hp_rw_version', $currentVersion);
         }
