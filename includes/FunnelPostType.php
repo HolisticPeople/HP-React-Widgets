@@ -93,9 +93,11 @@ class FunnelPostType
             'capability_type'       => 'post',
             'supports'              => [
                 'title',
+                'editor',
                 'revisions',
                 'page-attributes',
                 'thumbnail',
+                'elementor',
             ],
             'has_archive'           => 'express-shops',
             'rewrite'               => [
