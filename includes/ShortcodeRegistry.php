@@ -19,14 +19,35 @@ class ShortcodeRegistry
         $allShortcodes = Plugin::get_shortcodes();
 
         foreach ($allShortcodes as $slug => $config) {
+            // Register every known shortcode so Elementor/WP never shows the raw [shortcode] text.
+            // Rendering logic checks whether it is enabled, and if not, returns an empty string.
             add_shortcode(
                 $slug,
                 function ($atts = []) use ($slug, $config, $enabled) {
+                    // #region agent log
+                    $log_path = 'c:\\DEV\\WC Plugins\\My Plugins\\HP-React-Widgets\\.cursor\\debug.log';
+                    $log_entry = json_encode([
+                        'location' => 'ShortcodeRegistry.php:27',
+                        'message' => 'Shortcode callback start',
+                        'data' => [
+                            'slug' => $slug,
+                            'enabled' => in_array($slug, $enabled, true)
+                        ],
+                        'timestamp' => (int)(microtime(true) * 1000),
+                        'sessionId' => 'debug-session',
+                        'runId' => 'run1',
+                        'hypothesisId' => 'C'
+                    ]);
+                    @file_put_contents($log_path, $log_entry . PHP_EOL, FILE_APPEND);
+                    // #endregion
+
                     if (!in_array($slug, $enabled, true)) {
+                        // Shortcode is configured but disabled → render nothing and do not enqueue assets.
                         return '';
                     }
 
-                    // Stability: If in Elementor Editor, render placeholder
+                    // Optimization: If in Elementor Editor UI, render a lightweight placeholder.
+                    // This prevents React/Underscore script collisions and speeds up editor load.
                     if (Plugin::is_elementor_editor()) {
                         return Plugin::get_editor_placeholder($config['label'] ?? $slug);
                     }
@@ -39,6 +60,9 @@ class ShortcodeRegistry
 
     /**
      * Generic renderer used for custom shortcodes defined via the wizard.
+     *
+     * @param array<string,mixed> $config
+     * @param array<string,mixed> $atts
      */
     private function renderGeneric(array $config, array $atts): string
     {
@@ -73,3 +97,5 @@ class ShortcodeRegistry
         );
     }
 }
+
+
