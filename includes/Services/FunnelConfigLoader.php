@@ -96,6 +96,10 @@ class FunnelConfigLoader
             }
         }
         
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('[HP-RW] getFromContext: FAILED TO FIND FUNNEL. REQUEST_URI: ' . ($_SERVER['REQUEST_URI'] ?? 'N/A') . ' | Queried Object ID: ' . get_queried_object_id());
+        }
+
         return null;
     }
 
