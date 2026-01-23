@@ -51,7 +51,7 @@ class FunnelConfigLoader
     public static function getFromContext(): ?array
     {
         // #region agent log
-        $log_path = HP_RW_PATH . '.cursor/debug.log';
+        $log_path = '/www/holisticpeoplecom_349/public/wp-content/debug-cursor.log';
         $log_entry = json_encode([
             'location' => 'FunnelConfigLoader.php:55',
             'message' => 'getFromContext start',
