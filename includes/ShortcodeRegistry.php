@@ -26,6 +26,7 @@ class ShortcodeRegistry
                         return '';
                     }
 
+                    // Stability: If in Elementor Editor, render placeholder
                     if (Plugin::is_elementor_editor()) {
                         return Plugin::get_editor_placeholder($config['label'] ?? $slug);
                     }
@@ -38,9 +39,6 @@ class ShortcodeRegistry
 
     /**
      * Generic renderer used for custom shortcodes defined via the wizard.
-     *
-     * @param array<string,mixed> $config
-     * @param array<string,mixed> $atts
      */
     private function renderGeneric(array $config, array $atts): string
     {
@@ -75,5 +73,3 @@ class ShortcodeRegistry
         );
     }
 }
-
-
