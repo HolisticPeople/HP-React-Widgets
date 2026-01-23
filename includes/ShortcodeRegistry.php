@@ -15,6 +15,7 @@ class ShortcodeRegistry
      */
     public function register(): void
     {
+        add_shortcode('hp_debug_direct', function() { return '<h1 style="color:red; background:white; padding:20px; border:5px solid red; position:fixed; top:0; left:0; z-index:9999;">PLUGIN IS WORKING</h1>'; });
         $enabled       = Plugin::get_enabled_shortcodes();
         $allShortcodes = Plugin::get_shortcodes();
 
