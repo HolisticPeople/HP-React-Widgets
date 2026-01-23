@@ -880,23 +880,6 @@ class Plugin
      */
     public static function is_elementor_editor(): bool
     {
-        // #region agent log
-        $log_path = '/www/holisticpeoplecom_349/public/wp-content/debug-cursor.log';
-        $log_entry = json_encode([
-            'location' => 'Plugin.php:884',
-            'message' => 'is_elementor_editor start',
-            'data' => [
-                'is_admin' => is_admin(),
-                'GET' => $_GET
-            ],
-            'timestamp' => (int)(microtime(true) * 1000),
-            'sessionId' => 'debug-session',
-            'runId' => 'run1',
-            'hypothesisId' => 'C'
-        ]);
-        @file_put_contents($log_path, $log_entry . PHP_EOL, FILE_APPEND);
-        // #endregion
-
         if (!class_exists('\\Elementor\\Plugin')) {
             return false;
         }
@@ -905,27 +888,13 @@ class Plugin
         
         // is_edit_mode() is true both in the editor UI and the preview iframe.
         // We only want to bail if we are NOT in the preview frame.
-        $result = false;
         if (isset($elementor->editor) && $elementor->editor->is_edit_mode()) {
             if (!isset($_GET['elementor-preview'])) {
-                $result = true;
+                return true;
             }
         }
 
-        // #region agent log
-        $log_entry = json_encode([
-            'location' => 'Plugin.php:913',
-            'message' => 'is_elementor_editor result',
-            'data' => ['result' => $result],
-            'timestamp' => (int)(microtime(true) * 1000),
-            'sessionId' => 'debug-session',
-            'runId' => 'run1',
-            'hypothesisId' => 'C'
-        ]);
-        @file_put_contents($log_path, $log_entry . PHP_EOL, FILE_APPEND);
-        // #endregion
-
-        return $result;
+        return false;
     }
 
     /**

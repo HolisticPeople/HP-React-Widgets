@@ -50,24 +50,6 @@ class FunnelConfigLoader
      */
     public static function getFromContext(): ?array
     {
-        // #region agent log
-        $log_path = '/www/holisticpeoplecom_349/public/wp-content/debug-cursor.log';
-        $log_entry = json_encode([
-            'location' => 'FunnelConfigLoader.php:55',
-            'message' => 'getFromContext start',
-            'data' => [
-                'post_id' => get_the_ID(),
-                'queried_object_id' => get_queried_object_id(),
-                'uri' => $_SERVER['REQUEST_URI'] ?? ''
-            ],
-            'timestamp' => (int)(microtime(true) * 1000),
-            'sessionId' => 'debug-session',
-            'runId' => 'run1',
-            'hypothesisId' => 'D'
-        ]);
-        @file_put_contents($log_path, $log_entry . PHP_EOL, FILE_APPEND);
-        // #endregion
-
         // Static cache for context to avoid repeated lookups in the same request
         static $contextCache = null;
         static $contextLookedUp = false;
@@ -84,18 +66,6 @@ class FunnelConfigLoader
         if (!empty($queryVarFunnel) && is_array($queryVarFunnel)) {
             $contextCache = $queryVarFunnel;
             $contextLookedUp = true;
-            // #region agent log
-            $log_entry = json_encode([
-                'location' => 'FunnelConfigLoader.php:86',
-                'message' => 'getFromContext result (Method 0)',
-                'data' => ['slug' => $contextCache['slug'] ?? 'unknown'],
-                'timestamp' => (int)(microtime(true) * 1000),
-                'sessionId' => 'debug-session',
-                'runId' => 'run1',
-                'hypothesisId' => 'D'
-            ]);
-            @file_put_contents($log_path, $log_entry . PHP_EOL, FILE_APPEND);
-            // #endregion
             return $queryVarFunnel;
         }
         
@@ -104,18 +74,6 @@ class FunnelConfigLoader
         if (!empty($queryVarSlug)) {
             $contextCache = self::getBySlug($queryVarSlug);
             $contextLookedUp = true;
-            // #region agent log
-            $log_entry = json_encode([
-                'location' => 'FunnelConfigLoader.php:105',
-                'message' => 'getFromContext result (Method 0b)',
-                'data' => ['slug' => $queryVarSlug, 'found' => !!$contextCache],
-                'timestamp' => (int)(microtime(true) * 1000),
-                'sessionId' => 'debug-session',
-                'runId' => 'run1',
-                'hypothesisId' => 'D'
-            ]);
-            @file_put_contents($log_path, $log_entry . PHP_EOL, FILE_APPEND);
-            // #endregion
             return $contextCache;
         }
         
@@ -124,18 +82,6 @@ class FunnelConfigLoader
         if ($queried instanceof \WP_Post && $queried->post_type === Plugin::FUNNEL_POST_TYPE) {
             $contextCache = self::getById($queried->ID);
             $contextLookedUp = true;
-            // #region agent log
-            $log_entry = json_encode([
-                'location' => 'FunnelConfigLoader.php:124',
-                'message' => 'getFromContext result (Method 1)',
-                'data' => ['id' => $queried->ID, 'found' => !!$contextCache],
-                'timestamp' => (int)(microtime(true) * 1000),
-                'sessionId' => 'debug-session',
-                'runId' => 'run1',
-                'hypothesisId' => 'D'
-            ]);
-            @file_put_contents($log_path, $log_entry . PHP_EOL, FILE_APPEND);
-            // #endregion
             return $contextCache;
         }
         
@@ -144,18 +90,6 @@ class FunnelConfigLoader
         if ($post instanceof \WP_Post && $post->post_type === Plugin::FUNNEL_POST_TYPE) {
             $contextCache = self::getById($post->ID);
             $contextLookedUp = true;
-            // #region agent log
-            $log_entry = json_encode([
-                'location' => 'FunnelConfigLoader.php:143',
-                'message' => 'getFromContext result (Method 2)',
-                'data' => ['id' => $post->ID, 'found' => !!$contextCache],
-                'timestamp' => (int)(microtime(true) * 1000),
-                'sessionId' => 'debug-session',
-                'runId' => 'run1',
-                'hypothesisId' => 'D'
-            ]);
-            @file_put_contents($log_path, $log_entry . PHP_EOL, FILE_APPEND);
-            // #endregion
             return $contextCache;
         }
         
@@ -189,18 +123,6 @@ class FunnelConfigLoader
                             if ($renderedPost && $renderedPost->post_type === Plugin::FUNNEL_POST_TYPE) {
                                 $contextCache = self::getById($renderedPostId);
                                 $contextLookedUp = true;
-                                // #region agent log
-                                $log_entry = json_encode([
-                                    'location' => 'FunnelConfigLoader.php:194',
-                                    'message' => 'getFromContext result (Method 3-Template)',
-                                    'data' => ['id' => $renderedPostId, 'found' => !!$contextCache],
-                                    'timestamp' => (int)(microtime(true) * 1000),
-                                    'sessionId' => 'debug-session',
-                                    'runId' => 'run1',
-                                    'hypothesisId' => 'D'
-                                ]);
-                                @file_put_contents($log_path, $log_entry . PHP_EOL, FILE_APPEND);
-                                // #endregion
                                 return $contextCache;
                             }
                         }
@@ -218,35 +140,11 @@ class FunnelConfigLoader
             if ($funnelPost) {
                 $contextCache = self::getById($funnelPost->ID);
                 $contextLookedUp = true;
-                // #region agent log
-                $log_entry = json_encode([
-                    'location' => 'FunnelConfigLoader.php:222',
-                    'message' => 'getFromContext result (Method 4)',
-                    'data' => ['slug' => $slug, 'found' => !!$contextCache],
-                    'timestamp' => (int)(microtime(true) * 1000),
-                    'sessionId' => 'debug-session',
-                    'runId' => 'run1',
-                    'hypothesisId' => 'D'
-                ]);
-                @file_put_contents($log_path, $log_entry . PHP_EOL, FILE_APPEND);
-                // #endregion
                 return $contextCache;
             }
         }
         
         $contextLookedUp = true;
-        // #region agent log
-        $log_entry = json_encode([
-            'location' => 'FunnelConfigLoader.php:239',
-            'message' => 'getFromContext result (Fail)',
-            'data' => [],
-            'timestamp' => (int)(microtime(true) * 1000),
-            'sessionId' => 'debug-session',
-            'runId' => 'run1',
-            'hypothesisId' => 'D'
-        ]);
-        @file_put_contents($log_path, $log_entry . PHP_EOL, FILE_APPEND);
-        // #endregion
         return null;
     }
 

@@ -24,13 +24,19 @@ class ShortcodeRegistry
             add_shortcode(
                 $slug,
                 function ($atts = []) use ($slug, $config, $enabled) {
+                    if (!in_array($slug, $enabled, true)) {
+                        // Shortcode is configured but disabled → render nothing and do not enqueue assets.
+                        return '';
+                    }
+
                     // #region agent log
                     $log_path = '/www/holisticpeoplecom_349/public/wp-content/debug-cursor.log';
                     $log_entry = json_encode([
-                        'location' => 'ShortcodeRegistry.php:27',
-                        'message' => 'Shortcode callback start',
+                        'location' => 'ShortcodeRegistry.php:32',
+                        'message' => 'Shortcode rendering',
                         'data' => [
                             'slug' => $slug,
+                            'is_editor' => Plugin::is_elementor_editor(),
                             'enabled' => in_array($slug, $enabled, true)
                         ],
                         'timestamp' => (int)(microtime(true) * 1000),
@@ -40,11 +46,6 @@ class ShortcodeRegistry
                     ]);
                     @file_put_contents($log_path, $log_entry . PHP_EOL, FILE_APPEND);
                     // #endregion
-
-                    if (!in_array($slug, $enabled, true)) {
-                        // Shortcode is configured but disabled → render nothing and do not enqueue assets.
-                        return '';
-                    }
 
                     // Optimization: If in Elementor Editor UI, render a lightweight placeholder.
                     // This prevents React/Underscore script collisions and speeds up editor load.
