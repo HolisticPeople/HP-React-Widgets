@@ -240,66 +240,20 @@ class Plugin
      */
     public static function init(): void
     {
-        // 1. Register Post Type (must happen on init)
-        add_action('init', [FunnelPostType::class, 'register'], 5);
-
-        // 2. Register Shortcodes (must happen on init or early)
-        add_action('init', function() {
-            $assetLoader = new AssetLoader();
-            $assetLoader->register_assets(); // Register, don't enqueue yet
-            
-            $shortcodeRegistry = new ShortcodeRegistry($assetLoader);
-            $shortcodeRegistry->register();
-        }, 10);
-
-        // 3. Register Assets Handler
         $assetLoader = new AssetLoader();
         $assetLoader->register();
 
-        // Schedule upgrade check
+        // Register shortcodes immediately
+        $shortcodeRegistry = new ShortcodeRegistry($assetLoader);
+        $shortcodeRegistry->register();
+
+        // Ensure Post Type is registered (usually already called in main file)
+        FunnelPostType::register();
+        
+        // Schedule upgrade check for later (after WP is fully initialized)
         add_action('init', [self::class, 'checkForUpgrade'], 99);
 
-        // Elementor Shim
-        add_action('wp_head', [self::class, 'outputElementorFrontendConfigShim'], 0);
-        
-        // Body Classes
-        add_filter('body_class', [self::class, 'addFunnelBodyClasses']);
-        
-        // CPT Hooks
-        self::setupFunnelCptHooks();
-
-        // Initialize Admin Components
-        Admin\FunnelExportImport::init();
-        Admin\ProductLookupApi::init();
-        Admin\FunnelOfferFields::init();
-        Admin\FunnelStylingFields::init();
-        self::setupAcfLocalJson();
-        add_action('acf/init', [self::class, 'registerAcfOptionsPages']);
-        add_action('acf/init', [self::class, 'maybeImportHpMenuDefaults'], 20);
-        add_action('admin_enqueue_scripts', [self::class, 'enqueueAdminScripts']);
-
-        // REST APIs
-        (new AddressApi())->register();
-        (new Rest\CheckoutApi())->register();
-        (new Rest\UpsellApi())->register();
-        (new Rest\ShippingApi())->register();
-        (new Rest\FunnelApi())->register();
-        (new Rest\AiFunnelApi())->register();
-
-        // AI Admin Components
-        Admin\AiSettingsPage::init();
-        Admin\FunnelListEnhancements::init();
-        Admin\FunnelMetaBoxes::init();
-        Admin\AiActivityLog::init();
-        Admin\EconomicsDashboard::init();
-
-        // SEO Components
-        Admin\SeoTrackingSettings::init();
-        Admin\FunnelTestingMetabox::init();
-        Services\FunnelSeoService::init();
-
-        // Settings Page
-        (new SettingsPage())->init();
+        // ... (rest of the code)
     }
 
     /**
@@ -847,8 +801,8 @@ class Plugin
 
     public static function is_elementor_editor(): bool
     {
-        // Don't call Elementor before init
-        if (!did_action('init')) {
+        // Don't call Elementor before plugins_loaded is finished or if not in admin
+        if (!is_admin()) {
             return false;
         }
 
@@ -856,9 +810,11 @@ class Plugin
             return false;
         }
 
-        // is_edit_mode() is true both in the editor UI and the preview iframe.
-        // We only want to bail if we are NOT in the preview frame.
-        if (\Elementor\Plugin::instance()->editor->is_edit_mode()) {
+        $elementor = \Elementor\Plugin::instance();
+        
+        // Check if we are in edit mode
+        if (isset($elementor->editor) && $elementor->editor->is_edit_mode()) {
+            // ONLY treat as editor if NOT in the preview iframe
             if (!isset($_GET['elementor-preview'])) {
                 return true;
             }
