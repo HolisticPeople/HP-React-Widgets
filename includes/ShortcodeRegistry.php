@@ -25,7 +25,7 @@ class ShortcodeRegistry
                 $slug,
                 function ($atts = []) use ($slug, $config, $enabled) {
                     if (!in_array($slug, $enabled, true)) {
-                        // Shortcode is configured but disabled ?åÆ render nothing and do not enqueue assets.
+                        // Shortcode is configured but disabled â†’ render nothing and do not enqueue assets.
                         return '';
                     }
 
@@ -49,23 +49,6 @@ class ShortcodeRegistry
      */
     private function renderGeneric(array $config, array $atts): string
     {
-        // #region agent log
-        $log_path = '/www/holisticpeoplecom_349/public/wp-content/debug-cursor.log';
-        $log_entry = json_encode([
-            'location' => 'ShortcodeRegistry.php:52',
-            'message' => 'renderGeneric start',
-            'data' => [
-                'component' => $config['component'] ?? 'unknown',
-                'atts' => $atts
-            ],
-            'timestamp' => (int)(microtime(true) * 1000),
-            'sessionId' => 'debug-session',
-            'runId' => 'run1',
-            'hypothesisId' => 'C'
-        ]);
-        @file_put_contents($log_path, $log_entry . PHP_EOL, FILE_APPEND);
-        // #endregion
-
         // Enqueue the React bundle (only loads on pages with this shortcode).
         AssetLoader::enqueue_bundle();
 
