@@ -19,14 +19,15 @@ class ShortcodeRegistry
         $allShortcodes = Plugin::get_shortcodes();
 
         foreach ($allShortcodes as $slug => $config) {
-            // Register every known shortcode so Elementor/WP never shows the raw [shortcode] text.
-            // Rendering logic checks whether it is enabled, and if not, returns an empty string.
             add_shortcode(
                 $slug,
                 function ($atts = []) use ($slug, $config, $enabled) {
                     if (!in_array($slug, $enabled, true)) {
-                        // Shortcode is configured but disabled → render nothing and do not enqueue assets.
                         return '';
+                    }
+
+                    if (Plugin::is_elementor_editor()) {
+                        return Plugin::get_editor_placeholder($config['label'] ?? $slug);
                     }
 
                     return $this->renderGeneric($config, (array) $atts);

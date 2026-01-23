@@ -872,39 +872,26 @@ class Plugin
         update_option(self::OPTION_SHORTCODE_DESCRIPTIONS, $descriptions);
     }
 
-    /**
-     * Detect if we are currently in the Elementor Editor (main window).
-     * This is used to prevent heavy logic and script collisions in the editor UI.
-     *
-     * @return bool True if in Elementor Editor but NOT the preview frame.
-     */
     public static function is_elementor_editor(): bool
     {
         if (!class_exists('\\Elementor\\Plugin')) {
             return false;
         }
-
-        // Simplest check: is_admin() + action=elementor
-        if (is_admin() && isset($_GET['action']) && $_GET['action'] === 'elementor') {
-            return true;
+        $elementor = \Elementor\Plugin::instance();
+        if (isset($elementor->editor) && $elementor->editor->is_edit_mode()) {
+            if (!isset($_GET['elementor-preview'])) {
+                return true;
+            }
         }
-
         return false;
     }
 
-    /**
-     * Get a placeholder for Elementor Editor display.
-     *
-     * @param string $label The shortcode label
-     * @return string HTML placeholder
-     */
     public static function get_editor_placeholder(string $label): string
     {
         return sprintf(
-            '<div class="hp-shortcode-placeholder" style="padding: 15px; background: #f9f9f9; border: 1px dashed #2271b1; border-radius: 4px; color: #2271b1; font-family: sans-serif; font-size: 13px; text-align: center; margin: 10px 0;">
-                <span class="dashicons dashicons-layout" style="vertical-align: middle; margin-right: 5px;"></span>
-                <strong>HP Widget:</strong> %s
-                <div style="font-size: 11px; color: #666; margin-top: 4px;">(Preview available in live frame)</div>
+            '<div class="hp-shortcode-placeholder" style="padding: 20px; background: #f0f7ff; border: 2px dashed #2271b1; border-radius: 8px; color: #2271b1; font-family: sans-serif; text-align: center; margin: 10px 0;">
+                <div style="font-weight: bold; margin-bottom: 5px;">HP Widget: %s</div>
+                <div style="font-size: 11px; color: #666;">(Live design visible in preview frame)</div>
             </div>',
             esc_html($label)
         );
