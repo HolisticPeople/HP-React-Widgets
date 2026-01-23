@@ -1576,6 +1576,158 @@ class FunnelConfigLoader
     }
 
     /**
+     * Inject global background assets (CSS/JS) if not already injected.
+     * This handles full-width section backgrounds and stable ID mapping.
+     *
+     * @param array $config The funnel configuration.
+     * @return string HTML/CSS/JS assets or empty string.
+     */
+    public static function getBackgroundAssets(array $config): string
+    {
+        static $assetsInjected = false;
+        if ($assetsInjected) {
+            return '';
+        }
+
+        $output = '';
+        $sectionBackgrounds = $config['styling']['section_backgrounds'] ?? [];
+        if (empty($sectionBackgrounds)) {
+            $assetsInjected = true;
+            return '';
+        }
+
+        $pageBgColor = sanitize_hex_color($config['styling']['page_bg_color']) ?: '#121212';
+
+        // 1. Generate Global CSS
+        $output .= '<style>
+            body { overflow-x: hidden !important; }
+            .hp-funnel-section.hp-has-bg {
+                width: 100vw !important;
+                position: relative !important;
+                left: 50% !important;
+                right: 50% !important;
+                margin-left: -50vw !important;
+                margin-right: -50vw !important;
+                margin-top: 0 !important;
+                margin-bottom: 0 !important;
+                padding-left: calc(50vw - 50%) !important;
+                padding-right: calc(50vw - 50%) !important;
+                box-sizing: border-box !important;
+            }
+            .hp-funnel-section.hp-funnel-infographics {
+                margin-top: 0 !important;
+                margin-bottom: 0 !important;
+            }
+        </style>';
+
+        // 2. Generate Application Script
+        $output .= '<script>
+            (function() {
+                var classToType = {
+                    "hp-funnel-hero-section": "hero",
+                    "hp-funnel-benefits": "benefits",
+                    "hp-funnel-products": "offers",
+                    "hp-funnel-features": "features",
+                    "hp-funnel-authority": "authority",
+                    "hp-funnel-testimonials": "testimonials",
+                    "hp-funnel-faq": "faq",
+                    "hp-funnel-cta": "cta",
+                    "hp-funnel-science": "science",
+                    "hp-funnel-infographics": "infographics"
+                };
+
+                function applyBackgrounds() {
+                    var sections = document.querySelectorAll(".hp-funnel-section");
+                    var typeOccurrences = {};
+                    var backgroundMap = window.hpFunnelBackgroundMap || {};
+
+                    sections.forEach(function(section) {
+                        var className = section.className;
+                        var sectionType = null;
+                        for (var pattern in classToType) {
+                            if (className.indexOf(pattern) !== -1) {
+                                sectionType = classToType[pattern];
+                                break;
+                            }
+                        }
+                        if (!sectionType) return;
+
+                        var stableId;
+                        if (sectionType === "infographics") {
+                            var infoIndex = section.getAttribute("data-info-index");
+                            stableId = infoIndex ? "infographics_" + infoIndex : null;
+                        }
+                        
+                        if (!stableId) {
+                            if (!typeOccurrences[sectionType]) typeOccurrences[sectionType] = 0;
+                            typeOccurrences[sectionType]++;
+                            stableId = sectionType + "_" + typeOccurrences[sectionType];
+                        }
+
+                        var background = backgroundMap[stableId];
+                        if (background && background !== "transparent") {
+                            section.classList.add("hp-has-bg");
+                            section.style.setProperty("background", background, "important");
+                        }
+                        section.setAttribute("data-section-id", stableId);
+                    });
+                }
+
+                window.hpApplyFunnelBackgrounds = applyBackgrounds;
+                if (document.readyState === "loading") {
+                    document.addEventListener("DOMContentLoaded", applyBackgrounds);
+                } else {
+                    setTimeout(applyBackgrounds, 100);
+                }
+            })();
+        </script>';
+
+        $assetsInjected = true;
+        return $output;
+    }
+
+    /**
+     * Get specific background map script for a request.
+     *
+     * @param array $config The funnel configuration.
+     * @return string JS script block.
+     */
+    public static function getBackgroundMapScript(array $config): string
+    {
+        $sectionBackgrounds = $config['styling']['section_backgrounds'] ?? [];
+        if (empty($sectionBackgrounds)) {
+            return '';
+        }
+
+        $pageBgColor = sanitize_hex_color($config['styling']['page_bg_color']) ?: '#121212';
+        $backgroundMap = [];
+
+        foreach ($sectionBackgrounds as $section) {
+            $sectionId = $section['section_id'];
+            $bgType = $section['background_type'] ?? 'none';
+
+            if ($bgType === 'none') {
+                $backgroundMap[$sectionId] = 'transparent';
+            } elseif ($bgType === 'solid') {
+                $backgroundMap[$sectionId] = sanitize_hex_color($section['gradient_start_color']) ?: '#1a1a2e';
+            } elseif ($bgType === 'gradient') {
+                $backgroundMap[$sectionId] = \HP_RW\Services\GradientGenerator::generateGradient([
+                    'gradient_type' => $section['gradient_type'] ?? 'linear',
+                    'gradient_preset' => $section['gradient_preset'] ?? 'vertical-down',
+                    'color_mode' => $section['color_mode'] ?? 'auto',
+                    'gradient_start_color' => $section['gradient_start_color'] ?? '',
+                    'gradient_end_color' => $section['gradient_end_color'] ?? '',
+                ], $section['gradient_start_color'] ?? '#1a1a2e', $pageBgColor);
+            }
+        }
+
+        return sprintf(
+            '<script>window.hpFunnelBackgroundMap = Object.assign(window.hpFunnelBackgroundMap || {}, %s); if(window.hpApplyFunnelBackgrounds) window.hpApplyFunnelBackgrounds();</script>',
+            wp_json_encode($backgroundMap)
+        );
+    }
+
+    /**
      * Deeply convert objects to arrays.
      * 
      * @param mixed $value Value to convert
