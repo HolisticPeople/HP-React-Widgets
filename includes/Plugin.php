@@ -1070,8 +1070,11 @@ class Plugin
         }
 
         // Optimization: Skip sync in Elementor editor mode to prevent slow loads
-        if (class_exists('\\Elementor\\Plugin') && \Elementor\Plugin::instance()->editor->is_edit_mode()) {
-            return;
+        if (class_exists('\\Elementor\\Plugin')) {
+            $elementor = \Elementor\Plugin::instance();
+            if (isset($elementor->editor) && $elementor->editor->is_edit_mode() && !isset($_GET['elementor-preview'])) {
+                return;
+            }
         }
 
         // Check if we need a forced sync due to version change

@@ -52,43 +52,27 @@ class FunnelConfigLoader
     {
         $debug = defined('WP_DEBUG') && WP_DEBUG;
         
-        if ($debug) {
-            error_log('[HP-RW] getFromContext: Starting lookup. REQUEST_URI: ' . ($_SERVER['REQUEST_URI'] ?? 'N/A'));
-        }
-
         // Method 0: Check query var set by funnel sub-routes (checkout, thankyou, etc.)
         $queryVarFunnel = get_query_var('hp_current_funnel');
         if (!empty($queryVarFunnel) && is_array($queryVarFunnel)) {
-            if ($debug) {
-                error_log('[HP-RW] getFromContext: Found via hp_current_funnel query var');
-            }
             return $queryVarFunnel;
         }
         
         // Method 0b: Check query var for funnel slug (set by rewrite rules)
         $queryVarSlug = get_query_var('hp_funnel_slug');
         if (!empty($queryVarSlug)) {
-            if ($debug) {
-                error_log('[HP-RW] getFromContext: Found hp_funnel_slug query var: ' . $queryVarSlug);
-            }
             return self::getBySlug($queryVarSlug);
         }
         
         // Method 1: Check get_queried_object() first - most reliable for single post views
         $queried = get_queried_object();
         if ($queried instanceof \WP_Post && $queried->post_type === Plugin::FUNNEL_POST_TYPE) {
-            if ($debug) {
-                error_log('[HP-RW] getFromContext: Found via get_queried_object() - ID: ' . $queried->ID);
-            }
             return self::getById($queried->ID);
         }
         
         // Method 2: Check global $post
         global $post;
         if ($post instanceof \WP_Post && $post->post_type === Plugin::FUNNEL_POST_TYPE) {
-            if ($debug) {
-                error_log('[HP-RW] getFromContext: Found via global $post - ID: ' . $post->ID);
-            }
             return self::getById($post->ID);
         }
         
@@ -101,25 +85,15 @@ class FunnelConfigLoader
                     $postId = $document->get_main_id();
                     $templatePost = get_post($postId);
                     
-                    if ($debug) {
-                        error_log('[HP-RW] getFromContext: Elementor document main_id: ' . $postId . ', type: ' . ($templatePost ? $templatePost->post_type : 'null'));
-                    }
-
                     if ($templatePost && $templatePost->post_type === 'elementor_library') {
                         $renderedPostId = get_the_ID();
                         if ($renderedPostId && $renderedPostId !== $postId) {
                             $renderedPost = get_post($renderedPostId);
                             if ($renderedPost && $renderedPost->post_type === Plugin::FUNNEL_POST_TYPE) {
-                                if ($debug) {
-                                    error_log('[HP-RW] getFromContext: Template context. renderedPostId: ' . $renderedPostId);
-                                }
                                 return self::getById($renderedPostId);
                             }
                         }
                     } else if ($templatePost && $templatePost->post_type === Plugin::FUNNEL_POST_TYPE) {
-                        if ($debug) {
-                            error_log('[HP-RW] getFromContext: Found via Elementor document ID');
-                        }
                         return self::getById($postId);
                     }
                 }
@@ -130,20 +104,10 @@ class FunnelConfigLoader
         $requestUri = $_SERVER['REQUEST_URI'] ?? '';
         if (preg_match('#/express-shop/([^/]+)/?#', $requestUri, $matches)) {
             $slug = sanitize_title($matches[1]);
-            if ($debug) {
-                error_log('[HP-RW] getFromContext: URL parsing fallback. Slug: ' . $slug);
-            }
             $funnelPost = self::findPostBySlug($slug);
             if ($funnelPost) {
-                if ($debug) {
-                    error_log('[HP-RW] getFromContext: Found via URL parse - ID: ' . $funnelPost->ID);
-                }
                 return self::getById($funnelPost->ID);
             }
-        }
-        
-        if ($debug) {
-            error_log('[HP-RW] getFromContext: NO FUNNEL FOUND');
         }
         
         return null;
