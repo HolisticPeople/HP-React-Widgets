@@ -878,12 +878,18 @@ class Plugin
             return false;
         }
         $elementor = \Elementor\Plugin::instance();
+        $is_editor = false;
         if (isset($elementor->editor) && $elementor->editor->is_edit_mode()) {
             if (!isset($_GET['elementor-preview'])) {
-                return true;
+                $is_editor = true;
             }
         }
-        return false;
+
+        // #region agent log
+        file_put_contents('c:\DEV\WC Plugins\My Plugins\HP-React-Widgets\.cursor\debug.log', json_encode(['location'=>'Plugin.php:is_elementor_editor','message'=>'Editor detection','data'=>['is_editor'=>$is_editor,'uri'=>$_SERVER['REQUEST_URI'] ?? 'N/A'],'timestamp'=>microtime(true)*1000,'sessionId'=>'debug-session','hypothesisId'=>'B'])."\n", FILE_APPEND);
+        // #endregion
+
+        return $is_editor;
     }
 
     public static function get_editor_placeholder(string $label): string

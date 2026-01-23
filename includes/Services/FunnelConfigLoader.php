@@ -50,6 +50,14 @@ class FunnelConfigLoader
      */
     public static function getFromContext(): ?array
     {
+        // #region agent log
+        static $logOnce = false;
+        if (!$logOnce) {
+            file_put_contents('c:\DEV\WC Plugins\My Plugins\HP-React-Widgets\.cursor\debug.log', json_encode(['location'=>'FunnelConfigLoader.php:getFromContext','message'=>'getFromContext entry','data'=>['uri'=>$_SERVER['REQUEST_URI'] ?? 'N/A'],'timestamp'=>microtime(true)*1000,'sessionId'=>'debug-session','hypothesisId'=>'C'])."\n", FILE_APPEND);
+            $logOnce = true;
+        }
+        // #endregion
+
         // Method 0: Check query var set by funnel sub-routes (checkout, thankyou, etc.)
         $queryVarFunnel = get_query_var('hp_current_funnel');
         if (!empty($queryVarFunnel) && is_array($queryVarFunnel)) {
