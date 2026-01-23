@@ -20,6 +20,39 @@ class FunnelConfigLoader
     private const CACHE_TTL = HOUR_IN_SECONDS;
 
     /**
+     * Map shortcode names to section types.
+     * Used for parsing page content and generating stable occurrence IDs.
+     */
+    private const SHORTCODE_TYPE_MAP = [
+        'hp_funnel_hero_section' => 'hero',
+        'hp_funnel_benefits'     => 'benefits',
+        'hp_funnel_products'     => 'offers',
+        'hp_funnel_features'     => 'features',
+        'hp_funnel_authority'    => 'authority',
+        'hp_funnel_testimonials' => 'testimonials',
+        'hp_funnel_faq'          => 'faq',
+        'hp_funnel_cta'          => 'cta',
+        'hp_funnel_science'      => 'science',
+        'hp_funnel_infographics' => 'infographics',
+    ];
+
+    /**
+     * Section type labels for admin display.
+     */
+    private const SECTION_LABELS = [
+        'hero'         => 'Hero',
+        'benefits'     => 'Benefits',
+        'offers'       => 'Offers',
+        'features'     => 'Features',
+        'authority'    => 'Expert',
+        'testimonials' => 'Reviews',
+        'faq'          => 'FAQ',
+        'cta'          => 'CTA',
+        'science'      => 'Science',
+        'infographics' => 'Comparison',
+    ];
+
+    /**
      * Static request-level cache to avoid redundant database/ACF calls.
      * @var array<string,array>
      */
@@ -744,7 +777,7 @@ class FunnelConfigLoader
 
         // Migrate if legacy fields exist and no new mode is set
         if ($legacyAlternateBg && !$sectionBackgroundMode) {
-            // Migrate: old alternating → new alternating with solid color
+            // Migrate: old alternating ? new alternating with solid color
             update_field('section_background_mode', 'alternating', $postId);
             update_field('alternating_type', 'solid', $postId);
             update_field('alternating_solid_color', $legacyAlternateColor ?: '#1a1a2e', $postId);
@@ -1779,39 +1812,6 @@ class FunnelConfigLoader
 
         return $result;
     }
-
-    /**
-     * Map shortcode names to section types.
-     * Used for parsing page content and generating stable occurrence IDs.
-     */
-    private const SHORTCODE_TYPE_MAP = [
-        'hp_funnel_hero_section' => 'hero',
-        'hp_funnel_benefits'     => 'benefits',
-        'hp_funnel_products'     => 'offers',
-        'hp_funnel_features'     => 'features',
-        'hp_funnel_authority'    => 'authority',
-        'hp_funnel_testimonials' => 'testimonials',
-        'hp_funnel_faq'          => 'faq',
-        'hp_funnel_cta'          => 'cta',
-        'hp_funnel_science'      => 'science',
-        'hp_funnel_infographics' => 'infographics',
-    ];
-
-    /**
-     * Section type labels for admin display.
-     */
-    private const SECTION_LABELS = [
-        'hero'         => 'Hero',
-        'benefits'     => 'Benefits',
-        'offers'       => 'Offers',
-        'features'     => 'Features',
-        'authority'    => 'Expert',
-        'testimonials' => 'Reviews',
-        'faq'          => 'FAQ',
-        'cta'          => 'CTA',
-        'science'      => 'Science',
-        'infographics' => 'Comparison',
-    ];
 
     /**
      * Detect which sections are actually configured in the funnel.

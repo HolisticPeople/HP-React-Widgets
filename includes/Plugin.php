@@ -240,7 +240,6 @@ class Plugin
      */
     public static function init(): void
     {
-        error_log("[HP-RW] Plugin::init starting");
         // Register the HP Funnel custom post type (fallback if not registered by ACF Pro)
         FunnelPostType::init();
         
@@ -322,14 +321,12 @@ class Plugin
         Services\FunnelSeoService::init();
 
         // Register shortcodes based on current settings.
-        error_log("[HP-RW] Registering shortcodes");
         $shortcodeRegistry = new ShortcodeRegistry($assetLoader);
         $shortcodeRegistry->register();
 
         // Register the admin settings page for managing shortcodes.
         $settingsPage = new SettingsPage();
         $settingsPage->init();
-        error_log("[HP-RW] Plugin::init complete");
     }
 
     /**
