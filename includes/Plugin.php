@@ -247,17 +247,86 @@ class Plugin
         $shortcodeRegistry = new ShortcodeRegistry($assetLoader);
         $shortcodeRegistry->register();
 
-        // Register debug shortcode for testing
-        add_shortcode('hp_debug_test', function() {
-            return '<div style="background: red; color: white; padding: 20px; text-align: center;">HP DEBUG SHORTCODE WORKING</div>';
-        });
-
         // Register the HP Funnel custom post type (fallback if not registered by ACF Pro)
         FunnelPostType::init();
         
         // Schedule upgrade check for later (after WP is fully initialized)
         add_action('init', [self::class, 'checkForUpgrade'], 99);
-        // ... (rest of the code)
+
+        // Elementor sometimes runs its frontend bundle before localizing `elementorFrontendConfig`,
+        // which throws a ReferenceError and can cascade into other plugin errors.
+        // This shim is safe and tiny; it just guarantees the global exists early.
+        add_action('wp_head', [self::class, 'outputElementorFrontendConfigShim'], 0);
+        
+        // Add funnel-specific body classes for styling
+        add_filter('body_class', [self::class, 'addFunnelBodyClasses']);
+        
+        // Set up funnel CPT customizations (CPT registered via ACF Pro)
+        self::setupFunnelCptHooks();
+
+        // Initialize Funnel Export/Import admin page
+        Admin\FunnelExportImport::init();
+
+        // Initialize Product Lookup API for admin
+        Admin\ProductLookupApi::init();
+
+        // Initialize Funnel Offer ACF fields
+        Admin\FunnelOfferFields::init();
+
+        // Initialize Funnel Styling ACF fields & admin UI
+        Admin\FunnelStylingFields::init();
+
+        // Setup ACF Local JSON sync for version control
+        self::setupAcfLocalJson();
+
+        // Register ACF options pages
+        add_action('acf/init', [self::class, 'registerAcfOptionsPages']);
+
+        // Import default HP Menu data if not configured
+        add_action('acf/init', [self::class, 'maybeImportHpMenuDefaults'], 20);
+
+        // Enqueue admin scripts for funnel editing
+        add_action('admin_enqueue_scripts', [self::class, 'enqueueAdminScripts']);
+
+        // Register REST API endpoints for widget interactions.
+        $addressApi = new AddressApi();
+        $addressApi->register();
+
+        // Register checkout REST API endpoints.
+        $checkoutApi = new Rest\CheckoutApi();
+        $checkoutApi->register();
+
+        // Register upsell REST API endpoints.
+        $upsellApi = new Rest\UpsellApi();
+        $upsellApi->register();
+
+        // Register shipping rates REST API endpoints.
+        $shippingApi = new Rest\ShippingApi();
+        $shippingApi->register();
+
+        // Register funnel import/export REST API endpoints.
+        $funnelApi = new Rest\FunnelApi();
+        $funnelApi->register();
+
+        // Register AI Funnel REST API endpoints (Phase 1: Funnel Generation Capability).
+        $aiFunnelApi = new Rest\AiFunnelApi();
+        $aiFunnelApi->register();
+
+        // Initialize AI admin components.
+        Admin\AiSettingsPage::init();
+        Admin\FunnelListEnhancements::init();
+        Admin\FunnelMetaBoxes::init();
+        Admin\AiActivityLog::init();
+        Admin\EconomicsDashboard::init();
+
+        // Initialize SEO & Tracking components (Smart Bridge).
+        Admin\SeoTrackingSettings::init();
+        Admin\FunnelTestingMetabox::init();
+        Services\FunnelSeoService::init();
+
+        // Register the admin settings page for managing shortcodes.
+        $settingsPage = new SettingsPage();
+        $settingsPage->init();
     }
 
     /**
