@@ -153,6 +153,7 @@ class FunnelImporter
             self::importScience($postId, $data['science'] ?? []);
             self::importSeo($postId, $data['seo'] ?? []);
             self::importResponsive($postId, $data['responsive'] ?? []);
+            self::importInfographics($postId, $data['infographics'] ?? []);
 
             // Clear cache
             FunnelConfigLoader::clearCache($postId);
@@ -197,6 +198,9 @@ class FunnelImporter
         foreach ($offerItems as $o) {
             if (empty($o['id']) || empty($o['type'])) continue;
 
+            // Sideload offer image
+            $offerImageId = self::sideloadImage($o['image'] ?? '', $postId);
+            
             $offer = [
                 'offer_id' => $o['id'],
                 'offer_name' => $o['name'] ?? '',
@@ -205,7 +209,7 @@ class FunnelImporter
                 'offer_enabled' => isset($o['enabled']) ? (bool) $o['enabled'] : true, // Round 2
                 'offer_badge' => $o['badge'] ?? '',
                 'offer_is_featured' => !empty($o['is_featured']),
-                'offer_image' => $o['image'] ?? '',
+                'offer_image' => $offerImageId ?: ($o['image'] ?? ''),
                 'offer_image_alt' => $o['image_alt'] ?? '',
                 'offer_discount_label' => $o['discount_label'] ?? '',
                 'offer_price' => $o['price'] ?? 0,
@@ -357,8 +361,8 @@ class FunnelImporter
     {
         if (empty($header)) return;
 
-        self::setField($postId, 'header_logo', $header['logo'] ?? null);
-        self::setUrlField($postId, 'header_logo_link', $header['logo_link'] ?? null);
+        self::setImageField($postId, 'header_logo', $header['logo'] ?? null);
+        self::setUrlField($postId, 'header_logo_link', $header['logo_link'] ?? '');
         self::setField($postId, 'header_sticky', !empty($header['sticky']));
         self::setField($postId, 'header_transparent', !empty($header['transparent']));
         
@@ -384,10 +388,10 @@ class FunnelImporter
         self::setField($postId, 'hero_subtitle', $hero['subtitle'] ?? null);
         self::setField($postId, 'hero_tagline', $hero['tagline'] ?? null);
         self::setField($postId, 'hero_description', $hero['description'] ?? null);
-        self::setUrlField($postId, 'hero_image', $hero['image'] ?? null);
+        self::setImageField($postId, 'hero_image', $hero['image'] ?? null);
         self::setField($postId, 'hero_image_alt', $hero['image_alt'] ?? null);
-        self::setUrlField($postId, 'hero_logo', $hero['logo'] ?? null);
-        self::setUrlField($postId, 'hero_logo_link', $hero['logo_link'] ?? null);
+        self::setImageField($postId, 'hero_logo', $hero['logo'] ?? null);
+        self::setUrlField($postId, 'hero_logo_link', $hero['logo_link'] ?? '');
         self::setField($postId, 'hero_cta_text', $hero['cta_text'] ?? null);
     }
 
@@ -424,12 +428,15 @@ class FunnelImporter
         foreach ($products as $p) {
             if (empty($p['sku'])) continue;
 
+            // Sideload product image
+            $productImageId = self::sideloadImage($p['image'] ?? '', $postId);
+
             $product = [
                 'sku' => $p['sku'],
                 'display_name' => $p['display_name'] ?? '',
                 'display_price' => $p['display_price'] ?? '',
                 'description' => $p['description'] ?? '',
-                'image' => $p['image'] ?? '',
+                'image' => $productImageId ?: ($p['image'] ?? ''),
                 'badge' => $p['badge'] ?? '',
                 'is_best_value' => !empty($p['is_best_value']),
                 'free_item_sku' => $p['free_item_sku'] ?? '',
@@ -481,7 +488,7 @@ class FunnelImporter
         self::setField($postId, 'authority_subtitle', $authority['subtitle'] ?? null);
         self::setField($postId, 'authority_name', $authority['name'] ?? null);
         self::setField($postId, 'authority_credentials', $authority['credentials'] ?? null);
-        self::setField($postId, 'authority_image', $authority['image'] ?? null);
+        self::setImageField($postId, 'authority_image', $authority['image'] ?? null);
         self::setField($postId, 'authority_image_alt', $authority['image_alt'] ?? null);
         self::setField($postId, 'authority_bio', $authority['bio'] ?? null);
         
@@ -520,16 +527,21 @@ class FunnelImporter
         self::setField($postId, 'testimonials_subtitle', $testimonials['subtitle'] ?? null);
         
         if (!empty($testimonials['items'])) {
-            self::setField($postId, 'testimonials_list', array_map(function($t) {
-                return [
+            $testimonialsData = [];
+            foreach ($testimonials['items'] as $t) {
+                // Sideload testimonial image
+                $imageId = self::sideloadImage($t['image'] ?? '', $postId);
+                
+                $testimonialsData[] = [
                     'name' => $t['name'] ?? null,
                     'role' => $t['role'] ?? null,
                     'title' => $t['title'] ?? null,
                     'quote' => $t['quote'] ?? null,
-                    'image' => $t['image'] ?? null,
+                    'image' => $imageId ?: ($t['image'] ?? null),
                     'rating' => $t['rating'] ?? null,
                 ];
-            }, $testimonials['items']));
+            }
+            self::setField($postId, 'testimonials_list', $testimonialsData);
         }
     }
 
@@ -627,13 +639,16 @@ class FunnelImporter
         self::setField($postId, 'show_upsell', !empty($thankyou['show_upsell']));
         
         if (!empty($thankyou['upsell']) && !empty($thankyou['upsell']['sku'])) {
+            // Sideload upsell image
+            $upsellImageId = self::sideloadImage($thankyou['upsell']['image'] ?? '', $postId);
+            
             self::setField($postId, 'upsell_config', [
                 'sku' => $thankyou['upsell']['sku'],
                 'qty' => $thankyou['upsell']['qty'] ?? null,
                 'discount_percent' => $thankyou['upsell']['discount_percent'] ?? null,
                 'headline' => $thankyou['upsell']['headline'] ?? null,
                 'description' => $thankyou['upsell']['description'] ?? null,
-                'image' => $thankyou['upsell']['image'] ?? null,
+                'image' => $upsellImageId ?: ($thankyou['upsell']['image'] ?? null),
             ]);
         }
     }
@@ -667,7 +682,7 @@ class FunnelImporter
         self::setField($postId, 'border_color', $styling['border_color'] ?? null);
         // Background type settings
         self::setField($postId, 'background_type', $styling['background_type'] ?? null);
-        self::setField($postId, 'background_image', $styling['background_image'] ?? null);
+        self::setImageField($postId, 'background_image', $styling['background_image'] ?? null);
         self::setField($postId, 'custom_css', $styling['custom_css'] ?? null);
 
         // v2.33.2: Per-section background configuration (replaces mode-based system)
@@ -843,6 +858,45 @@ class FunnelImporter
     }
 
     /**
+     * Import infographics section (v2.34.0).
+     * 
+     * Imports infographic configurations including all images with sideloading.
+     */
+    private static function importInfographics(int $postId, array $infographics): void
+    {
+        if (empty($infographics)) return;
+
+        // Handle both direct items array and wrapped format
+        $items = isset($infographics['items']) ? $infographics['items'] : $infographics;
+        
+        if (empty($items) || !is_array($items)) return;
+
+        $infographicsData = [];
+        
+        foreach ($items as $info) {
+            // Sideload all images
+            $desktopImageId = self::sideloadImage($info['desktop_image'] ?? '', $postId);
+            $titleImageId = self::sideloadImage($info['title_image'] ?? '', $postId);
+            $leftPanelId = self::sideloadImage($info['left_panel_image'] ?? '', $postId);
+            $rightPanelId = self::sideloadImage($info['right_panel_image'] ?? '', $postId);
+            
+            $infographicsData[] = [
+                'info_label' => $info['label'] ?? '',
+                'info_nav_label' => $info['nav_label'] ?? '',
+                'info_title' => $info['title'] ?? '',
+                'info_desktop_image' => $desktopImageId ?: ($info['desktop_image'] ?? ''),
+                'use_mobile_images' => !empty($info['use_mobile_images']),
+                'info_title_image' => $titleImageId ?: ($info['title_image'] ?? ''),
+                'info_left_panel' => $leftPanelId ?: ($info['left_panel_image'] ?? ''),
+                'info_right_panel' => $rightPanelId ?: ($info['right_panel_image'] ?? ''),
+                'info_alt_text' => $info['alt_text'] ?? '',
+            ];
+        }
+
+        self::setField($postId, 'funnel_infographics', $infographicsData);
+    }
+
+    /**
      * Set field using ACF update_field or fallback to post meta.
      */
     private static function setField(int $postId, string $fieldName, $value): void
@@ -858,8 +912,17 @@ class FunnelImporter
      * Set a URL field, converting relative URLs to absolute.
      * ACF URL fields require full URLs with protocol.
      */
-    private static function setUrlField(int $postId, string $fieldName, string $value): void
+    private static function setUrlField(int $postId, string $fieldName, ?string $value): void
     {
+        // #region agent log
+        file_put_contents('c:\DEV\WC Plugins\My Plugins\HP-React-Widgets\.cursor\debug.log', json_encode(['location'=>'FunnelImporter.php:setUrlField','message'=>'setUrlField called','data'=>['postId'=>$postId,'fieldName'=>$fieldName,'value'=>$value,'valueType'=>gettype($value)],'timestamp'=>time()*1000,'sessionId'=>'debug-session','hypothesisId'=>'H1'])."\n", FILE_APPEND);
+        // #endregion
+        
+        if ($value === null || $value === '') {
+            self::setField($postId, $fieldName, '');
+            return;
+        }
+        
         $absoluteUrl = self::toAbsoluteUrl($value);
         self::setField($postId, $fieldName, $absoluteUrl);
     }
@@ -907,6 +970,122 @@ class FunnelImporter
             $value = maybe_serialize($value);
         }
         update_post_meta($postId, $key, $value);
+    }
+
+    /**
+     * Sideload an image from URL to local media library.
+     * 
+     * Downloads external images and imports them into WordPress media library.
+     * Returns the attachment ID for use with ACF image fields.
+     * 
+     * @param string $url The image URL to sideload
+     * @param int $postId Optional post ID to attach the image to
+     * @return int|null Attachment ID or null on failure
+     * @since 2.34.0
+     */
+    private static function sideloadImage(string $url, int $postId = 0): ?int
+    {
+        if (empty($url)) {
+            return null;
+        }
+
+        // Check if URL is already local
+        $siteUrl = home_url();
+        if (strpos($url, $siteUrl) === 0) {
+            // Already local - try to find existing attachment
+            $attachmentId = attachment_url_to_postid($url);
+            return $attachmentId > 0 ? $attachmentId : null;
+        }
+
+        // Ensure we have the required functions
+        if (!function_exists('media_handle_sideload')) {
+            require_once ABSPATH . 'wp-admin/includes/media.php';
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            require_once ABSPATH . 'wp-admin/includes/image.php';
+        }
+
+        // Download the image to a temporary file
+        $tempFile = download_url($url, 30);
+        
+        if (is_wp_error($tempFile)) {
+            error_log('[HP-RW] Failed to download image from: ' . $url . ' - ' . $tempFile->get_error_message());
+            return null;
+        }
+
+        // Get filename from URL
+        $filename = basename(wp_parse_url($url, PHP_URL_PATH));
+        
+        // Sanitize filename
+        $filename = sanitize_file_name($filename);
+        
+        // If no extension, try to detect from content type
+        if (!pathinfo($filename, PATHINFO_EXTENSION)) {
+            $mimeType = mime_content_type($tempFile);
+            $ext = '';
+            switch ($mimeType) {
+                case 'image/jpeg':
+                    $ext = '.jpg';
+                    break;
+                case 'image/png':
+                    $ext = '.png';
+                    break;
+                case 'image/gif':
+                    $ext = '.gif';
+                    break;
+                case 'image/webp':
+                    $ext = '.webp';
+                    break;
+            }
+            $filename .= $ext;
+        }
+
+        // Prepare file array for sideloading
+        $fileArray = [
+            'name'     => $filename,
+            'tmp_name' => $tempFile,
+        ];
+
+        // Sideload the image
+        $attachmentId = media_handle_sideload($fileArray, $postId);
+
+        // Clean up temp file if still exists
+        if (file_exists($tempFile)) {
+            @unlink($tempFile);
+        }
+
+        if (is_wp_error($attachmentId)) {
+            error_log('[HP-RW] Failed to sideload image: ' . $attachmentId->get_error_message());
+            return null;
+        }
+
+        return (int) $attachmentId;
+    }
+
+    /**
+     * Set an image field, sideloading external images to local media library.
+     * 
+     * @param int $postId The post ID
+     * @param string $fieldName The ACF field name
+     * @param string|null $imageUrl The image URL (can be external or local)
+     * @since 2.34.0
+     */
+    private static function setImageField(int $postId, string $fieldName, ?string $imageUrl): void
+    {
+        if (empty($imageUrl)) {
+            self::setField($postId, $fieldName, null);
+            return;
+        }
+
+        // Try to sideload the image
+        $attachmentId = self::sideloadImage($imageUrl, $postId);
+        
+        if ($attachmentId) {
+            // ACF image fields expect attachment ID
+            self::setField($postId, $fieldName, $attachmentId);
+        } else {
+            // Fallback to URL if sideload fails
+            self::setField($postId, $fieldName, $imageUrl);
+        }
     }
 }
 

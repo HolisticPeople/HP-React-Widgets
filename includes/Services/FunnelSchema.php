@@ -563,7 +563,21 @@ class FunnelSchema
 
         // Validate offers if present
         if (isset($data['offers']) && is_array($data['offers'])) {
-            foreach ($data['offers'] as $i => $offer) {
+            // Handle both formats:
+            // - New format: {section_title: string, items: array}
+            // - Legacy format: flat array of offer objects
+            $offerItems = $data['offers'];
+            if (isset($data['offers']['items']) && is_array($data['offers']['items'])) {
+                // New format with section_title and items
+                $offerItems = $data['offers']['items'];
+            }
+            
+            foreach ($offerItems as $i => $offer) {
+                // Skip if this is a non-numeric key from the new format (like 'section_title')
+                if (!is_array($offer)) {
+                    continue;
+                }
+                
                 if (empty($offer['id'])) {
                     $errors[] = "Offer at index $i is missing required 'id' field";
                 }

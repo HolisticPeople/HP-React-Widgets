@@ -107,6 +107,7 @@ class FunnelExporter
             'footer' => self::exportFooter($postId),
             'science' => self::exportScience($postId),
             'responsive' => self::exportResponsive($postId),
+            'infographics' => self::exportInfographics($postId),
         ];
 
         // Remove empty sections
@@ -583,6 +584,40 @@ class FunnelExporter
                     'height_behavior' => FunnelConfigLoader::getFieldValue('responsive_cta_height_behavior', $postId),
                 ],
             ],
+        ];
+    }
+
+    /**
+     * Export infographics section (v2.34.0).
+     * 
+     * Exports all infographic configurations including desktop and mobile images.
+     */
+    private static function exportInfographics(int $postId): array
+    {
+        $infographics = FunnelConfigLoader::getFieldValue('funnel_infographics', $postId) ?: [];
+        $items = [];
+
+        foreach ($infographics as $info) {
+            $item = [
+                'label' => $info['info_label'] ?? '',
+                'nav_label' => $info['info_nav_label'] ?? '',
+                'title' => $info['info_title'] ?? '',
+                'desktop_image' => self::resolveImageUrl($info['info_desktop_image'] ?? null),
+                'use_mobile_images' => !empty($info['use_mobile_images']),
+                'title_image' => self::resolveImageUrl($info['info_title_image'] ?? null),
+                'left_panel_image' => self::resolveImageUrl($info['info_left_panel'] ?? null),
+                'right_panel_image' => self::resolveImageUrl($info['info_right_panel'] ?? null),
+                'alt_text' => $info['info_alt_text'] ?? '',
+            ];
+
+            // Only include if there's at least a desktop image or label
+            if (!empty($item['desktop_image']) || !empty($item['label'])) {
+                $items[] = $item;
+            }
+        }
+
+        return [
+            'items' => $items,
         ];
     }
 
