@@ -50,20 +50,6 @@ class FunnelConfigLoader
      */
     public static function getFromContext(): ?array
     {
-        $debug = defined('WP_DEBUG') && WP_DEBUG;
-        
-        // Method 0: Check query var set by funnel sub-routes (checkout, thankyou, etc.)
-        $queryVarFunnel = get_query_var('hp_current_funnel');
-        if (!empty($queryVarFunnel) && is_array($queryVarFunnel)) {
-            return $queryVarFunnel;
-        }
-        
-        // Method 0b: Check query var for funnel slug (set by rewrite rules)
-        $queryVarSlug = get_query_var('hp_funnel_slug');
-        if (!empty($queryVarSlug)) {
-            return self::getBySlug($queryVarSlug);
-        }
-        
         // Method 1: Check get_queried_object() first - most reliable for single post views
         $queried = get_queried_object();
         if ($queried instanceof \WP_Post && $queried->post_type === Plugin::FUNNEL_POST_TYPE) {
@@ -110,10 +96,6 @@ class FunnelConfigLoader
             }
         }
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[HP-RW] getFromContext: FAILED TO FIND FUNNEL. REQUEST_URI: ' . ($_SERVER['REQUEST_URI'] ?? 'N/A') . ' | Queried Object ID: ' . get_queried_object_id());
-        }
-
         return null;
     }
 

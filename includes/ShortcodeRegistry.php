@@ -29,12 +29,6 @@ class ShortcodeRegistry
                         return '';
                     }
 
-                    // Optimization: If in Elementor Editor UI, render a lightweight placeholder.
-                    // This prevents React/Underscore script collisions and speeds up editor load.
-                    if (Plugin::is_elementor_editor()) {
-                        return Plugin::get_editor_placeholder($config['label'] ?? $slug);
-                    }
-
                     return $this->renderGeneric($config, (array) $atts);
                 }
             );
