@@ -214,6 +214,134 @@ class FunnelHeroSectionShortcode
 
         $pageBgColor = sanitize_hex_color($config['styling']['page_bg_color']) ?: '#121212';
 
+        // Static tracking to prevent redundant output of global CSS/JS
+        static $globalsPrinted = false;
+
+        if (!$globalsPrinted) {
+            // Generate CSS for full-width backgrounds
+            $output .= '<style>
+            body { overflow-x: hidden !important; }
+            .hp-funnel-section.hp-has-bg {
+                width: 100vw !important;
+                position: relative !important;
+                left: 50% !important;
+                right: 50% !important;
+                margin-left: -50vw !important;
+                margin-right: -50vw !important;
+                margin-top: 0 !important;
+                margin-bottom: 0 !important;
+                padding-left: calc(50vw - 50%) !important;
+                padding-right: calc(50vw - 50%) !important;
+                box-sizing: border-box !important;
+            }
+            /* Reset infographics sections to prevent margin/positioning issues */
+            .hp-funnel-section.hp-funnel-infographics {
+                margin-top: 0 !important;
+                margin-bottom: 0 !important;
+            }
+            </style>';
+
+            // Generate JavaScript to apply backgrounds using occurrence-based IDs (v2.33.73)
+            // For infographics, uses data-info-index attribute for stable mapping
+            $output .= sprintf(
+                '<script>
+    (function() {
+        // Map CSS class patterns to section types (must match PHP FunnelConfigLoader::SHORTCODE_TYPE_MAP)
+        var classToType = {
+            "hp-funnel-hero-section": "hero",
+            "hp-funnel-benefits": "benefits",
+            "hp-funnel-products": "offers",
+            "hp-funnel-features": "features",
+            "hp-funnel-authority": "authority",
+            "hp-funnel-testimonials": "testimonials",
+            "hp-funnel-faq": "faq",
+            "hp-funnel-cta": "cta",
+            "hp-funnel-science": "science",
+            "hp-funnel-infographics": "infographics"
+        };
+
+        function detectSectionType(section) {
+            var className = section.className;
+            for (var pattern in classToType) {
+                // Check if class contains the pattern (handles hp-funnel-products-{slug} etc.)
+                if (className.indexOf(pattern) !== -1) {
+                    return classToType[pattern];
+                }
+            }
+            return null;
+        }
+
+        function applyBackgrounds() {
+            var sections = document.querySelectorAll(".hp-funnel-section");
+            var typeOccurrences = {};
+
+            sections.forEach(function(section) {
+                var className = section.className;
+                
+                // Skip header and footer
+                if (className.indexOf("hp-funnel-header") !== -1 || 
+                    className.indexOf("hp-funnel-footer") !== -1) {
+                    return;
+                }
+
+                // Detect section type from CSS class
+                var sectionType = detectSectionType(section);
+                if (!sectionType) {
+                    return;
+                }
+
+                var stableId;
+                
+                // For infographics, use data-info-index attribute for stable ID
+                if (sectionType === "infographics") {
+                    var infoIndex = section.getAttribute("data-info-index");
+                    if (infoIndex) {
+                        stableId = "infographics_" + infoIndex;
+                    } else {
+                        // Fallback to occurrence-based if no data attribute
+                        if (!typeOccurrences[sectionType]) {
+                            typeOccurrences[sectionType] = 0;
+                        }
+                        typeOccurrences[sectionType]++;
+                        stableId = sectionType + "_" + typeOccurrences[sectionType];
+                    }
+                } else {
+                    // For other types, use occurrence-based IDs
+                    if (!typeOccurrences[sectionType]) {
+                        typeOccurrences[sectionType] = 0;
+                    }
+                    typeOccurrences[sectionType]++;
+                    stableId = sectionType + "_" + typeOccurrences[sectionType];
+                }
+
+                // Get background map from window global
+                var backgroundMap = window.hpFunnelBackgroundMap || {};
+                var background = backgroundMap[stableId];
+
+                if (background && background !== "transparent") {
+                    section.classList.add("hp-has-bg");
+                    section.style.setProperty("background", background, "important");
+                }
+                
+                // Always set the data attribute for debugging/inspection
+                section.setAttribute("data-section-id", stableId);
+            });
+        }
+
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", applyBackgrounds);
+        } else {
+            setTimeout(applyBackgrounds, 100);
+        }
+        
+        // Expose applyBackgrounds for re-triggering if needed
+        window.hpApplyFunnelBackgrounds = applyBackgrounds;
+    })();
+    </script>'
+            );
+            $globalsPrinted = true;
+        }
+
         // Build section background map: section_id => CSS background value
         $backgroundMap = [];
         foreach ($sectionBackgrounds as $section) {
@@ -241,124 +369,10 @@ class FunnelHeroSectionShortcode
             }
         }
 
-        // Generate CSS for full-width backgrounds
-        $output .= '<style>
-        body { overflow-x: hidden !important; }
-        .hp-funnel-section.hp-has-bg {
-            width: 100vw !important;
-            position: relative !important;
-            left: 50% !important;
-            right: 50% !important;
-            margin-left: -50vw !important;
-            margin-right: -50vw !important;
-            margin-top: 0 !important;
-            margin-bottom: 0 !important;
-            padding-left: calc(50vw - 50%) !important;
-            padding-right: calc(50vw - 50%) !important;
-            box-sizing: border-box !important;
-        }
-        /* Reset infographics sections to prevent margin/positioning issues */
-        .hp-funnel-section.hp-funnel-infographics {
-            margin-top: 0 !important;
-            margin-bottom: 0 !important;
-        }
-        </style>';
-
-        // Generate JavaScript to apply backgrounds using occurrence-based IDs (v2.33.73)
-        // For infographics, uses data-info-index attribute for stable mapping
+        // Output the background map for THIS funnel
         $backgroundMapJson = wp_json_encode($backgroundMap);
         $output .= sprintf(
-            '<script>
-(function() {
-    var backgroundMap = %s;
-
-    // Map CSS class patterns to section types (must match PHP FunnelConfigLoader::SHORTCODE_TYPE_MAP)
-    var classToType = {
-        "hp-funnel-hero-section": "hero",
-        "hp-funnel-benefits": "benefits",
-        "hp-funnel-products": "offers",
-        "hp-funnel-features": "features",
-        "hp-funnel-authority": "authority",
-        "hp-funnel-testimonials": "testimonials",
-        "hp-funnel-faq": "faq",
-        "hp-funnel-cta": "cta",
-        "hp-funnel-science": "science",
-        "hp-funnel-infographics": "infographics"
-    };
-
-    function detectSectionType(section) {
-        var className = section.className;
-        for (var pattern in classToType) {
-            // Check if class contains the pattern (handles hp-funnel-products-{slug} etc.)
-            if (className.indexOf(pattern) !== -1) {
-                return classToType[pattern];
-            }
-        }
-        return null;
-    }
-
-    function applyBackgrounds() {
-        var sections = document.querySelectorAll(".hp-funnel-section");
-        var typeOccurrences = {};
-
-        sections.forEach(function(section) {
-            var className = section.className;
-            
-            // Skip header and footer
-            if (className.indexOf("hp-funnel-header") !== -1 || 
-                className.indexOf("hp-funnel-footer") !== -1) {
-                return;
-            }
-
-            // Detect section type from CSS class
-            var sectionType = detectSectionType(section);
-            if (!sectionType) {
-                return;
-            }
-
-            var stableId;
-            
-            // For infographics, use data-info-index attribute for stable ID
-            if (sectionType === "infographics") {
-                var infoIndex = section.getAttribute("data-info-index");
-                if (infoIndex) {
-                    stableId = "infographics_" + infoIndex;
-                } else {
-                    // Fallback to occurrence-based if no data attribute
-                    if (!typeOccurrences[sectionType]) {
-                        typeOccurrences[sectionType] = 0;
-                    }
-                    typeOccurrences[sectionType]++;
-                    stableId = sectionType + "_" + typeOccurrences[sectionType];
-                }
-            } else {
-                // For other types, use occurrence-based IDs
-                if (!typeOccurrences[sectionType]) {
-                    typeOccurrences[sectionType] = 0;
-                }
-                typeOccurrences[sectionType]++;
-                stableId = sectionType + "_" + typeOccurrences[sectionType];
-            }
-
-            var background = backgroundMap[stableId];
-
-            if (background && background !== "transparent") {
-                section.classList.add("hp-has-bg");
-                section.style.setProperty("background", background, "important");
-            }
-            
-            // Always set the data attribute for debugging/inspection
-            section.setAttribute("data-section-id", stableId);
-        });
-    }
-
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", applyBackgrounds);
-    } else {
-        setTimeout(applyBackgrounds, 100);
-    }
-})();
-</script>',
+            '<script>window.hpFunnelBackgroundMap = Object.assign(window.hpFunnelBackgroundMap || {}, %s); if(window.hpApplyFunnelBackgrounds) window.hpApplyFunnelBackgrounds();</script>',
             $backgroundMapJson
         );
 

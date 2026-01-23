@@ -20,6 +20,12 @@ class FunnelConfigLoader
     private const CACHE_TTL = HOUR_IN_SECONDS;
 
     /**
+     * Static request-level cache to avoid redundant database/ACF calls.
+     * @var array<string,array>
+     */
+    private static $requestCache = [];
+
+    /**
      * Get funnel config by slug or ID.
      *
      * @param string|int $slugOrId Funnel slug or post ID
@@ -93,6 +99,13 @@ class FunnelConfigLoader
                 if ($document) {
                     // Get the post ID that the template is rendering for
                     $postId = $document->get_main_id();
+                    
+                    // Check static cache first for this document ID
+                    $cacheKey = 'id_' . $postId;
+                    if (isset(self::$requestCache[$cacheKey])) {
+                        return self::$requestCache[$cacheKey];
+                    }
+
                     $templatePost = get_post($postId);
                     
                     if ($debug) {
@@ -159,18 +172,30 @@ class FunnelConfigLoader
             return null;
         }
 
-        // Check cache first
-        $cacheKey = self::CACHE_PREFIX . 'slug_' . $slug;
-        $cached = get_transient($cacheKey);
+        // Check request cache first
+        $cacheKey = 'slug_' . $slug;
+        if (isset(self::$requestCache[$cacheKey])) {
+            return self::$requestCache[$cacheKey];
+        }
+
+        // Check transient cache second
+        $transientKey = self::CACHE_PREFIX . 'slug_' . $slug;
+        $cached = get_transient($transientKey);
         if ($cached !== false) {
-            return self::ensureArrayRecursive($cached);
+            $config = self::ensureArrayRecursive($cached);
+            self::$requestCache[$cacheKey] = $config;
+            return $config;
         }
 
         // Find the funnel post
         $post = self::findPostBySlug($slug);
         if (!$post) {
             // Try legacy options as fallback
-            return self::getLegacyConfig($slug);
+            $config = self::getLegacyConfig($slug);
+            if ($config) {
+                self::$requestCache[$cacheKey] = $config;
+            }
+            return $config;
         }
 
         $config = self::loadFromPost($post);
@@ -178,8 +203,14 @@ class FunnelConfigLoader
         // Final safety check: deep convert to array to ensure no objects leak
         $config = self::ensureArrayRecursive($config);
         
-        // Cache the result
-        set_transient($cacheKey, $config, self::CACHE_TTL);
+        // Cache the result in transient
+        set_transient($transientKey, $config, self::CACHE_TTL);
+        
+        // Cache in request memory
+        self::$requestCache[$cacheKey] = $config;
+        if (!empty($config['id'])) {
+            self::$requestCache['id_' . $config['id']] = $config;
+        }
         
         return $config;
     }
@@ -196,11 +227,19 @@ class FunnelConfigLoader
             return null;
         }
 
-        // Check cache first
-        $cacheKey = self::CACHE_PREFIX . 'id_' . $postId;
-        $cached = get_transient($cacheKey);
+        // Check request cache first
+        $cacheKey = 'id_' . $postId;
+        if (isset(self::$requestCache[$cacheKey])) {
+            return self::$requestCache[$cacheKey];
+        }
+
+        // Check transient cache second
+        $transientKey = self::CACHE_PREFIX . 'id_' . $postId;
+        $cached = get_transient($transientKey);
         if ($cached !== false) {
-            return self::ensureArrayRecursive($cached);
+            $config = self::ensureArrayRecursive($cached);
+            self::$requestCache[$cacheKey] = $config;
+            return $config;
         }
 
         $post = get_post($postId);
@@ -213,8 +252,14 @@ class FunnelConfigLoader
         // Final safety check: deep convert to array to ensure no objects leak
         $config = self::ensureArrayRecursive($config);
         
-        // Cache the result
-        set_transient($cacheKey, $config, self::CACHE_TTL);
+        // Cache the result in transient
+        set_transient($transientKey, $config, self::CACHE_TTL);
+        
+        // Cache in request memory
+        self::$requestCache[$cacheKey] = $config;
+        if (!empty($config['slug'])) {
+            self::$requestCache['slug_' . $config['slug']] = $config;
+        }
         
         return $config;
     }
@@ -227,18 +272,23 @@ class FunnelConfigLoader
      */
     public static function clearCache(int $postId, string $oldSlug = ''): void
     {
-        // Clear by ID
+        // Clear request cache
+        unset(self::$requestCache['id_' . $postId]);
+        
+        // Clear by ID transient
         delete_transient(self::CACHE_PREFIX . 'id_' . $postId);
         
         // Clear by post_name (single source of truth)
         $post = get_post($postId);
         $currentSlug = $post ? $post->post_name : '';
         if ($currentSlug) {
+            unset(self::$requestCache['slug_' . $currentSlug]);
             delete_transient(self::CACHE_PREFIX . 'slug_' . $currentSlug);
         }
         
         // If old slug provided (slug was changed), clear that cache too
         if ($oldSlug && $oldSlug !== $currentSlug) {
+            unset(self::$requestCache['slug_' . $oldSlug]);
             delete_transient(self::CACHE_PREFIX . 'slug_' . $oldSlug);
         }
     }
