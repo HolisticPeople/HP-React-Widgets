@@ -914,10 +914,6 @@ class FunnelImporter
      */
     private static function setUrlField(int $postId, string $fieldName, ?string $value): void
     {
-        // #region agent log
-        file_put_contents('c:\DEV\WC Plugins\My Plugins\HP-React-Widgets\.cursor\debug.log', json_encode(['location'=>'FunnelImporter.php:setUrlField','message'=>'setUrlField called','data'=>['postId'=>$postId,'fieldName'=>$fieldName,'value'=>$value,'valueType'=>gettype($value)],'timestamp'=>time()*1000,'sessionId'=>'debug-session','hypothesisId'=>'H1'])."\n", FILE_APPEND);
-        // #endregion
-        
         if ($value === null || $value === '') {
             self::setField($postId, $fieldName, '');
             return;

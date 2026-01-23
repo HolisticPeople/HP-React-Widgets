@@ -1026,6 +1026,11 @@ class Plugin
             return;
         }
 
+        // Optimization: Skip sync in Elementor editor mode to prevent slow loads
+        if (class_exists('\\Elementor\\Plugin') && \Elementor\Plugin::instance()->editor->is_edit_mode()) {
+            return;
+        }
+
         // Check if we need a forced sync due to version change
         $current_version = defined('HP_RW_VERSION') ? HP_RW_VERSION : '';
         $stored_version = get_option('hp_rw_version', '');
