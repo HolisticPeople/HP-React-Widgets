@@ -232,21 +232,15 @@ class Plugin
      */
     public static function init(): void
     {
-        // 1. Register Post Type Early
-        add_action('init', [FunnelPostType::class, 'register'], 5);
-
-        // 2. Register Shortcodes on Init
-        add_action('init', function() {
-            $assetLoader = new AssetLoader();
-            $assetLoader->register_assets();
-            
-            $shortcodeRegistry = new ShortcodeRegistry($assetLoader);
-            $shortcodeRegistry->register();
-        }, 10);
-
-        // 3. Register Assets Hook
         $assetLoader = new AssetLoader();
         $assetLoader->register();
+
+        // 1. Register Shortcodes IMMEDIATELY
+        $shortcodeRegistry = new ShortcodeRegistry($assetLoader);
+        $shortcodeRegistry->register();
+
+        // 2. Register Post Type Early
+        add_action('init', [FunnelPostType::class, 'register'], 5);
 
         add_action('init', [self::class, 'checkForUpgrade'], 99);
         add_action('wp_head', [self::class, 'outputElementorFrontendConfigShim'], 0);
