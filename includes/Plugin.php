@@ -232,18 +232,15 @@ class Plugin
      */
     public static function init(): void
     {
-        error_log("[HP-RW] Plugin::init starting");
         $assetLoader = new AssetLoader();
         $assetLoader->register();
 
         // 1. Register Shortcodes IMMEDIATELY
         $shortcodeRegistry = new ShortcodeRegistry($assetLoader);
         $shortcodeRegistry->register();
-        error_log("[HP-RW] Shortcodes registered");
 
         // 2. Register Post Type Early
         add_action('init', [FunnelPostType::class, 'register'], 5);
-        error_log("[HP-RW] Post type registration scheduled");
 
         add_action('init', [self::class, 'checkForUpgrade'], 99);
         add_action('wp_head', [self::class, 'outputElementorFrontendConfigShim'], 0);

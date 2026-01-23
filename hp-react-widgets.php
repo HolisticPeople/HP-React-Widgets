@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       HP React Widgets
  * Description:       Container plugin for React-based widgets (Side Cart, Multi-Address, etc.) integrated via Shortcodes.
- * Version:           2.34.30
+ * Version:           2.35.0
  * Author:            Holistic People
  * Text Domain:       hp-react-widgets
  */
@@ -11,9 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-error_log("[HP-RW] MAIN FILE LOADED");
-
-define('HP_RW_VERSION', '2.34.30');
+define('HP_RW_VERSION', '2.35.0');
 define('HP_RW_FILE', __FILE__);
 define('HP_RW_PATH', plugin_dir_path(__FILE__));
 define('HP_RW_URL', plugin_dir_url(__FILE__));
@@ -30,19 +28,13 @@ spl_autoload_register(function ($class) {
     $file = $base_dir . str_replace('\\', DIRECTORY_SEPARATOR, $relative_class) . '.php';
     if (file_exists($file)) {
         require $file;
-    } else {
-        error_log("[HP-RW] FAILED TO LOAD CLASS: $class AT $file");
     }
 });
 
 // Initialize Plugin
 add_action('plugins_loaded', function () {
-    error_log("[HP-RW] PLUGINS_LOADED HOOK TRIGGERED");
     if (class_exists('HP_RW\\Plugin')) {
-        error_log("[HP-RW] CALLING PLUGIN::INIT");
         \HP_RW\Plugin::init();
-    } else {
-        error_log("[HP-RW] HP_RW\\Plugin CLASS NOT FOUND");
     }
 });
 
