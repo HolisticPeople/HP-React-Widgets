@@ -884,22 +884,12 @@ class Plugin
             return false;
         }
 
-        $elementor = \Elementor\Plugin::instance();
-        
-        $is_editor = false;
-        // is_edit_mode() is true both in the editor UI and the preview iframe.
-        // We only want to bail if we are NOT in the preview frame.
-        if (isset($elementor->editor) && $elementor->editor->is_edit_mode()) {
-            if (!isset($_GET['elementor-preview'])) {
-                $is_editor = true;
-            }
+        // Simplest check: is_admin() + action=elementor
+        if (is_admin() && isset($_GET['action']) && $_GET['action'] === 'elementor') {
+            return true;
         }
 
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[HP-RW] is_elementor_editor: ' . ($is_editor ? 'YES' : 'NO') . ' | REQUEST_URI: ' . ($_SERVER['REQUEST_URI'] ?? 'N/A'));
-        }
-
-        return $is_editor;
+        return false;
     }
 
     /**
