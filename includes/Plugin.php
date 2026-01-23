@@ -321,8 +321,10 @@ class Plugin
         Services\FunnelSeoService::init();
 
         // Register shortcodes based on current settings.
-        $shortcodeRegistry = new ShortcodeRegistry($assetLoader);
-        $shortcodeRegistry->register();
+        add_action('init', function() use ($assetLoader) {
+            $shortcodeRegistry = new ShortcodeRegistry($assetLoader);
+            $shortcodeRegistry->register();
+        }, 20);
 
         // Register the admin settings page for managing shortcodes.
         $settingsPage = new SettingsPage();
