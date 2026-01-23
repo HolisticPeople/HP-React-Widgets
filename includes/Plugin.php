@@ -240,93 +240,66 @@ class Plugin
      */
     public static function init(): void
     {
+        // 1. Register Post Type (must happen on init)
+        add_action('init', [FunnelPostType::class, 'register'], 5);
+
+        // 2. Register Shortcodes (must happen on init or early)
+        add_action('init', function() {
+            $assetLoader = new AssetLoader();
+            $assetLoader->register_assets(); // Register, don't enqueue yet
+            
+            $shortcodeRegistry = new ShortcodeRegistry($assetLoader);
+            $shortcodeRegistry->register();
+        }, 10);
+
+        // 3. Register Assets Handler
         $assetLoader = new AssetLoader();
         $assetLoader->register();
 
-        // Register shortcodes immediately
-        $shortcodeRegistry = new ShortcodeRegistry($assetLoader);
-        $shortcodeRegistry->register();
-
-        // Register the HP Funnel custom post type (fallback if not registered by ACF Pro)
-        FunnelPostType::init();
-        
-        // Schedule upgrade check for later (after WP is fully initialized)
+        // Schedule upgrade check
         add_action('init', [self::class, 'checkForUpgrade'], 99);
 
-        // Elementor sometimes runs its frontend bundle before localizing `elementorFrontendConfig`,
-        // which throws a ReferenceError and can cascade into other plugin errors.
-        // This shim is safe and tiny; it just guarantees the global exists early.
+        // Elementor Shim
         add_action('wp_head', [self::class, 'outputElementorFrontendConfigShim'], 0);
         
-        // Add funnel-specific body classes for styling
+        // Body Classes
         add_filter('body_class', [self::class, 'addFunnelBodyClasses']);
         
-        // Set up funnel CPT customizations (CPT registered via ACF Pro)
+        // CPT Hooks
         self::setupFunnelCptHooks();
 
-        // Initialize Funnel Export/Import admin page
+        // Initialize Admin Components
         Admin\FunnelExportImport::init();
-
-        // Initialize Product Lookup API for admin
         Admin\ProductLookupApi::init();
-
-        // Initialize Funnel Offer ACF fields
         Admin\FunnelOfferFields::init();
-
-        // Initialize Funnel Styling ACF fields & admin UI
         Admin\FunnelStylingFields::init();
-
-        // Setup ACF Local JSON sync for version control
         self::setupAcfLocalJson();
-
-        // Register ACF options pages
         add_action('acf/init', [self::class, 'registerAcfOptionsPages']);
-
-        // Import default HP Menu data if not configured
         add_action('acf/init', [self::class, 'maybeImportHpMenuDefaults'], 20);
-
-        // Enqueue admin scripts for funnel editing
         add_action('admin_enqueue_scripts', [self::class, 'enqueueAdminScripts']);
 
-        // Register REST API endpoints for widget interactions.
-        $addressApi = new AddressApi();
-        $addressApi->register();
+        // REST APIs
+        (new AddressApi())->register();
+        (new Rest\CheckoutApi())->register();
+        (new Rest\UpsellApi())->register();
+        (new Rest\ShippingApi())->register();
+        (new Rest\FunnelApi())->register();
+        (new Rest\AiFunnelApi())->register();
 
-        // Register checkout REST API endpoints.
-        $checkoutApi = new Rest\CheckoutApi();
-        $checkoutApi->register();
-
-        // Register upsell REST API endpoints.
-        $upsellApi = new Rest\UpsellApi();
-        $upsellApi->register();
-
-        // Register shipping rates REST API endpoints.
-        $shippingApi = new Rest\ShippingApi();
-        $shippingApi->register();
-
-        // Register funnel import/export REST API endpoints.
-        $funnelApi = new Rest\FunnelApi();
-        $funnelApi->register();
-
-        // Register AI Funnel REST API endpoints (Phase 1: Funnel Generation Capability).
-        $aiFunnelApi = new Rest\AiFunnelApi();
-        $aiFunnelApi->register();
-
-        // Initialize AI admin components.
+        // AI Admin Components
         Admin\AiSettingsPage::init();
         Admin\FunnelListEnhancements::init();
         Admin\FunnelMetaBoxes::init();
         Admin\AiActivityLog::init();
         Admin\EconomicsDashboard::init();
 
-        // Initialize SEO & Tracking components (Smart Bridge).
+        // SEO Components
         Admin\SeoTrackingSettings::init();
         Admin\FunnelTestingMetabox::init();
         Services\FunnelSeoService::init();
 
-        // Register the admin settings page for managing shortcodes.
-        $settingsPage = new SettingsPage();
-        $settingsPage->init();
+        // Settings Page
+        (new SettingsPage())->init();
     }
 
     /**
@@ -874,22 +847,24 @@ class Plugin
 
     public static function is_elementor_editor(): bool
     {
+        // Don't call Elementor before init
+        if (!did_action('init')) {
+            return false;
+        }
+
         if (!class_exists('\\Elementor\\Plugin')) {
             return false;
         }
-        $elementor = \Elementor\Plugin::instance();
-        $is_editor = false;
-        if (isset($elementor->editor) && $elementor->editor->is_edit_mode()) {
+
+        // is_edit_mode() is true both in the editor UI and the preview iframe.
+        // We only want to bail if we are NOT in the preview frame.
+        if (\Elementor\Plugin::instance()->editor->is_edit_mode()) {
             if (!isset($_GET['elementor-preview'])) {
-                $is_editor = true;
+                return true;
             }
         }
 
-        // #region agent log
-        file_put_contents('c:\DEV\WC Plugins\My Plugins\HP-React-Widgets\.cursor\debug.log', json_encode(['location'=>'Plugin.php:is_elementor_editor','message'=>'Editor detection','data'=>['is_editor'=>$is_editor,'uri'=>$_SERVER['REQUEST_URI'] ?? 'N/A'],'timestamp'=>microtime(true)*1000,'sessionId'=>'debug-session','hypothesisId'=>'B'])."\n", FILE_APPEND);
-        // #endregion
-
-        return $is_editor;
+        return false;
     }
 
     public static function get_editor_placeholder(string $label): string

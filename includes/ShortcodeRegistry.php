@@ -18,18 +18,10 @@ class ShortcodeRegistry
         $enabled       = Plugin::get_enabled_shortcodes();
         $allShortcodes = Plugin::get_shortcodes();
 
-        // #region agent log
-        file_put_contents('c:\DEV\WC Plugins\My Plugins\HP-React-Widgets\.cursor\debug.log', json_encode(['location'=>'ShortcodeRegistry.php:register','message'=>'Registering shortcodes','data'=>['hook'=>current_action(),'count'=>count($allShortcodes)],'timestamp'=>microtime(true)*1000,'sessionId'=>'debug-session','hypothesisId'=>'A'])."\n", FILE_APPEND);
-        // #endregion
-
         foreach ($allShortcodes as $slug => $config) {
             add_shortcode(
                 $slug,
                 function ($atts = []) use ($slug, $config, $enabled) {
-                    // #region agent log
-                    file_put_contents('c:\DEV\WC Plugins\My Plugins\HP-React-Widgets\.cursor\debug.log', json_encode(['location'=>'ShortcodeRegistry.php:add_shortcode','message'=>'Shortcode callback triggered','data'=>['slug'=>$slug,'atts'=>$atts,'is_editor'=>Plugin::is_elementor_editor()],'timestamp'=>microtime(true)*1000,'sessionId'=>'debug-session','hypothesisId'=>'B'])."\n", FILE_APPEND);
-                    // #endregion
-
                     if (!in_array($slug, $enabled, true)) {
                         return '';
                     }
