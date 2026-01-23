@@ -546,7 +546,9 @@ class Plugin
                 $data = \acf_get_field_group($key);
                 if (!$data || ($data['local'] ?? '') !== 'json') continue;
                 $id = 0;
-                if ($type === 'acf-field-group') $id = \acf_get_field_group_id($key);
+                if ($type === 'acf-field-group' && function_exists('acf_get_field_group_id')) {
+                    $id = \acf_get_field_group_id($key);
+                }
                 if (!$id) { $p = get_posts(['post_type' => $type, 'name' => $key, 'posts_per_page' => 1, 'fields' => 'ids']); if ($p) $id = $p[0]; }
                 if (!$id || version_compare(get_option('hp_rw_version', ''), $ver, '<') || ($data['modified'] ?? 0) > get_post_modified_time('U', true, $id)) {
                     $json = json_decode(file_get_contents($path), true);
