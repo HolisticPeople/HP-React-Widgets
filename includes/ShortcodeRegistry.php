@@ -23,14 +23,17 @@ class ShortcodeRegistry
                 $slug,
                 function ($atts = []) use ($slug, $config, $enabled) {
                     if (!in_array($slug, $enabled, true)) {
+                        error_log("[HP-RW] Shortcode $slug NOT ENABLED");
                         return '';
                     }
 
                     // Stability: If in Elementor Editor, render placeholder
                     if (Plugin::is_elementor_editor()) {
+                        error_log("[HP-RW] Rendering placeholder for $slug");
                         return Plugin::get_editor_placeholder($config['label'] ?? $slug);
                     }
 
+                    error_log("[HP-RW] Rendering widget for $slug");
                     return $this->renderGeneric($config, (array) $atts);
                 }
             );
