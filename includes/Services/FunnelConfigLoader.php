@@ -50,6 +50,14 @@ class FunnelConfigLoader
      */
     public static function getFromContext(): ?array
     {
+        // Static cache for context to avoid repeated lookups in the same request
+        static $contextCache = null;
+        static $contextLookedUp = false;
+
+        if ($contextLookedUp) {
+            return $contextCache;
+        }
+
         $debug = defined('WP_DEBUG') && WP_DEBUG;
         
         // Method 0: Check query var set by funnel sub-routes (checkout, thankyou, etc.)
@@ -59,6 +67,8 @@ class FunnelConfigLoader
             if ($debug) {
                 error_log('[HP-RW] getFromContext: Found via hp_current_funnel query var - ID: ' . ($queryVarFunnel['id'] ?? 'unknown'));
             }
+            $contextCache = $queryVarFunnel;
+            $contextLookedUp = true;
             return $queryVarFunnel;
         }
         
@@ -68,7 +78,9 @@ class FunnelConfigLoader
             if ($debug) {
                 error_log('[HP-RW] getFromContext: Found hp_funnel_slug query var: ' . $queryVarSlug);
             }
-            return self::getBySlug($queryVarSlug);
+            $contextCache = self::getBySlug($queryVarSlug);
+            $contextLookedUp = true;
+            return $contextCache;
         }
         
         // Method 1: Check get_queried_object() first - most reliable for single post views
@@ -77,7 +89,9 @@ class FunnelConfigLoader
             if ($debug) {
                 error_log('[HP-RW] getFromContext: Found via get_queried_object() - ID: ' . $queried->ID);
             }
-            return self::getById($queried->ID);
+            $contextCache = self::getById($queried->ID);
+            $contextLookedUp = true;
+            return $contextCache;
         }
         
         // Method 2: Check global $post
@@ -86,7 +100,9 @@ class FunnelConfigLoader
             if ($debug) {
                 error_log('[HP-RW] getFromContext: Found via global $post - ID: ' . $post->ID);
             }
-            return self::getById($post->ID);
+            $contextCache = self::getById($post->ID);
+            $contextLookedUp = true;
+            return $contextCache;
         }
         
         // Method 3: Try Elementor's document system (for theme builder templates)
@@ -103,7 +119,9 @@ class FunnelConfigLoader
                     // Check static cache first for this document ID
                     $cacheKey = 'id_' . $postId;
                     if (isset(self::$requestCache[$cacheKey])) {
-                        return self::$requestCache[$cacheKey];
+                        $contextCache = self::$requestCache[$cacheKey];
+                        $contextLookedUp = true;
+                        return $contextCache;
                     }
 
                     $templatePost = get_post($postId);
@@ -125,7 +143,9 @@ class FunnelConfigLoader
                                 if ($debug) {
                                     error_log('[HP-RW] getFromContext: Found via Elementor get_the_ID() - ID: ' . $renderedPostId);
                                 }
-                                return self::getById($renderedPostId);
+                                $contextCache = self::getById($renderedPostId);
+                                $contextLookedUp = true;
+                                return $contextCache;
                             }
                         }
                     }
@@ -149,7 +169,9 @@ class FunnelConfigLoader
                 if ($debug) {
                     error_log('[HP-RW] getFromContext: Found via URL parse - ID: ' . $funnelPost->ID);
                 }
-                return self::getById($funnelPost->ID);
+                $contextCache = self::getById($funnelPost->ID);
+                $contextLookedUp = true;
+                return $contextCache;
             }
         }
         
@@ -157,6 +179,7 @@ class FunnelConfigLoader
             error_log('[HP-RW] getFromContext: No funnel found. queried_object type: ' . (is_object($queried) ? get_class($queried) : gettype($queried)) . ', global $post type: ' . ($post ? $post->post_type : 'null'));
         }
         
+        $contextLookedUp = true;
         return null;
     }
 
@@ -198,6 +221,13 @@ class FunnelConfigLoader
             return $config;
         }
 
+        // Optimization: In Elementor editor, check if we already have this post loaded via ID
+        if (isset(self::$requestCache['id_' . $post->ID])) {
+            $config = self::$requestCache['id_' . $post->ID];
+            self::$requestCache[$cacheKey] = $config;
+            return $config;
+        }
+
         $config = self::loadFromPost($post);
         
         // Final safety check: deep convert to array to ensure no objects leak
@@ -208,9 +238,7 @@ class FunnelConfigLoader
         
         // Cache in request memory
         self::$requestCache[$cacheKey] = $config;
-        if (!empty($config['id'])) {
-            self::$requestCache['id_' . $config['id']] = $config;
-        }
+        self::$requestCache['id_' . $post->ID] = $config;
         
         return $config;
     }
@@ -247,6 +275,13 @@ class FunnelConfigLoader
             return null;
         }
 
+        // Optimization: In Elementor editor, check if we already have this post loaded via slug
+        if (isset(self::$requestCache['slug_' . $post->post_name])) {
+            $config = self::$requestCache['slug_' . $post->post_name];
+            self::$requestCache[$cacheKey] = $config;
+            return $config;
+        }
+
         $config = self::loadFromPost($post);
         
         // Final safety check: deep convert to array to ensure no objects leak
@@ -257,9 +292,7 @@ class FunnelConfigLoader
         
         // Cache in request memory
         self::$requestCache[$cacheKey] = $config;
-        if (!empty($config['slug'])) {
-            self::$requestCache['slug_' . $config['slug']] = $config;
-        }
+        self::$requestCache['slug_' . $post->post_name] = $config;
         
         return $config;
     }
@@ -1645,13 +1678,22 @@ class FunnelConfigLoader
             return $fallback;
         }
 
+        // Static cache for resolved image URLs during this request
+        static $imageUrlCache = [];
+        $cacheKey = is_scalar($value) ? (string)$value : md5(serialize($value));
+        if (isset($imageUrlCache[$cacheKey])) {
+            return $imageUrlCache[$cacheKey];
+        }
+
         // If it's already a URL
         if (is_string($value) && filter_var($value, FILTER_VALIDATE_URL)) {
+            $imageUrlCache[$cacheKey] = $value;
             return $value;
         }
 
         // If it's an array (ACF returns array when return_format is 'array')
         if (is_array($value) && isset($value['url'])) {
+            $imageUrlCache[$cacheKey] = (string) $value['url'];
             return (string) $value['url'];
         }
 
@@ -1659,6 +1701,7 @@ class FunnelConfigLoader
         if (is_numeric($value)) {
             $imageData = wp_get_attachment_image_src((int) $value, 'large');
             if ($imageData && isset($imageData[0])) {
+                $imageUrlCache[$cacheKey] = $imageData[0];
                 return $imageData[0];
             }
         }

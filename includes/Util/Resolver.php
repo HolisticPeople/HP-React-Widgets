@@ -13,6 +13,9 @@ if (!defined('ABSPATH')) {
  */
 class Resolver
 {
+    /** @var array<string, \WC_Product> Static cache for resolved products during this request */
+    private static $resolvedProducts = [];
+
     /**
      * Resolve a WC_Product (or variation) from an incoming item payload.
      *
@@ -25,6 +28,12 @@ class Resolver
         $variation_id = isset($item['variation_id']) ? (int) $item['variation_id'] : 0;
         $sku = isset($item['sku']) ? (string) $item['sku'] : '';
 
+        // Build cache key
+        $cacheKey = "p_{$product_id}_v_{$variation_id}_s_{$sku}";
+        if (isset(self::$resolvedProducts[$cacheKey])) {
+            return self::$resolvedProducts[$cacheKey];
+        }
+
         // If no product_id but we have a SKU, try to resolve by SKU
         if ($product_id <= 0 && $sku !== '') {
             $pid = wc_get_product_id_by_sku($sku);
@@ -33,23 +42,23 @@ class Resolver
             }
         }
 
+        $p = null;
+
         // If we have a variation_id, prefer that
         if ($variation_id > 0) {
             $p = wc_get_product($variation_id);
-            if ($p) {
-                return $p;
-            }
         }
 
         // Otherwise use product_id
-        if ($product_id > 0) {
+        if (!$p && $product_id > 0) {
             $p = wc_get_product($product_id);
-            if ($p) {
-                return $p;
-            }
         }
 
-        return null;
+        if ($p) {
+            self::$resolvedProducts[$cacheKey] = $p;
+        }
+
+        return $p;
     }
 
     /**
