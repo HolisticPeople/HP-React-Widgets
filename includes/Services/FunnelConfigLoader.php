@@ -17,6 +17,42 @@ class FunnelConfigLoader
     private const CACHE_TTL = HOUR_IN_SECONDS;
 
     /**
+     * Map shortcode names to section types for page parsing.
+     */
+    private const SHORTCODE_TYPE_MAP = [
+        'hp_funnel_styles' => 'styles',
+        'hp_funnel_header' => 'header',
+        'hp_funnel_hero_section' => 'hero',
+        'hp_funnel_benefits' => 'benefits',
+        'hp_funnel_products' => 'offers',
+        'hp_funnel_features' => 'features',
+        'hp_funnel_authority' => 'authority',
+        'hp_funnel_testimonials' => 'testimonials',
+        'hp_funnel_faq' => 'faq',
+        'hp_funnel_cta' => 'cta',
+        'hp_funnel_science' => 'science',
+        'hp_funnel_infographics' => 'infographics',
+        'hp_funnel_footer' => 'footer',
+    ];
+
+    /**
+     * Human-readable labels for section types.
+     */
+    private const SECTION_LABELS = [
+        'hero' => 'Hero Section',
+        'benefits' => 'Benefits',
+        'offers' => 'Product Offers',
+        'features' => 'Features',
+        'authority' => 'Authority',
+        'testimonials' => 'Testimonials',
+        'faq' => 'FAQ',
+        'cta' => 'Call to Action',
+        'science' => 'Science',
+        'infographics' => 'Infographics',
+        'footer' => 'Footer',
+    ];
+
+    /**
      * Static request-level cache to avoid redundant database/ACF calls.
      */
     private static $requestCache = [];
