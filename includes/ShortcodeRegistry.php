@@ -25,7 +25,7 @@ class ShortcodeRegistry
                 $slug,
                 function ($atts = []) use ($slug, $config, $enabled) {
                     // #region agent log
-                    $log_path = 'c:\\DEV\\WC Plugins\\My Plugins\\HP-React-Widgets\\.cursor\\debug.log';
+                    $log_path = HP_RW_PATH . '.cursor/debug.log';
                     $log_entry = json_encode([
                         'location' => 'ShortcodeRegistry.php:27',
                         'message' => 'Shortcode callback start',
