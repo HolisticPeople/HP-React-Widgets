@@ -80,6 +80,11 @@ class AssetLoader
      */
     public static function enqueue_bundle()
     {
+        // Don't enqueue in Elementor Editor UI (main window) to prevent script collisions.
+        if (Plugin::is_elementor_editor()) {
+            return;
+        }
+
         // Ensure registered first (in case called before wp_enqueue_scripts)
         if (!self::$registered) {
             (new self())->register_assets();

@@ -873,6 +873,49 @@ class Plugin
     }
 
     /**
+     * Detect if we are currently in the Elementor Editor (main window).
+     * This is used to prevent heavy logic and script collisions in the editor UI.
+     *
+     * @return bool True if in Elementor Editor but NOT the preview frame.
+     */
+    public static function is_elementor_editor(): bool
+    {
+        if (!class_exists('\\Elementor\\Plugin')) {
+            return false;
+        }
+
+        $elementor = \Elementor\Plugin::instance();
+        
+        // is_edit_mode() is true both in the editor UI and the preview iframe.
+        // We only want to bail if we are NOT in the preview frame.
+        if (isset($elementor->editor) && $elementor->editor->is_edit_mode()) {
+            if (!isset($_GET['elementor-preview'])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get a placeholder for Elementor Editor display.
+     *
+     * @param string $label The shortcode label
+     * @return string HTML placeholder
+     */
+    public static function get_editor_placeholder(string $label): string
+    {
+        return sprintf(
+            '<div class="hp-shortcode-placeholder" style="padding: 15px; background: #f9f9f9; border: 1px dashed #2271b1; border-radius: 4px; color: #2271b1; font-family: sans-serif; font-size: 13px; text-align: center; margin: 10px 0;">
+                <span class="dashicons dashicons-layout" style="vertical-align: middle; margin-right: 5px;"></span>
+                <strong>HP Widget:</strong> %s
+                <div style="font-size: 11px; color: #666; margin-top: 4px;">(Preview available in live frame)</div>
+            </div>',
+            esc_html($label)
+        );
+    }
+
+    /**
      * Get responsive settings (breakpoints, max-width, scroll settings).
      *
      * @return array Responsive settings merged with defaults

@@ -64,9 +64,6 @@ class FunnelConfigLoader
         // This is set by Plugin::handleFunnelSubRoutes() for virtual route pages
         $queryVarFunnel = get_query_var('hp_current_funnel');
         if (!empty($queryVarFunnel) && is_array($queryVarFunnel)) {
-            if ($debug) {
-                error_log('[HP-RW] getFromContext: Found via hp_current_funnel query var - ID: ' . ($queryVarFunnel['id'] ?? 'unknown'));
-            }
             $contextCache = $queryVarFunnel;
             $contextLookedUp = true;
             return $queryVarFunnel;
@@ -75,9 +72,6 @@ class FunnelConfigLoader
         // Method 0b: Check query var for funnel slug (set by rewrite rules)
         $queryVarSlug = get_query_var('hp_funnel_slug');
         if (!empty($queryVarSlug)) {
-            if ($debug) {
-                error_log('[HP-RW] getFromContext: Found hp_funnel_slug query var: ' . $queryVarSlug);
-            }
             $contextCache = self::getBySlug($queryVarSlug);
             $contextLookedUp = true;
             return $contextCache;
@@ -86,9 +80,6 @@ class FunnelConfigLoader
         // Method 1: Check get_queried_object() first - most reliable for single post views
         $queried = get_queried_object();
         if ($queried instanceof \WP_Post && $queried->post_type === Plugin::FUNNEL_POST_TYPE) {
-            if ($debug) {
-                error_log('[HP-RW] getFromContext: Found via get_queried_object() - ID: ' . $queried->ID);
-            }
             $contextCache = self::getById($queried->ID);
             $contextLookedUp = true;
             return $contextCache;
@@ -97,9 +88,6 @@ class FunnelConfigLoader
         // Method 2: Check global $post
         global $post;
         if ($post instanceof \WP_Post && $post->post_type === Plugin::FUNNEL_POST_TYPE) {
-            if ($debug) {
-                error_log('[HP-RW] getFromContext: Found via global $post - ID: ' . $post->ID);
-            }
             $contextCache = self::getById($post->ID);
             $contextLookedUp = true;
             return $contextCache;
@@ -126,23 +114,13 @@ class FunnelConfigLoader
 
                     $templatePost = get_post($postId);
                     
-                    if ($debug) {
-                        error_log('[HP-RW] getFromContext: Elementor document main_id: ' . $postId . ', type: ' . ($templatePost ? $templatePost->post_type : 'null'));
-                    }
-                    
                     // If the document is a template, we need to find the actual post being rendered
                     if ($templatePost && $templatePost->post_type === 'elementor_library') {
                         // Try get_the_ID() which Elementor usually sets correctly during render
                         $renderedPostId = get_the_ID();
-                        if ($debug) {
-                            error_log('[HP-RW] getFromContext: get_the_ID() returned: ' . $renderedPostId);
-                        }
                         if ($renderedPostId && $renderedPostId !== $postId) {
                             $renderedPost = get_post($renderedPostId);
                             if ($renderedPost && $renderedPost->post_type === Plugin::FUNNEL_POST_TYPE) {
-                                if ($debug) {
-                                    error_log('[HP-RW] getFromContext: Found via Elementor get_the_ID() - ID: ' . $renderedPostId);
-                                }
                                 $contextCache = self::getById($renderedPostId);
                                 $contextLookedUp = true;
                                 return $contextCache;
@@ -156,27 +134,14 @@ class FunnelConfigLoader
         // Method 4: Parse URL to extract funnel slug as last resort
         // This handles cases where WordPress query hasn't fully set up the post context
         $requestUri = $_SERVER['REQUEST_URI'] ?? '';
-        if ($debug) {
-            error_log('[HP-RW] getFromContext: Trying URL parse, REQUEST_URI: ' . $requestUri);
-        }
         if (preg_match('#/express-shop/([^/]+)/?#', $requestUri, $matches)) {
             $slug = sanitize_title($matches[1]);
-            if ($debug) {
-                error_log('[HP-RW] getFromContext: Extracted slug from URL: ' . $slug);
-            }
             $funnelPost = self::findPostBySlug($slug);
             if ($funnelPost) {
-                if ($debug) {
-                    error_log('[HP-RW] getFromContext: Found via URL parse - ID: ' . $funnelPost->ID);
-                }
                 $contextCache = self::getById($funnelPost->ID);
                 $contextLookedUp = true;
                 return $contextCache;
             }
-        }
-        
-        if ($debug) {
-            error_log('[HP-RW] getFromContext: No funnel found. queried_object type: ' . (is_object($queried) ? get_class($queried) : gettype($queried)) . ', global $post type: ' . ($post ? $post->post_type : 'null'));
         }
         
         $contextLookedUp = true;
