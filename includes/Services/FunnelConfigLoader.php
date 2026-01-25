@@ -933,6 +933,30 @@ class FunnelConfigLoader
 
             // v2.33.2: Per-section background configuration (replaces mode-based system)
             'section_backgrounds' => $sectionBackgrounds ?: [],
+
+            // v2.42.0: Typography sizing for responsive breakpoints
+            'typography' => [
+                'h1' => [
+                    'mobile'  => (int) (self::getFieldValue('h1_size_mobile', $postId) ?: 36),
+                    'tablet'  => (int) (self::getFieldValue('h1_size_tablet', $postId) ?: 48),
+                    'desktop' => (int) (self::getFieldValue('h1_size_desktop', $postId) ?: 60),
+                ],
+                'h2' => [
+                    'mobile'  => (int) (self::getFieldValue('h2_size_mobile', $postId) ?: 24),
+                    'tablet'  => (int) (self::getFieldValue('h2_size_tablet', $postId) ?: 30),
+                    'desktop' => (int) (self::getFieldValue('h2_size_desktop', $postId) ?: 36),
+                ],
+                'h3' => [
+                    'mobile'  => (int) (self::getFieldValue('h3_size_mobile', $postId) ?: 20),
+                    'tablet'  => (int) (self::getFieldValue('h3_size_tablet', $postId) ?: 22),
+                    'desktop' => (int) (self::getFieldValue('h3_size_desktop', $postId) ?: 24),
+                ],
+                'body' => [
+                    'mobile'  => (int) (self::getFieldValue('body_size_mobile', $postId) ?: 16),
+                    'tablet'  => (int) (self::getFieldValue('body_size_tablet', $postId) ?: 16),
+                    'desktop' => (int) (self::getFieldValue('body_size_desktop', $postId) ?: 18),
+                ],
+            ],
         ];
     }
 
