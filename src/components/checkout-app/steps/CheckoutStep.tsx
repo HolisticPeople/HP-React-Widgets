@@ -321,7 +321,9 @@ export const CheckoutStep = ({
   const orderDraftIdRef = useRef<string | null>(null);
 
   const stripeContainerRef = useRef<HTMLDivElement>(null);
+  const expressCheckoutContainerRef = useRef<HTMLDivElement>(null);
   const stripeMountedRef = useRef(false);
+  const expressCheckoutMountedRef = useRef(false);
 
   // Hooks
   const customerLookup = useCustomerLookup({
@@ -346,6 +348,10 @@ export const CheckoutStep = ({
 
   const api = useCheckoutApi({ apiBase, funnelId, funnelName });
 
+  // Ref for api to use in callbacks
+  const apiRef = useRef(api);
+  apiRef.current = api;
+
   const stripePayment = useStripePayment({
     publishableKey: stripePublishableKey,
     stripeMode,
@@ -366,6 +372,96 @@ export const CheckoutStep = ({
     onPaymentError: (err) => {
       setError(err);
       setIsSubmitting(false);
+    },
+    // Express Checkout: resolve immediately to open wallet sheet
+    onExpressCheckoutClick: (resolve) => {
+      resolve();
+    },
+    // Express Checkout: create payment intent when user confirms in wallet
+    onExpressCheckoutConfirm: async () => {
+      // Validate required fields
+      if (!formData.phone.trim()) {
+        setError('Please fill in your phone number before using Express Checkout.');
+        return null;
+      }
+      if (!formData.email.trim()) {
+        setError('Please fill in your email address before using Express Checkout.');
+        return null;
+      }
+      if (!formData.firstName.trim() || !formData.lastName.trim()) {
+        setError('Please fill in your name before using Express Checkout.');
+        return null;
+      }
+      if (!formData.address.trim() || !formData.city.trim() || !formData.zipCode.trim()) {
+        setError('Please fill in your shipping address before using Express Checkout.');
+        return null;
+      }
+
+      setIsSubmitting(true);
+      setError(null);
+
+      try {
+        const items = getCartItems();
+        const address: Address = {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          address1: formData.address,
+          city: formData.city,
+          state: formData.state,
+          postcode: formData.zipCode,
+          country: formData.country,
+          phone: formData.phone,
+          email: formData.email,
+        };
+
+        let submitRate = selectedRate;
+        if (!submitRate && isFreeShipping) {
+          submitRate = {
+            serviceCode: 'free_shipping',
+            serviceName: 'Free Shipping',
+            shipmentCost: 0,
+            otherCost: 0,
+          };
+        }
+
+        const result = await apiRef.current.createPaymentIntent(
+          items,
+          address,
+          formData.email,
+          formData.firstName,
+          formData.lastName,
+          submitRate,
+          pointsToRedeem,
+          offerPrice.discounted
+        );
+
+        orderDraftIdRef.current = result.orderDraftId;
+
+        return {
+          clientSecret: result.clientSecret,
+          billingDetails: {
+            name: `${formData.firstName} ${formData.lastName}`,
+            email: formData.email,
+            phone: formData.phone,
+            address: {
+              line1: formData.address,
+              city: formData.city,
+              state: formData.state,
+              postal_code: formData.zipCode,
+              country: formData.country,
+            },
+          },
+        };
+      } catch (err: any) {
+        console.error('[CheckoutStep] Express Checkout failed', err);
+        if (err.code === 'funnel_off' && err.redirect) {
+          window.location.href = err.redirect;
+          return null;
+        }
+        setError(err.message || 'Something went wrong. Please try again.');
+        setIsSubmitting(false);
+        return null;
+      }
     },
   });
 
@@ -406,15 +502,28 @@ export const CheckoutStep = ({
     // Poll for Stripe readiness to avoid dependency on stripePayment
     const checkAndMount = () => {
       const isReady = stripePaymentRef.current.isReady;
-      const hasContainer = !!stripeContainerRef.current;
-      const alreadyMounted = stripeMountedRef.current;
+      const hasCardContainer = !!stripeContainerRef.current;
+      const hasExpressContainer = !!expressCheckoutContainerRef.current;
+      const cardAlreadyMounted = stripeMountedRef.current;
+      const expressAlreadyMounted = expressCheckoutMountedRef.current;
       
-      if (isReady && hasContainer && !alreadyMounted) {
+      let mounted = false;
+      
+      // Mount card element
+      if (isReady && hasCardContainer && !cardAlreadyMounted) {
         stripePaymentRef.current.mountCardElement(stripeContainerRef.current);
         stripeMountedRef.current = true;
-        return true;
+        mounted = true;
       }
-      return false;
+      
+      // Mount Express Checkout element (after card element is mounted)
+      if (isReady && hasExpressContainer && !expressAlreadyMounted && stripeMountedRef.current) {
+        stripePaymentRef.current.mountExpressCheckout(expressCheckoutContainerRef.current);
+        expressCheckoutMountedRef.current = true;
+        mounted = true;
+      }
+      
+      return stripeMountedRef.current && expressCheckoutMountedRef.current;
     };
 
     // Try immediately
@@ -438,6 +547,7 @@ export const CheckoutStep = ({
       if (stripeMountedRef.current) {
         stripePaymentRef.current.unmountCardElement();
         stripeMountedRef.current = false;
+        expressCheckoutMountedRef.current = false;
       }
     };
   }, []); // Empty deps - runs only on mount/unmount
@@ -1545,6 +1655,28 @@ export const CheckoutStep = ({
                     </span>
                   )}
                 </div>
+
+                {/* Express Checkout - Apple Pay / Google Pay */}
+                <div 
+                  ref={expressCheckoutContainerRef}
+                  className="min-h-[48px] mb-4"
+                  style={{ display: stripePayment.hasExpressCheckout === false ? 'none' : 'block' }}
+                >
+                  {stripePayment.isLoading && (
+                    <div className="flex items-center justify-center h-12">
+                      <LoaderIcon className="w-5 h-5 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Divider - only show when Express Checkout is available */}
+                {stripePayment.hasExpressCheckout && (
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="flex-1 h-px bg-border/30" />
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">or pay with card</span>
+                    <div className="flex-1 h-px bg-border/30" />
+                  </div>
+                )}
                 
                 {stripeMode === 'test' && (
                   <div className="mb-3 p-3 bg-accent/5 border border-accent/20 rounded-md text-[11px] space-y-1">

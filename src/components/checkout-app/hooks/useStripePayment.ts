@@ -9,6 +9,13 @@ interface Stripe {
 interface StripeElements {
   create: (type: string, options?: any) => StripeElement;
   getElement: (type: string) => StripeElement | null;
+  submit: () => Promise<{ error?: any }>;
+}
+
+interface ExpressCheckoutAvailablePaymentMethods {
+  applePay?: boolean;
+  googlePay?: boolean;
+  link?: boolean;
 }
 
 interface StripeElement {
@@ -33,6 +40,8 @@ interface UseStripePaymentOptions {
   stripeMode?: string;
   onPaymentSuccess?: (paymentIntentId: string) => void;
   onPaymentError?: (error: string) => void;
+  onExpressCheckoutClick?: (resolve: (params: { lineItems?: any[] }) => void) => void;
+  onExpressCheckoutConfirm?: () => Promise<{ clientSecret: string; billingDetails: any } | null>;
 }
 
 // Global Stripe singleton loader - ensures only ONE Stripe instance exists
@@ -100,22 +109,28 @@ function loadStripeSingleton(publishableKey: string): Promise<Stripe | null> {
 }
 
 export function useStripePayment(options: UseStripePaymentOptions) {
-  const { publishableKey, stripeMode, onPaymentSuccess, onPaymentError } = options;
+  const { publishableKey, stripeMode, onPaymentSuccess, onPaymentError, onExpressCheckoutClick, onExpressCheckoutConfirm } = options;
   
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isCardComplete, setIsCardComplete] = useState(false);
+  const [expressCheckoutAvailable, setExpressCheckoutAvailable] = useState<ExpressCheckoutAvailablePaymentMethods | null>(null);
   
   const stripeRef = useRef<Stripe | null>(null);
   const elementsRef = useRef<StripeElements | null>(null);
   const cardElementRef = useRef<StripeElement | null>(null);
+  const expressCheckoutRef = useRef<StripeElement | null>(null);
   
   // Use refs for callbacks to avoid recreating confirmPayment on every render
   const onPaymentSuccessRef = useRef(onPaymentSuccess);
   const onPaymentErrorRef = useRef(onPaymentError);
+  const onExpressCheckoutClickRef = useRef(onExpressCheckoutClick);
+  const onExpressCheckoutConfirmRef = useRef(onExpressCheckoutConfirm);
   onPaymentSuccessRef.current = onPaymentSuccess;
   onPaymentErrorRef.current = onPaymentError;
+  onExpressCheckoutClickRef.current = onExpressCheckoutClick;
+  onExpressCheckoutConfirmRef.current = onExpressCheckoutConfirm;
 
   // Load Stripe.js using singleton pattern
   useEffect(() => {
@@ -212,8 +227,136 @@ export function useStripePayment(options: UseStripePaymentOptions) {
       cardElementRef.current.destroy();
       cardElementRef.current = null;
     }
+    if (expressCheckoutRef.current) {
+      expressCheckoutRef.current.destroy();
+      expressCheckoutRef.current = null;
+    }
     elementsRef.current = null;
     isMountedRef.current = false;
+    setExpressCheckoutAvailable(null);
+  }, []);
+
+  // Track if Express Checkout is already mounted
+  const isExpressCheckoutMountedRef = useRef(false);
+
+  // Mount Express Checkout Element (Apple Pay, Google Pay, etc.)
+  const mountExpressCheckout = useCallback((container: HTMLElement | string) => {
+    // Prevent duplicate mounts
+    if (isExpressCheckoutMountedRef.current || !elementsRef.current) {
+      return;
+    }
+
+    isExpressCheckoutMountedRef.current = true;
+
+    // Create Express Checkout Element
+    expressCheckoutRef.current = elementsRef.current.create('expressCheckout', {
+      buttonType: {
+        applePay: 'buy',
+        googlePay: 'buy',
+      },
+      buttonHeight: 48,
+      buttonTheme: {
+        applePay: 'black',
+        googlePay: 'black',
+      },
+      layout: {
+        maxColumns: 2,
+        maxRows: 1,
+        overflow: 'never',
+      },
+    });
+
+    // Mount to container
+    expressCheckoutRef.current.mount(container);
+
+    // Listen for ready event to check which wallets are available
+    expressCheckoutRef.current.on('ready', (event: { availablePaymentMethods?: ExpressCheckoutAvailablePaymentMethods }) => {
+      if (event.availablePaymentMethods) {
+        setExpressCheckoutAvailable(event.availablePaymentMethods);
+      } else {
+        setExpressCheckoutAvailable(null);
+      }
+    });
+
+    // Handle click event - resolve with payment details when wallet sheet opens
+    expressCheckoutRef.current.on('click', (event: { resolve: (params?: { lineItems?: any[] }) => void }) => {
+      if (onExpressCheckoutClickRef.current) {
+        onExpressCheckoutClickRef.current(event.resolve);
+      } else {
+        // Default: just resolve without line items
+        event.resolve();
+      }
+    });
+
+    // Handle confirm event - when user authorizes payment in wallet
+    expressCheckoutRef.current.on('confirm', async () => {
+      if (!onExpressCheckoutConfirmRef.current || !stripeRef.current || !elementsRef.current) {
+        return;
+      }
+
+      setIsProcessing(true);
+      setError(null);
+
+      try {
+        // Get client secret and billing details from parent
+        const result = await onExpressCheckoutConfirmRef.current();
+        if (!result) {
+          setError('Failed to prepare payment');
+          setIsProcessing(false);
+          return;
+        }
+
+        const { clientSecret, billingDetails } = result;
+
+        // Confirm payment with Stripe
+        const { error: confirmError, paymentIntent } = await stripeRef.current.confirmPayment({
+          elements: elementsRef.current,
+          clientSecret,
+          confirmParams: {
+            payment_method_data: {
+              billing_details: billingDetails,
+            },
+            return_url: window.location.href,
+          },
+          redirect: 'if_required',
+        });
+
+        if (confirmError) {
+          setError(confirmError.message || 'Payment failed');
+          if (onPaymentErrorRef.current) {
+            onPaymentErrorRef.current(confirmError.message || 'Payment failed');
+          }
+          setIsProcessing(false);
+          return;
+        }
+
+        if (paymentIntent?.status === 'succeeded') {
+          if (onPaymentSuccessRef.current) {
+            onPaymentSuccessRef.current(paymentIntent.id);
+          }
+        } else {
+          setError('Payment was not completed');
+        }
+      } catch (err: any) {
+        const message = err.message || 'An unexpected error occurred';
+        setError(message);
+        if (onPaymentErrorRef.current) {
+          onPaymentErrorRef.current(message);
+        }
+      } finally {
+        setIsProcessing(false);
+      }
+    });
+  }, []);
+
+  // Unmount Express Checkout Element only
+  const unmountExpressCheckout = useCallback(() => {
+    if (expressCheckoutRef.current) {
+      expressCheckoutRef.current.destroy();
+      expressCheckoutRef.current = null;
+    }
+    isExpressCheckoutMountedRef.current = false;
+    setExpressCheckoutAvailable(null);
   }, []);
 
   // Confirm payment
@@ -300,6 +443,10 @@ export function useStripePayment(options: UseStripePaymentOptions) {
 
   const isReady = !isLoading && !!stripeRef.current;
 
+  // Check if any Express Checkout wallet is available
+  const hasExpressCheckout = expressCheckoutAvailable 
+    && (expressCheckoutAvailable.applePay || expressCheckoutAvailable.googlePay || expressCheckoutAvailable.link);
+
   // Memoize return object to prevent unnecessary re-renders in consumers
   return useMemo(() => ({
     isLoading,
@@ -310,6 +457,11 @@ export function useStripePayment(options: UseStripePaymentOptions) {
     unmountCardElement,
     confirmPayment,
     isReady,
-  }), [isLoading, isProcessing, isCardComplete, error, mountCardElement, unmountCardElement, confirmPayment, isReady]);
+    // Express Checkout
+    mountExpressCheckout,
+    unmountExpressCheckout,
+    expressCheckoutAvailable,
+    hasExpressCheckout,
+  }), [isLoading, isProcessing, isCardComplete, error, mountCardElement, unmountCardElement, confirmPayment, isReady, mountExpressCheckout, unmountExpressCheckout, expressCheckoutAvailable, hasExpressCheckout]);
 }
 
