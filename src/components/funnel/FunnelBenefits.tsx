@@ -230,7 +230,7 @@ export const FunnelBenefits = ({
             {categorizedBenefits.map(({ key, label, benefits: catBenefits }) => (
               <div key={key} className="space-y-4">
                 {/* Category Title - enlarged on mobile for better visibility */}
-                <h3 className="text-xl md:text-lg font-semibold text-accent border-b border-accent/30 pb-2 mb-4">
+                <h3 className="text-2xl md:text-xl font-semibold text-accent border-b border-accent/30 pb-2 mb-4">
                   {label}
                 </h3>
                 {/* Benefits in this category */}

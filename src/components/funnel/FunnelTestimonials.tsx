@@ -481,27 +481,62 @@ export const FunnelTestimonials = ({
               </button>
             )}
 
-            {/* Dot indicators */}
+            {/* Swipe indicator with arrows (mobile) and dot indicators */}
             {testimonials.length > 1 && (
-              <div className="flex justify-center gap-2 mt-6">
-                {testimonials.map((_, index) => (
+              <div className="flex flex-col items-center gap-3 mt-6">
+                {/* Swipe arrows hint - visible on mobile */}
+                <div 
+                  className="flex items-center gap-3 md:hidden"
+                  style={{ color: 'var(--hp-funnel-text-note, #a3a3a3)' }}
+                >
                   <button
-                    key={index}
-                    onClick={() => scrollToIndex(index)}
-                    className={cn(
-                      'w-2.5 h-2.5 rounded-full transition-all duration-300',
-                      currentIndex === index 
-                        ? 'scale-125' 
-                        : 'opacity-50 hover:opacity-75'
-                    )}
-                    style={{
-                      backgroundColor: currentIndex === index 
-                        ? 'var(--hp-funnel-text-accent, #eab308)' 
-                        : 'var(--hp-funnel-border, #7c3aed)',
+                    onClick={() => scrollCarousel('prev')}
+                    disabled={currentIndex === 0}
+                    className="p-2 rounded-full transition-opacity disabled:opacity-30"
+                    style={{ 
+                      backgroundColor: 'var(--hp-funnel-card-bg, #1a1a1a)',
+                      border: '1px solid var(--hp-funnel-border, #7c3aed)',
                     }}
-                    aria-label={`Go to testimonial ${index + 1}`}
-                  />
-                ))}
+                    aria-label="Previous testimonial"
+                  >
+                    <ArrowLeftIcon />
+                  </button>
+                  <span className="text-sm">Swipe for more</span>
+                  <button
+                    onClick={() => scrollCarousel('next')}
+                    disabled={currentIndex >= testimonials.length - 1}
+                    className="p-2 rounded-full transition-opacity disabled:opacity-30"
+                    style={{ 
+                      backgroundColor: 'var(--hp-funnel-card-bg, #1a1a1a)',
+                      border: '1px solid var(--hp-funnel-border, #7c3aed)',
+                    }}
+                    aria-label="Next testimonial"
+                  >
+                    <ArrowRightIcon />
+                  </button>
+                </div>
+                
+                {/* Dot indicators */}
+                <div className="flex justify-center gap-2">
+                  {testimonials.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => scrollToIndex(index)}
+                      className={cn(
+                        'w-2.5 h-2.5 rounded-full transition-all duration-300',
+                        currentIndex === index 
+                          ? 'scale-125' 
+                          : 'opacity-50 hover:opacity-75'
+                      )}
+                      style={{
+                        backgroundColor: currentIndex === index 
+                          ? 'var(--hp-funnel-text-accent, #eab308)' 
+                          : 'var(--hp-funnel-border, #7c3aed)',
+                      }}
+                      aria-label={`Go to testimonial ${index + 1}`}
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </div>

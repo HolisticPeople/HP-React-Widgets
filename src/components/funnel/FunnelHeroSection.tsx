@@ -79,7 +79,7 @@ export const FunnelHeroSection = ({
   minHeight = '600px',
   titleSize = 'xl', // Default to xl (matches reference funnel)
   heightBehavior = 'scrollable', // Changed from fit_viewport - overflow issues on mobile
-  mobileImagePosition = 'below',
+  mobileImagePosition = 'above', // Changed default: image between title and description on mobile
   mobileTitleSize,
   enableScrollNavigation = false,
   className,
@@ -206,7 +206,7 @@ export const FunnelHeroSection = ({
             {/* Title block - comes first on mobile */}
             <div className="space-y-4">
               <h1 
-                className="font-bold text-accent drop-shadow-[0_0_30px_hsl(45_95%_60%/0.5)] hp-hero-title"
+                className="font-bold text-accent drop-shadow-[0_0_15px_hsl(45_95%_60%/0.4)] hp-hero-title"
                 style={{ 
                   fontSize: titleSizeValue,
                   lineHeight: 1.1,
@@ -292,7 +292,7 @@ export const FunnelHeroSection = ({
               )}
             >
               <h1 
-                className="font-bold text-accent drop-shadow-[0_0_30px_hsl(45_95%_60%/0.5)] hp-hero-title"
+                className="font-bold text-accent drop-shadow-[0_0_15px_hsl(45_95%_60%/0.4)] hp-hero-title"
                 style={{ 
                   fontSize: titleSizeValue,
                   lineHeight: 1.1,
