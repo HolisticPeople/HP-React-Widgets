@@ -196,7 +196,7 @@ export const StickyCTA = ({
           ...buttonStyle,
           // Capsule shape: auto width, large horizontal padding, fully rounded
           padding: '14px 48px',
-          fontSize: '18px', // Increased from 15px for better readability
+          fontSize: '20px', // Increased for better readability on mobile
           fontWeight: 700,
           border: 'none',
           borderRadius: '9999px', // Fully rounded capsule
