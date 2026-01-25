@@ -4444,6 +4444,7 @@
             "show_color_wheel": true
         },
         {
+            "ID": 0,
             "key": "field_typography_header",
             "label": "Typography Sizes",
             "name": "",
@@ -4470,6 +4471,7 @@
             "_valid": 1
         },
         {
+            "ID": 0,
             "key": "field_h1_size_mobile",
             "label": "H1 Mobile",
             "name": "h1_size_mobile",
@@ -4500,6 +4502,7 @@
             "_valid": 1
         },
         {
+            "ID": 0,
             "key": "field_h1_size_tablet",
             "label": "H1 Tablet",
             "name": "h1_size_tablet",
@@ -4530,6 +4533,7 @@
             "_valid": 1
         },
         {
+            "ID": 0,
             "key": "field_h1_size_desktop",
             "label": "H1 Desktop",
             "name": "h1_size_desktop",
@@ -4560,6 +4564,7 @@
             "_valid": 1
         },
         {
+            "ID": 0,
             "key": "field_h2_size_mobile",
             "label": "H2 Mobile",
             "name": "h2_size_mobile",
@@ -4590,6 +4595,7 @@
             "_valid": 1
         },
         {
+            "ID": 0,
             "key": "field_h2_size_tablet",
             "label": "H2 Tablet",
             "name": "h2_size_tablet",
@@ -4620,6 +4626,7 @@
             "_valid": 1
         },
         {
+            "ID": 0,
             "key": "field_h2_size_desktop",
             "label": "H2 Desktop",
             "name": "h2_size_desktop",
@@ -4650,6 +4657,7 @@
             "_valid": 1
         },
         {
+            "ID": 0,
             "key": "field_h3_size_mobile",
             "label": "H3 Mobile",
             "name": "h3_size_mobile",
@@ -4680,6 +4688,7 @@
             "_valid": 1
         },
         {
+            "ID": 0,
             "key": "field_h3_size_tablet",
             "label": "H3 Tablet",
             "name": "h3_size_tablet",
@@ -4710,6 +4719,7 @@
             "_valid": 1
         },
         {
+            "ID": 0,
             "key": "field_h3_size_desktop",
             "label": "H3 Desktop",
             "name": "h3_size_desktop",
@@ -4740,6 +4750,7 @@
             "_valid": 1
         },
         {
+            "ID": 0,
             "key": "field_body_size_mobile",
             "label": "Body Mobile",
             "name": "body_size_mobile",
@@ -4770,6 +4781,7 @@
             "_valid": 1
         },
         {
+            "ID": 0,
             "key": "field_body_size_tablet",
             "label": "Body Tablet",
             "name": "body_size_tablet",
@@ -4800,6 +4812,7 @@
             "_valid": 1
         },
         {
+            "ID": 0,
             "key": "field_body_size_desktop",
             "label": "Body Desktop",
             "name": "body_size_desktop",
