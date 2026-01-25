@@ -496,6 +496,7 @@ class FunnelConfigLoader
             'name'        => $post->post_title,
             'slug'        => $funnelSlug,
             'stripe_mode' => self::getFieldValue('stripe_mode', $postId),
+            'paypal_mode' => self::getFieldValue('paypal_mode', $postId),
             
             // General settings (Round 2 improvements)
             'general' => [
@@ -1746,6 +1747,7 @@ class FunnelConfigLoader
             'name'        => $legacy['name'] ?? ucfirst($slug),
             'slug'        => $slug,
             'stripe_mode' => 'auto',
+            'paypal_mode' => 'auto',
             
             'hero' => [
                 'title'         => $legacy['hero_title'] ?? ($legacy['title'] ?? ''),

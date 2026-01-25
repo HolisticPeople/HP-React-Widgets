@@ -370,6 +370,7 @@ class PayPalApi
 
     /**
      * Determine PayPal mode for a funnel (sandbox or live).
+     * Checks paypal_mode first, falls back to stripe_mode if 'auto', then environment.
      */
     private function getPayPalModeForFunnel(string $funnelId): string
     {
@@ -377,10 +378,17 @@ class PayPalApi
         if ($postId > 0) {
             $config = FunnelConfigLoader::getById($postId);
             if (is_array($config)) {
-                // Use same mode as Stripe
-                $mode = strtolower(trim((string) ($config['stripe_mode'] ?? 'auto')));
-                if ($mode === 'test' || $mode === 'sandbox') return 'sandbox';
-                if ($mode === 'live') return 'live';
+                // First check funnel's paypal_mode setting
+                $paypalMode = strtolower(trim((string) ($config['paypal_mode'] ?? 'auto')));
+                if ($paypalMode === 'sandbox') return 'sandbox';
+                if ($paypalMode === 'live') return 'live';
+                
+                // If 'auto', follow Stripe mode
+                if ($paypalMode === 'auto' || $paypalMode === '') {
+                    $stripeMode = strtolower(trim((string) ($config['stripe_mode'] ?? 'auto')));
+                    if ($stripeMode === 'test' || $stripeMode === 'sandbox') return 'sandbox';
+                    if ($stripeMode === 'live') return 'live';
+                }
             }
         }
 

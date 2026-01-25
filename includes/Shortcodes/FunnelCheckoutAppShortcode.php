@@ -106,12 +106,13 @@ class FunnelCheckoutAppShortcode
         }
 
         // Get Stripe mode + publishable key (mode can be forced per funnel)
-        $resolvedMode = 'auto';
+        $resolvedStripeMode = 'auto';
         $stripeMode = (string) ($config['stripe_mode'] ?? 'auto');
-        $stripeKey = $this->getStripePublishableKey($stripeMode, $resolvedMode);
+        $stripeKey = $this->getStripePublishableKey($stripeMode, $resolvedStripeMode);
 
-        // Get PayPal config (uses same mode as Stripe)
-        $paypalConfig = $this->getPayPalConfig($resolvedMode);
+        // Get PayPal config (can be set independently or follow Stripe mode)
+        $paypalMode = (string) ($config['paypal_mode'] ?? 'auto');
+        $paypalConfig = $this->getPayPalConfig($paypalMode, $resolvedStripeMode);
 
         // Get logged-in user data for autofill
         $initialUserData = $this->getLoggedInUserData();
@@ -131,7 +132,7 @@ class FunnelCheckoutAppShortcode
             'enableCustomerLookup' => (bool) ($config['checkout']['enable_customer_lookup'] ?? true),
             'showAllOffers'       => (bool) ($config['checkout']['show_all_offers'] ?? true),
             'stripePublishableKey' => $stripeKey,
-            'stripeMode'          => $resolvedMode, // Use the resolved 'test' or 'live'
+            'stripeMode'          => $resolvedStripeMode, // Use the resolved 'test' or 'live'
             'paypalEnabled'       => $paypalConfig['enabled'],
             'paypalClientId'      => $paypalConfig['client_id'],
             'upsellOffers'        => $this->buildUpsellOffers($config['thankyou']['upsell'] ?? null),
@@ -459,17 +460,25 @@ class FunnelCheckoutAppShortcode
     /**
      * Get PayPal configuration based on mode.
      *
-     * @param string $mode 'test' or 'live' - matches Stripe mode for consistency
+     * @param string $paypalMode PayPal mode from funnel config: 'auto', 'live', or 'sandbox'
+     * @param string $stripeMode Resolved Stripe mode to use when paypalMode is 'auto'
      * @return array PayPal config with 'enabled' and 'client_id'
      */
-    private function getPayPalConfig(string $mode): array
+    private function getPayPalConfig(string $paypalMode, string $stripeMode): array
     {
         $paypalSettings = get_option('hp_rw_paypal_settings', []);
         
         $enabled = !empty($paypalSettings['enabled']);
         
-        // Map 'test' to 'sandbox' for PayPal terminology
-        if ($mode === 'test') {
+        // Determine which credentials to use
+        $resolvedMode = $paypalMode;
+        if ($paypalMode === 'auto' || $paypalMode === '') {
+            // Follow Stripe mode: 'test' -> 'sandbox', 'live' -> 'live'
+            $resolvedMode = ($stripeMode === 'test') ? 'sandbox' : 'live';
+        }
+        
+        // Get appropriate client ID
+        if ($resolvedMode === 'sandbox' || $resolvedMode === 'test') {
             $clientId = $paypalSettings['sandbox_client_id'] ?? '';
         } else {
             $clientId = $paypalSettings['live_client_id'] ?? '';
