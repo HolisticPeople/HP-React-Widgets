@@ -371,14 +371,15 @@ export const FunnelTestimonials = ({
         )}
 
         {/* Carousel/Slider Layout - mobile-optimized with touch swipe */}
+        {/* Reduced horizontal padding on mobile, shows peek of next card */}
         {effectiveLayout === 'carousel' && (
-          <div className="relative px-12 md:px-16">
-            {/* Navigation arrows - positioned outside cards */}
+          <div className="relative px-2 md:px-16">
+            {/* Navigation arrows - positioned outside cards (hidden on mobile due to reduced padding) */}
             {testimonials.length > 1 && (
               <button
                 onClick={() => scrollCarousel('prev')}
                 disabled={currentIndex === 0}
-                className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:scale-110"
+                className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full hidden md:flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:scale-110"
                 style={{ 
                   backgroundColor: 'var(--hp-funnel-card-bg, #1a1a1a)',
                   border: '1px solid var(--hp-funnel-border, #7c3aed)',
@@ -396,16 +397,18 @@ export const FunnelTestimonials = ({
             >
               <style>{`.hp-funnel-testimonials::-webkit-scrollbar { display: none; }`}</style>
               <div 
-                className="flex gap-6"
+                className="flex gap-4 md:gap-6"
                 style={{ minWidth: 'max-content' }}
               >
                 {testimonials.map((testimonial, index) => (
                   <div
                     key={index}
-                    className="testimonial-card rounded-xl p-6 flex-shrink-0"
+                    className="testimonial-card rounded-xl p-5 md:p-6 flex-shrink-0"
                     style={{
                       ...cardStyle,
-                      width: 'min(600px, 80vw)',
+                      // Mobile: show peek of next card (85vw leaves ~15vw for peek + gap)
+                      // Desktop: larger cards up to 600px
+                      width: 'min(600px, calc(100vw - 56px))',
                       minHeight: 'auto',
                     }}
                   >
@@ -462,12 +465,12 @@ export const FunnelTestimonials = ({
               </div>
             </div>
 
-            {/* Right arrow */}
+            {/* Right arrow - hidden on mobile (swipe instead) */}
             {testimonials.length > 1 && (
               <button
                 onClick={() => scrollCarousel('next')}
                 disabled={currentIndex >= testimonials.length - 1}
-                className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:scale-110"
+                className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full hidden md:flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:scale-110"
                 style={{ 
                   backgroundColor: 'var(--hp-funnel-card-bg, #1a1a1a)',
                   border: '1px solid var(--hp-funnel-border, #7c3aed)',

@@ -140,13 +140,14 @@ export const FunnelInfographics = ({
   };
 
   // Mobile Stack View - Title + Left + Right stacked vertically
+  // Full-width images with no horizontal margins on mobile
   const renderMobileStack = () => (
-    <div className="hp-infographics-mobile-stack flex flex-col gap-4 md:hidden">
+    <div className="hp-infographics-mobile-stack flex flex-col gap-2 md:hidden">
       {titleImage && (
         <img
           src={titleImage}
           alt={`${altText} - Title`}
-          className="w-full h-auto rounded-lg shadow-md"
+          className="w-full h-auto"
           loading="lazy"
         />
       )}
@@ -154,7 +155,7 @@ export const FunnelInfographics = ({
         <img
           src={leftPanelImage}
           alt={`${altText} - Left panel`}
-          className="w-full h-auto rounded-lg shadow-md"
+          className="w-full h-auto"
           loading="lazy"
         />
       )}
@@ -162,7 +163,7 @@ export const FunnelInfographics = ({
         <img
           src={rightPanelImage}
           alt={`${altText} - Right panel`}
-          className="w-full h-auto rounded-lg shadow-md"
+          className="w-full h-auto"
           loading="lazy"
         />
       )}
@@ -170,6 +171,7 @@ export const FunnelInfographics = ({
   );
 
   // Mobile Carousel View - Title on top, swipeable panels with dots
+  // Full-width images with no horizontal margins on mobile
   const renderMobileCarousel = () => {
     const panels = [
       { src: leftPanelImage, label: 'Left panel' },
@@ -177,13 +179,13 @@ export const FunnelInfographics = ({
     ].filter(p => p.src);
 
     return (
-      <div className="hp-infographics-mobile-carousel flex flex-col gap-4 md:hidden">
-        {/* Title image at top */}
+      <div className="hp-infographics-mobile-carousel flex flex-col gap-2 md:hidden">
+        {/* Title image at top - full width */}
         {titleImage && (
           <img
             src={titleImage}
             alt={`${altText} - Title`}
-            className="w-full h-auto rounded-lg shadow-md"
+            className="w-full h-auto"
             loading="lazy"
           />
         )}
@@ -205,7 +207,7 @@ export const FunnelInfographics = ({
                     <img
                       src={panel.src}
                       alt={`${altText} - ${panel.label}`}
-                      className="w-full h-auto rounded-lg shadow-md"
+                      className="w-full h-auto"
                       loading="lazy"
                     />
                   </CarouselItem>
@@ -258,12 +260,13 @@ export const FunnelInfographics = ({
   return (
     <section
       className={cn(
-        'hp-funnel-infographics hp-funnel-section py-4 md:py-16 px-4',
+        'hp-funnel-infographics hp-funnel-section py-4 md:py-16 px-0 md:px-4',
         className
       )}
       data-effective-mode={effectiveMode}
     >
-      <div className="max-w-6xl mx-auto w-full">
+      {/* Container: full-width on mobile, max-width on desktop */}
+      <div className="w-full md:max-w-6xl md:mx-auto">
         {/* Optional section title */}
         {title && (
           <h2 

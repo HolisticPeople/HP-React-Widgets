@@ -46,12 +46,13 @@ export interface FunnelHeroSectionProps {
 }
 
 // Title size mapping with CSS values (to override WordPress theme CSS)
+// Mobile sizes increased in v2.33.0 to fill screen width better
 const titleSizes: Record<string, { mobile: string; tablet: string; desktop: string }> = {
-  'sm': { mobile: '1.5rem', tablet: '1.875rem', desktop: '2.25rem' },     // 24px → 30px → 36px
-  'md': { mobile: '1.875rem', tablet: '2.25rem', desktop: '3rem' },       // 30px → 36px → 48px
-  'lg': { mobile: '2.25rem', tablet: '3rem', desktop: '3.75rem' },        // 36px → 48px → 60px
-  'xl': { mobile: '2.5rem', tablet: '3.75rem', desktop: '4.5rem' },       // 40px → 60px → 72px
-  '2xl': { mobile: '3rem', tablet: '4.5rem', desktop: '6rem' },           // 48px → 72px → 96px
+  'sm': { mobile: '1.75rem', tablet: '1.875rem', desktop: '2.25rem' },    // 28px → 30px → 36px
+  'md': { mobile: '2.25rem', tablet: '2.25rem', desktop: '3rem' },        // 36px → 36px → 48px
+  'lg': { mobile: '2.75rem', tablet: '3rem', desktop: '3.75rem' },        // 44px → 48px → 60px
+  'xl': { mobile: '3rem', tablet: '3.75rem', desktop: '4.5rem' },         // 48px → 60px → 72px
+  '2xl': { mobile: '3.5rem', tablet: '4.5rem', desktop: '6rem' },         // 56px → 72px → 96px
 };
 
 export const FunnelHeroSection = ({
@@ -193,101 +194,194 @@ export const FunnelHeroSection = ({
         />
       </div>
 
-      {/* Content */}
-      <div className="relative w-full max-w-7xl mx-auto px-4 py-16">
-        <div
-          className={cn(
-            'grid gap-8 md:gap-12 items-center',
-            showImage && 'md:grid-cols-2',
-            imagePosition === 'left' && 'md:flex-row-reverse'
-          )}
-        >
-          {/* Text Content */}
-          <div
-            className={cn(
-              'space-y-6',
-              textAlign === 'center' && 'text-center',
-              textAlign === 'right' && 'text-right',
-              imagePosition === 'left' && 'md:order-2'
-            )}
-          >
-            <h1 
-              className="font-bold text-accent drop-shadow-[0_0_30px_hsl(45_95%_60%/0.5)]"
-              style={{ 
-                fontSize: titleSizeValue,
-                lineHeight: 1.1,
-              }}
-            >
-              {title}
-            </h1>
-
-            {subtitle && (
-              <p className="text-3xl md:text-4xl font-semibold text-accent/90">
-                {subtitle}
-              </p>
-            )}
-
-            {tagline && (
-              <p className="text-xl md:text-2xl text-foreground/90">
-                {tagline}
-              </p>
-            )}
-
-            {description && (
-              <p className="text-lg text-muted-foreground max-w-xl">
-                {description}
-              </p>
-            )}
-
-            <div className={cn(
-              'flex gap-4 mt-8',
-              textAlign === 'center' && 'justify-center',
-              textAlign === 'right' && 'justify-end'
-            )}>
-              <Button
-                size="lg"
-                onClick={handleCtaClick}
-                className="hp-funnel-cta-btn font-bold text-xl px-12 py-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+      {/* Content - reduced top padding on mobile for vertical space efficiency */}
+      <div className="relative w-full max-w-7xl mx-auto px-4 pt-4 pb-12 md:py-16">
+        {/* Mobile layout: Title → Image → Description when mobileImagePosition is 'above' */}
+        {isMobile && showImage && mobileImagePosition === 'above' ? (
+          <div className={cn(
+            'flex flex-col gap-6',
+            textAlign === 'center' && 'text-center items-center',
+            textAlign === 'right' && 'text-right items-end'
+          )}>
+            {/* Title block - comes first on mobile */}
+            <div className="space-y-4">
+              <h1 
+                className="font-bold text-accent drop-shadow-[0_0_30px_hsl(45_95%_60%/0.5)] hp-hero-title"
+                style={{ 
+                  fontSize: titleSizeValue,
+                  lineHeight: 1.1,
+                }}
               >
-                {ctaText}
-              </Button>
+                {title}
+              </h1>
 
-              {ctaSecondaryText && ctaSecondaryUrl && (
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={() => window.location.href = ctaSecondaryUrl}
-                  className="font-bold text-xl px-8 py-6 rounded-full border-accent/50 text-accent hover:bg-accent/10"
-                >
-                  {ctaSecondaryText}
-                </Button>
+              {subtitle && (
+                <p className="text-2xl font-semibold text-accent/90">
+                  {subtitle}
+                </p>
+              )}
+
+              {tagline && (
+                <p className="text-lg text-foreground/90">
+                  {tagline}
+                </p>
               )}
             </div>
-          </div>
 
-          {/* Hero Image (side position) - respects mobile visibility and ordering */}
-          {showImage && (
-            <div
-              className={cn(
-                'relative flex justify-center items-center',
-                // Desktop: respect imagePosition setting
-                imagePosition === 'left' && 'md:order-1',
-                // Mobile: use mobileImagePosition for ordering
-                isMobile && mobileImagePosition === 'above' && 'order-first',
-                isMobile && mobileImagePosition === 'below' && 'order-last'
-              )}
-            >
+            {/* Image - appears between title and description on mobile */}
+            <div className="relative flex justify-center items-center w-full">
               <div className="absolute inset-0 bg-gradient-to-r from-accent/20 via-primary/30 to-accent/20 rounded-full blur-3xl scale-75" />
               <img
                 src={heroImage}
                 alt={heroImageAlt}
                 loading="lazy"
-                className="relative w-full max-w-md h-auto drop-shadow-[0_0_40px_hsl(45_95%_60%/0.6)]"
+                className="relative w-full max-w-sm h-auto drop-shadow-[0_0_40px_hsl(45_95%_60%/0.6)]"
               />
             </div>
-          )}
-        </div>
+
+            {/* Description and CTA - comes after image on mobile */}
+            <div className="space-y-6">
+              {description && (
+                <p className="text-base text-muted-foreground">
+                  {description}
+                </p>
+              )}
+
+              <div className={cn(
+                'flex gap-4',
+                textAlign === 'center' && 'justify-center',
+                textAlign === 'right' && 'justify-end'
+              )}>
+                <Button
+                  size="lg"
+                  onClick={handleCtaClick}
+                  className="hp-funnel-cta-btn font-bold text-xl px-12 py-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  {ctaText}
+                </Button>
+
+                {ctaSecondaryText && ctaSecondaryUrl && (
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => window.location.href = ctaSecondaryUrl}
+                    className="font-bold text-xl px-8 py-6 rounded-full border-accent/50 text-accent hover:bg-accent/10"
+                  >
+                    {ctaSecondaryText}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Standard grid layout for desktop and other mobile configurations */
+          <div
+            className={cn(
+              'grid gap-8 md:gap-12 items-center',
+              showImage && 'md:grid-cols-2',
+              imagePosition === 'left' && 'md:flex-row-reverse'
+            )}
+          >
+            {/* Text Content */}
+            <div
+              className={cn(
+                'space-y-6',
+                textAlign === 'center' && 'text-center',
+                textAlign === 'right' && 'text-right',
+                imagePosition === 'left' && 'md:order-2'
+              )}
+            >
+              <h1 
+                className="font-bold text-accent drop-shadow-[0_0_30px_hsl(45_95%_60%/0.5)] hp-hero-title"
+                style={{ 
+                  fontSize: titleSizeValue,
+                  lineHeight: 1.1,
+                }}
+              >
+                {title}
+              </h1>
+
+              {subtitle && (
+                <p className="text-3xl md:text-4xl font-semibold text-accent/90">
+                  {subtitle}
+                </p>
+              )}
+
+              {tagline && (
+                <p className="text-xl md:text-2xl text-foreground/90">
+                  {tagline}
+                </p>
+              )}
+
+              {description && (
+                <p className="text-lg text-muted-foreground max-w-xl">
+                  {description}
+                </p>
+              )}
+
+              <div className={cn(
+                'flex gap-4 mt-8',
+                textAlign === 'center' && 'justify-center',
+                textAlign === 'right' && 'justify-end'
+              )}>
+                <Button
+                  size="lg"
+                  onClick={handleCtaClick}
+                  className="hp-funnel-cta-btn font-bold text-xl px-12 py-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  {ctaText}
+                </Button>
+
+                {ctaSecondaryText && ctaSecondaryUrl && (
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => window.location.href = ctaSecondaryUrl}
+                    className="font-bold text-xl px-8 py-6 rounded-full border-accent/50 text-accent hover:bg-accent/10"
+                  >
+                    {ctaSecondaryText}
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Hero Image (side position) - respects mobile visibility and ordering */}
+            {showImage && (
+              <div
+                className={cn(
+                  'relative flex justify-center items-center',
+                  // Desktop: respect imagePosition setting
+                  imagePosition === 'left' && 'md:order-1',
+                  // Mobile: use mobileImagePosition for ordering
+                  isMobile && mobileImagePosition === 'below' && 'order-last'
+                )}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-accent/20 via-primary/30 to-accent/20 rounded-full blur-3xl scale-75" />
+                <img
+                  src={heroImage}
+                  alt={heroImageAlt}
+                  loading="lazy"
+                  className="relative w-full max-w-md h-auto drop-shadow-[0_0_40px_hsl(45_95%_60%/0.6)]"
+                />
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* CSS for TM/superscript sizing - reduces relative size on mobile */}
+      <style>{`
+        .hp-hero-title sup {
+          font-size: 0.4em;
+          vertical-align: super;
+          line-height: 0;
+        }
+        @media (min-width: 768px) {
+          .hp-hero-title sup {
+            font-size: 0.5em;
+          }
+        }
+      `}</style>
 
       {/* Scroll Navigation - rendered automatically when enabled in funnel settings */}
       {enableScrollNavigation && <ScrollNavigation />}

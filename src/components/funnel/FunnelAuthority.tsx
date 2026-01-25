@@ -152,7 +152,7 @@ export const FunnelAuthority = ({
                     {category.quotes.map((quote, quoteIndex) => (
                       <blockquote
                         key={quoteIndex}
-                        className="pl-4 border-l-2 border-accent/30 text-foreground/90 italic"
+                        className="pl-0 md:pl-4 border-l-0 md:border-l-2 border-accent/30 text-foreground/90 italic"
                       >
                         "{quote}"
                       </blockquote>
@@ -200,9 +200,9 @@ export const FunnelAuthority = ({
                   {normalizedQuotes.map((quote, index) => (
                     <blockquote
                       key={index}
-                      className="relative pl-6 border-l-4 border-accent/50 italic text-foreground/90"
+                      className="relative pl-0 md:pl-6 border-l-0 md:border-l-4 border-accent/50 italic text-foreground/90"
                     >
-                      <span className="absolute -left-2 -top-2 text-accent opacity-30">
+                      <span className="absolute -left-2 -top-2 text-accent opacity-30 hidden md:block">
                         <QuoteIcon />
                       </span>
                       "{quote.text}"
@@ -292,7 +292,7 @@ export const FunnelAuthority = ({
                 {normalizedQuotes.map((quote, index) => (
                   <blockquote
                     key={index}
-                    className="relative pl-6 border-l-4 border-accent/50 italic text-foreground/90"
+                    className="relative pl-0 md:pl-6 border-l-0 md:border-l-4 border-accent/50 italic text-foreground/90"
                   >
                     "{quote.text}"
                   </blockquote>

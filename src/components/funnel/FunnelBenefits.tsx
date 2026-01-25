@@ -229,8 +229,8 @@ export const FunnelBenefits = ({
           <div className={cn('grid gap-8', gridCols[Math.min(categorizedBenefits.length, 5) as 2|3|4|5] || 'lg:grid-cols-3')}>
             {categorizedBenefits.map(({ key, label, benefits: catBenefits }) => (
               <div key={key} className="space-y-4">
-                {/* Category Title */}
-                <h3 className="text-lg font-semibold text-accent border-b border-accent/30 pb-2 mb-4">
+                {/* Category Title - enlarged on mobile for better visibility */}
+                <h3 className="text-xl md:text-lg font-semibold text-accent border-b border-accent/30 pb-2 mb-4">
                   {label}
                 </h3>
                 {/* Benefits in this category */}
