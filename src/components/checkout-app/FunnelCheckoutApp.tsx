@@ -572,6 +572,8 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
             showAllOffers={props.showAllOffers ?? true}
             stripePublishableKey={stripePublishableKey}
             stripeMode={stripeMode}
+            paypalEnabled={props.paypalEnabled}
+            paypalClientId={props.paypalClientId}
             landingUrl={landingUrl}
             apiBase={apiBase}
             getCartItems={getCartItems}

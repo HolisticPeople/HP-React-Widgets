@@ -423,6 +423,107 @@ class SettingsPage
 
             <hr />
 
+            <?php
+            // Handle PayPal settings submission
+            if (isset($_POST['hp_rw_paypal_submitted'])) {
+                check_admin_referer('hp_rw_paypal_settings');
+
+                $paypalSettings = [
+                    'enabled'           => isset($_POST['paypal_enabled']),
+                    'sandbox_client_id' => isset($_POST['paypal_sandbox_client_id']) ? sanitize_text_field($_POST['paypal_sandbox_client_id']) : '',
+                    'sandbox_secret'    => isset($_POST['paypal_sandbox_secret']) ? sanitize_text_field($_POST['paypal_sandbox_secret']) : '',
+                    'live_client_id'    => isset($_POST['paypal_live_client_id']) ? sanitize_text_field($_POST['paypal_live_client_id']) : '',
+                    'live_secret'       => isset($_POST['paypal_live_secret']) ? sanitize_text_field($_POST['paypal_live_secret']) : '',
+                ];
+
+                update_option('hp_rw_paypal_settings', $paypalSettings);
+                echo '<div class="notice notice-success is-dismissible"><p>PayPal settings saved.</p></div>';
+            }
+
+            $paypalSettings = get_option('hp_rw_paypal_settings', []);
+            ?>
+
+            <h2><?php echo esc_html('PayPal Settings'); ?></h2>
+            <p class="description">
+                <?php echo esc_html('Configure PayPal credentials for funnel checkout. Get your REST API credentials from the PayPal Developer Dashboard.'); ?>
+            </p>
+
+            <form method="post" style="max-width: 900px;">
+                <?php wp_nonce_field('hp_rw_paypal_settings'); ?>
+                <input type="hidden" name="hp_rw_paypal_submitted" value="1" />
+
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th scope="row">
+                            <label for="paypal_enabled"><?php echo esc_html('Enable PayPal'); ?></label>
+                        </th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="paypal_enabled" id="paypal_enabled" 
+                                       value="1" <?php checked(!empty($paypalSettings['enabled'])); ?> />
+                                <?php echo esc_html('Show PayPal button in funnel checkout'); ?>
+                            </label>
+                        </td>
+                    </tr>
+                </table>
+
+                <h3><?php echo esc_html('Sandbox Credentials (for testing)'); ?></h3>
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th scope="row">
+                            <label for="paypal_sandbox_client_id"><?php echo esc_html('Client ID'); ?></label>
+                        </th>
+                        <td>
+                            <input type="text" name="paypal_sandbox_client_id" id="paypal_sandbox_client_id" 
+                                   value="<?php echo esc_attr($paypalSettings['sandbox_client_id'] ?? ''); ?>" 
+                                   class="regular-text" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="paypal_sandbox_secret"><?php echo esc_html('Secret'); ?></label>
+                        </th>
+                        <td>
+                            <input type="password" name="paypal_sandbox_secret" id="paypal_sandbox_secret" 
+                                   value="<?php echo esc_attr($paypalSettings['sandbox_secret'] ?? ''); ?>" 
+                                   class="regular-text" />
+                        </td>
+                    </tr>
+                </table>
+
+                <h3><?php echo esc_html('Live Credentials (for production)'); ?></h3>
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th scope="row">
+                            <label for="paypal_live_client_id"><?php echo esc_html('Client ID'); ?></label>
+                        </th>
+                        <td>
+                            <input type="text" name="paypal_live_client_id" id="paypal_live_client_id" 
+                                   value="<?php echo esc_attr($paypalSettings['live_client_id'] ?? ''); ?>" 
+                                   class="regular-text" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="paypal_live_secret"><?php echo esc_html('Secret'); ?></label>
+                        </th>
+                        <td>
+                            <input type="password" name="paypal_live_secret" id="paypal_live_secret" 
+                                   value="<?php echo esc_attr($paypalSettings['live_secret'] ?? ''); ?>" 
+                                   class="regular-text" />
+                        </td>
+                    </tr>
+                </table>
+
+                <p>
+                    <button type="submit" class="button button-primary">
+                        <?php echo esc_html('Save PayPal Settings'); ?>
+                    </button>
+                </p>
+            </form>
+
+            <hr />
+
             <?php $isEditing = ($editingSlug !== ''); ?>
             <h2>
                 <?php

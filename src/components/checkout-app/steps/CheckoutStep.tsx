@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { useCustomerLookup } from '../hooks/useCustomerLookup';
 import { useCheckoutApi } from '../hooks/useCheckoutApi';
 import { useStripePayment } from '../hooks/useStripePayment';
+import { usePayPalPayment } from '../hooks/usePayPalPayment';
 import { getServiceCode, extractShippingCost } from '../utils/shipping';
 import { getCarrierLogo } from '../utils/carrierLogos';
 import { LegalPopup } from '../LegalPopup';
@@ -236,6 +237,8 @@ interface CheckoutStepProps {
   showAllOffers?: boolean;
   stripePublishableKey: string;
   stripeMode: string;
+  paypalEnabled?: boolean;
+  paypalClientId?: string;
   landingUrl: string;
   apiBase: string;
   getCartItems: () => CartItem[];
@@ -274,6 +277,8 @@ export const CheckoutStep = ({
   showAllOffers = true,
   stripePublishableKey,
   stripeMode,
+  paypalEnabled = false,
+  paypalClientId = '',
   landingUrl,
   apiBase,
   getCartItems,
@@ -322,8 +327,10 @@ export const CheckoutStep = ({
 
   const stripeContainerRef = useRef<HTMLDivElement>(null);
   const expressCheckoutContainerRef = useRef<HTMLDivElement>(null);
+  const paypalContainerRef = useRef<HTMLDivElement>(null);
   const stripeMountedRef = useRef(false);
   const expressCheckoutMountedRef = useRef(false);
+  const paypalMountedRef = useRef(false);
 
   // Hooks
   const customerLookup = useCustomerLookup({
@@ -465,6 +472,77 @@ export const CheckoutStep = ({
     },
   });
 
+  // PayPal payment hook
+  const paypalPayment = usePayPalPayment({
+    clientId: paypalEnabled ? paypalClientId : '',
+    currency: 'USD',
+    onCreateOrder: async () => {
+      // Return order data for PayPal backend
+      const items = getCartItems();
+      let submitRate = selectedRate;
+      // Compute free shipping inline (same logic as isFreeShipping memo)
+      const isFreeShippingNow = freeShippingCountries.includes(formData.country.toUpperCase());
+      if (!submitRate && isFreeShippingNow) {
+        submitRate = {
+          serviceCode: 'free_shipping',
+          serviceName: 'Free Shipping',
+          shipmentCost: 0,
+          otherCost: 0,
+        };
+      }
+
+      return {
+        funnelId,
+        funnelName,
+        amount: offerPrice.discounted,
+        items,
+        customer: {
+          email: formData.email,
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+        },
+        shippingAddress: {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          address1: formData.address,
+          city: formData.city,
+          state: formData.state,
+          postcode: formData.zipCode,
+          country: formData.country,
+          phone: formData.phone,
+          email: formData.email,
+        },
+        selectedRate: submitRate,
+        pointsToRedeem,
+        offerTotal: offerPrice.discounted,
+      };
+    },
+    onPaymentSuccess: (orderId, orderNumber) => {
+      // PayPal success - redirect to thank you step
+      const address: Address = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        address1: formData.address,
+        city: formData.city,
+        state: formData.state,
+        postcode: formData.zipCode,
+        country: formData.country,
+        phone: formData.phone,
+        email: formData.email,
+      };
+      // Use PayPal order ID as payment reference
+      onComplete(`paypal_${orderId}`, address, '');
+    },
+    onPaymentError: (err) => {
+      setError(err);
+      setIsSubmitting(false);
+    },
+  });
+
+  // Ref for PayPal payment
+  const paypalPaymentRef = useRef(paypalPayment);
+  paypalPaymentRef.current = paypalPayment;
+
   // Get selected offer
   const selectedOffer = useMemo(
     () => offers.find(o => o.id === selectedOfferId) as Offer | undefined,
@@ -551,6 +629,48 @@ export const CheckoutStep = ({
       }
     };
   }, []); // Empty deps - runs only on mount/unmount
+
+  // Mount PayPal button when ready (separate effect for PayPal)
+  useEffect(() => {
+    if (!paypalEnabled || !paypalClientId) return;
+    
+    const checkAndMountPayPal = () => {
+      const isAvailable = paypalPaymentRef.current.isAvailable;
+      const hasContainer = !!paypalContainerRef.current;
+      const alreadyMounted = paypalMountedRef.current;
+      
+      if (isAvailable && hasContainer && !alreadyMounted) {
+        paypalPaymentRef.current.mountPayPalButton(paypalContainerRef.current);
+        paypalMountedRef.current = true;
+        return true;
+      }
+      return paypalMountedRef.current;
+    };
+
+    // Try immediately
+    if (checkAndMountPayPal()) {
+      return;
+    }
+
+    // Poll every 100ms until ready (max 5 seconds)
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts++;
+      if (checkAndMountPayPal()) {
+        clearInterval(interval);
+      } else if (attempts > 50) {
+        clearInterval(interval);
+      }
+    }, 100);
+
+    return () => {
+      clearInterval(interval);
+      if (paypalMountedRef.current) {
+        paypalPaymentRef.current.unmountPayPalButton();
+        paypalMountedRef.current = false;
+      }
+    };
+  }, [paypalEnabled, paypalClientId]);
 
   // Refs to avoid dependency loops - these hold current values without triggering re-renders
   const selectedRateRef = useRef(selectedRate);
@@ -1656,21 +1776,41 @@ export const CheckoutStep = ({
                   )}
                 </div>
 
-                {/* Express Checkout - Apple Pay / Google Pay */}
-                <div 
-                  ref={expressCheckoutContainerRef}
-                  className="min-h-[48px] mb-4"
-                  style={{ display: stripePayment.hasExpressCheckout === false ? 'none' : 'block' }}
-                >
-                  {stripePayment.isLoading && (
-                    <div className="flex items-center justify-center h-12">
-                      <LoaderIcon className="w-5 h-5 text-muted-foreground" />
+                {/* Express Checkout - Apple Pay / Google Pay / PayPal */}
+                {(stripePayment.hasExpressCheckout || (paypalEnabled && paypalPayment.isAvailable)) && (
+                  <div className="space-y-3 mb-4">
+                    {/* Stripe Express Checkout (Apple Pay / Google Pay) */}
+                    <div 
+                      ref={expressCheckoutContainerRef}
+                      className="min-h-[48px]"
+                      style={{ display: stripePayment.hasExpressCheckout === false ? 'none' : 'block' }}
+                    >
+                      {stripePayment.isLoading && (
+                        <div className="flex items-center justify-center h-12">
+                          <LoaderIcon className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                {/* Divider - only show when Express Checkout is available */}
-                {stripePayment.hasExpressCheckout && (
+                    {/* PayPal Button */}
+                    {paypalEnabled && (
+                      <div 
+                        ref={paypalContainerRef}
+                        className="min-h-[48px]"
+                        style={{ display: paypalPayment.isAvailable === false && !paypalPayment.isLoading ? 'none' : 'block' }}
+                      >
+                        {paypalPayment.isLoading && (
+                          <div className="flex items-center justify-center h-12">
+                            <LoaderIcon className="w-5 h-5 text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Divider - show when any wallet option is available */}
+                {(stripePayment.hasExpressCheckout || (paypalEnabled && paypalPayment.isAvailable)) && (
                   <div className="flex items-center gap-3 mb-4">
                     <div className="flex-1 h-px bg-border/30" />
                     <span className="text-xs text-muted-foreground uppercase tracking-wider">or pay with card</span>

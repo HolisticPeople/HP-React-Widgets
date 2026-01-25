@@ -292,6 +292,10 @@ class Plugin
         $checkoutApi = new Rest\CheckoutApi();
         $checkoutApi->register();
 
+        // Register PayPal REST API endpoints.
+        $paypalApi = new Rest\PayPalApi();
+        $paypalApi->register();
+
         // Register upsell REST API endpoints.
         $upsellApi = new Rest\UpsellApi();
         $upsellApi->register();

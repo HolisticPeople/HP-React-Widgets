@@ -110,6 +110,9 @@ class FunnelCheckoutAppShortcode
         $stripeMode = (string) ($config['stripe_mode'] ?? 'auto');
         $stripeKey = $this->getStripePublishableKey($stripeMode, $resolvedMode);
 
+        // Get PayPal config (uses same mode as Stripe)
+        $paypalConfig = $this->getPayPalConfig($resolvedMode);
+
         // Get logged-in user data for autofill
         $initialUserData = $this->getLoggedInUserData();
 
@@ -129,6 +132,8 @@ class FunnelCheckoutAppShortcode
             'showAllOffers'       => (bool) ($config['checkout']['show_all_offers'] ?? true),
             'stripePublishableKey' => $stripeKey,
             'stripeMode'          => $resolvedMode, // Use the resolved 'test' or 'live'
+            'paypalEnabled'       => $paypalConfig['enabled'],
+            'paypalClientId'      => $paypalConfig['client_id'],
             'upsellOffers'        => $this->buildUpsellOffers($config['thankyou']['upsell'] ?? null),
             'showUpsell'          => (bool) ($config['thankyou']['show_upsell'] ?? false),
             'thankYouHeadline'    => $config['thankyou']['headline'] ?? 'Thank You for Your Order!',
@@ -449,6 +454,31 @@ class FunnelCheckoutAppShortcode
             return (string) ($stripeSettings['test_publishable_key'] ?: ($stripeApiSettings['publishable_key_test'] ?? ''));
         }
         return (string) ($stripeSettings['publishable_key'] ?: ($stripeApiSettings['publishable_key_live'] ?? ''));
+    }
+
+    /**
+     * Get PayPal configuration based on mode.
+     *
+     * @param string $mode 'test' or 'live' - matches Stripe mode for consistency
+     * @return array PayPal config with 'enabled' and 'client_id'
+     */
+    private function getPayPalConfig(string $mode): array
+    {
+        $paypalSettings = get_option('hp_rw_paypal_settings', []);
+        
+        $enabled = !empty($paypalSettings['enabled']);
+        
+        // Map 'test' to 'sandbox' for PayPal terminology
+        if ($mode === 'test') {
+            $clientId = $paypalSettings['sandbox_client_id'] ?? '';
+        } else {
+            $clientId = $paypalSettings['live_client_id'] ?? '';
+        }
+        
+        return [
+            'enabled'   => $enabled && !empty($clientId),
+            'client_id' => $clientId,
+        ];
     }
 }
 

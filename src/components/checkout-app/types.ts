@@ -257,6 +257,9 @@ export interface FunnelCheckoutAppConfig {
   showAllOffers: boolean;
   stripePublishableKey: string;
   stripeMode?: string;
+  // PayPal configuration
+  paypalEnabled?: boolean;
+  paypalClientId?: string;
   upsellOffers: UpsellOffer[];
   showUpsell: boolean;
   thankYouHeadline: string;

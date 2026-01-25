@@ -40,6 +40,51 @@ class CheckoutService
         delete_transient(self::TRANSIENT_PREFIX . $id);
     }
 
+    /**
+     * Update an existing draft with new data.
+     */
+    public function updateDraft(string $id, array $payload): bool
+    {
+        $existing = $this->getDraft($id);
+        if (!$existing) return false;
+        set_transient(self::TRANSIENT_PREFIX . $id, wp_json_encode($payload), self::TTL);
+        return true;
+    }
+
+    /**
+     * Find a draft by PayPal order ID.
+     */
+    public function findDraftByPayPalOrderId(string $paypalOrderId): ?array
+    {
+        global $wpdb;
+        
+        // Search transients for the PayPal order ID
+        $transients = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT option_name, option_value FROM {$wpdb->options} 
+                 WHERE option_name LIKE %s 
+                 AND option_value LIKE %s 
+                 LIMIT 1",
+                '_transient_' . self::TRANSIENT_PREFIX . '%',
+                '%' . $wpdb->esc_like($paypalOrderId) . '%'
+            )
+        );
+
+        if (empty($transients)) return null;
+
+        foreach ($transients as $transient) {
+            $data = json_decode($transient->option_value, true);
+            if (is_array($data) && isset($data['paypal_order_id']) && $data['paypal_order_id'] === $paypalOrderId) {
+                // Extract draft ID from transient name
+                $draftId = str_replace('_transient_' . self::TRANSIENT_PREFIX, '', $transient->option_name);
+                $data['draft_id'] = $draftId;
+                return $data;
+            }
+        }
+
+        return null;
+    }
+
     public function calculateTotals(
         array $items,
         array $address,
