@@ -259,11 +259,6 @@ export function useStripePayment(options: UseStripePaymentOptions) {
         applePay: 'black',
         googlePay: 'black',
       },
-      layout: {
-        maxColumns: 2,
-        maxRows: 1,
-        overflow: 'never',
-      },
     });
 
     // Mount to container
