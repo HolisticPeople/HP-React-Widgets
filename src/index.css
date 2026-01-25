@@ -339,6 +339,13 @@
         color: hsl(var(--primary));
     }
 
+    /* Default Badge Star Icon - constrain size to match badge text */
+    .default-badge svg.hp-icon {
+        width: 0.875rem !important;
+        height: 0.875rem !important;
+        flex-shrink: 0;
+    }
+
     .slider-dot {
         width: 0.5rem;
         height: 0.5rem;
