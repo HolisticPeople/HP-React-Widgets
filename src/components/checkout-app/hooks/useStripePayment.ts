@@ -181,14 +181,6 @@ export function useStripePayment(options: UseStripePaymentOptions) {
       mode: 'payment',
       amount: 1000, // Placeholder - will be updated when we have final amount
       currency: 'usd',
-      loader: 'always', // Preload to reduce telemetry polling
-      defaultValues: stripeMode === 'test' ? {
-        billingDetails: {
-          address: {
-            country: 'US',
-          },
-        },
-      } : undefined,
       appearance: {
         theme: 'night',
         variables: {
