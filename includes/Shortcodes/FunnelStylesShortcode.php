@@ -60,6 +60,21 @@ class FunnelStylesShortcode
         $bgImage = $styling['background_image'] ?? '';
         $customCss = $styling['custom_css'] ?? '';
 
+        // Typography settings (v2.42.0)
+        $typography = $styling['typography'] ?? [];
+        $h1Mobile  = ($typography['h1']['mobile'] ?? 36) . 'px';
+        $h1Tablet  = ($typography['h1']['tablet'] ?? 48) . 'px';
+        $h1Desktop = ($typography['h1']['desktop'] ?? 60) . 'px';
+        $h2Mobile  = ($typography['h2']['mobile'] ?? 24) . 'px';
+        $h2Tablet  = ($typography['h2']['tablet'] ?? 30) . 'px';
+        $h2Desktop = ($typography['h2']['desktop'] ?? 36) . 'px';
+        $h3Mobile  = ($typography['h3']['mobile'] ?? 20) . 'px';
+        $h3Tablet  = ($typography['h3']['tablet'] ?? 22) . 'px';
+        $h3Desktop = ($typography['h3']['desktop'] ?? 24) . 'px';
+        $bodyMobile  = ($typography['body']['mobile'] ?? 16) . 'px';
+        $bodyTablet  = ($typography['body']['tablet'] ?? 16) . 'px';
+        $bodyDesktop = ($typography['body']['desktop'] ?? 18) . 'px';
+
         // Build background CSS (solid background uses page_bg_color)
         $background = $this->buildBackground($bgType, $pageBgColor, $bgImage);
         $slug = esc_attr($config['slug']);
@@ -81,6 +96,18 @@ class FunnelStylesShortcode
             --hp-funnel-card-bg: {$cardBgColor};
             --hp-funnel-page-bg: {$pageBgColor};
             --hp-funnel-input-bg: {$inputBgColor};
+            --hp-funnel-h1-mobile: {$h1Mobile};
+            --hp-funnel-h1-tablet: {$h1Tablet};
+            --hp-funnel-h1-desktop: {$h1Desktop};
+            --hp-funnel-h2-mobile: {$h2Mobile};
+            --hp-funnel-h2-tablet: {$h2Tablet};
+            --hp-funnel-h2-desktop: {$h2Desktop};
+            --hp-funnel-h3-mobile: {$h3Mobile};
+            --hp-funnel-h3-tablet: {$h3Tablet};
+            --hp-funnel-h3-desktop: {$h3Desktop};
+            --hp-funnel-body-mobile: {$bodyMobile};
+            --hp-funnel-body-tablet: {$bodyTablet};
+            --hp-funnel-body-desktop: {$bodyDesktop};
         ";
 
         // Output CSS with high specificity to override Elementor
@@ -314,6 +341,75 @@ class FunnelStylesShortcode
             /* Accent SVG icons (checkmarks, etc.) */
             .hp-funnel-section svg {
                 color: var(--hp-funnel-text-accent);
+            }
+            
+            /* ===========================================
+               RESPONSIVE TYPOGRAPHY (v2.42.0)
+               Mobile-first approach with breakpoint overrides
+               =========================================== */
+            
+            /* Mobile (base) typography */
+            .hp-funnel-section h1,
+            .hp-funnel-checkout-app h1 {
+                font-size: var(--hp-funnel-h1-mobile) !important;
+            }
+            .hp-funnel-section h2,
+            .hp-funnel-checkout-app h2 {
+                font-size: var(--hp-funnel-h2-mobile) !important;
+            }
+            .hp-funnel-section h3,
+            .hp-funnel-checkout-app h3 {
+                font-size: var(--hp-funnel-h3-mobile) !important;
+            }
+            .hp-funnel-section p,
+            .hp-funnel-section li,
+            .hp-funnel-checkout-app p,
+            .hp-funnel-checkout-app li {
+                font-size: var(--hp-funnel-body-mobile);
+            }
+            
+            /* Tablet (768px+) typography */
+            @media (min-width: 768px) {
+                .hp-funnel-section h1,
+                .hp-funnel-checkout-app h1 {
+                    font-size: var(--hp-funnel-h1-tablet) !important;
+                }
+                .hp-funnel-section h2,
+                .hp-funnel-checkout-app h2 {
+                    font-size: var(--hp-funnel-h2-tablet) !important;
+                }
+                .hp-funnel-section h3,
+                .hp-funnel-checkout-app h3 {
+                    font-size: var(--hp-funnel-h3-tablet) !important;
+                }
+                .hp-funnel-section p,
+                .hp-funnel-section li,
+                .hp-funnel-checkout-app p,
+                .hp-funnel-checkout-app li {
+                    font-size: var(--hp-funnel-body-tablet);
+                }
+            }
+            
+            /* Desktop (1024px+) typography */
+            @media (min-width: 1024px) {
+                .hp-funnel-section h1,
+                .hp-funnel-checkout-app h1 {
+                    font-size: var(--hp-funnel-h1-desktop) !important;
+                }
+                .hp-funnel-section h2,
+                .hp-funnel-checkout-app h2 {
+                    font-size: var(--hp-funnel-h2-desktop) !important;
+                }
+                .hp-funnel-section h3,
+                .hp-funnel-checkout-app h3 {
+                    font-size: var(--hp-funnel-h3-desktop) !important;
+                }
+                .hp-funnel-section p,
+                .hp-funnel-section li,
+                .hp-funnel-checkout-app p,
+                .hp-funnel-checkout-app li {
+                    font-size: var(--hp-funnel-body-desktop);
+                }
             }
 
             {$customCss}

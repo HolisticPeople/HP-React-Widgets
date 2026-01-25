@@ -714,6 +714,18 @@ class FunnelImporter
             // v2.33.2+ format - import section_backgrounds directly
             self::setField($postId, 'section_backgrounds', $styling['section_backgrounds'] ?? []);
         }
+
+        // v2.42.0: Typography sizing for responsive breakpoints
+        $typography = $styling['typography'] ?? [];
+        if (!empty($typography)) {
+            foreach (['h1', 'h2', 'h3', 'body'] as $element) {
+                if (isset($typography[$element])) {
+                    self::setField($postId, "{$element}_size_mobile", $typography[$element]['mobile'] ?? null);
+                    self::setField($postId, "{$element}_size_tablet", $typography[$element]['tablet'] ?? null);
+                    self::setField($postId, "{$element}_size_desktop", $typography[$element]['desktop'] ?? null);
+                }
+            }
+        }
     }
 
     /**
