@@ -97,12 +97,13 @@ export const FunnelFaq = ({
                 <button
                   onClick={() => toggleItem(index)}
                   className={cn(
-                    "w-full flex items-center justify-between p-6 text-left transition-colors",
+                    "w-full flex items-center justify-between p-4 md:p-6 text-left transition-colors gap-3",
                     "bg-card/40 hover:bg-card/55"
                   )}
                   aria-expanded={isOpen}
                 >
-                  <span className="font-medium text-lg text-foreground/95 pr-4">
+                  {/* v2.43.3: Added break-words and min-w-0 to ensure text wraps properly on mobile */}
+                  <span className="font-medium text-base md:text-lg text-foreground/95 break-words min-w-0">
                     {faq.question}
                   </span>
                   <span className="text-accent flex-shrink-0">
