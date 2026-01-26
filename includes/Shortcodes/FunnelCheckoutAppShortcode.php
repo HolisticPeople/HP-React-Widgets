@@ -421,6 +421,14 @@ class FunnelCheckoutAppShortcode
      */
     private function getCustomerPointsBalance(int $userId): int
     {
+        // Try YITH WooCommerce Points and Rewards (most common on this site)
+        if (function_exists('ywpar_get_customer')) {
+            $customer = ywpar_get_customer($userId);
+            if ($customer && method_exists($customer, 'get_total_points')) {
+                return (int) $customer->get_total_points();
+            }
+        }
+        
         // Try WooCommerce Points and Rewards
         if (class_exists('WC_Points_Rewards_Manager')) {
             return (int) \WC_Points_Rewards_Manager::get_users_points($userId);
