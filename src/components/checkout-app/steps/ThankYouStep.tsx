@@ -153,21 +153,16 @@ export const ThankYouStep = ({
             {shipping?.country && <p>{shipping.country}</p>}
           </div>
           <p className="text-sm text-muted-foreground mt-4">
-            If anything looks wrong, please contact support as soon as possible so we can fix it before shipment.
+            If anything looks wrong, please{' '}
+            <a
+              href="/contact-us/"
+              className="text-accent hover:text-accent/80 underline underline-offset-2"
+            >
+              contact support
+            </a>{' '}
+            as soon as possible so we can fix it before shipment.
           </p>
         </Card>
-      )}
-
-      {/* Logged-in users: link to My Account order page */}
-      {!!orderSummary?.viewOrderUrl && (
-        <div className="text-center mb-8">
-          <a
-            href={orderSummary.viewOrderUrl}
-            className="text-accent hover:text-accent/80 font-medium"
-          >
-            View this order in My Account →
-          </a>
-        </div>
       )}
 
       {/* What's Next Section */}
@@ -186,6 +181,17 @@ export const ThankYouStep = ({
             <span className="text-accent mt-1">📧</span>
             <span>You'll receive tracking information once your order ships.</span>
           </li>
+          {!!orderSummary?.viewOrderUrl && (
+            <li className="flex items-start gap-3">
+              <span className="text-accent mt-1">🧾</span>
+              <a
+                href={orderSummary.viewOrderUrl}
+                className="text-accent hover:text-accent/80 underline underline-offset-2"
+              >
+                View this order in My Account
+              </a>
+            </li>
+          )}
         </ul>
       </Card>
 
