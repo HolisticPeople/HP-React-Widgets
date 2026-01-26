@@ -1678,6 +1678,261 @@
             "_valid": 1
         },
         {
+            "ID": 0,
+            "key": "field_benefit_category_1_icon",
+            "label": "Category 1 Default Icon",
+            "name": "benefit_category_1_icon",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "select",
+            "value": null,
+            "menu_order": 21.561,
+            "instructions": "Default icon for new benefits in this category",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_enable_benefit_categories",
+                        "operator": "==",
+                        "value": "1"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "20",
+                "class": "",
+                "id": ""
+            },
+            "choices": {
+                "check": "Check",
+                "star": "Star",
+                "shield": "Shield",
+                "heart": "Heart",
+                "leaf": "Leaf",
+                "bolt": "Bolt",
+                "flask": "Flask",
+                "brain": "Brain",
+                "sun": "Sun",
+                "moon": "Moon"
+            },
+            "default_value": "check",
+            "return_format": "value",
+            "multiple": 0,
+            "allow_null": 0,
+            "ui": 1,
+            "ajax": 0,
+            "placeholder": "",
+            "_name": "benefit_category_1_icon",
+            "_valid": 1
+        },
+        {
+            "ID": 0,
+            "key": "field_benefit_category_2_icon",
+            "label": "Category 2 Default Icon",
+            "name": "benefit_category_2_icon",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "select",
+            "value": null,
+            "menu_order": 21.562,
+            "instructions": "Default icon for new benefits in this category",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_enable_benefit_categories",
+                        "operator": "==",
+                        "value": "1"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "20",
+                "class": "",
+                "id": ""
+            },
+            "choices": {
+                "check": "Check",
+                "star": "Star",
+                "shield": "Shield",
+                "heart": "Heart",
+                "leaf": "Leaf",
+                "bolt": "Bolt",
+                "flask": "Flask",
+                "brain": "Brain",
+                "sun": "Sun",
+                "moon": "Moon"
+            },
+            "default_value": "flask",
+            "return_format": "value",
+            "multiple": 0,
+            "allow_null": 0,
+            "ui": 1,
+            "ajax": 0,
+            "placeholder": "",
+            "_name": "benefit_category_2_icon",
+            "_valid": 1
+        },
+        {
+            "ID": 0,
+            "key": "field_benefit_category_3_icon",
+            "label": "Category 3 Default Icon",
+            "name": "benefit_category_3_icon",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "select",
+            "value": null,
+            "menu_order": 21.563,
+            "instructions": "Default icon for new benefits in this category",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_enable_benefit_categories",
+                        "operator": "==",
+                        "value": "1"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "20",
+                "class": "",
+                "id": ""
+            },
+            "choices": {
+                "check": "Check",
+                "star": "Star",
+                "shield": "Shield",
+                "heart": "Heart",
+                "leaf": "Leaf",
+                "bolt": "Bolt",
+                "flask": "Flask",
+                "brain": "Brain",
+                "sun": "Sun",
+                "moon": "Moon"
+            },
+            "default_value": "shield",
+            "return_format": "value",
+            "multiple": 0,
+            "allow_null": 0,
+            "ui": 1,
+            "ajax": 0,
+            "placeholder": "",
+            "_name": "benefit_category_3_icon",
+            "_valid": 1
+        },
+        {
+            "ID": 0,
+            "key": "field_benefit_category_4_icon",
+            "label": "Category 4 Default Icon",
+            "name": "benefit_category_4_icon",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "select",
+            "value": null,
+            "menu_order": 21.564,
+            "instructions": "Default icon for new benefits in this category",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_enable_benefit_categories",
+                        "operator": "==",
+                        "value": "1"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "20",
+                "class": "",
+                "id": ""
+            },
+            "choices": {
+                "check": "Check",
+                "star": "Star",
+                "shield": "Shield",
+                "heart": "Heart",
+                "leaf": "Leaf",
+                "bolt": "Bolt",
+                "flask": "Flask",
+                "brain": "Brain",
+                "sun": "Sun",
+                "moon": "Moon"
+            },
+            "default_value": "star",
+            "return_format": "value",
+            "multiple": 0,
+            "allow_null": 0,
+            "ui": 1,
+            "ajax": 0,
+            "placeholder": "",
+            "_name": "benefit_category_4_icon",
+            "_valid": 1
+        },
+        {
+            "ID": 0,
+            "key": "field_benefit_category_5_icon",
+            "label": "Category 5 Default Icon",
+            "name": "benefit_category_5_icon",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "select",
+            "value": null,
+            "menu_order": 21.565,
+            "instructions": "Default icon for new benefits in this category",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_enable_benefit_categories",
+                        "operator": "==",
+                        "value": "1"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "20",
+                "class": "",
+                "id": ""
+            },
+            "choices": {
+                "check": "Check",
+                "star": "Star",
+                "shield": "Shield",
+                "heart": "Heart",
+                "leaf": "Leaf",
+                "bolt": "Bolt",
+                "flask": "Flask",
+                "brain": "Brain",
+                "sun": "Sun",
+                "moon": "Moon"
+            },
+            "default_value": "heart",
+            "return_format": "value",
+            "multiple": 0,
+            "allow_null": 0,
+            "ui": 1,
+            "ajax": 0,
+            "placeholder": "",
+            "_name": "benefit_category_5_icon",
+            "_valid": 1
+        },
+        {
             "ID": 125177,
             "key": "field_products_tab",
             "label": "Products",

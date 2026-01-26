@@ -1055,6 +1055,128 @@ class Plugin
 
         // AUTO-SYNC: Import JSON files automatically if they are newer than DB
         add_action('acf/init', [self::class, 'autoSyncAcfJson']);
+        
+        // v2.43.1: Dynamically populate benefit category dropdown with custom category names
+        add_filter('acf/load_field/key=field_benefit_category', [self::class, 'loadBenefitCategoryChoices']);
+        
+        // v2.43.1: Add "Apply to All" buttons for category icons in admin
+        add_action('admin_footer-post.php', [self::class, 'outputCategoryIconAdminScript']);
+        add_action('admin_footer-post-new.php', [self::class, 'outputCategoryIconAdminScript']);
+    }
+    
+    /**
+     * Output inline JavaScript for category icon "Apply to All" functionality.
+     * v2.43.1
+     */
+    public static function outputCategoryIconAdminScript(): void
+    {
+        $screen = get_current_screen();
+        if (!$screen || $screen->post_type !== 'hp-funnel') {
+            return;
+        }
+        ?>
+        <script type="text/javascript">
+        (function($) {
+            'use strict';
+            
+            // Category key mapping (icon field name -> category key)
+            var categoryMap = {
+                'benefit_category_1_icon': 'health',
+                'benefit_category_2_icon': 'science',
+                'benefit_category_3_icon': 'quality',
+                'benefit_category_4_icon': 'results',
+                'benefit_category_5_icon': 'support'
+            };
+            
+            // Wait for ACF to be ready
+            if (typeof acf === 'undefined') return;
+            
+            acf.addAction('ready', function() {
+                // For each category icon field, add an "Apply to All" button
+                $.each(categoryMap, function(fieldName, categoryKey) {
+                    var $field = $('[data-name="' + fieldName + '"]');
+                    if (!$field.length) return;
+                    
+                    // Add button after the select field
+                    var $button = $('<button type="button" class="button button-secondary hp-apply-icon-to-category" style="margin-left:8px;margin-top:4px;" data-category="' + categoryKey + '" data-icon-field="' + fieldName + '">Apply to All</button>');
+                    $field.find('.acf-input').append($button);
+                });
+                
+                // Handle button click
+                $(document).on('click', '.hp-apply-icon-to-category', function(e) {
+                    e.preventDefault();
+                    
+                    var categoryKey = $(this).data('category');
+                    var iconFieldName = $(this).data('icon-field');
+                    
+                    // Get selected icon from dropdown
+                    var $iconField = $('[data-name="' + iconFieldName + '"]');
+                    var selectedIcon = $iconField.find('select').val();
+                    
+                    if (!selectedIcon) {
+                        alert('Please select an icon first.');
+                        return;
+                    }
+                    
+                    // Find all benefit rows with this category
+                    var updated = 0;
+                    $('[data-name="hero_benefits"] .acf-row:not(.acf-clone)').each(function() {
+                        var $row = $(this);
+                        var $categoryField = $row.find('[data-name="category"] select');
+                        var rowCategory = $categoryField.val();
+                        
+                        if (rowCategory === categoryKey) {
+                            // Update the icon field in this row
+                            var $iconSelect = $row.find('[data-name="icon"] select');
+                            $iconSelect.val(selectedIcon).trigger('change');
+                            updated++;
+                        }
+                    });
+                    
+                    if (updated > 0) {
+                        alert('Applied "' + selectedIcon + '" icon to ' + updated + ' benefit(s) in this category.');
+                    } else {
+                        alert('No benefits found in this category.');
+                    }
+                });
+            });
+        })(jQuery);
+        </script>
+        <?php
+    }
+    
+    /**
+     * Dynamically load benefit category choices from custom category name fields.
+     * v2.43.1: Makes the category dropdown show custom names instead of hardcoded ones.
+     *
+     * @param array $field ACF field configuration
+     * @return array Modified field with dynamic choices
+     */
+    public static function loadBenefitCategoryChoices(array $field): array
+    {
+        // Get the current post ID (funnel being edited)
+        $postId = isset($_GET['post']) ? (int) $_GET['post'] : 0;
+        if (!$postId && isset($_POST['post_id'])) {
+            $postId = (int) $_POST['post_id'];
+        }
+        
+        // Get custom category names, falling back to defaults
+        $cat1 = get_field('benefit_category_1_name', $postId) ?: 'Health & Wellness';
+        $cat2 = get_field('benefit_category_2_name', $postId) ?: 'Science & Research';
+        $cat3 = get_field('benefit_category_3_name', $postId) ?: 'Quality & Purity';
+        $cat4 = get_field('benefit_category_4_name', $postId) ?: 'Results & Benefits';
+        $cat5 = get_field('benefit_category_5_name', $postId) ?: 'Support & Care';
+        
+        // Override choices with custom names (keys stay the same for data consistency)
+        $field['choices'] = [
+            'health'  => $cat1,
+            'science' => $cat2,
+            'quality' => $cat3,
+            'results' => $cat4,
+            'support' => $cat5,
+        ];
+        
+        return $field;
     }
 
     /**
