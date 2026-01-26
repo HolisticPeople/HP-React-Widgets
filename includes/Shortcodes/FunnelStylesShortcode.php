@@ -143,11 +143,10 @@ class FunnelStylesShortcode
             }
             
             /* v2.43.6: Fix Elementor flex container height issues on mobile */
-            /* Prevent shortcode widgets from expanding in flex containers */
+            /* Prevent shortcode widgets from expanding in flex containers - use block layout */
             @media (max-width: 767px) {
-                .e-con.e-flex > .elementor-widget-shortcode {
-                    flex: 0 0 auto !important;
-                    height: fit-content !important;
+                .e-con.e-flex:has(> .elementor-widget-shortcode) {
+                    display: block !important;
                 }
             }
             
