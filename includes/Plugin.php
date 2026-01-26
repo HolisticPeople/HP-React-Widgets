@@ -486,9 +486,18 @@ class Plugin
     
     /**
      * Handle funnel sub-route requests by loading the appropriate template.
+     * 
+     * This method hijacks the WP query to make WordPress/Elementor believe we're viewing
+     * the actual funnel CPT post. This ensures:
+     * - is_singular('hp-funnel') returns true
+     * - Elementor Theme Builder conditions for hp-funnel work correctly
+     * - Header/footer templates match the landing page
+     * - Body classes are applied correctly
      */
     public static function handleFunnelSubRoutes(): void
     {
+        global $wp_query, $post;
+        
         $route = get_query_var('hp_funnel_route');
         $slug = get_query_var('hp_funnel_slug');
         
@@ -496,10 +505,45 @@ class Plugin
             return;
         }
         
-        // Find the funnel by slug
+        // Find the actual funnel CPT post by slug
+        $funnel_posts = get_posts([
+            'post_type' => self::FUNNEL_POST_TYPE,
+            'name' => $slug,
+            'posts_per_page' => 1,
+            'post_status' => 'publish',
+        ]);
+        
+        if (empty($funnel_posts)) {
+            // Funnel not found - let WordPress handle 404
+            return;
+        }
+        
+        $funnel_post = $funnel_posts[0];
+        
+        // Hijack the main query to simulate viewing the funnel post
+        // This makes is_singular('hp-funnel') return true, enabling
+        // Elementor Theme Builder conditions to work correctly
+        $wp_query->is_singular = true;
+        $wp_query->is_single = true;
+        $wp_query->is_page = false;
+        $wp_query->is_archive = false;
+        $wp_query->is_home = false;
+        $wp_query->is_404 = false;
+        $wp_query->queried_object = $funnel_post;
+        $wp_query->queried_object_id = $funnel_post->ID;
+        $wp_query->post = $funnel_post;
+        $wp_query->posts = [$funnel_post];
+        $wp_query->post_count = 1;
+        $wp_query->found_posts = 1;
+        
+        // Set global $post so get_the_ID(), get_post(), etc. work correctly
+        $post = $funnel_post;
+        setup_postdata($post);
+        
+        // Find the funnel config (includes styling, offers, etc.)
         $funnel = Services\FunnelConfigLoader::getBySlug($slug);
         if (!$funnel || !$funnel['active']) {
-            // Funnel not found - let WordPress handle 404
+            // Funnel config not found or inactive
             return;
         }
         
