@@ -351,7 +351,17 @@ class CheckoutApi
     public function handle_order_summary(WP_REST_Request $request): WP_REST_Response|WP_Error
     {
         $orderId = (int) $request->get_param('order_id');
-        $piId = (string) $request->get_param('pi_id');
+        $piIdRaw = (string) $request->get_param('pi_id');
+        $piId = sanitize_text_field($piIdRaw);
+
+        // Accept Stripe client_secret (pi_..._secret_...) by normalizing to the PI id.
+        // This keeps the thank-you page resilient across different redirect/link formats.
+        if ($piId !== '' && str_contains($piId, '_secret_')) {
+            $secretPos = strpos($piId, '_secret_');
+            if ($secretPos !== false && $secretPos > 0) {
+                $piId = substr($piId, 0, $secretPos);
+            }
+        }
 
         $order = null;
         if ($orderId > 0) {
@@ -504,6 +514,13 @@ class CheckoutApi
             }
         }
 
+        $shippingMethodTitle = '';
+        try {
+            $shippingMethodTitle = (string) $order->get_shipping_method();
+        } catch (\Throwable $e) {
+            $shippingMethodTitle = '';
+        }
+
         return new WP_REST_Response([
             'success'         => true,
             'order_id'        => $order->get_id(),
@@ -512,6 +529,7 @@ class CheckoutApi
             'items_discount'  => (float) $totalDiscount,
             'points_redeemed' => $pointsRedeemed,
             'shipping_total'  => $shippingTotal,
+            'shipping_method_title' => $shippingMethodTitle,
             'grand_total'     => (float) max(0, $calculatedGrandTotal),
             'status'          => $order->get_status(),
             'date'            => $order->get_date_created() ? $order->get_date_created()->date('Y-m-d H:i:s') : '',

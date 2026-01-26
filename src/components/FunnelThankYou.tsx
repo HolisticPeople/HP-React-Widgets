@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { FunnelUpsell, UpsellOffer } from './FunnelUpsell';
 
@@ -41,11 +41,24 @@ interface OrderSummary {
   order_number: string;
   items: OrderItem[];
   shipping_total: number;
+  shipping_method_title?: string;
   fees_total: number;
   points_redeemed: { points: number; value: number };
   items_discount: number;
   grand_total: number;
   status: string;
+  shipping_address?: {
+    first_name?: string;
+    last_name?: string;
+    company?: string;
+    address_1?: string;
+    address_2?: string;
+    city?: string;
+    state?: string;
+    postcode?: string;
+    country?: string;
+  };
+  view_order_url?: string;
 }
 
 export interface FunnelThankYouProps {
@@ -87,6 +100,7 @@ export const FunnelThankYou = ({
   const [error, setError] = useState<string | null>(null);
   const [showUpsellOffer, setShowUpsellOffer] = useState(showUpsell && upsellOffers.length > 0);
   const [currentUpsellIndex, setCurrentUpsellIndex] = useState(0);
+  const retryCountRef = useRef(0);
 
   // Get order details from URL if not provided as props
   const orderId = propOrderId || (() => {
@@ -108,6 +122,9 @@ export const FunnelThankYou = ({
         return;
       }
 
+      setIsLoading(true);
+      setError(null);
+
       try {
         // If we only have piId, first resolve the order
         let resolvedOrderId = orderId;
@@ -117,13 +134,22 @@ export const FunnelThankYou = ({
           if (resolveRes.ok) {
             const resolveData = await resolveRes.json();
             resolvedOrderId = resolveData.order_id;
+          } else if (resolveRes.status !== 404) {
+            throw new Error('Failed to resolve order');
           }
         }
 
         if (!resolvedOrderId) {
           // Order might not be created yet (webhook delay)
           // Retry after a short delay
-          setTimeout(fetchOrderSummary, 2000);
+          retryCountRef.current += 1;
+          if (retryCountRef.current <= 10) {
+            setTimeout(fetchOrderSummary, 2000);
+            return;
+          }
+
+          setError('We could not find your order yet. Please use the link from your confirmation email, or refresh in a moment.');
+          setIsLoading(false);
           return;
         }
 
@@ -137,7 +163,14 @@ export const FunnelThankYou = ({
         if (!res.ok) {
           if (res.status === 404) {
             // Order not found yet, retry
-            setTimeout(fetchOrderSummary, 2000);
+            retryCountRef.current += 1;
+            if (retryCountRef.current <= 10) {
+              setTimeout(fetchOrderSummary, 2000);
+              return;
+            }
+
+            setError('We could not find your order yet. Please use the link from your confirmation email, or refresh in a moment.');
+            setIsLoading(false);
             return;
           }
           throw new Error('Failed to load order');
@@ -153,6 +186,7 @@ export const FunnelThankYou = ({
       }
     };
 
+    retryCountRef.current = 0;
     fetchOrderSummary();
   }, [orderId, piId, apiBase]);
 
@@ -264,6 +298,39 @@ export const FunnelThankYou = ({
               Order Summary
             </h2>
 
+            {/* Shipping Address */}
+            {!!orderSummary.shipping_address?.address_1 && (
+              <div className="mb-6 p-5 bg-background/50 rounded-lg">
+                <h3 className="text-lg font-semibold text-foreground mb-2">Shipping Address</h3>
+                <div className="text-foreground/90 space-y-1 text-sm">
+                  <div className="font-medium">
+                    {[orderSummary.shipping_address.first_name, orderSummary.shipping_address.last_name]
+                      .filter(Boolean)
+                      .join(' ')}
+                  </div>
+                  {orderSummary.shipping_address.company && <div>{orderSummary.shipping_address.company}</div>}
+                  <div>{orderSummary.shipping_address.address_1}</div>
+                  {orderSummary.shipping_address.address_2 && <div>{orderSummary.shipping_address.address_2}</div>}
+                  <div>
+                    {[orderSummary.shipping_address.city, orderSummary.shipping_address.state, orderSummary.shipping_address.postcode]
+                      .filter(Boolean)
+                      .join(', ')}
+                  </div>
+                  {orderSummary.shipping_address.country && <div>{orderSummary.shipping_address.country}</div>}
+                </div>
+                <p className="text-xs text-muted-foreground mt-3">
+                  If anything looks wrong, please{' '}
+                  <a
+                    href="/contact-us/"
+                    className="text-accent hover:text-accent/80 underline underline-offset-2"
+                  >
+                    contact support
+                  </a>{' '}
+                  as soon as possible so we can fix it before shipment.
+                </p>
+              </div>
+            )}
+
             {/* Items */}
             <div className="space-y-4 mb-6">
               {orderSummary.items.map((item, idx) => (
@@ -316,6 +383,12 @@ export const FunnelThankYou = ({
                   }
                 </span>
               </div>
+              {!!orderSummary.shipping_method_title && (
+                <div className="flex justify-between text-muted-foreground text-sm">
+                  <span>Method</span>
+                  <span>{orderSummary.shipping_method_title}</span>
+                </div>
+              )}
 
               <div className="flex justify-between text-xl font-bold pt-2 border-t border-border/50">
                 <span className="text-accent">Total</span>
@@ -341,6 +414,17 @@ export const FunnelThankYou = ({
               <span className="text-accent mt-1">📧</span>
               <span>You'll receive tracking information once your order ships.</span>
             </li>
+            {!!orderSummary?.view_order_url && (
+              <li className="flex items-start gap-3">
+                <span className="text-accent mt-1">🧾</span>
+                <a
+                  href={orderSummary.view_order_url}
+                  className="text-accent hover:text-accent/80 underline underline-offset-2"
+                >
+                  View this order in My Account
+                </a>
+              </li>
+            )}
           </ul>
         </Card>
 
