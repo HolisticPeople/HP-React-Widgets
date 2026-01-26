@@ -308,7 +308,7 @@ class PayPalApi
         
         // Set payment method title
         $order->set_payment_method('paypal_funnel');
-        $order->set_payment_method_title('PayPal (Funnel Checkout)');
+        $order->set_payment_method_title('PayPal (Express Shop)');
         $order->set_transaction_id($captureId ?: $paypalOrderId);
         
         // Add order note

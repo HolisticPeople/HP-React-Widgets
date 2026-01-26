@@ -113,7 +113,7 @@ export const FunnelThankYou = ({
     return params.get('pi_id') || params.get('payment_intent') || '';
   })();
 
-  // Fetch order summary
+  // Fetch order summary - SINGLE API call (v2.43.15)
   useEffect(() => {
     const fetchOrderSummary = async () => {
       if (!orderId && !piId) {
@@ -126,34 +126,11 @@ export const FunnelThankYou = ({
       setError(null);
 
       try {
-        // If we only have piId, first resolve the order
-        let resolvedOrderId = orderId;
-        
-        if (!resolvedOrderId && piId) {
-          const resolveRes = await fetch(`${apiBase}/checkout/order-summary?pi_id=${encodeURIComponent(piId)}`);
-          if (resolveRes.ok) {
-            const resolveData = await resolveRes.json();
-            resolvedOrderId = resolveData.order_id;
-          } else if (resolveRes.status !== 404) {
-            throw new Error('Failed to resolve order');
-          }
+        // Build params - API handles lookup by pi_id OR order_id
+        const params = new URLSearchParams();
+        if (orderId) {
+          params.append('order_id', String(orderId));
         }
-
-        if (!resolvedOrderId) {
-          // Order might not be created yet (webhook delay)
-          // Retry after a short delay
-          retryCountRef.current += 1;
-          if (retryCountRef.current <= 10) {
-            setTimeout(fetchOrderSummary, 2000);
-            return;
-          }
-
-          setError('We could not find your order yet. Please use the link from your confirmation email, or refresh in a moment.');
-          setIsLoading(false);
-          return;
-        }
-
-        const params = new URLSearchParams({ order_id: String(resolvedOrderId) });
         if (piId) {
           params.append('pi_id', piId);
         }
@@ -162,7 +139,7 @@ export const FunnelThankYou = ({
         
         if (!res.ok) {
           if (res.status === 404) {
-            // Order not found yet, retry
+            // Order might not be created yet (webhook delay) - retry
             retryCountRef.current += 1;
             if (retryCountRef.current <= 10) {
               setTimeout(fetchOrderSummary, 2000);
@@ -170,6 +147,12 @@ export const FunnelThankYou = ({
             }
 
             setError('We could not find your order yet. Please use the link from your confirmation email, or refresh in a moment.');
+            setIsLoading(false);
+            return;
+          }
+          if (res.status === 403) {
+            // Authorization issue - don't retry, show message
+            setError('Unable to load order details. Please check your confirmation email for order information.');
             setIsLoading(false);
             return;
           }
