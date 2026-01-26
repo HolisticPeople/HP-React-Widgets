@@ -11,60 +11,6 @@ import {
 } from '@/components/ui/carousel';
 
 /**
- * ImageLightbox - Full-screen image viewer with pinch-to-zoom support
- * v2.43.3: Added for mobile touch-to-zoom functionality
- */
-const ImageLightbox = ({ 
-  src, 
-  alt, 
-  isOpen, 
-  onClose 
-}: { 
-  src: string; 
-  alt: string; 
-  isOpen: boolean; 
-  onClose: () => void;
-}) => {
-  if (!isOpen) return null;
-  
-  return (
-    <div 
-      className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center"
-      onClick={onClose}
-    >
-      {/* Close button */}
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
-        aria-label="Close"
-      >
-        <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-      
-      {/* Hint text */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/70 text-sm">
-        Pinch to zoom • Tap to close
-      </div>
-      
-      {/* Image container - allows native pinch-to-zoom */}
-      <div 
-        className="w-full h-full overflow-auto touch-pinch-zoom"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <img
-          src={src}
-          alt={alt}
-          className="w-full h-auto min-h-full object-contain"
-          style={{ touchAction: 'pinch-zoom' }}
-        />
-      </div>
-    </div>
-  );
-};
-
-/**
  * FunnelInfographics - Responsive infographic comparison display.
  * 
  * Displays a full-width infographic on desktop and breaks into separate 
@@ -125,9 +71,6 @@ export const FunnelInfographics = ({
   const [current, setCurrent] = React.useState(0);
   const [count, setCount] = React.useState(0);
   
-  // v2.43.3: Lightbox state for touch-to-zoom
-  const [lightboxImage, setLightboxImage] = React.useState<string | null>(null);
-  
   // Determine if we should use mobile-specific images
   // Only use mobile images if enabled AND at least one mobile image exists
   const hasMobileImages = !!(titleImage || leftPanelImage || rightPanelImage);
@@ -146,40 +89,18 @@ export const FunnelInfographics = ({
   }, [api]);
 
   // Desktop View - Full image (hidden on mobile when using mobile-specific images)
-  // v2.43.4: Added tap-to-zoom for mobile even when showing scaled desktop image
   const renderDesktop = () => (
     <div className={cn(
       "hp-infographics-desktop",
       shouldUseMobileImages ? "hidden md:block" : "" // Show on all devices if not using mobile images
     )}>
       {desktopImage && (
-        <>
-          <img
-            src={desktopImage}
-            alt={altText}
-            className={cn(
-              "w-full h-auto rounded-lg shadow-lg",
-              // On mobile (when not using mobile images), make tappable for zoom
-              !shouldUseMobileImages && "md:cursor-default cursor-zoom-in active:opacity-90 transition-opacity"
-            )}
-            loading="lazy"
-            onClick={() => {
-              // Only trigger lightbox on mobile when not using mobile images
-              if (!shouldUseMobileImages && isMobile) {
-                setLightboxImage(desktopImage);
-              }
-            }}
-          />
-          {/* Tap hint on mobile when showing scaled desktop image */}
-          {!shouldUseMobileImages && isMobile && (
-            <p 
-              className="text-center text-xs mt-2 opacity-50 md:hidden"
-              style={{ color: 'var(--hp-funnel-text-note, #a3a3a3)' }}
-            >
-              Tap image to zoom
-            </p>
-          )}
-        </>
+        <img
+          src={desktopImage}
+          alt={altText}
+          className="w-full h-auto rounded-lg shadow-lg"
+          loading="lazy"
+        />
       )}
     </div>
   );
@@ -220,49 +141,37 @@ export const FunnelInfographics = ({
 
   // Mobile Stack View - Title + Left + Right stacked vertically
   // Full-width images with no horizontal margins on mobile
-  // v2.43.3: Added tap-to-zoom functionality
   const renderMobileStack = () => (
     <div className="hp-infographics-mobile-stack flex flex-col gap-2 md:hidden">
       {titleImage && (
         <img
           src={titleImage}
           alt={`${altText} - Title`}
-          className="w-full h-auto cursor-zoom-in active:opacity-90 transition-opacity"
+          className="w-full h-auto"
           loading="lazy"
-          onClick={() => setLightboxImage(titleImage)}
         />
       )}
       {leftPanelImage && (
         <img
           src={leftPanelImage}
           alt={`${altText} - Left panel`}
-          className="w-full h-auto cursor-zoom-in active:opacity-90 transition-opacity"
+          className="w-full h-auto"
           loading="lazy"
-          onClick={() => setLightboxImage(leftPanelImage)}
         />
       )}
       {rightPanelImage && (
         <img
           src={rightPanelImage}
           alt={`${altText} - Right panel`}
-          className="w-full h-auto cursor-zoom-in active:opacity-90 transition-opacity"
+          className="w-full h-auto"
           loading="lazy"
-          onClick={() => setLightboxImage(rightPanelImage)}
         />
       )}
-      {/* Tap hint - shown once */}
-      <p 
-        className="text-center text-xs mt-1 opacity-50"
-        style={{ color: 'var(--hp-funnel-text-note, #a3a3a3)' }}
-      >
-        Tap image to zoom
-      </p>
     </div>
   );
 
   // Mobile Carousel View - Title on top, swipeable panels with dots
   // Full-width images with no horizontal margins on mobile
-  // v2.43.3: Added tap-to-zoom functionality
   const renderMobileCarousel = () => {
     const panels = [
       { src: leftPanelImage, label: 'Left panel' },
@@ -276,9 +185,8 @@ export const FunnelInfographics = ({
           <img
             src={titleImage}
             alt={`${altText} - Title`}
-            className="w-full h-auto cursor-zoom-in active:opacity-90 transition-opacity"
+            className="w-full h-auto"
             loading="lazy"
-            onClick={() => setLightboxImage(titleImage)}
           />
         )}
 
@@ -299,9 +207,8 @@ export const FunnelInfographics = ({
                     <img
                       src={panel.src}
                       alt={`${altText} - ${panel.label}`}
-                      className="w-full h-auto cursor-zoom-in active:opacity-90 transition-opacity"
+                      className="w-full h-auto"
                       loading="lazy"
-                      onClick={() => panel.src && setLightboxImage(panel.src)}
                     />
                   </CarouselItem>
                 ))}
@@ -332,12 +239,12 @@ export const FunnelInfographics = ({
               </div>
             )}
 
-            {/* Swipe and tap hint */}
+            {/* Swipe hint */}
             <p 
               className="text-center text-xs mt-2 opacity-50"
               style={{ color: 'var(--hp-funnel-text-note, #a3a3a3)' }}
             >
-              Swipe to compare • Tap to zoom
+              Swipe to compare
             </p>
           </div>
         )}
@@ -351,16 +258,7 @@ export const FunnelInfographics = ({
   }
 
   return (
-    <>
-      {/* v2.43.3: Lightbox for touch-to-zoom on mobile */}
-      <ImageLightbox
-        src={lightboxImage || ''}
-        alt={altText}
-        isOpen={!!lightboxImage}
-        onClose={() => setLightboxImage(null)}
-      />
-      
-      <section
+    <section
         className={cn(
           'hp-funnel-infographics hp-funnel-section py-4 md:py-16 px-0 lg:px-4', // v2.43.0: Only large screens get horizontal margins
           className
@@ -393,7 +291,6 @@ export const FunnelInfographics = ({
           )}
         </div>
       </section>
-    </>
   );
 };
 
