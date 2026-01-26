@@ -130,6 +130,14 @@ class FunnelStylesShortcode
                 min-height: 100vh;
             }
             
+            /* v2.43.7: Prevent horizontal overflow on funnel pages */
+            /* Some third-party plugins (e.g., search widgets) can cause horizontal scroll */
+            html:has(body.hp-funnel-{$slug}),
+            body.hp-funnel-{$slug} {
+                overflow-x: hidden !important;
+                max-width: 100vw;
+            }
+            
             /* Make Elementor sections transparent */
             body.hp-funnel-{$slug} .elementor-section,
             body.hp-funnel-{$slug} .elementor-element,
