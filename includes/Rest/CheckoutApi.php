@@ -505,13 +505,15 @@ class CheckoutApi
             $shippingAddress = $order->get_address('billing');
         }
 
-        // My Account "View order" URL (only when logged in as owner)
+        // My Account "View order" URL
+        // - If the caller is authorized via pi_id, we can safely show a link (viewing still requires login).
+        // - If the caller is the logged-in owner, we also show the link.
+        //
+        // IMPORTANT: HP site uses /my-account-n/ (not the default WooCommerce /my-account/).
+        // The endpoint itself is still "view-order/{id}/".
         $viewOrderUrl = '';
-        if ($isOwner) {
-            $myAccountUrl = function_exists('wc_get_page_permalink') ? wc_get_page_permalink('myaccount') : '';
-            if ($myAccountUrl) {
-                $viewOrderUrl = wc_get_endpoint_url('view-order', (string) $order->get_id(), $myAccountUrl);
-            }
+        if ($isOwner || $piId !== '') {
+            $viewOrderUrl = trailingslashit(home_url('/my-account-n/')) . 'view-order/' . (string) $order->get_id() . '/';
         }
 
         $shippingMethodTitle = '';
