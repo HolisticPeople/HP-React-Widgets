@@ -496,7 +496,7 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
       );
       
       // Refresh order summary
-      const summary = await api.getOrderSummary(orderId);
+      const summary = await api.getOrderSummary(orderId, paymentIntentId);
       if (summary) {
         setOrderSummary(summary);
       }

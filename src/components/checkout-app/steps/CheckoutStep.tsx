@@ -867,10 +867,10 @@ export const CheckoutStep = ({
         if (debugShipping) console.log('[SHIPPING DEBUG] <<< RECEIVED RATES (requestId:', currentRequestId, '):', rates.length, 'rates');
         setIsFetchingShipping(false);
         if (rates.length > 0) {
-          // Sort rates by total cost (cheapest first)
-          const sortedRates = [...rates].sort((a, b) => 
-            (a.shipmentCost + a.otherCost) - (b.shipmentCost + b.otherCost)
-          );
+          // Sort rates by *actual* total cost (cheapest first).
+          // IMPORTANT: ShipStation may return cost fields under shipping_amount_raw/base_amount_raw,
+          // so we must use extractShippingCost() rather than shipmentCost/otherCost.
+          const sortedRates = [...rates].sort((a, b) => extractShippingCost(a) - extractShippingCost(b));
           setShippingRates(sortedRates);
           // Select the cheapest rate by default
           onSelectRateRef.current(sortedRates[0]);
@@ -1713,17 +1713,10 @@ export const CheckoutStep = ({
                 <div className="pt-4 mt-4 border-t border-border/20">
                   <h4 className="text-base font-medium text-foreground mb-3">Shipping Method</h4>
                   <div className="space-y-2">
-                    {shippingRates.map((rate) => {
-                      // Handle various field name formats from API (ShipStation returns shipping_amount_raw)
+                    {shippingRates.map((rate, idx) => {
                       const rateAny = rate as Record<string, unknown>;
                       const serviceName = rate.serviceName || (rateAny.service_name as string) || 'Shipping';
-                      // Check multiple possible field names for the cost
-                      // Note: ShipStation returns shipping_amount_raw as a number
-                      const rawCost = rateAny.shipping_amount_raw ?? rateAny.base_amount_raw ?? rate.shipmentCost ?? rateAny.shipment_cost ?? 0;
-                      const shipmentCost = typeof rawCost === 'number' ? rawCost : parseFloat(String(rawCost)) || 0;
-                      const rawOther = rateAny.other_cost_raw ?? rate.otherCost ?? rateAny.other_cost ?? 0;
-                      const otherCost = typeof rawOther === 'number' ? rawOther : parseFloat(String(rawOther)) || 0;
-                      const totalCost = shipmentCost + otherCost;
+                      const totalCost = extractShippingCost(rate);
                       
                       const rateServiceCode = getServiceCode(rate);
                       const selectedServiceCode = getServiceCode(selectedRate);

@@ -54,6 +54,9 @@ export const FunnelScience = ({
     : breakpoint === 'tablet' 
       ? tabletColumns 
       : desktopColumns;
+
+  // If there are fewer cards than the configured columns, cap columns so cards can use more horizontal space.
+  const cappedColumns = Math.max(1, Math.min(effectiveColumns, sections.length || 1));
   
   // Handle CTA click based on behavior setting
   const handleCtaClick = () => {
@@ -86,7 +89,7 @@ export const FunnelScience = ({
       )}
       style={heightStyle}
     >
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Section Header */}
         {(title || subtitle) && (
           <div className="text-center mb-12 md:mb-16">
@@ -112,18 +115,23 @@ export const FunnelScience = ({
         {/* Cards Grid Layout - uses responsive column settings */}
         {layout === 'columns' && (
           <div className={cn(
-            'grid gap-6 md:gap-8',
+            'grid',
+            sections.length === 2 ? 'gap-5 md:gap-6' : 'gap-6 md:gap-8',
             sections.length === 1 && 'max-w-2xl mx-auto',
-            // Use effectiveColumns for responsive grid
-            effectiveColumns === 1 && 'grid-cols-1',
-            effectiveColumns === 2 && 'grid-cols-1 md:grid-cols-2',
-            effectiveColumns === 3 && 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
-            effectiveColumns === 4 && 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
+            // Use cappedColumns for responsive grid (prevents 2 cards being forced into 3 columns)
+            cappedColumns === 1 && 'grid-cols-1',
+            cappedColumns === 2 && 'grid-cols-1 md:grid-cols-2',
+            cappedColumns === 3 && 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
+            cappedColumns === 4 && 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
           )}>
             {sections.map((section, index) => (
               <div 
                 key={index} 
-                className="hp-science-card rounded-xl p-6 md:p-8 transition-all duration-300 hover:shadow-lg"
+                className={cn(
+                  "hp-science-card rounded-xl transition-all duration-300 hover:shadow-lg",
+                  // If only 2 cards, keep them visually wider/shorter by reducing padding at larger breakpoints
+                  sections.length === 2 ? "p-5 md:p-6 lg:p-6" : "p-6 md:p-8"
+                )}
                 style={{
                   backgroundColor: 'var(--hp-funnel-card-bg, #1a1a1a)',
                   border: '1px solid var(--hp-funnel-border, #7c3aed)',

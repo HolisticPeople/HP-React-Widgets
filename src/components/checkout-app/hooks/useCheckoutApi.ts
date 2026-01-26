@@ -212,6 +212,18 @@ export function useCheckoutApi(options: UseCheckoutApiOptions) {
       itemsDiscount: data.items_discount || 0,
       grandTotal: data.grand_total || 0,
       status: data.status || '',
+      shippingAddress: data.shipping_address ? {
+        firstName: data.shipping_address.first_name || '',
+        lastName: data.shipping_address.last_name || '',
+        company: data.shipping_address.company || '',
+        address1: data.shipping_address.address_1 || '',
+        address2: data.shipping_address.address_2 || '',
+        city: data.shipping_address.city || '',
+        state: data.shipping_address.state || '',
+        postcode: data.shipping_address.postcode || '',
+        country: data.shipping_address.country || '',
+      } : null,
+      viewOrderUrl: data.view_order_url || '',
     };
   }, [apiBase]);
 

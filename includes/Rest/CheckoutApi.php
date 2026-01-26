@@ -363,8 +363,21 @@ class CheckoutApi
 
         if (!$order) return new WP_Error('not_found', 'Order not found', ['status' => 404]);
 
-        $storedPiId = $order->get_meta('_hp_rw_stripe_pi_id');
-        if ($piId !== '' && $storedPiId !== $piId) return new WP_Error('unauthorized', 'Invalid authorization', ['status' => 403]);
+        // SECURITY: allow access only if:
+        // - caller provides matching pi_id, OR
+        // - logged-in owner of the order
+        $storedPiId = (string) $order->get_meta('_hp_rw_stripe_pi_id');
+        $currentUserId = get_current_user_id();
+        $isOwner = ($currentUserId > 0) && ((int) $order->get_user_id() === (int) $currentUserId);
+        if ($piId !== '') {
+            if ($storedPiId !== $piId) {
+                return new WP_Error('unauthorized', 'Invalid authorization', ['status' => 403]);
+            }
+        } else {
+            if (!$isOwner) {
+                return new WP_Error('unauthorized', 'Authorization required', ['status' => 403]);
+            }
+        }
 
         $items = [];
         $itemsBySku = [];  // For consolidating items by SKU on TY page
@@ -475,6 +488,22 @@ class CheckoutApi
         // Calculate grand total: Items (full price) - Discount - Points + Shipping
         $calculatedGrandTotal = $sumSubtotal - $totalDiscount - $pointsRedeemed['value'] + $shippingTotal;
 
+        // Shipping address (for customer verification on TY page)
+        $shippingAddress = $order->get_address('shipping');
+        if (!is_array($shippingAddress) || empty($shippingAddress['address_1'])) {
+            // Fallback to billing when shipping is empty (e.g., virtual products)
+            $shippingAddress = $order->get_address('billing');
+        }
+
+        // My Account "View order" URL (only when logged in as owner)
+        $viewOrderUrl = '';
+        if ($isOwner) {
+            $myAccountUrl = function_exists('wc_get_page_permalink') ? wc_get_page_permalink('myaccount') : '';
+            if ($myAccountUrl) {
+                $viewOrderUrl = wc_get_endpoint_url('view-order', (string) $order->get_id(), $myAccountUrl);
+            }
+        }
+
         return new WP_REST_Response([
             'success'         => true,
             'order_id'        => $order->get_id(),
@@ -486,6 +515,18 @@ class CheckoutApi
             'grand_total'     => (float) max(0, $calculatedGrandTotal),
             'status'          => $order->get_status(),
             'date'            => $order->get_date_created() ? $order->get_date_created()->date('Y-m-d H:i:s') : '',
+            'shipping_address' => [
+                'first_name' => (string) ($shippingAddress['first_name'] ?? ''),
+                'last_name'  => (string) ($shippingAddress['last_name'] ?? ''),
+                'company'    => (string) ($shippingAddress['company'] ?? ''),
+                'address_1'  => (string) ($shippingAddress['address_1'] ?? ''),
+                'address_2'  => (string) ($shippingAddress['address_2'] ?? ''),
+                'city'       => (string) ($shippingAddress['city'] ?? ''),
+                'state'      => (string) ($shippingAddress['state'] ?? ''),
+                'postcode'   => (string) ($shippingAddress['postcode'] ?? ''),
+                'country'    => (string) ($shippingAddress['country'] ?? ''),
+            ],
+            'view_order_url'  => $viewOrderUrl,
         ]);
     }
 

@@ -38,6 +38,11 @@ export const ThankYouStep = ({
     window.scrollTo(0, 0);
   }, []);
 
+  const shipping = orderSummary?.shippingAddress || null;
+  const hasShipping =
+    !!shipping &&
+    (!!shipping.address1 || !!shipping.city || !!shipping.postcode || !!shipping.country);
+
   return (
     <div className="max-w-4xl mx-auto py-12">
       {/* Success Header */}
@@ -125,6 +130,44 @@ export const ThankYouStep = ({
             </div>
           </div>
         </Card>
+      )}
+
+      {/* Shipping Address (so customer can catch mistakes) */}
+      {hasShipping && (
+        <Card className="p-8 bg-card/50 backdrop-blur-sm border-border/50 mb-8">
+          <h2 className="text-2xl font-bold mb-4 text-accent">
+            Shipping Address
+          </h2>
+          <div className="text-foreground space-y-1">
+            <p className="font-medium">
+              {[shipping?.firstName, shipping?.lastName].filter(Boolean).join(' ')}
+            </p>
+            {shipping?.company && <p>{shipping.company}</p>}
+            {shipping?.address1 && <p>{shipping.address1}</p>}
+            {shipping?.address2 && <p>{shipping.address2}</p>}
+            <p>
+              {[shipping?.city, shipping?.state, shipping?.postcode]
+                .filter(Boolean)
+                .join(', ')}
+            </p>
+            {shipping?.country && <p>{shipping.country}</p>}
+          </div>
+          <p className="text-sm text-muted-foreground mt-4">
+            If anything looks wrong, please contact support as soon as possible so we can fix it before shipment.
+          </p>
+        </Card>
+      )}
+
+      {/* Logged-in users: link to My Account order page */}
+      {!!orderSummary?.viewOrderUrl && (
+        <div className="text-center mb-8">
+          <a
+            href={orderSummary.viewOrderUrl}
+            className="text-accent hover:text-accent/80 font-medium"
+          >
+            View this order in My Account →
+          </a>
+        </div>
       )}
 
       {/* What's Next Section */}
