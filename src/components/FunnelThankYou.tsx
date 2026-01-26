@@ -335,39 +335,6 @@ export const FunnelThankYou = ({
               Order Summary
             </h2>
 
-            {/* Shipping Address */}
-            {!!orderSummary.shipping_address?.address_1 && (
-              <div className="mb-6 p-5 bg-background/50 rounded-lg">
-                <h3 className="text-lg font-semibold text-foreground mb-2">Shipping Address</h3>
-                <div className="text-foreground/90 space-y-1 text-sm">
-                  <div className="font-medium">
-                    {[orderSummary.shipping_address.first_name, orderSummary.shipping_address.last_name]
-                      .filter(Boolean)
-                      .join(' ')}
-                  </div>
-                  {orderSummary.shipping_address.company && <div>{orderSummary.shipping_address.company}</div>}
-                  <div>{orderSummary.shipping_address.address_1}</div>
-                  {orderSummary.shipping_address.address_2 && <div>{orderSummary.shipping_address.address_2}</div>}
-                  <div>
-                    {[orderSummary.shipping_address.city, orderSummary.shipping_address.state, orderSummary.shipping_address.postcode]
-                      .filter(Boolean)
-                      .join(', ')}
-                  </div>
-                  {orderSummary.shipping_address.country && <div>{orderSummary.shipping_address.country}</div>}
-                </div>
-                <p className="text-xs text-muted-foreground mt-3">
-                  If anything looks wrong, please{' '}
-                  <a
-                    href="/contact-us/"
-                    className="text-accent hover:text-accent/80 underline underline-offset-2"
-                  >
-                    contact support
-                  </a>{' '}
-                  as soon as possible so we can fix it before shipment.
-                </p>
-              </div>
-            )}
-
             {/* Items */}
             <div className="space-y-4 mb-6">
               {orderSummary.items.map((item, idx) => (
@@ -464,6 +431,39 @@ export const FunnelThankYou = ({
             )}
           </ul>
         </Card>
+
+        {/* Shipping Address - at bottom of page */}
+        {orderSummary && !!orderSummary.shipping_address?.address_1 && (
+          <Card className="mt-8 p-8 bg-card/50 backdrop-blur-sm border-border/50">
+            <h3 className="text-xl font-semibold text-accent mb-4">Shipping To</h3>
+            <div className="text-foreground/90 space-y-1">
+              <div className="font-medium">
+                {[orderSummary.shipping_address.first_name, orderSummary.shipping_address.last_name]
+                  .filter(Boolean)
+                  .join(' ')}
+              </div>
+              {orderSummary.shipping_address.company && <div>{orderSummary.shipping_address.company}</div>}
+              <div>{orderSummary.shipping_address.address_1}</div>
+              {orderSummary.shipping_address.address_2 && <div>{orderSummary.shipping_address.address_2}</div>}
+              <div>
+                {[orderSummary.shipping_address.city, orderSummary.shipping_address.state, orderSummary.shipping_address.postcode]
+                  .filter(Boolean)
+                  .join(', ')}
+              </div>
+              {orderSummary.shipping_address.country && <div>{orderSummary.shipping_address.country}</div>}
+            </div>
+            <p className="text-sm text-muted-foreground mt-4">
+              If anything looks wrong, please{' '}
+              <a
+                href="/contact-us/"
+                className="text-accent hover:text-accent/80 underline underline-offset-2"
+              >
+                contact support
+              </a>{' '}
+              as soon as possible so we can fix it before shipment.
+            </p>
+          </Card>
+        )}
 
         {/* Continue Shopping */}
         <div className="text-center mt-8">

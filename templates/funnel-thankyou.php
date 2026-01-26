@@ -165,41 +165,58 @@ if (!function_exists('hp_build_funnel_styles')) {
                 color: var(--hp-funnel-card-bg) !important;
             }
             
-            /* Override Tailwind classes in React checkout app */
+            /* Override Tailwind classes in React checkout app AND thank you page */
             .hp-funnel-checkout-app h1,
             .hp-funnel-checkout-app h2,
-            .hp-funnel-checkout-app h3 {
+            .hp-funnel-checkout-app h3,
+            .hp-funnel-thankyou h1,
+            .hp-funnel-thankyou h2,
+            .hp-funnel-thankyou h3 {
                 color: var(--hp-funnel-text-accent) !important;
             }
             .hp-funnel-checkout-app .text-foreground,
-            .hp-funnel-checkout-app [class*='text-foreground'] {
+            .hp-funnel-checkout-app [class*='text-foreground'],
+            .hp-funnel-thankyou .text-foreground,
+            .hp-funnel-thankyou [class*='text-foreground'] {
                 color: var(--hp-funnel-text-basic) !important;
             }
             .hp-funnel-checkout-app .text-muted-foreground,
-            .hp-funnel-checkout-app [class*='text-muted'] {
+            .hp-funnel-checkout-app [class*='text-muted'],
+            .hp-funnel-thankyou .text-muted-foreground,
+            .hp-funnel-thankyou [class*='text-muted'] {
                 color: var(--hp-funnel-text-note) !important;
             }
             .hp-funnel-checkout-app .text-accent,
-            .hp-funnel-checkout-app [class*='text-accent'] {
+            .hp-funnel-checkout-app [class*='text-accent'],
+            .hp-funnel-thankyou .text-accent,
+            .hp-funnel-thankyou [class*='text-accent'] {
                 color: var(--hp-funnel-text-accent) !important;
             }
             .hp-funnel-checkout-app .text-green-500, 
             .hp-funnel-checkout-app .text-emerald-500,
             .hp-funnel-checkout-app [class*='text-green'],
-            .hp-funnel-checkout-app [class*='text-emerald'] {
+            .hp-funnel-checkout-app [class*='text-emerald'],
+            .hp-funnel-thankyou .text-green-500, 
+            .hp-funnel-thankyou .text-emerald-500,
+            .hp-funnel-thankyou [class*='text-green'],
+            .hp-funnel-thankyou [class*='text-emerald'] {
                 color: var(--hp-funnel-text-discount) !important;
             }
             .hp-funnel-checkout-app label:not(.hp-funnel-badge-pill),
-            .hp-funnel-checkout-app .text-sm:not(.hp-funnel-badge-pill) {
+            .hp-funnel-checkout-app .text-sm:not(.hp-funnel-badge-pill),
+            .hp-funnel-thankyou label:not(.hp-funnel-badge-pill),
+            .hp-funnel-thankyou .text-sm:not(.hp-funnel-badge-pill) {
                 color: var(--hp-funnel-text-note) !important;
             }
-            .hp-funnel-checkout-app .line-through {
+            .hp-funnel-checkout-app .line-through,
+            .hp-funnel-thankyou .line-through {
                 color: var(--hp-funnel-text-note) !important;
             }
             
-        /* UI Element color overrides for React checkout app */
+        /* UI Element color overrides for React checkout app AND thank you page */
         /* Tailwind expects HSL values without hsl() wrapper, e.g., 45 95% 53% */
-            .hp-funnel-checkout-app {
+            .hp-funnel-checkout-app,
+            .hp-funnel-thankyou {
                 --background: {$pageBgHsl};
                 --foreground: 0 0% 90%;
                 --card: {$cardBgHsl};
@@ -228,13 +245,18 @@ if (!function_exists('hp_build_funnel_styles')) {
             /* Border color overrides */
             .hp-funnel-checkout-app [class*='border-border'],
             .hp-funnel-checkout-app [class*='border-accent'],
-            .hp-funnel-checkout-app .border {
+            .hp-funnel-checkout-app .border,
+            .hp-funnel-thankyou [class*='border-border'],
+            .hp-funnel-thankyou [class*='border-accent'],
+            .hp-funnel-thankyou .border {
                 border-color: var(--hp-funnel-border) !important;
             }
             
             /* Card background overrides */
             .hp-funnel-checkout-app [class*='bg-card'],
-            .hp-funnel-checkout-app [class*='bg-secondary'] {
+            .hp-funnel-checkout-app [class*='bg-secondary'],
+            .hp-funnel-thankyou [class*='bg-card'],
+            .hp-funnel-thankyou [class*='bg-secondary'] {
                 background-color: var(--hp-funnel-card-bg) !important;
             }
             
@@ -242,12 +264,17 @@ if (!function_exists('hp_build_funnel_styles')) {
             .hp-funnel-checkout-app [class*='bg-input'],
             .hp-funnel-checkout-app input,
             .hp-funnel-checkout-app select,
-            .hp-funnel-checkout-app textarea {
+            .hp-funnel-checkout-app textarea,
+            .hp-funnel-thankyou [class*='bg-input'],
+            .hp-funnel-thankyou input,
+            .hp-funnel-thankyou select,
+            .hp-funnel-thankyou textarea {
                 background-color: var(--hp-funnel-input-bg) !important;
             }
             
             /* Page background for the checkout app container */
-            .hp-funnel-checkout-app [class*='bg-background'] {
+            .hp-funnel-checkout-app [class*='bg-background'],
+            .hp-funnel-thankyou [class*='bg-background'] {
                 background-color: var(--hp-funnel-page-bg) !important;
             }
             
