@@ -306,8 +306,8 @@ class PayPalApi
         $order->update_meta_data('_hp_rw_paypal_payer_email', $payerEmail);
         $order->update_meta_data('_hp_rw_paypal_mode', $paypalMode);
         
-        // Set payment method title
-        $order->set_payment_method('paypal_funnel');
+        // Set payment method (using registered gateway for refund support)
+        $order->set_payment_method('hp_paypal_express');
         $order->set_payment_method_title('PayPal (Express Shop)');
         $order->set_transaction_id($captureId ?: $paypalOrderId);
         

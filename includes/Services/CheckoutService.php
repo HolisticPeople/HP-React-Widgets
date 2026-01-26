@@ -388,10 +388,24 @@ class CheckoutService
 
         if ($pointsToRedeem > 0) $this->applyPointsRedemption($order, $pointsToRedeem);
 
-        $order->update_meta_data('_hp_rw_stripe_customer_id', $stripeCustomerId);
-        $order->update_meta_data('_hp_rw_stripe_pi_id', $stripePaymentIntentId);
-        if ($stripeChargeId) $order->update_meta_data('_hp_rw_stripe_charge_id', $stripeChargeId);
-        if ($paymentMethodId) $order->update_meta_data('_hp_rw_stripe_pm_id', $paymentMethodId);
+        // Store Stripe metadata (if this is a Stripe order)
+        if (!empty($stripePaymentIntentId)) {
+            $order->update_meta_data('_hp_rw_payment_method', 'stripe');
+            $order->update_meta_data('_hp_rw_stripe_customer_id', $stripeCustomerId);
+            $order->update_meta_data('_hp_rw_stripe_pi_id', $stripePaymentIntentId);
+            if ($stripeChargeId) $order->update_meta_data('_hp_rw_stripe_charge_id', $stripeChargeId);
+            if ($paymentMethodId) $order->update_meta_data('_hp_rw_stripe_pm_id', $paymentMethodId);
+            
+            // Store Stripe mode for refund processing
+            $stripeMode = $draftData['stripe_mode'] ?? 'live';
+            $order->update_meta_data('_hp_rw_stripe_mode', $stripeMode);
+            
+            // Set payment gateway (for refund support)
+            $order->set_payment_method('hp_stripe_express');
+            $order->set_payment_method_title('Stripe (Express Shop)');
+            $order->set_transaction_id($stripePaymentIntentId);
+        }
+        
         $order->update_meta_data('_hp_rw_funnel_id', $draftData['funnel_id'] ?? 'default');
         $order->update_meta_data('_hp_rw_funnel_name', $funnelName);
 

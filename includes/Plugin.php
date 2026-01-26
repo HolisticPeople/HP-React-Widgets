@@ -296,6 +296,9 @@ class Plugin
         $paypalApi = new Rest\PayPalApi();
         $paypalApi->register();
 
+        // Register Express Shop payment gateways (for refund support)
+        add_filter('woocommerce_payment_gateways', [self::class, 'registerExpressShopGateways']);
+
         // Register upsell REST API endpoints.
         $upsellApi = new Rest\UpsellApi();
         $upsellApi->register();
@@ -360,6 +363,21 @@ class Plugin
         }
         
         return $classes;
+    }
+
+    /**
+     * Register Express Shop payment gateways for refund support.
+     * These are internal-only gateways that enable WooCommerce to process refunds
+     * for orders created via the Express Shop funnel checkout.
+     *
+     * @param array $gateways Existing payment gateways.
+     * @return array Modified payment gateways.
+     */
+    public static function registerExpressShopGateways(array $gateways): array
+    {
+        $gateways[] = Gateway\PayPalExpressGateway::class;
+        $gateways[] = Gateway\StripeExpressGateway::class;
+        return $gateways;
     }
 
     /**
