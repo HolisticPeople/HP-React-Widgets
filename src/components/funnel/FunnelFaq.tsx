@@ -97,19 +97,19 @@ export const FunnelFaq = ({
                 <button
                   onClick={() => toggleItem(index)}
                   className={cn(
-                    "w-full flex items-start justify-between p-4 md:p-6 text-left transition-colors gap-3",
+                    "w-full flex items-center justify-between p-4 md:p-6 text-left transition-colors gap-3",
                     "bg-card/40 hover:bg-card/55"
                   )}
                   aria-expanded={isOpen}
                 >
-                  {/* v2.43.4: Fixed text wrapping - use flex-1, whitespace-normal, and word-break */}
+                  {/* v2.43.5: Fixed text wrapping - flex-1, min-w-0, word-break for long questions */}
                   <span 
                     className="font-medium text-base md:text-lg text-foreground/95 flex-1 min-w-0"
                     style={{ wordBreak: 'break-word', whiteSpace: 'normal' }}
                   >
                     {faq.question}
                   </span>
-                  <span className="text-accent flex-shrink-0 mt-1">
+                  <span className="text-accent flex-shrink-0">
                     <ChevronIcon open={isOpen} />
                   </span>
                 </button>
