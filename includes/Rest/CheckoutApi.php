@@ -354,9 +354,19 @@ class CheckoutApi
         $piIdRaw = (string) $request->get_param('pi_id');
         $piId = sanitize_text_field($piIdRaw);
 
+        // Detect payment method type from pi_id format
+        $isPayPalRef = false;
+        $paypalOrderIdFromUrl = 0;
+
+        // PayPal format: paypal_{wc_order_id}
+        if ($piId !== '' && str_starts_with($piId, 'paypal_')) {
+            $isPayPalRef = true;
+            $paypalOrderIdFromUrl = absint(substr($piId, 7)); // "paypal_" is 7 chars
+        }
+
         // Accept Stripe client_secret (pi_..._secret_...) by normalizing to the PI id.
         // This keeps the thank-you page resilient across different redirect/link formats.
-        if ($piId !== '' && str_contains($piId, '_secret_')) {
+        if (!$isPayPalRef && $piId !== '' && str_contains($piId, '_secret_')) {
             $secretPos = strpos($piId, '_secret_');
             if ($secretPos !== false && $secretPos > 0) {
                 $piId = substr($piId, 0, $secretPos);
@@ -364,29 +374,50 @@ class CheckoutApi
         }
 
         $order = null;
+        $authorizedViaPiId = false;
+
         if ($orderId > 0) {
             $order = wc_get_order($orderId);
+        } elseif ($isPayPalRef && $paypalOrderIdFromUrl > 0) {
+            // PayPal: lookup by WC order ID directly
+            $order = wc_get_order($paypalOrderIdFromUrl);
+            // Verify it's actually a PayPal order from our funnel checkout
+            if ($order) {
+                $paymentMethod = (string) $order->get_meta('_hp_rw_payment_method');
+                if ($paymentMethod === 'paypal') {
+                    $authorizedViaPiId = true;
+                } else {
+                    // Not a funnel PayPal order - require other auth
+                    $order = null;
+                }
+            }
         } elseif ($piId !== '') {
+            // Stripe: lookup by payment intent meta
             $orders = wc_get_orders(['limit' => 1, 'meta_key' => '_hp_rw_stripe_pi_id', 'meta_value' => $piId]);
-            if (!empty($orders)) $order = $orders[0];
+            if (!empty($orders)) {
+                $order = $orders[0];
+                $authorizedViaPiId = true;
+            }
         }
 
         if (!$order) return new WP_Error('not_found', 'Order not found', ['status' => 404]);
 
         // SECURITY: allow access only if:
-        // - caller provides matching pi_id, OR
+        // - caller provides valid pi_id (Stripe or PayPal), OR
         // - logged-in owner of the order
-        $storedPiId = (string) $order->get_meta('_hp_rw_stripe_pi_id');
         $currentUserId = get_current_user_id();
         $isOwner = ($currentUserId > 0) && ((int) $order->get_user_id() === (int) $currentUserId);
-        if ($piId !== '') {
-            if ($storedPiId !== $piId) {
-                return new WP_Error('unauthorized', 'Invalid authorization', ['status' => 403]);
+
+        if (!$authorizedViaPiId && !$isPayPalRef) {
+            // Stripe pi_id provided but didn't match during lookup - verify stored value
+            $storedPiId = (string) $order->get_meta('_hp_rw_stripe_pi_id');
+            if ($piId !== '' && $storedPiId === $piId) {
+                $authorizedViaPiId = true;
             }
-        } else {
-            if (!$isOwner) {
-                return new WP_Error('unauthorized', 'Authorization required', ['status' => 403]);
-            }
+        }
+
+        if (!$authorizedViaPiId && !$isOwner) {
+            return new WP_Error('unauthorized', 'Authorization required', ['status' => 403]);
         }
 
         $items = [];
@@ -511,8 +542,9 @@ class CheckoutApi
         //
         // IMPORTANT: HP site uses /my-account-n/ (not the default WooCommerce /my-account/).
         // The endpoint itself is still "view-order/{id}/".
+        // Show link if authorized via payment reference (Stripe PI or PayPal order ID) or logged-in owner.
         $viewOrderUrl = '';
-        if ($isOwner || $piId !== '') {
+        if ($isOwner || $authorizedViaPiId) {
             $viewOrderUrl = trailingslashit(home_url('/my-account-n/')) . 'view-order/' . (string) $order->get_id() . '/';
         }
 
