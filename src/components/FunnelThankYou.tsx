@@ -402,37 +402,7 @@ export const FunnelThankYou = ({
           </Card>
         )}
 
-        {/* What's Next Section */}
-        <Card className="mt-8 p-8 bg-gradient-to-br from-secondary/30 to-card/50 backdrop-blur-sm border-border/50">
-          <h2 className="text-2xl font-bold mb-4 text-accent">What's Next?</h2>
-          <ul className="space-y-3 text-foreground">
-            <li className="flex items-start gap-3">
-              <span className="text-accent mt-1">✉️</span>
-              <span>You'll receive a confirmation email with your order details shortly.</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-accent mt-1">📦</span>
-              <span>Your order will be shipped within 1-2 business days.</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-accent mt-1">📧</span>
-              <span>You'll receive tracking information once your order ships.</span>
-            </li>
-            {!!orderSummary?.view_order_url && (
-              <li className="flex items-start gap-3">
-                <span className="text-accent mt-1">🧾</span>
-                <a
-                  href={orderSummary.view_order_url}
-                  className="text-accent hover:text-accent/80 underline underline-offset-2"
-                >
-                  View this order in My Account
-                </a>
-              </li>
-            )}
-          </ul>
-        </Card>
-
-        {/* Shipping Address - at bottom of page */}
+        {/* Shipping Address - above What's Next */}
         {orderSummary && !!orderSummary.shipping_address?.address_1 && (
           <Card className="mt-8 p-8 bg-card/50 backdrop-blur-sm border-border/50">
             <h3 className="text-xl font-semibold text-accent mb-4">Shipping To</h3>
@@ -464,6 +434,36 @@ export const FunnelThankYou = ({
             </p>
           </Card>
         )}
+
+        {/* What's Next Section */}
+        <Card className="mt-8 p-8 bg-gradient-to-br from-secondary/30 to-card/50 backdrop-blur-sm border-border/50">
+          <h2 className="text-2xl font-bold mb-4 text-accent">What's Next?</h2>
+          <ul className="space-y-3 text-foreground">
+            <li className="flex items-start gap-3">
+              <span className="text-accent mt-1">✉️</span>
+              <span>You'll receive a confirmation email with your order details shortly.</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="text-accent mt-1">📦</span>
+              <span>Your order will be shipped within 1-2 business days.</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="text-accent mt-1">📧</span>
+              <span>You'll receive tracking information once your order ships.</span>
+            </li>
+            {!!orderSummary?.view_order_url && (
+              <li className="flex items-start gap-3">
+                <span className="text-accent mt-1">🧾</span>
+                <a
+                  href={orderSummary.view_order_url}
+                  className="text-accent hover:text-accent/80 underline underline-offset-2"
+                >
+                  View this order in My Account
+                </a>
+              </li>
+            )}
+          </ul>
+        </Card>
 
         {/* Continue Shopping */}
         <div className="text-center mt-8">
