@@ -146,18 +146,40 @@ export const FunnelInfographics = ({
   }, [api]);
 
   // Desktop View - Full image (hidden on mobile when using mobile-specific images)
+  // v2.43.4: Added tap-to-zoom for mobile even when showing scaled desktop image
   const renderDesktop = () => (
     <div className={cn(
       "hp-infographics-desktop",
       shouldUseMobileImages ? "hidden md:block" : "" // Show on all devices if not using mobile images
     )}>
       {desktopImage && (
-        <img
-          src={desktopImage}
-          alt={altText}
-          className="w-full h-auto rounded-lg shadow-lg"
-          loading="lazy"
-        />
+        <>
+          <img
+            src={desktopImage}
+            alt={altText}
+            className={cn(
+              "w-full h-auto rounded-lg shadow-lg",
+              // On mobile (when not using mobile images), make tappable for zoom
+              !shouldUseMobileImages && "md:cursor-default cursor-zoom-in active:opacity-90 transition-opacity"
+            )}
+            loading="lazy"
+            onClick={() => {
+              // Only trigger lightbox on mobile when not using mobile images
+              if (!shouldUseMobileImages && isMobile) {
+                setLightboxImage(desktopImage);
+              }
+            }}
+          />
+          {/* Tap hint on mobile when showing scaled desktop image */}
+          {!shouldUseMobileImages && isMobile && (
+            <p 
+              className="text-center text-xs mt-2 opacity-50 md:hidden"
+              style={{ color: 'var(--hp-funnel-text-note, #a3a3a3)' }}
+            >
+              Tap image to zoom
+            </p>
+          )}
+        </>
       )}
     </div>
   );
