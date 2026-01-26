@@ -208,6 +208,8 @@ export interface OrderSummary {
   itemsDiscount: number;
   grandTotal: number;
   status: string;
+  shippingAddress?: Address | null;
+  viewOrderUrl?: string;
 }
 
 export interface OrderItem {

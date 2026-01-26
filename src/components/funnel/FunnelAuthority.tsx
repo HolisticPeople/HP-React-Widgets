@@ -200,9 +200,9 @@ export const FunnelAuthority = ({
                   {normalizedQuotes.map((quote, index) => (
                     <blockquote
                       key={index}
-                      className="relative pl-0 md:pl-6 border-l-0 md:border-l-4 border-accent/50 italic text-foreground/90"
+                      className="relative pl-0 md:pl-8 border-l-0 md:border-l-4 border-accent/50 italic text-foreground/90"
                     >
-                      <span className="absolute -left-2 -top-2 text-accent opacity-30 hidden md:block">
+                      <span className="absolute left-1 -top-2 text-accent opacity-30 hidden md:block">
                         <QuoteIcon />
                       </span>
                       "{quote.text}"

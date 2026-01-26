@@ -351,7 +351,17 @@ class CheckoutApi
     public function handle_order_summary(WP_REST_Request $request): WP_REST_Response|WP_Error
     {
         $orderId = (int) $request->get_param('order_id');
-        $piId = (string) $request->get_param('pi_id');
+        $piIdRaw = (string) $request->get_param('pi_id');
+        $piId = sanitize_text_field($piIdRaw);
+
+        // Accept Stripe client_secret (pi_..._secret_...) by normalizing to the PI id.
+        // This keeps the thank-you page resilient across different redirect/link formats.
+        if ($piId !== '' && str_contains($piId, '_secret_')) {
+            $secretPos = strpos($piId, '_secret_');
+            if ($secretPos !== false && $secretPos > 0) {
+                $piId = substr($piId, 0, $secretPos);
+            }
+        }
 
         $order = null;
         if ($orderId > 0) {
@@ -363,8 +373,21 @@ class CheckoutApi
 
         if (!$order) return new WP_Error('not_found', 'Order not found', ['status' => 404]);
 
-        $storedPiId = $order->get_meta('_hp_rw_stripe_pi_id');
-        if ($piId !== '' && $storedPiId !== $piId) return new WP_Error('unauthorized', 'Invalid authorization', ['status' => 403]);
+        // SECURITY: allow access only if:
+        // - caller provides matching pi_id, OR
+        // - logged-in owner of the order
+        $storedPiId = (string) $order->get_meta('_hp_rw_stripe_pi_id');
+        $currentUserId = get_current_user_id();
+        $isOwner = ($currentUserId > 0) && ((int) $order->get_user_id() === (int) $currentUserId);
+        if ($piId !== '') {
+            if ($storedPiId !== $piId) {
+                return new WP_Error('unauthorized', 'Invalid authorization', ['status' => 403]);
+            }
+        } else {
+            if (!$isOwner) {
+                return new WP_Error('unauthorized', 'Authorization required', ['status' => 403]);
+            }
+        }
 
         $items = [];
         $itemsBySku = [];  // For consolidating items by SKU on TY page
@@ -475,6 +498,31 @@ class CheckoutApi
         // Calculate grand total: Items (full price) - Discount - Points + Shipping
         $calculatedGrandTotal = $sumSubtotal - $totalDiscount - $pointsRedeemed['value'] + $shippingTotal;
 
+        // Shipping address (for customer verification on TY page)
+        $shippingAddress = $order->get_address('shipping');
+        if (!is_array($shippingAddress) || empty($shippingAddress['address_1'])) {
+            // Fallback to billing when shipping is empty (e.g., virtual products)
+            $shippingAddress = $order->get_address('billing');
+        }
+
+        // My Account "View order" URL
+        // - If the caller is authorized via pi_id, we can safely show a link (viewing still requires login).
+        // - If the caller is the logged-in owner, we also show the link.
+        //
+        // IMPORTANT: HP site uses /my-account-n/ (not the default WooCommerce /my-account/).
+        // The endpoint itself is still "view-order/{id}/".
+        $viewOrderUrl = '';
+        if ($isOwner || $piId !== '') {
+            $viewOrderUrl = trailingslashit(home_url('/my-account-n/')) . 'view-order/' . (string) $order->get_id() . '/';
+        }
+
+        $shippingMethodTitle = '';
+        try {
+            $shippingMethodTitle = (string) $order->get_shipping_method();
+        } catch (\Throwable $e) {
+            $shippingMethodTitle = '';
+        }
+
         return new WP_REST_Response([
             'success'         => true,
             'order_id'        => $order->get_id(),
@@ -483,9 +531,22 @@ class CheckoutApi
             'items_discount'  => (float) $totalDiscount,
             'points_redeemed' => $pointsRedeemed,
             'shipping_total'  => $shippingTotal,
+            'shipping_method_title' => $shippingMethodTitle,
             'grand_total'     => (float) max(0, $calculatedGrandTotal),
             'status'          => $order->get_status(),
             'date'            => $order->get_date_created() ? $order->get_date_created()->date('Y-m-d H:i:s') : '',
+            'shipping_address' => [
+                'first_name' => (string) ($shippingAddress['first_name'] ?? ''),
+                'last_name'  => (string) ($shippingAddress['last_name'] ?? ''),
+                'company'    => (string) ($shippingAddress['company'] ?? ''),
+                'address_1'  => (string) ($shippingAddress['address_1'] ?? ''),
+                'address_2'  => (string) ($shippingAddress['address_2'] ?? ''),
+                'city'       => (string) ($shippingAddress['city'] ?? ''),
+                'state'      => (string) ($shippingAddress['state'] ?? ''),
+                'postcode'   => (string) ($shippingAddress['postcode'] ?? ''),
+                'country'    => (string) ($shippingAddress['country'] ?? ''),
+            ],
+            'view_order_url'  => $viewOrderUrl,
         ]);
     }
 
