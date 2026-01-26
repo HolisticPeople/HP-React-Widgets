@@ -204,6 +204,80 @@ export const FunnelThankYou = ({
 
   const currentUpsellOffer = upsellOffers[currentUpsellIndex];
 
+  // Full-page loading state - wait for BOTH order confirmation before showing content
+  if (isLoading) {
+    return (
+      <div className="hp-funnel-thankyou min-h-screen bg-background py-12 px-4 flex flex-col items-center justify-center">
+        <div className="max-w-md mx-auto text-center">
+          {/* Logo during loading */}
+          {logoUrl && (
+            <div className="mb-8">
+              <img 
+                src={logoUrl} 
+                alt={funnelName} 
+                className="h-10 mx-auto opacity-60" 
+              />
+            </div>
+          )}
+          
+          <Card className="p-12 bg-card/50 backdrop-blur-sm border-border/50">
+            <div className="text-accent mb-6 flex justify-center">
+              <LoaderIcon />
+            </div>
+            <h2 className="text-2xl font-bold text-foreground mb-2">
+              Processing Your Order
+            </h2>
+            <p className="text-muted-foreground">
+              Please wait while we confirm your payment...
+            </p>
+            {retryCountRef.current > 0 && (
+              <p className="text-sm text-muted-foreground/70 mt-4">
+                This may take a few moments...
+              </p>
+            )}
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state - show dedicated error page
+  if (error) {
+    return (
+      <div className="hp-funnel-thankyou min-h-screen bg-background py-12 px-4 flex flex-col items-center justify-center">
+        <div className="max-w-md mx-auto text-center">
+          {/* Logo */}
+          {logoUrl && (
+            <div className="mb-8">
+              <img 
+                src={logoUrl} 
+                alt={funnelName} 
+                className="h-10 mx-auto opacity-60" 
+              />
+            </div>
+          )}
+          
+          <Card className="p-8 bg-destructive/10 border-destructive/30">
+            <h2 className="text-2xl font-bold text-foreground mb-4">
+              Order Confirmation
+            </h2>
+            <p className="text-muted-foreground mb-4">{error}</p>
+            <p className="text-muted-foreground">
+              Don't worry - your order has been placed. Check your email for confirmation details.
+            </p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="mt-6 px-6 py-2 bg-accent text-accent-foreground rounded-lg hover:bg-accent/90 transition-colors"
+            >
+              Refresh Page
+            </button>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Main content - only shown when orderSummary is loaded
   return (
     <div className="hp-funnel-thankyou min-h-screen bg-background py-12 px-4">
       <div className="max-w-4xl mx-auto">
@@ -252,26 +326,6 @@ export const FunnelThankYou = ({
             </p>
           )}
         </div>
-
-        {/* Loading State */}
-        {isLoading && (
-          <Card className="p-12 bg-card/50 backdrop-blur-sm border-border/50 text-center">
-            <div className="text-accent mb-4 flex justify-center">
-              <LoaderIcon />
-            </div>
-            <p className="text-muted-foreground">Loading your order details...</p>
-          </Card>
-        )}
-
-        {/* Error State */}
-        {error && !isLoading && (
-          <Card className="p-8 bg-destructive/10 border-destructive/30 text-center">
-            <p className="text-destructive">{error}</p>
-            <p className="text-muted-foreground mt-2">
-              Don't worry - your order has been placed. Check your email for confirmation.
-            </p>
-          </Card>
-        )}
 
         {/* Order Summary */}
         {orderSummary && !isLoading && (
