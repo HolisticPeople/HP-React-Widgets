@@ -142,6 +142,15 @@ class FunnelStylesShortcode
                 background: transparent;
             }
             
+            /* v2.43.6: Fix Elementor flex container height issues on mobile */
+            /* Prevent shortcode widgets from expanding in flex containers */
+            @media (max-width: 767px) {
+                .e-con.e-flex > .elementor-widget-shortcode {
+                    flex: 0 0 auto !important;
+                    height: fit-content !important;
+                }
+            }
+            
             /* Text color utilities */
             .hp-text-basic {
                 color: var(--hp-funnel-text-basic) !important;
