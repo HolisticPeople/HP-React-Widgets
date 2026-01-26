@@ -83,8 +83,8 @@ const iconMap: Record<string, React.FC> = {
   moon: MoonIcon,
 };
 
-// Category display labels
-const categoryLabels: Record<string, string> = {
+// Default category display labels (can be overridden via props)
+const defaultCategoryLabels: Record<string, string> = {
   health: 'Health & Wellness',
   science: 'Science & Research',
   quality: 'Quality & Purity',
@@ -109,6 +109,7 @@ export interface FunnelBenefitsProps {
   backgroundGradient?: string;
   className?: string;
   enableCategories?: boolean; // Round 2: Enable categorized column layout
+  categoryNames?: Record<string, string>; // v2.43.0: Custom category names from admin
   // Responsive settings (v2.32.0)
   heightBehavior?: HeightBehavior | { mobile?: HeightBehavior; tablet?: HeightBehavior; desktop?: HeightBehavior };
 }
@@ -124,8 +125,11 @@ export const FunnelBenefits = ({
   backgroundGradient,
   className,
   enableCategories = false,
+  categoryNames, // v2.43.0: Custom category names from admin
   heightBehavior = 'scrollable', // Changed from fit_viewport - overflow issues on mobile
 }: FunnelBenefitsProps) => {
+  // Merge custom category names with defaults
+  const categoryLabels = { ...defaultCategoryLabels, ...categoryNames };
   // Responsive hooks
   const { className: heightClassName, style: heightStyle } = useHeightBehavior(heightBehavior);
   

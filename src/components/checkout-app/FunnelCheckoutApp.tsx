@@ -98,7 +98,10 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
   }, []);
   
   // Checkout data that persists across steps
-  const [customerData, setCustomerData] = useState<CustomerData | null>(null);
+  // v2.43.0: Initialize customerData from initialUserData for logged-in users (fixes points slider)
+  const [customerData, setCustomerData] = useState<CustomerData | null>(
+    props.initialUserData ? (props.initialUserData as CustomerData) : null
+  );
   const [shippingAddress, setShippingAddress] = useState<Address | null>(null);
   const [selectedRate, setSelectedRate] = useState<ShippingRate | null>(null);
   const [pointsToRedeem, setPointsToRedeem] = useState(0);

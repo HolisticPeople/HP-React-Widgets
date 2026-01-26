@@ -175,6 +175,14 @@ class FunnelExporter
             'title' => FunnelConfigLoader::getFieldValue('hero_benefits_title', $postId),
             'subtitle' => FunnelConfigLoader::getFieldValue('hero_benefits_subtitle', $postId), // Round 2
             'enable_categories' => (bool) FunnelConfigLoader::getFieldValue('enable_benefit_categories', $postId), // Round 2
+            // v2.43.0: Custom category names
+            'category_names' => [
+                'health'  => FunnelConfigLoader::getFieldValue('benefit_category_1_name', $postId) ?: 'Health & Wellness',
+                'science' => FunnelConfigLoader::getFieldValue('benefit_category_2_name', $postId) ?: 'Science & Research',
+                'quality' => FunnelConfigLoader::getFieldValue('benefit_category_3_name', $postId) ?: 'Quality & Purity',
+                'results' => FunnelConfigLoader::getFieldValue('benefit_category_4_name', $postId) ?: 'Results & Benefits',
+                'support' => FunnelConfigLoader::getFieldValue('benefit_category_5_name', $postId) ?: 'Support & Care',
+            ],
             'items' => $items,
         ];
     }

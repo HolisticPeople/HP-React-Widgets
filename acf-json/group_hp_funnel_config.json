@@ -1493,6 +1493,191 @@
             "_valid": 1
         },
         {
+            "ID": 0,
+            "key": "field_benefit_category_1_name",
+            "label": "Category 1 Name",
+            "name": "benefit_category_1_name",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "text",
+            "value": null,
+            "menu_order": 21.51,
+            "instructions": "Custom name for category 1 (default: Health & Wellness)",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_enable_benefit_categories",
+                        "operator": "==",
+                        "value": "1"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "20",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "placeholder": "Health & Wellness",
+            "prepend": "",
+            "append": "",
+            "maxlength": "",
+            "_name": "benefit_category_1_name",
+            "_valid": 1
+        },
+        {
+            "ID": 0,
+            "key": "field_benefit_category_2_name",
+            "label": "Category 2 Name",
+            "name": "benefit_category_2_name",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "text",
+            "value": null,
+            "menu_order": 21.52,
+            "instructions": "Custom name for category 2 (default: Science & Research)",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_enable_benefit_categories",
+                        "operator": "==",
+                        "value": "1"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "20",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "placeholder": "Science & Research",
+            "prepend": "",
+            "append": "",
+            "maxlength": "",
+            "_name": "benefit_category_2_name",
+            "_valid": 1
+        },
+        {
+            "ID": 0,
+            "key": "field_benefit_category_3_name",
+            "label": "Category 3 Name",
+            "name": "benefit_category_3_name",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "text",
+            "value": null,
+            "menu_order": 21.53,
+            "instructions": "Custom name for category 3 (default: Quality & Purity)",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_enable_benefit_categories",
+                        "operator": "==",
+                        "value": "1"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "20",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "placeholder": "Quality & Purity",
+            "prepend": "",
+            "append": "",
+            "maxlength": "",
+            "_name": "benefit_category_3_name",
+            "_valid": 1
+        },
+        {
+            "ID": 0,
+            "key": "field_benefit_category_4_name",
+            "label": "Category 4 Name",
+            "name": "benefit_category_4_name",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "text",
+            "value": null,
+            "menu_order": 21.54,
+            "instructions": "Custom name for category 4 (default: Results & Benefits)",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_enable_benefit_categories",
+                        "operator": "==",
+                        "value": "1"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "20",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "placeholder": "Results & Benefits",
+            "prepend": "",
+            "append": "",
+            "maxlength": "",
+            "_name": "benefit_category_4_name",
+            "_valid": 1
+        },
+        {
+            "ID": 0,
+            "key": "field_benefit_category_5_name",
+            "label": "Category 5 Name",
+            "name": "benefit_category_5_name",
+            "aria-label": "",
+            "prefix": "acf",
+            "type": "text",
+            "value": null,
+            "menu_order": 21.55,
+            "instructions": "Custom name for category 5 (default: Support & Care)",
+            "required": false,
+            "id": "",
+            "class": "",
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_enable_benefit_categories",
+                        "operator": "==",
+                        "value": "1"
+                    }
+                ]
+            ],
+            "parent": 125087,
+            "wrapper": {
+                "width": "20",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "placeholder": "Support & Care",
+            "prepend": "",
+            "append": "",
+            "maxlength": "",
+            "_name": "benefit_category_5_name",
+            "_valid": 1
+        },
+        {
             "ID": 125177,
             "key": "field_products_tab",
             "label": "Products",

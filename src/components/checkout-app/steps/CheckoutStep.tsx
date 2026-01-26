@@ -1399,10 +1399,10 @@ export const CheckoutStep = ({
                 </Button>
               </div>
               
-              {/* Bonus Message */}
+              {/* Bonus Message - v2.43.0: Use discount color from styling */}
               {selectedOffer.bonusMessage && offerQuantity > 1 && (
                 <div className="mt-4 p-4 bg-accent/10 rounded-lg text-center">
-                  <p className="text-accent font-semibold">
+                  <p className="font-semibold" style={{ color: 'var(--hp-funnel-text-discount, #22c55e)' }}>
                     {selectedOffer.bonusMessage.replace('{qty}', String(offerQuantity))}
                   </p>
                 </div>

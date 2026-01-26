@@ -260,13 +260,13 @@ export const FunnelInfographics = ({
   return (
     <section
       className={cn(
-        'hp-funnel-infographics hp-funnel-section py-4 md:py-16 px-0 md:px-4',
+        'hp-funnel-infographics hp-funnel-section py-4 md:py-16 px-0 lg:px-4', // v2.43.0: Only large screens get horizontal margins
         className
       )}
       data-effective-mode={effectiveMode}
     >
-      {/* Container: full-width on mobile, max-width on desktop */}
-      <div className="w-full md:max-w-6xl md:mx-auto">
+      {/* Container: full-width on mobile/tablet, max-width on desktop (v2.43.0) */}
+      <div className="w-full lg:max-w-6xl lg:mx-auto">
         {/* Optional section title */}
         {title && (
           <h2 

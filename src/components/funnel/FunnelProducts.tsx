@@ -66,12 +66,17 @@ export const FunnelProducts = ({
   const { breakpoint, isMobile, isTablet } = useResponsive();
   const { className: heightClassName, style: heightStyle } = useHeightBehavior(heightBehavior);
   
+  // v2.43.0: Auto-adjust columns based on offer count for optimal layout
+  const productCount = products.length;
+  const autoDesktopColumns = productCount <= 2 ? productCount : desktopColumns;
+  const autoTabletColumns = productCount === 1 ? 1 : tabletColumns;
+  
   // Determine effective columns based on breakpoint
   const effectiveColumns = isMobile 
     ? 1 // Mobile always single column for stacked/compact
     : isTablet 
-      ? tabletColumns 
-      : desktopColumns;
+      ? autoTabletColumns 
+      : autoDesktopColumns;
   
   const handleProductClick = (product: FunnelProduct) => {
     const url = product.ctaUrl || defaultCtaUrl;
@@ -108,16 +113,16 @@ export const FunnelProducts = ({
     }
   };
 
-  // Extended grid column options for responsive support
+  // Extended grid column options for responsive support (v2.43.0: wider cards for 1-2 offers)
   const gridCols: Record<number, string> = {
-    1: 'max-w-md mx-auto',
-    2: 'md:grid-cols-2',
+    1: 'max-w-lg mx-auto', // Single offer: wider centered card
+    2: 'md:grid-cols-2 max-w-3xl mx-auto', // Two offers: wider cards, centered
     3: 'md:grid-cols-2 lg:grid-cols-3',
     4: 'md:grid-cols-2 lg:grid-cols-4',
   };
 
-  // Use effectiveColumns for responsive behavior
-  const columnClass = gridCols[Math.min(effectiveColumns, 4)] || gridCols[3];
+  // Use effectiveColumns for responsive behavior, considering product count
+  const columnClass = gridCols[Math.min(productCount <= 2 ? productCount : effectiveColumns, 4)] || gridCols[3];
 
   // Build background style, merge with height behavior
   const bgStyle: React.CSSProperties = { ...heightStyle };

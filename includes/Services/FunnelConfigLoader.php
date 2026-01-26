@@ -532,6 +532,14 @@ class FunnelConfigLoader
                 'subtitle' => self::getFieldValue('hero_benefits_subtitle', $postId),
                 'items'    => self::extractBenefitsWithIcons(self::getFieldValue('hero_benefits', $postId)),
                 'enable_categories' => (bool) self::getFieldValue('enable_benefit_categories', $postId),
+                // v2.43.0: Custom category names (editable in admin)
+                'category_names' => [
+                    'health'  => self::getFieldValue('benefit_category_1_name', $postId) ?: 'Health & Wellness',
+                    'science' => self::getFieldValue('benefit_category_2_name', $postId) ?: 'Science & Research',
+                    'quality' => self::getFieldValue('benefit_category_3_name', $postId) ?: 'Quality & Purity',
+                    'results' => self::getFieldValue('benefit_category_4_name', $postId) ?: 'Results & Benefits',
+                    'support' => self::getFieldValue('benefit_category_5_name', $postId) ?: 'Support & Care',
+                ],
             ],
             
             // Offers section (replaces legacy products)

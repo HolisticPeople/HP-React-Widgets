@@ -406,6 +406,16 @@ class FunnelImporter
         self::setField($postId, 'hero_benefits_subtitle', $benefits['subtitle'] ?? null); // Round 2
         self::setField($postId, 'enable_benefit_categories', !empty($benefits['enable_categories'])); // Round 2
         
+        // v2.43.0: Import custom category names
+        $categoryNames = $benefits['category_names'] ?? [];
+        if (!empty($categoryNames)) {
+            self::setField($postId, 'benefit_category_1_name', $categoryNames['health'] ?? null);
+            self::setField($postId, 'benefit_category_2_name', $categoryNames['science'] ?? null);
+            self::setField($postId, 'benefit_category_3_name', $categoryNames['quality'] ?? null);
+            self::setField($postId, 'benefit_category_4_name', $categoryNames['results'] ?? null);
+            self::setField($postId, 'benefit_category_5_name', $categoryNames['support'] ?? null);
+        }
+        
         if (!empty($benefits['items'])) {
             self::setField($postId, 'hero_benefits', array_map(function($item) {
                 return [
