@@ -378,6 +378,13 @@ class CheckoutApi
 
         if ($orderId > 0) {
             $order = wc_get_order($orderId);
+            // If order_id is provided along with a PayPal reference, verify it matches
+            if ($order && $isPayPalRef) {
+                $paymentMethod = (string) $order->get_meta('_hp_rw_payment_method');
+                if ($paymentMethod === 'paypal' && $paypalOrderIdFromUrl === $orderId) {
+                    $authorizedViaPiId = true;
+                }
+            }
         } elseif ($isPayPalRef && $paypalOrderIdFromUrl > 0) {
             // PayPal: lookup by WC order ID directly
             $order = wc_get_order($paypalOrderIdFromUrl);
