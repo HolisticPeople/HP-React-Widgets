@@ -524,6 +524,57 @@ class SettingsPage
 
             <hr />
 
+            <?php
+            // Handle Advanced settings submission
+            if (isset($_POST['hp_rw_advanced_submitted'])) {
+                check_admin_referer('hp_rw_advanced_settings');
+
+                $advancedSettings = get_option('hp_rw_advanced_settings', []);
+                $advancedSettings['disable_subroute_query_hijack'] = isset($_POST['disable_subroute_query_hijack']);
+
+                update_option('hp_rw_advanced_settings', $advancedSettings);
+                echo '<div class="notice notice-success is-dismissible"><p>Advanced settings saved.</p></div>';
+            }
+
+            $advancedSettings = get_option('hp_rw_advanced_settings', []);
+            ?>
+
+            <h2><?php echo esc_html('Advanced Settings'); ?></h2>
+            <p class="description">
+                <?php echo esc_html('Developer options and troubleshooting toggles.'); ?>
+            </p>
+
+            <form method="post" style="max-width: 900px;">
+                <?php wp_nonce_field('hp_rw_advanced_settings'); ?>
+                <input type="hidden" name="hp_rw_advanced_submitted" value="1" />
+
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th scope="row">
+                            <label for="disable_subroute_query_hijack"><?php echo esc_html('Disable Sub-Route Query Hijack'); ?></label>
+                        </th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="disable_subroute_query_hijack" id="disable_subroute_query_hijack" 
+                                       value="1" <?php checked(!empty($advancedSettings['disable_subroute_query_hijack'])); ?> />
+                                <?php echo esc_html('Disable the WP query hijack for funnel sub-routes (checkout/thank-you)'); ?>
+                            </label>
+                            <p class="description">
+                                <?php echo esc_html('When enabled, the plugin makes WordPress believe /checkout and /thank-you sub-routes are viewing the funnel CPT. This allows Elementor Theme Builder conditions (header/footer) to apply correctly. Disable this if you experience unexpected behavior on funnel pages.'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+
+                <p>
+                    <button type="submit" class="button button-primary">
+                        <?php echo esc_html('Save Advanced Settings'); ?>
+                    </button>
+                </p>
+            </form>
+
+            <hr />
+
             <?php $isEditing = ($editingSlug !== ''); ?>
             <h2>
                 <?php

@@ -493,6 +493,9 @@ class Plugin
      * - Elementor Theme Builder conditions for hp-funnel work correctly
      * - Header/footer templates match the landing page
      * - Body classes are applied correctly
+     * 
+     * The query hijack can be disabled via Settings > HP React Widgets > Advanced Settings
+     * if it causes unexpected behavior.
      */
     public static function handleFunnelSubRoutes(): void
     {
@@ -505,46 +508,49 @@ class Plugin
             return;
         }
         
-        // Find the actual funnel CPT post by slug
-        $funnel_posts = get_posts([
-            'post_type' => self::FUNNEL_POST_TYPE,
-            'name' => $slug,
-            'posts_per_page' => 1,
-            'post_status' => 'publish',
-        ]);
-        
-        if (empty($funnel_posts)) {
-            // Funnel not found - let WordPress handle 404
-            return;
-        }
-        
-        $funnel_post = $funnel_posts[0];
-        
-        // Hijack the main query to simulate viewing the funnel post
-        // This makes is_singular('hp-funnel') return true, enabling
-        // Elementor Theme Builder conditions to work correctly
-        $wp_query->is_singular = true;
-        $wp_query->is_single = true;
-        $wp_query->is_page = false;
-        $wp_query->is_archive = false;
-        $wp_query->is_home = false;
-        $wp_query->is_404 = false;
-        $wp_query->queried_object = $funnel_post;
-        $wp_query->queried_object_id = $funnel_post->ID;
-        $wp_query->post = $funnel_post;
-        $wp_query->posts = [$funnel_post];
-        $wp_query->post_count = 1;
-        $wp_query->found_posts = 1;
-        
-        // Set global $post so get_the_ID(), get_post(), etc. work correctly
-        $post = $funnel_post;
-        setup_postdata($post);
-        
         // Find the funnel config (includes styling, offers, etc.)
         $funnel = Services\FunnelConfigLoader::getBySlug($slug);
         if (!$funnel || !$funnel['active']) {
-            // Funnel config not found or inactive
+            // Funnel config not found or inactive - let WordPress handle 404
             return;
+        }
+        
+        // Check if query hijack is disabled (kill switch)
+        $advancedSettings = get_option('hp_rw_advanced_settings', []);
+        $disableQueryHijack = !empty($advancedSettings['disable_subroute_query_hijack']);
+        
+        if (!$disableQueryHijack) {
+            // Find the actual funnel CPT post by slug
+            $funnel_posts = get_posts([
+                'post_type' => self::FUNNEL_POST_TYPE,
+                'name' => $slug,
+                'posts_per_page' => 1,
+                'post_status' => 'publish',
+            ]);
+            
+            if (!empty($funnel_posts)) {
+                $funnel_post = $funnel_posts[0];
+                
+                // Hijack the main query to simulate viewing the funnel post
+                // This makes is_singular('hp-funnel') return true, enabling
+                // Elementor Theme Builder conditions to work correctly
+                $wp_query->is_singular = true;
+                $wp_query->is_single = true;
+                $wp_query->is_page = false;
+                $wp_query->is_archive = false;
+                $wp_query->is_home = false;
+                $wp_query->is_404 = false;
+                $wp_query->queried_object = $funnel_post;
+                $wp_query->queried_object_id = $funnel_post->ID;
+                $wp_query->post = $funnel_post;
+                $wp_query->posts = [$funnel_post];
+                $wp_query->post_count = 1;
+                $wp_query->found_posts = 1;
+                
+                // Set global $post so get_the_ID(), get_post(), etc. work correctly
+                $post = $funnel_post;
+                setup_postdata($post);
+            }
         }
         
         // Store funnel data for template use
