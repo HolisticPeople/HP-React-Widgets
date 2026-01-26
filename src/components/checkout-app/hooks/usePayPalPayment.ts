@@ -220,6 +220,7 @@ export function usePayPalPayment(options: UsePayPalPaymentOptions) {
       },
 
       onApprove: async (data) => {
+        console.log('[PayPal] onApprove called with orderID:', data.orderID);
         try {
           const response = await fetch(`${restBase}/hp-rw/v1/paypal/capture-order`, {
             method: 'POST',
@@ -229,16 +230,20 @@ export function usePayPalPayment(options: UsePayPalPaymentOptions) {
             }),
           });
 
+          console.log('[PayPal] Capture response status:', response.status);
           const result = await response.json();
+          console.log('[PayPal] Capture response body:', result);
 
           if (!response.ok || !result.success) {
-            throw new Error(result.message || 'Failed to capture payment');
+            throw new Error(result.message || result.data?.message || 'Failed to capture payment');
           }
 
+          console.log('[PayPal] Payment successful, order:', result.order_id);
           if (onPaymentSuccessRef.current) {
             onPaymentSuccessRef.current(result.order_id, result.order_number);
           }
         } catch (err: any) {
+          console.error('[PayPal] Capture error:', err);
           const message = err.message || 'Payment capture failed';
           setError(message);
           if (onPaymentErrorRef.current) {

@@ -69,10 +69,13 @@ class PayPalApi
 
         // Get PayPal credentials
         $paypalMode = $this->getPayPalModeForFunnel($funnelId);
+        error_log('[HP PayPal] Create order - funnel: ' . $funnelId . ', mode determined: ' . $paypalMode);
+        
         $credentials = $this->getPayPalCredentials($paypalMode);
         
         if (!$credentials['client_id'] || !$credentials['secret']) {
-            return new WP_Error('paypal_not_configured', 'PayPal credentials not configured', ['status' => 500]);
+            error_log('[HP PayPal] Error: No credentials for mode ' . $paypalMode);
+            return new WP_Error('paypal_not_configured', 'PayPal credentials not configured for ' . $paypalMode . ' mode', ['status' => 500]);
         }
 
         // Calculate totals
@@ -186,6 +189,10 @@ class PayPalApi
         // Store PayPal order ID in draft
         $draftData['paypal_order_id'] = $paypalOrderId;
         $checkoutService->updateDraft($draftId, $draftData);
+        
+        // Store reverse mapping for object-cache-safe lookup
+        $checkoutService->storePayPalOrderMapping($paypalOrderId, $draftId);
+        error_log('[HP PayPal] Order created successfully - PayPal ID: ' . $paypalOrderId . ', Draft ID: ' . $draftId);
 
         return new WP_REST_Response([
             'success' => true,
@@ -200,8 +207,10 @@ class PayPalApi
     public function handle_capture_order(WP_REST_Request $request): WP_REST_Response|WP_Error
     {
         $paypalOrderId = (string) $request->get_param('paypal_order_id');
+        error_log('[HP PayPal] Capture request for order: ' . $paypalOrderId);
         
         if (empty($paypalOrderId)) {
+            error_log('[HP PayPal] Error: PayPal order ID is empty');
             return new WP_Error('bad_request', 'PayPal order ID required', ['status' => 400]);
         }
 
@@ -210,24 +219,30 @@ class PayPalApi
         // Find draft by PayPal order ID
         $draftData = $checkoutService->findDraftByPayPalOrderId($paypalOrderId);
         if (!$draftData) {
+            error_log('[HP PayPal] Error: Draft not found for PayPal order ' . $paypalOrderId);
             return new WP_Error('not_found', 'Order draft not found', ['status' => 404]);
         }
 
         $draftId = $draftData['draft_id'] ?? '';
         $paypalMode = $draftData['paypal_mode'] ?? 'sandbox';
+        error_log('[HP PayPal] Draft found: ' . $draftId . ', mode: ' . $paypalMode);
+        
         $credentials = $this->getPayPalCredentials($paypalMode);
 
         if (!$credentials['client_id'] || !$credentials['secret']) {
-            return new WP_Error('paypal_not_configured', 'PayPal credentials not configured', ['status' => 500]);
+            error_log('[HP PayPal] Error: Credentials not configured for mode ' . $paypalMode);
+            return new WP_Error('paypal_not_configured', 'PayPal credentials not configured for ' . $paypalMode . ' mode', ['status' => 500]);
         }
 
         $accessToken = $this->getAccessToken($credentials, $paypalMode);
         if (!$accessToken) {
+            error_log('[HP PayPal] Error: Failed to get access token');
             return new WP_Error('paypal_auth', 'Failed to authenticate with PayPal', ['status' => 502]);
         }
 
         // Capture the order
         $apiBase = $paypalMode === 'live' ? self::PAYPAL_LIVE_API : self::PAYPAL_SANDBOX_API;
+        error_log('[HP PayPal] Capturing order at: ' . $apiBase . '/v2/checkout/orders/' . $paypalOrderId . '/capture');
         
         $response = wp_remote_post($apiBase . '/v2/checkout/orders/' . $paypalOrderId . '/capture', [
             'headers' => [
@@ -239,21 +254,27 @@ class PayPalApi
         ]);
 
         if (is_wp_error($response)) {
+            error_log('[HP PayPal] WP Error: ' . $response->get_error_message());
             return new WP_Error('paypal_api', 'PayPal API error: ' . $response->get_error_message(), ['status' => 502]);
         }
 
         $statusCode = wp_remote_retrieve_response_code($response);
         $body = json_decode(wp_remote_retrieve_body($response), true);
+        error_log('[HP PayPal] Capture response status: ' . $statusCode . ', body: ' . wp_json_encode($body));
 
         if ($statusCode !== 200 && $statusCode !== 201) {
             $errorMsg = $body['message'] ?? $body['details'][0]['description'] ?? 'Unknown PayPal error';
+            error_log('[HP PayPal] Capture failed: ' . $errorMsg);
             return new WP_Error('paypal_capture', 'Failed to capture payment: ' . $errorMsg, ['status' => 502]);
         }
 
         $captureStatus = $body['status'] ?? '';
         if ($captureStatus !== 'COMPLETED') {
+            error_log('[HP PayPal] Payment not completed, status: ' . $captureStatus);
             return new WP_Error('payment_failed', 'Payment was not completed. Status: ' . $captureStatus, ['status' => 400]);
         }
+        
+        error_log('[HP PayPal] Capture successful, creating WC order');
 
         // Extract capture details
         $captureId = '';

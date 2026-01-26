@@ -52,13 +52,34 @@ class CheckoutService
     }
 
     /**
+     * Store a PayPal order ID -> draft ID mapping for later lookup.
+     * This is object-cache safe (uses transient API properly).
+     */
+    public function storePayPalOrderMapping(string $paypalOrderId, string $draftId): void
+    {
+        set_transient('hp_rw_paypal_' . $paypalOrderId, $draftId, self::TTL);
+    }
+
+    /**
      * Find a draft by PayPal order ID.
+     * Uses a dedicated mapping transient that works with object cache.
      */
     public function findDraftByPayPalOrderId(string $paypalOrderId): ?array
     {
+        // First, try the dedicated mapping transient (object-cache safe)
+        $draftId = get_transient('hp_rw_paypal_' . $paypalOrderId);
+        
+        if ($draftId) {
+            $data = $this->getDraft($draftId);
+            if ($data) {
+                $data['draft_id'] = $draftId;
+                return $data;
+            }
+        }
+        
+        // Fallback: search database directly (for sites without object cache or legacy data)
         global $wpdb;
         
-        // Search transients for the PayPal order ID
         $transients = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT option_name, option_value FROM {$wpdb->options} 
@@ -70,18 +91,21 @@ class CheckoutService
             )
         );
 
-        if (empty($transients)) return null;
+        if (empty($transients)) {
+            error_log('[HP PayPal] findDraftByPayPalOrderId: No draft found for ' . $paypalOrderId);
+            return null;
+        }
 
         foreach ($transients as $transient) {
             $data = json_decode($transient->option_value, true);
             if (is_array($data) && isset($data['paypal_order_id']) && $data['paypal_order_id'] === $paypalOrderId) {
-                // Extract draft ID from transient name
-                $draftId = str_replace('_transient_' . self::TRANSIENT_PREFIX, '', $transient->option_name);
-                $data['draft_id'] = $draftId;
+                $foundDraftId = str_replace('_transient_' . self::TRANSIENT_PREFIX, '', $transient->option_name);
+                $data['draft_id'] = $foundDraftId;
                 return $data;
             }
         }
 
+        error_log('[HP PayPal] findDraftByPayPalOrderId: Draft not found in fallback search for ' . $paypalOrderId);
         return null;
     }
 
