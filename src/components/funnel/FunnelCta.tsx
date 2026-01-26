@@ -46,8 +46,10 @@ export const FunnelCta = ({
   const stickyCTAActive = typeof document !== 'undefined' && 
     document.getElementById('hp-sticky-cta-hide-section-ctas') !== null;
   
+  // v2.43.6: Return a collapsed placeholder instead of null to prevent Elementor flex 
+  // container from redistributing empty space to other widgets (causing layout gaps)
   if (isMobile && hideOnMobileIfStickyCta && stickyCTAActive) {
-    return null;
+    return <div className="hp-funnel-cta hp-funnel-section hidden" aria-hidden="true" />;
   }
   
   // Handle CTA button click based on behavior
