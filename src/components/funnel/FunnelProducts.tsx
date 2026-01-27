@@ -255,13 +255,19 @@ export const FunnelProducts = ({
                         e.stopPropagation();
                         handleProductClick(product);
                       }}
-                      className={cn(
-                        "hp-funnel-cta-btn w-full rounded-full transition-all duration-300",
-                        // Mobile: match floating CTA style (20px, bold, uppercase, letter-spacing)
-                        isMobile 
-                          ? "text-[20px] font-bold uppercase tracking-wide py-4" 
-                          : "text-lg font-bold py-6"
-                      )}
+                      className="hp-funnel-cta-btn w-full rounded-full transition-all duration-300"
+                      style={isMobile ? {
+                        // Match floating CTA style exactly
+                        fontSize: '20px',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        padding: '14px 48px',
+                      } : {
+                        fontSize: '18px',
+                        fontWeight: 700,
+                        padding: '24px 32px',
+                      }}
                     >
                       {product.ctaText || defaultCtaText}
                     </Button>
