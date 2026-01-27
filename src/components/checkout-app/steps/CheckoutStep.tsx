@@ -1070,12 +1070,21 @@ export const CheckoutStep = ({
   const renderOfferCard = (offer: Offer) => {
     const isSelected = selectedOfferId === offer.id;
     
+    // Handle card click - only on desktop, on mobile use the CTA button instead
+    const handleCardClick = () => {
+      if (!isMobile) {
+        onSelectOffer(offer.id);
+      }
+    };
+    
     return (
       <div
         key={offer.id}
-        onClick={() => onSelectOffer(offer.id)}
+        onClick={handleCardClick}
         className={cn(
-          "p-6 rounded-lg border-2 cursor-pointer transition-all duration-300 mb-4 relative",
+          "p-6 rounded-lg border-2 transition-all duration-300 mb-4 relative",
+          // Only show pointer cursor on desktop
+          !isMobile && "cursor-pointer",
           isSelected
             ? "border-accent bg-accent/10 shadow-[0_0_20px_hsl(45_95%_60%/0.3)]"
             : "border-border/50 hover:border-accent/50"
@@ -1139,6 +1148,25 @@ export const CheckoutStep = ({
                 <span className="px-2 py-0.5 bg-accent/20 text-accent rounded">Customize Your Kit</span>
               )}
             </div>
+            
+            {/* CTA Button - larger on mobile, primary action point */}
+            <Button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent card click on desktop
+                onSelectOffer(offer.id);
+              }}
+              className={cn(
+                "mt-4 w-full font-bold transition-all",
+                // Larger text and padding on mobile
+                isMobile ? "text-lg py-6" : "text-base py-3",
+                isSelected
+                  ? "bg-accent text-accent-foreground hover:bg-accent/90"
+                  : "bg-secondary hover:bg-accent hover:text-accent-foreground"
+              )}
+            >
+              {isSelected ? 'Selected' : 'Select This Package'}
+            </Button>
           </div>
         </div>
         
