@@ -574,6 +574,9 @@ export const CheckoutStep = ({
   const stripePaymentRef = useRef(stripePayment);
   stripePaymentRef.current = stripePayment;
 
+  // Detect mobile for adjusted timing
+  const isMobile = typeof window !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
   // Mount Stripe Elements when ready - use empty deps to run only once
   // and check isReady inside the effect
   useEffect(() => {
@@ -585,20 +588,27 @@ export const CheckoutStep = ({
       const cardAlreadyMounted = stripeMountedRef.current;
       const expressAlreadyMounted = expressCheckoutMountedRef.current;
       
-      let mounted = false;
-      
       // Mount card element
       if (isReady && hasCardContainer && !cardAlreadyMounted) {
         stripePaymentRef.current.mountCardElement(stripeContainerRef.current);
         stripeMountedRef.current = true;
-        mounted = true;
       }
       
       // Mount Express Checkout element (after card element is mounted)
+      // Use a small delay on mobile to ensure DOM is ready
       if (isReady && hasExpressContainer && !expressAlreadyMounted && stripeMountedRef.current) {
-        stripePaymentRef.current.mountExpressCheckout(expressCheckoutContainerRef.current);
-        expressCheckoutMountedRef.current = true;
-        mounted = true;
+        // On mobile, wait a tick to ensure container is fully visible
+        if (isMobile) {
+          setTimeout(() => {
+            if (expressCheckoutContainerRef.current && !expressCheckoutMountedRef.current) {
+              stripePaymentRef.current.mountExpressCheckout(expressCheckoutContainerRef.current);
+              expressCheckoutMountedRef.current = true;
+            }
+          }, 50);
+        } else {
+          stripePaymentRef.current.mountExpressCheckout(expressCheckoutContainerRef.current);
+          expressCheckoutMountedRef.current = true;
+        }
       }
       
       return stripeMountedRef.current && expressCheckoutMountedRef.current;
@@ -609,13 +619,14 @@ export const CheckoutStep = ({
       return;
     }
 
-    // Poll every 100ms until ready (max 5 seconds)
+    // Poll until ready - longer timeout on mobile for slow connections
+    const maxAttempts = isMobile ? 80 : 50; // 8s on mobile, 5s on desktop
     let attempts = 0;
     const interval = setInterval(() => {
       attempts++;
       if (checkAndMount()) {
         clearInterval(interval);
-      } else if (attempts > 50) {
+      } else if (attempts > maxAttempts) {
         clearInterval(interval);
       }
     }, 100);
@@ -629,6 +640,34 @@ export const CheckoutStep = ({
       }
     };
   }, []); // Empty deps - runs only on mount/unmount
+  
+  // Visibility-based retry for Express Checkout on mobile
+  // Some mobile browsers (especially iOS Safari) may not detect wallets until visible
+  useEffect(() => {
+    if (!isMobile || !expressCheckoutContainerRef.current) return;
+    
+    // Use IntersectionObserver to detect when Express Checkout container becomes visible
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && expressCheckoutMountedRef.current) {
+            // Container is now visible - trigger retry if we haven't received ready event
+            // The hook internally checks if retry is needed
+            if (stripePaymentRef.current.retryExpressCheckout) {
+              stripePaymentRef.current.retryExpressCheckout();
+            }
+          }
+        });
+      },
+      { threshold: 0.1 } // Trigger when 10% visible
+    );
+    
+    observer.observe(expressCheckoutContainerRef.current);
+    
+    return () => {
+      observer.disconnect();
+    };
+  }, [isMobile]);
 
   // Mount PayPal button when ready (separate effect for PayPal)
   useEffect(() => {
@@ -1770,40 +1809,48 @@ export const CheckoutStep = ({
                 </div>
 
                 {/* Express Checkout - Apple Pay / Google Pay / PayPal */}
-                {(stripePayment.hasExpressCheckout || (paypalEnabled && paypalPayment.isAvailable)) && (
+                {/* Always render container on mobile to ensure wallet detection works */}
+                {(stripePayment.hasExpressCheckout || stripePayment.isExpressCheckoutLoading || (paypalEnabled && paypalPayment.isAvailable)) && (
                   <div className="space-y-3 mb-4">
-                    {/* Stripe Express Checkout (Apple Pay / Google Pay) */}
-                    <div 
-                      ref={expressCheckoutContainerRef}
-                      className="min-h-[48px]"
-                      style={{ display: stripePayment.hasExpressCheckout === false ? 'none' : 'block' }}
-                    >
-                      {stripePayment.isLoading && (
-                        <div className="flex items-center justify-center h-12">
-                          <LoaderIcon className="w-5 h-5 text-muted-foreground" />
-                        </div>
-                      )}
-                    </div>
+                    {/* Stripe Express Checkout wrapper with loading overlay */}
+                    {stripePayment.hasExpressCheckout !== false && (
+                      <div className="relative" style={{ minHeight: isMobile ? '56px' : '52px' }}>
+                        {/* Loading indicator - positioned absolutely to not interfere with Stripe container */}
+                        {stripePayment.isExpressCheckoutLoading && (
+                          <div className="absolute inset-0 flex items-center justify-center gap-2 bg-background/80 z-10">
+                            <LoaderIcon className="w-5 h-5 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground">Loading wallet options...</span>
+                          </div>
+                        )}
+                        {/* Stripe Express Checkout container - MUST be empty, no React children */}
+                        <div 
+                          ref={expressCheckoutContainerRef}
+                          style={{ minHeight: isMobile ? '56px' : '52px' }}
+                        />
+                      </div>
+                    )}
 
-                    {/* PayPal Button */}
-                    {paypalEnabled && (
-                      <div 
-                        ref={paypalContainerRef}
-                        className="min-h-[48px]"
-                        style={{ display: paypalPayment.isAvailable === false && !paypalPayment.isLoading ? 'none' : 'block' }}
-                      >
+                    {/* PayPal Button wrapper */}
+                    {paypalEnabled && paypalPayment.isAvailable !== false && (
+                      <div className="relative" style={{ minHeight: '48px' }}>
+                        {/* PayPal loading indicator */}
                         {paypalPayment.isLoading && (
-                          <div className="flex items-center justify-center h-12">
+                          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
                             <LoaderIcon className="w-5 h-5 text-muted-foreground" />
                           </div>
                         )}
+                        {/* PayPal container - MUST be empty, no React children */}
+                        <div 
+                          ref={paypalContainerRef}
+                          style={{ minHeight: '48px' }}
+                        />
                       </div>
                     )}
                   </div>
                 )}
 
-                {/* Divider - show when any wallet option is available */}
-                {(stripePayment.hasExpressCheckout || (paypalEnabled && paypalPayment.isAvailable)) && (
+                {/* Divider - show when any wallet option is available or loading */}
+                {(stripePayment.hasExpressCheckout || stripePayment.isExpressCheckoutLoading || (paypalEnabled && paypalPayment.isAvailable)) && (
                   <div className="flex items-center gap-3 mb-4">
                     <div className="flex-1 h-px bg-border/30" />
                     <span className="text-xs text-muted-foreground uppercase tracking-wider">or pay with card</span>
