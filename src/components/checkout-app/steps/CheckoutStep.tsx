@@ -78,6 +78,7 @@ const COUNTRY_NAME_TO_CODE: Record<string, string> = {
   'israel': 'IL',
   'mexico': 'MX',
   'brazil': 'BR',
+  'puerto rico': 'PR',
 };
 
 // Normalize country value to 2-letter ISO code
