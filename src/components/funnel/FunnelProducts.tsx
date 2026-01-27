@@ -169,9 +169,16 @@ export const FunnelProducts = ({
           {products.map((product) => (
             <Card
               key={product.id}
-              onClick={() => handleProductClick(product)}
+              onClick={() => {
+                // On mobile, only the CTA button is clickable - card click is disabled
+                if (!isMobile) {
+                  handleProductClick(product);
+                }
+              }}
               className={cn(
-                'relative p-8 transition-all duration-300 flex flex-col h-full cursor-pointer',
+                'relative p-8 transition-all duration-300 flex flex-col h-full',
+                // Only show pointer cursor on desktop
+                !isMobile && 'cursor-pointer',
                 product.isBestValue
                   ? 'bg-gradient-to-br from-accent/10 to-card/70 backdrop-blur-sm border-accent shadow-[0_0_40px_hsl(45_95%_60%/0.3)] scale-105'
                   : 'bg-card/70 backdrop-blur-sm border-border/50 hover:border-accent/50 hover:shadow-[0_0_30px_hsl(var(--accent)/0.3)]',
@@ -240,7 +247,7 @@ export const FunnelProducts = ({
                   </ul>
                 )}
 
-                {/* CTA Button */}
+                {/* CTA Button - larger on mobile for better touch targets */}
                 {(product.ctaUrl || defaultCtaUrl) && (
                   <div className="mt-auto pt-4">
                     <Button
@@ -248,7 +255,11 @@ export const FunnelProducts = ({
                         e.stopPropagation();
                         handleProductClick(product);
                       }}
-                      className="hp-funnel-cta-btn w-full font-bold text-lg py-6 rounded-full transition-all duration-300"
+                      className={cn(
+                        "hp-funnel-cta-btn w-full font-bold rounded-full transition-all duration-300",
+                        // Larger text and padding on mobile
+                        isMobile ? "text-xl py-7" : "text-lg py-6"
+                      )}
                     >
                       {product.ctaText || defaultCtaText}
                     </Button>
