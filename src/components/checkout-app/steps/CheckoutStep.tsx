@@ -1812,38 +1812,38 @@ export const CheckoutStep = ({
                 {/* Always render container on mobile to ensure wallet detection works */}
                 {(stripePayment.hasExpressCheckout || stripePayment.isExpressCheckoutLoading || (paypalEnabled && paypalPayment.isAvailable)) && (
                   <div className="space-y-3 mb-4">
-                    {/* Stripe Express Checkout (Apple Pay / Google Pay) */}
-                    {/* Only hide if explicitly false (not null/loading) */}
-                    <div 
-                      ref={expressCheckoutContainerRef}
-                      className="min-h-[52px]"
-                      style={{ 
-                        display: stripePayment.hasExpressCheckout === false ? 'none' : 'block',
-                        // Ensure minimum height for mobile touch targets
-                        minHeight: isMobile ? '56px' : '48px',
-                      }}
-                    >
-                      {/* Show loading indicator while Express Checkout is initializing */}
-                      {stripePayment.isExpressCheckoutLoading && (
-                        <div className="flex items-center justify-center h-12 gap-2">
-                          <LoaderIcon className="w-5 h-5 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">Loading wallet options...</span>
-                        </div>
-                      )}
-                    </div>
+                    {/* Stripe Express Checkout wrapper with loading overlay */}
+                    {stripePayment.hasExpressCheckout !== false && (
+                      <div className="relative" style={{ minHeight: isMobile ? '56px' : '52px' }}>
+                        {/* Loading indicator - positioned absolutely to not interfere with Stripe container */}
+                        {stripePayment.isExpressCheckoutLoading && (
+                          <div className="absolute inset-0 flex items-center justify-center gap-2 bg-background/80 z-10">
+                            <LoaderIcon className="w-5 h-5 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground">Loading wallet options...</span>
+                          </div>
+                        )}
+                        {/* Stripe Express Checkout container - MUST be empty, no React children */}
+                        <div 
+                          ref={expressCheckoutContainerRef}
+                          style={{ minHeight: isMobile ? '56px' : '52px' }}
+                        />
+                      </div>
+                    )}
 
-                    {/* PayPal Button */}
-                    {paypalEnabled && (
-                      <div 
-                        ref={paypalContainerRef}
-                        className="min-h-[48px]"
-                        style={{ display: paypalPayment.isAvailable === false && !paypalPayment.isLoading ? 'none' : 'block' }}
-                      >
+                    {/* PayPal Button wrapper */}
+                    {paypalEnabled && paypalPayment.isAvailable !== false && (
+                      <div className="relative" style={{ minHeight: '48px' }}>
+                        {/* PayPal loading indicator */}
                         {paypalPayment.isLoading && (
-                          <div className="flex items-center justify-center h-12">
+                          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
                             <LoaderIcon className="w-5 h-5 text-muted-foreground" />
                           </div>
                         )}
+                        {/* PayPal container - MUST be empty, no React children */}
+                        <div 
+                          ref={paypalContainerRef}
+                          style={{ minHeight: '48px' }}
+                        />
                       </div>
                     )}
                   </div>
