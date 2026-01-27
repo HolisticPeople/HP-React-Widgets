@@ -130,7 +130,7 @@ class FunnelCheckoutAppShortcode
             'freeShippingCountries' => $config['checkout']['free_shipping_countries'] ?? ['US'],
             'enablePoints'        => (bool) ($config['checkout']['enable_points'] ?? true),
             'enableCustomerLookup' => (bool) ($config['checkout']['enable_customer_lookup'] ?? true),
-            'showAllOffers'       => (bool) ($config['checkout']['show_all_offers'] ?? true),
+            'showAllOffers'       => $config['checkout']['show_all_offers'] ?? 'all',
             'stripePublishableKey' => $stripeKey,
             'stripeMode'          => $resolvedStripeMode, // Use the resolved 'test' or 'live'
             'paypalEnabled'       => $paypalConfig['enabled'],

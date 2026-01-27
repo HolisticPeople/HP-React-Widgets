@@ -563,7 +563,7 @@ class FunnelConfigLoader
                 'global_discount_percent' => (float) self::getFieldValue('global_discount_percent', $postId),
                 'enable_points'          => (bool) self::getFieldValue('enable_points_redemption', $postId),
                 'show_order_summary'     => (bool) self::getFieldValue('show_order_summary', $postId),
-                'show_all_offers'        => (bool) self::getFieldValue('checkout_show_all_offers', $postId),
+                'show_all_offers'        => self::normalizeShowAllOffers(self::getFieldValue('checkout_show_all_offers', $postId)),
                 // Round 2 improvements - configurable page title and legal popup pages
                 'page_title'             => self::getFieldValue('checkout_page_title', $postId) ?: 'Secure Your Order',
                 'page_subtitle'          => self::getFieldValue('checkout_page_subtitle', $postId),
@@ -760,6 +760,31 @@ class FunnelConfigLoader
             'mobile_settings'      => $mobileSettings,
             'sections'             => $sectionSettings,
         ];
+    }
+
+    /**
+     * Normalize showAllOffers value - handle legacy boolean and new select values.
+     * 
+     * @param mixed $value The raw ACF field value
+     * @return string Normalized value: 'all', 'selected', or 'large_only'
+     */
+    private static function normalizeShowAllOffers($value): string
+    {
+        // Handle legacy boolean values (true/1 = all, false/0 = selected)
+        if ($value === true || $value === 1 || $value === '1') {
+            return 'all';
+        }
+        if ($value === false || $value === 0 || $value === '0' || $value === '') {
+            return 'selected';
+        }
+        
+        // Handle new select values
+        if (in_array($value, ['all', 'selected', 'large_only'], true)) {
+            return $value;
+        }
+        
+        // Default to 'all' for any unexpected value
+        return 'all';
     }
 
     /**
