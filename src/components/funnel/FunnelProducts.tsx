@@ -247,7 +247,7 @@ export const FunnelProducts = ({
                   </ul>
                 )}
 
-                {/* CTA Button - larger on mobile for better touch targets */}
+                {/* CTA Button - styled like floating CTA on mobile for consistency */}
                 {(product.ctaUrl || defaultCtaUrl) && (
                   <div className="mt-auto pt-4">
                     <Button
@@ -256,9 +256,11 @@ export const FunnelProducts = ({
                         handleProductClick(product);
                       }}
                       className={cn(
-                        "hp-funnel-cta-btn w-full font-bold rounded-full transition-all duration-300",
-                        // Larger text and padding on mobile
-                        isMobile ? "text-xl py-7" : "text-lg py-6"
+                        "hp-funnel-cta-btn w-full rounded-full transition-all duration-300",
+                        // Mobile: match floating CTA style (20px, bold, uppercase, letter-spacing)
+                        isMobile 
+                          ? "text-[20px] font-bold uppercase tracking-wide py-4" 
+                          : "text-lg font-bold py-6"
                       )}
                     >
                       {product.ctaText || defaultCtaText}
