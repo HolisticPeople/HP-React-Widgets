@@ -44,6 +44,12 @@ interface UseStripePaymentOptions {
   onExpressCheckoutConfirm?: () => Promise<{ clientSecret: string; billingDetails: any } | null>;
 }
 
+// Detect if we're on a mobile device
+function isMobileDevice(): boolean {
+  if (typeof window === 'undefined') return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
 // Global Stripe singleton loader - ensures only ONE Stripe instance exists
 function loadStripeSingleton(publishableKey: string): Promise<Stripe | null> {
   return new Promise((resolve) => {
@@ -116,11 +122,17 @@ export function useStripePayment(options: UseStripePaymentOptions) {
   const [error, setError] = useState<string | null>(null);
   const [isCardComplete, setIsCardComplete] = useState(false);
   const [expressCheckoutAvailable, setExpressCheckoutAvailable] = useState<ExpressCheckoutAvailablePaymentMethods | null>(null);
+  // Track Express Checkout loading state separately for better UX on mobile
+  const [isExpressCheckoutLoading, setIsExpressCheckoutLoading] = useState(true);
   
   const stripeRef = useRef<Stripe | null>(null);
   const elementsRef = useRef<StripeElements | null>(null);
   const cardElementRef = useRef<StripeElement | null>(null);
   const expressCheckoutRef = useRef<StripeElement | null>(null);
+  // Track Express Checkout ready event received
+  const expressReadyReceivedRef = useRef(false);
+  // Store container ref for retry logic
+  const expressContainerRef = useRef<HTMLElement | null>(null);
   
   // Use refs for callbacks to avoid recreating confirmPayment on every render
   const onPaymentSuccessRef = useRef(onPaymentSuccess);
@@ -230,6 +242,8 @@ export function useStripePayment(options: UseStripePaymentOptions) {
 
   // Track if Express Checkout is already mounted
   const isExpressCheckoutMountedRef = useRef(false);
+  // Timeout ref for cleanup
+  const expressReadyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Mount Express Checkout Element (Apple Pay, Google Pay, etc.)
   const mountExpressCheckout = useCallback((container: HTMLElement | string) => {
@@ -239,17 +253,31 @@ export function useStripePayment(options: UseStripePaymentOptions) {
     }
 
     isExpressCheckoutMountedRef.current = true;
+    expressReadyReceivedRef.current = false;
+    setIsExpressCheckoutLoading(true);
+    
+    // Store container for potential retry
+    if (typeof container !== 'string') {
+      expressContainerRef.current = container;
+    }
 
-    // Create Express Checkout Element
+    // Create Express Checkout Element with mobile-optimized settings
+    const isMobile = isMobileDevice();
     expressCheckoutRef.current = elementsRef.current.create('expressCheckout', {
       buttonType: {
         applePay: 'buy',
         googlePay: 'buy',
       },
-      buttonHeight: 48,
+      // Use taller buttons on mobile for easier touch targets
+      buttonHeight: isMobile ? 52 : 48,
       buttonTheme: {
         applePay: 'black',
         googlePay: 'black',
+      },
+      // Ensure layout works well on mobile
+      layout: {
+        maxColumns: 1,
+        maxRows: 2,
       },
     });
 
@@ -258,12 +286,33 @@ export function useStripePayment(options: UseStripePaymentOptions) {
 
     // Listen for ready event to check which wallets are available
     expressCheckoutRef.current.on('ready', (event: { availablePaymentMethods?: ExpressCheckoutAvailablePaymentMethods }) => {
+      expressReadyReceivedRef.current = true;
+      setIsExpressCheckoutLoading(false);
+      
+      // Clear timeout since we received ready event
+      if (expressReadyTimeoutRef.current) {
+        clearTimeout(expressReadyTimeoutRef.current);
+        expressReadyTimeoutRef.current = null;
+      }
+      
       if (event.availablePaymentMethods) {
         setExpressCheckoutAvailable(event.availablePaymentMethods);
       } else {
-        setExpressCheckoutAvailable(null);
+        // No wallets available on this device
+        setExpressCheckoutAvailable({ applePay: false, googlePay: false, link: false });
       }
     });
+
+    // Set a timeout to handle case where ready event never fires
+    // This is more generous on mobile where wallet detection can be slow
+    const timeoutMs = isMobile ? 8000 : 5000;
+    expressReadyTimeoutRef.current = setTimeout(() => {
+      if (!expressReadyReceivedRef.current) {
+        setIsExpressCheckoutLoading(false);
+        // Don't set to false - leave as null so UI can show fallback or retry
+        // This prevents hiding potential wallets that are just slow to load
+      }
+    }, timeoutMs);
 
     // Handle click event - resolve with payment details when wallet sheet opens
     expressCheckoutRef.current.on('click', (event: { resolve: (params?: { lineItems?: any[] }) => void }) => {
@@ -334,17 +383,59 @@ export function useStripePayment(options: UseStripePaymentOptions) {
         setIsProcessing(false);
       }
     });
+    
+    // Handle loaderror event for better debugging
+    expressCheckoutRef.current.on('loaderror', (event: { error?: { message?: string } }) => {
+      console.warn('[useStripePayment] Express Checkout load error:', event.error?.message);
+      setIsExpressCheckoutLoading(false);
+      // Set explicitly to false to indicate no wallets available due to error
+      setExpressCheckoutAvailable({ applePay: false, googlePay: false, link: false });
+    });
   }, []);
 
   // Unmount Express Checkout Element only
   const unmountExpressCheckout = useCallback(() => {
+    // Clear any pending timeout
+    if (expressReadyTimeoutRef.current) {
+      clearTimeout(expressReadyTimeoutRef.current);
+      expressReadyTimeoutRef.current = null;
+    }
     if (expressCheckoutRef.current) {
       expressCheckoutRef.current.destroy();
       expressCheckoutRef.current = null;
     }
     isExpressCheckoutMountedRef.current = false;
+    expressReadyReceivedRef.current = false;
+    expressContainerRef.current = null;
     setExpressCheckoutAvailable(null);
+    setIsExpressCheckoutLoading(true);
   }, []);
+  
+  // Retry mounting Express Checkout (useful for visibility-triggered retry on mobile)
+  const retryExpressCheckout = useCallback(() => {
+    if (!expressContainerRef.current || !elementsRef.current) {
+      return;
+    }
+    
+    // Only retry if we haven't received a ready event yet
+    if (expressReadyReceivedRef.current) {
+      return;
+    }
+    
+    // Unmount and remount
+    if (expressCheckoutRef.current) {
+      expressCheckoutRef.current.destroy();
+      expressCheckoutRef.current = null;
+    }
+    isExpressCheckoutMountedRef.current = false;
+    
+    // Wait a tick then remount
+    setTimeout(() => {
+      if (expressContainerRef.current) {
+        mountExpressCheckout(expressContainerRef.current);
+      }
+    }, 100);
+  }, [mountExpressCheckout]);
 
   // Confirm payment
   const confirmPayment = useCallback(async (
@@ -447,8 +538,10 @@ export function useStripePayment(options: UseStripePaymentOptions) {
     // Express Checkout
     mountExpressCheckout,
     unmountExpressCheckout,
+    retryExpressCheckout,
     expressCheckoutAvailable,
     hasExpressCheckout,
-  }), [isLoading, isProcessing, isCardComplete, error, mountCardElement, unmountCardElement, confirmPayment, isReady, mountExpressCheckout, unmountExpressCheckout, expressCheckoutAvailable, hasExpressCheckout]);
+    isExpressCheckoutLoading,
+  }), [isLoading, isProcessing, isCardComplete, error, mountCardElement, unmountCardElement, confirmPayment, isReady, mountExpressCheckout, unmountExpressCheckout, retryExpressCheckout, expressCheckoutAvailable, hasExpressCheckout, isExpressCheckoutLoading]);
 }
 
