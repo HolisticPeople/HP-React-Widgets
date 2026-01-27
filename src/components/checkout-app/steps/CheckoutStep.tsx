@@ -1091,19 +1091,24 @@ export const CheckoutStep = ({
           {offer.image && (
             <img src={offer.image} alt={offer.name} className="w-20 h-auto rounded" />
           )}
-          <div className="flex-1">
-            <h3 className="text-xl font-bold text-foreground mb-1">{offer.name}</h3>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-xl font-bold text-foreground mb-1 break-words">{offer.name}</h3>
             {offer.description && (
-              <p className="text-muted-foreground text-sm mb-2">{offer.description}</p>
+              <p className="text-muted-foreground text-sm mb-2 break-words">{offer.description}</p>
             )}
             
             {/* Price display - hide for customizable kits when selected (details shown in kit area) */}
             {!(isSelected && offer.type === 'customizable_kit') && (
               <>
-                <div className="flex items-baseline gap-2">
-                  {offer.discountLabel && (
+                {/* Discount label on its own line on mobile */}
+                {offer.discountLabel && (
+                  <div className="mb-1">
                     <span className="text-green-500 text-sm font-semibold">{offer.discountLabel}</span>
-                  )}
+                  </div>
+                )}
+                
+                {/* Price row - wrap on mobile */}
+                <div className="flex items-baseline gap-2 flex-wrap">
                   <span className="text-2xl font-bold text-accent">
                     ${(offer.calculatedPrice || 0).toFixed(2)}
                   </span>
