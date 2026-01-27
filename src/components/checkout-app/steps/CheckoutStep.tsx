@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useCustomerLookup } from '../hooks/useCustomerLookup';
 import { useCheckoutApi } from '../hooks/useCheckoutApi';
 import { useStripePayment } from '../hooks/useStripePayment';
@@ -234,7 +235,7 @@ interface CheckoutStepProps {
   freeShippingCountries: string[];
   enablePoints: boolean;
   enableCustomerLookup: boolean;
-  showAllOffers?: boolean;
+  showAllOffers?: 'all' | 'selected' | 'large_only';
   stripePublishableKey: string;
   stripeMode: string;
   paypalEnabled?: boolean;
@@ -274,7 +275,7 @@ export const CheckoutStep = ({
   freeShippingCountries,
   enablePoints,
   enableCustomerLookup,
-  showAllOffers = true,
+  showAllOffers = 'all',
   stripePublishableKey,
   stripeMode,
   paypalEnabled = false,
@@ -291,6 +292,9 @@ export const CheckoutStep = ({
 }: CheckoutStepProps) => {
   // Ensure offers is always an array
   const offers = Array.isArray(rawOffers) ? rawOffers : [];
+  
+  // Mobile detection for responsive layout adjustments
+  const isMobile = useIsMobile();
 
   // Form state - prefill from initialUserData (logged-in user) if available
   const [formData, setFormData] = useState({
@@ -574,8 +578,8 @@ export const CheckoutStep = ({
   const stripePaymentRef = useRef(stripePayment);
   stripePaymentRef.current = stripePayment;
 
-  // Detect mobile for adjusted timing
-  const isMobile = typeof window !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  // Detect mobile device (user-agent) for adjusted timing - different from screen-width based isMobile hook
+  const isMobileDevice = typeof window !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   
   // Mount Stripe Elements when ready - use empty deps to run only once
   // and check isReady inside the effect
@@ -620,7 +624,7 @@ export const CheckoutStep = ({
     }
 
     // Poll until ready - longer timeout on mobile for slow connections
-    const maxAttempts = isMobile ? 80 : 50; // 8s on mobile, 5s on desktop
+    const maxAttempts = isMobileDevice ? 80 : 50; // 8s on mobile, 5s on desktop
     let attempts = 0;
     const interval = setInterval(() => {
       attempts++;
@@ -1319,6 +1323,69 @@ export const CheckoutStep = ({
     );
   };
 
+  // Quantity selector component - rendered in different positions based on screen size
+  const renderQuantitySelector = () => {
+    if (!selectedOffer || selectedOffer.type === 'customizable_kit') {
+      return null;
+    }
+    
+    return (
+      <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
+        <h2 className="text-xl font-bold mb-4 text-accent">How Many Would You Like?</h2>
+        
+        <div className="flex items-center justify-center gap-6 mb-4">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={() => onOfferQuantityChange(offerQuantity - 1)}
+            disabled={offerQuantity <= 1}
+            className="h-14 w-14 border-accent/50 hover:bg-accent/20 text-2xl"
+          >
+            <MinusIcon />
+          </Button>
+          
+          <div className="text-center">
+            <span className="text-5xl font-bold text-accent">{offerQuantity}</span>
+            <p className="text-sm text-muted-foreground mt-1">
+              {offerQuantity === 1 ? 'package' : 'packages'}
+            </p>
+          </div>
+          
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={() => onOfferQuantityChange(offerQuantity + 1)}
+            disabled={offerQuantity >= 10}
+            className="h-14 w-14 border-accent/50 hover:bg-accent/20 text-2xl"
+          >
+            <PlusIcon />
+          </Button>
+        </div>
+        
+        {/* Bonus Message - v2.43.0: Use discount color from styling */}
+        {selectedOffer.bonusMessage && offerQuantity > 1 && (
+          <div className="mt-4 p-4 bg-accent/10 rounded-lg text-center">
+            <p className="font-semibold" style={{ color: 'var(--hp-funnel-text-discount, #22c55e)' }}>
+              {selectedOffer.bonusMessage.replace('{qty}', String(offerQuantity))}
+            </p>
+          </div>
+        )}
+        
+        {/* Price summary when qty > 1 */}
+        {offerQuantity > 1 && (
+          <div className="mt-4 pt-4 border-t border-border/30 text-center">
+            <p className="text-muted-foreground text-sm">
+              {offerQuantity} × ${((selectedOffer.calculatedPrice || 0)).toFixed(2)} = 
+              <span className="text-accent font-bold ml-2">${offerPrice.discounted.toFixed(2)}</span>
+            </p>
+          </div>
+        )}
+      </Card>
+    );
+  };
+
   return (
     <div className="max-w-6xl mx-auto">
       {/* Header */}
@@ -1348,8 +1415,11 @@ export const CheckoutStep = ({
                 return 0;
               });
               
-              // Filter to show only selected offer if showAllOffers is false
-              const visibleOffers = showAllOffers 
+              // Determine if we should show all offers based on setting and screen size
+              // 'all' = always show all, 'selected' = always show only selected, 'large_only' = show all on desktop, selected on mobile
+              const shouldShowAll = showAllOffers === 'all' || (showAllOffers === 'large_only' && !isMobile);
+              
+              const visibleOffers = shouldShowAll 
                 ? sortedOffers 
                 : sortedOffers.filter(o => o.id === selectedOfferId);
               
@@ -1358,7 +1428,7 @@ export const CheckoutStep = ({
                   {visibleOffers.map((offer, index) => {
                     const isSelected = selectedOfferId === offer.id;
                     // Apply dimming to non-selected offers when multiple are shown
-                    const isDimmed = showAllOffers && !isSelected && visibleOffers.length > 1;
+                    const isDimmed = shouldShowAll && !isSelected && visibleOffers.length > 1;
                     
                     return (
                       <div 
@@ -1376,6 +1446,9 @@ export const CheckoutStep = ({
               );
             })()}
           </Card>
+
+          {/* Mobile only: Quantity Selector between offers and trust badges */}
+          {isMobile && renderQuantitySelector()}
 
           {/* Trust Badges */}
           <div className="grid grid-cols-3 gap-4">
@@ -1400,64 +1473,10 @@ export const CheckoutStep = ({
           </div>
         </div>
 
-        {/* Right Column - Quantity, Order Summary & Form */}
+        {/* Right Column - Quantity (desktop only), Order Summary & Form */}
         <div className="space-y-6">
-          {/* Quantity Selector - Only for non-kit offers */}
-          {selectedOffer && selectedOffer.type !== 'customizable_kit' && (
-            <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
-              <h2 className="text-xl font-bold mb-4 text-accent">How Many Would You Like?</h2>
-              
-              <div className="flex items-center justify-center gap-6 mb-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="lg"
-                  onClick={() => onOfferQuantityChange(offerQuantity - 1)}
-                  disabled={offerQuantity <= 1}
-                  className="h-14 w-14 border-accent/50 hover:bg-accent/20 text-2xl"
-                >
-                  <MinusIcon />
-                </Button>
-                
-                <div className="text-center">
-                  <span className="text-5xl font-bold text-accent">{offerQuantity}</span>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {offerQuantity === 1 ? 'package' : 'packages'}
-                  </p>
-                </div>
-                
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="lg"
-                  onClick={() => onOfferQuantityChange(offerQuantity + 1)}
-                  disabled={offerQuantity >= 10}
-                  className="h-14 w-14 border-accent/50 hover:bg-accent/20 text-2xl"
-                >
-                  <PlusIcon />
-                </Button>
-              </div>
-              
-              {/* Bonus Message - v2.43.0: Use discount color from styling */}
-              {selectedOffer.bonusMessage && offerQuantity > 1 && (
-                <div className="mt-4 p-4 bg-accent/10 rounded-lg text-center">
-                  <p className="font-semibold" style={{ color: 'var(--hp-funnel-text-discount, #22c55e)' }}>
-                    {selectedOffer.bonusMessage.replace('{qty}', String(offerQuantity))}
-                  </p>
-                </div>
-              )}
-              
-              {/* Price summary when qty > 1 */}
-              {offerQuantity > 1 && (
-                <div className="mt-4 pt-4 border-t border-border/30 text-center">
-                  <p className="text-muted-foreground text-sm">
-                    {offerQuantity} × ${((selectedOffer.calculatedPrice || 0)).toFixed(2)} = 
-                    <span className="text-accent font-bold ml-2">${offerPrice.discounted.toFixed(2)}</span>
-                  </p>
-                </div>
-              )}
-            </Card>
-          )}
+          {/* Desktop only: Quantity Selector - rendered in left column on mobile */}
+          {!isMobile && renderQuantitySelector()}
 
           {/* Order Summary */}
           <Card className="p-6 bg-gradient-to-br from-secondary/50 to-card/50 backdrop-blur-sm border-accent/30">
@@ -1814,7 +1833,7 @@ export const CheckoutStep = ({
                   <div className="space-y-3 mb-4">
                     {/* Stripe Express Checkout wrapper with loading overlay */}
                     {stripePayment.hasExpressCheckout !== false && (
-                      <div className="relative" style={{ minHeight: isMobile ? '56px' : '52px' }}>
+                      <div className="relative" style={{ minHeight: isMobileDevice ? '56px' : '52px' }}>
                         {/* Loading indicator - positioned absolutely to not interfere with Stripe container */}
                         {stripePayment.isExpressCheckoutLoading && (
                           <div className="absolute inset-0 flex items-center justify-center gap-2 bg-background/80 z-10">
@@ -1825,7 +1844,7 @@ export const CheckoutStep = ({
                         {/* Stripe Express Checkout container - MUST be empty, no React children */}
                         <div 
                           ref={expressCheckoutContainerRef}
-                          style={{ minHeight: isMobile ? '56px' : '52px' }}
+                          style={{ minHeight: isMobileDevice ? '56px' : '52px' }}
                         />
                       </div>
                     )}
