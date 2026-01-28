@@ -2043,7 +2043,7 @@ export const CheckoutStep = ({
                   ) : (
                     <div className="flex items-center justify-center gap-2">
                       <LockIcon />
-                      <span>Pay ${displayTotal.toFixed(2)}</span>
+                      <span>ORDER NOW ${displayTotal.toFixed(2)}</span>
                     </div>
                   )}
                 </button>
