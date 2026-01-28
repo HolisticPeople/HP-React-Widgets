@@ -1737,12 +1737,7 @@ export const CheckoutStep = ({
                       <PopoverTrigger asChild>
                         <select
                           id="state"
-                          className="w-full max-w-full h-10 px-3 rounded-md bg-input text-foreground border border-border/50 cursor-pointer appearance-none truncate"
-                          style={{ 
-                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
-                            backgroundRepeat: 'no-repeat',
-                            backgroundPosition: 'right 12px center'
-                          }}
+                          className="w-full max-w-full h-10 px-3 rounded-md bg-input text-foreground border border-border/50 cursor-pointer truncate"
                           value={formData.state || ''}
                           onClick={(e) => {
                             e.preventDefault();
