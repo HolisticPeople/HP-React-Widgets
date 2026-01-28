@@ -1732,7 +1732,7 @@ export const CheckoutStep = ({
                 </div>
                 {countryHasStates(formData.country) && (
                   <div>
-                    <Label htmlFor="state" className="text-foreground">{getStateLabel(formData.country)}</Label>
+                    <Label htmlFor="state" className="block text-foreground">{getStateLabel(formData.country)}</Label>
                     <Popover open={statePickerOpen} onOpenChange={setStatePickerOpen}>
                       <PopoverTrigger asChild>
                         <button
