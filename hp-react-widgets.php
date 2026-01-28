@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       HP React Widgets
  * Description:       Container plugin for React-based widgets (Side Cart, Multi-Address, etc.) integrated via Shortcodes.
- * Version:           2.43.31
+ * Version:           2.43.32
  * Author:            Holistic People
  * Text Domain:       hp-react-widgets
  */
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('HP_RW_VERSION', '2.43.31');
+define('HP_RW_VERSION', '2.43.32');
 define('HP_RW_FILE', __FILE__);
 define('HP_RW_PATH', plugin_dir_path(__FILE__));
 define('HP_RW_URL', plugin_dir_url(__FILE__));

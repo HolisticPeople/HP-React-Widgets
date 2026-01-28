@@ -86,7 +86,7 @@ class FunnelExporter
             
             'funnel' => [
                 'name' => $post->post_title,
-                'slug' => FunnelConfigLoader::getFieldValue('funnel_slug', $postId) ?: $post->post_name,
+                'slug' => $post->post_name, // Single source of truth: WordPress permalink
                 'status' => FunnelConfigLoader::getFieldValue('funnel_status', $postId),
                 'stripe_mode' => FunnelConfigLoader::getFieldValue('stripe_mode', $postId),
                 'enable_scroll_navigation' => (bool) FunnelConfigLoader::getFieldValue('enable_scroll_navigation', $postId), // Round 2
