@@ -1735,27 +1735,28 @@ export const CheckoutStep = ({
                     <Label htmlFor="state" className="text-foreground">{getStateLabel(formData.country)}</Label>
                     <Popover open={statePickerOpen} onOpenChange={setStatePickerOpen}>
                       <PopoverTrigger asChild>
-                        <div className="relative">
-                          <Input
-                            readOnly
-                            value={(() => {
-                              const matchedState = getStatesForCountry(formData.country).find(s => s.code === formData.state);
-                              return matchedState ? matchedState.name : '';
-                            })()}
-                            placeholder={`Select ${getStateLabel(formData.country).toLowerCase()}...`}
-                            className="bg-input text-foreground border-border/50 cursor-pointer pr-8 focus-visible:ring-0 focus-visible:ring-offset-0"
-                            onClick={() => setStatePickerOpen(true)}
-                          />
-                          <svg 
-                            className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-50 pointer-events-none" 
-                            viewBox="0 0 24 24" 
-                            fill="none" 
-                            stroke="currentColor" 
-                            strokeWidth="2"
-                          >
-                            <path d="m6 9 6 6 6-6"/>
-                          </svg>
-                        </div>
+                        <select
+                          id="state"
+                          className="w-full h-10 px-3 rounded-md bg-input text-foreground border border-border/50 cursor-pointer appearance-none"
+                          style={{ 
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'right 12px center'
+                          }}
+                          value={formData.state || ''}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setStatePickerOpen(true);
+                          }}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onChange={() => {}}
+                        >
+                          <option value="">Select {getStateLabel(formData.country).toLowerCase()}...</option>
+                          {formData.state && (() => {
+                            const matchedState = getStatesForCountry(formData.country).find(s => s.code === formData.state);
+                            return matchedState ? <option value={formData.state}>{matchedState.name}</option> : null;
+                          })()}
+                        </select>
                       </PopoverTrigger>
                       <PopoverContent 
                         className="w-[--radix-popover-trigger-width] p-0" 
