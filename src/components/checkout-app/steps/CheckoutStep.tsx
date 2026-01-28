@@ -1719,7 +1719,7 @@ export const CheckoutStep = ({
               </div>
 
               <div className={cn("grid grid-cols-2 gap-4", !countryHasStates(formData.country) && "grid-cols-1")}>
-                <div className="min-w-0 overflow-hidden">
+                <div>
                   <Label htmlFor="city" className="text-foreground">City</Label>
                   <Input
                     id="city"
@@ -1731,26 +1731,31 @@ export const CheckoutStep = ({
                   />
                 </div>
                 {countryHasStates(formData.country) && (
-                  <div className="min-w-0 overflow-hidden">
+                  <div>
                     <Label htmlFor="state" className="text-foreground">{getStateLabel(formData.country)}</Label>
                     <Popover open={statePickerOpen} onOpenChange={setStatePickerOpen}>
                       <PopoverTrigger asChild>
-                        <button
-                          type="button"
-                          role="combobox"
-                          aria-expanded={statePickerOpen}
-                          className="flex h-10 w-full max-w-full items-center justify-between overflow-hidden rounded-md border border-border/50 bg-input px-3 py-2 text-base text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
-                        >
-                          <span className={cn("flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-left", !formData.state && "text-muted-foreground")}>
-                            {(() => {
+                        <div className="relative">
+                          <Input
+                            readOnly
+                            value={(() => {
                               const matchedState = getStatesForCountry(formData.country).find(s => s.code === formData.state);
-                              return matchedState ? matchedState.name : `Select ${getStateLabel(formData.country).toLowerCase()}...`;
+                              return matchedState ? matchedState.name : '';
                             })()}
-                          </span>
-                          <svg className="ml-2 h-4 w-4 shrink-0 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            placeholder={`Select ${getStateLabel(formData.country).toLowerCase()}...`}
+                            className="bg-input text-foreground border-border/50 cursor-pointer pr-8"
+                            onClick={() => setStatePickerOpen(true)}
+                          />
+                          <svg 
+                            className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-50 pointer-events-none" 
+                            viewBox="0 0 24 24" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            strokeWidth="2"
+                          >
                             <path d="m6 9 6 6 6-6"/>
                           </svg>
-                        </button>
+                        </div>
                       </PopoverTrigger>
                       <PopoverContent 
                         className="w-[--radix-popover-trigger-width] p-0" 
