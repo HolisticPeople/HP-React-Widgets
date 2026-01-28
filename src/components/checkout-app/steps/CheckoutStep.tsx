@@ -1110,11 +1110,11 @@ export const CheckoutStep = ({
           </div>
         )}
         
-        <div className="flex items-start gap-6">
+        <div className="flex items-start gap-4 overflow-hidden">
           {offer.image && (
-            <img src={offer.image} alt={offer.name} className="w-20 h-auto rounded" />
+            <img src={offer.image} alt={offer.name} className="w-16 sm:w-20 h-auto rounded flex-shrink-0" />
           )}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 overflow-hidden">
             <h3 className="text-xl font-bold text-foreground mb-1 break-words">{offer.name}</h3>
             {offer.description && (
               <p className="text-muted-foreground text-sm mb-2 break-words">{offer.description}</p>
@@ -1415,7 +1415,7 @@ export const CheckoutStep = ({
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto overflow-x-hidden">
       {/* Header */}
       <div className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-accent via-accent to-foreground bg-clip-text text-transparent">
@@ -1428,9 +1428,9 @@ export const CheckoutStep = ({
         )}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8">
+      <div className="grid lg:grid-cols-2 gap-8 overflow-hidden">
         {/* Left Column - Offer Selection */}
-        <div className="space-y-6 lg:sticky lg:top-4 lg:self-start">
+        <div className="space-y-6 lg:sticky lg:top-4 lg:self-start min-w-0">
           <Card className="p-6 pt-8 bg-card/50 backdrop-blur-sm border-border/50">
             <h2 className="text-2xl font-bold mb-6 text-accent">Select Your Package</h2>
             
@@ -1502,7 +1502,7 @@ export const CheckoutStep = ({
         </div>
 
         {/* Right Column - Quantity (desktop only), Order Summary & Form */}
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0">
           {/* Desktop only: Quantity Selector - rendered in left column on mobile */}
           {!isMobile && renderQuantitySelector()}
 
