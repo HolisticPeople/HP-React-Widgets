@@ -451,7 +451,7 @@ class FunnelExporter
         $upsellConfig = FunnelConfigLoader::getFieldValue('upsell_config', $postId) ?: [];
 
         return [
-            'url' => FunnelConfigLoader::getFieldValue('thankyou_url', $postId),
+            'url' => self::toRelativeUrl(FunnelConfigLoader::getFieldValue('thankyou_url', $postId)),
             'headline' => FunnelConfigLoader::getFieldValue('thankyou_headline', $postId),
             'message' => FunnelConfigLoader::getFieldValue('thankyou_message', $postId),
             'show_upsell' => (bool) FunnelConfigLoader::getFieldValue('show_upsell', $postId),
@@ -536,7 +536,7 @@ class FunnelExporter
             if (!empty($l['label']) && !empty($l['url'])) {
                 $linkItems[] = [
                     'label' => $l['label'],
-                    'url' => $l['url'],
+                    'url' => self::toRelativeUrl($l['url']),
                 ];
             }
         }
@@ -720,6 +720,44 @@ class FunnelExporter
         }
 
         return wp_json_encode($data, $flags);
+    }
+
+    /**
+     * Convert URL to relative path for portable export.
+     * 
+     * Strips domain from absolute URLs to make exports portable
+     * between staging and production environments.
+     *
+     * @param string|null $url URL to convert
+     * @return string Relative path (e.g., /privacy-policy/)
+     */
+    private static function toRelativeUrl(?string $url): string
+    {
+        if (empty($url)) {
+            return '';
+        }
+
+        // Already relative
+        if (!preg_match('#^https?://#i', $url) && !str_starts_with($url, '//')) {
+            // Ensure starts with /
+            if (!str_starts_with($url, '/')) {
+                return '/' . $url;
+            }
+            return $url;
+        }
+
+        // Extract path from absolute URL
+        $parsed = wp_parse_url($url);
+        if ($parsed && isset($parsed['path'])) {
+            $path = $parsed['path'];
+            // Include query string if present
+            if (!empty($parsed['query'])) {
+                $path .= '?' . $parsed['query'];
+            }
+            return $path ?: '/';
+        }
+
+        return '/';
     }
 }
 

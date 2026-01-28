@@ -947,11 +947,16 @@ class FunnelImporter
     }
 
     /**
-     * Convert a relative URL to absolute URL.
-     * Preserves already-absolute URLs.
+     * Convert a URL to absolute URL using the current site's domain.
+     * 
+     * Handles:
+     * - Relative URLs: prepends current site URL
+     * - Staging URLs (env-*.kinsta.cloud): extracts path and uses current site URL
+     * - Production URLs: extracts path and uses current site URL
+     * - Protocol-relative URLs: adds https
      *
      * @param string $url URL (relative or absolute)
-     * @return string Absolute URL
+     * @return string Absolute URL using current site's domain
      */
     private static function toAbsoluteUrl(string $url): string
     {
@@ -959,25 +964,79 @@ class FunnelImporter
             return '';
         }
 
-        // Already absolute
+        $siteUrl = rtrim(home_url(), '/');
+
+        // If it's an absolute URL, extract path and normalize to current site
         if (preg_match('#^https?://#i', $url)) {
+            $parsed = wp_parse_url($url);
+            if ($parsed && isset($parsed['path'])) {
+                $path = $parsed['path'];
+                // Include query string if present
+                if (!empty($parsed['query'])) {
+                    $path .= '?' . $parsed['query'];
+                }
+                return $siteUrl . $path;
+            }
+            // If parsing failed, return as-is
             return $url;
         }
 
         // Protocol-relative URL
         if (str_starts_with($url, '//')) {
+            $parsed = wp_parse_url('https:' . $url);
+            if ($parsed && isset($parsed['path'])) {
+                $path = $parsed['path'];
+                if (!empty($parsed['query'])) {
+                    $path .= '?' . $parsed['query'];
+                }
+                return $siteUrl . $path;
+            }
             return 'https:' . $url;
         }
 
         // Relative URL - prepend site URL
-        $siteUrl = rtrim(home_url(), '/');
-        
         // Ensure URL starts with /
         if (!str_starts_with($url, '/')) {
             $url = '/' . $url;
         }
 
         return $siteUrl . $url;
+    }
+
+    /**
+     * Extract relative path from any URL.
+     * Used for storing URLs in a portable format.
+     *
+     * @param string $url URL (relative or absolute)
+     * @return string Relative path (e.g., /privacy-policy/)
+     */
+    public static function toRelativeUrl(string $url): string
+    {
+        if (empty($url)) {
+            return '';
+        }
+
+        // Already relative
+        if (!preg_match('#^https?://#i', $url) && !str_starts_with($url, '//')) {
+            // Ensure starts with /
+            if (!str_starts_with($url, '/')) {
+                return '/' . $url;
+            }
+            return $url;
+        }
+
+        // Extract path from absolute URL
+        $parsed = wp_parse_url($url);
+        if ($parsed && isset($parsed['path'])) {
+            $path = $parsed['path'];
+            // Include query string if present
+            if (!empty($parsed['query'])) {
+                $path .= '?' . $parsed['query'];
+            }
+            return $path ?: '/';
+        }
+
+        return '/';
     }
 
     /**
