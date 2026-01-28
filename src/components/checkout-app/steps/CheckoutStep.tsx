@@ -962,20 +962,14 @@ export const CheckoutStep = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    // When country changes and new country has states, clear state to force re-selection
-    if (name === 'country') {
-      const newCountryHasStates = countryHasStates(value);
-      const oldCountryHasStates = countryHasStates(formData.country);
-      
-      // If switching between countries with different state requirements, clear state
-      if (newCountryHasStates !== oldCountryHasStates || (newCountryHasStates && value !== formData.country)) {
-        setFormData(prev => ({
-          ...prev,
-          country: value,
-          state: '', // Clear state when country changes
-        }));
-        return;
-      }
+    // When country changes, always clear the state since it won't be valid for the new country
+    if (name === 'country' && value !== formData.country) {
+      setFormData(prev => ({
+        ...prev,
+        country: value,
+        state: '', // Clear state when country changes
+      }));
+      return;
     }
     
     setFormData(prev => ({
@@ -1747,10 +1741,11 @@ export const CheckoutStep = ({
                           aria-expanded={statePickerOpen}
                           className="w-full h-10 px-3 text-left rounded-md bg-input text-foreground border border-border/50 flex items-center justify-between"
                         >
-                          <span className={formData.state ? '' : 'text-muted-foreground'}>
-                            {formData.state 
-                              ? getStatesForCountry(formData.country).find(s => s.code === formData.state)?.name || formData.state
-                              : `Select ${getStateLabel(formData.country).toLowerCase()}...`}
+                          <span className={formData.state && getStatesForCountry(formData.country).find(s => s.code === formData.state) ? '' : 'text-muted-foreground'}>
+                            {(() => {
+                              const matchedState = getStatesForCountry(formData.country).find(s => s.code === formData.state);
+                              return matchedState ? matchedState.name : `Select ${getStateLabel(formData.country).toLowerCase()}...`;
+                            })()}
                           </span>
                           <svg className="w-4 h-4 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="m7 15 5 5 5-5M7 9l5-5 5 5"/>
