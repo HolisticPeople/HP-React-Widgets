@@ -2025,6 +2025,7 @@ export const CheckoutStep = ({
                     outline: 'none',
                     boxShadow: 'none',
                     fontSize: '1.25rem',
+                    fontWeight: 700,
                   }}
                   onMouseEnter={(e) => {
                     if (!e.currentTarget.disabled) {
