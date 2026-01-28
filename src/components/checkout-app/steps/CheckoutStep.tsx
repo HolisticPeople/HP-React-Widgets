@@ -1753,17 +1753,32 @@ export const CheckoutStep = ({
                         </button>
                       </PopoverTrigger>
                       <PopoverContent 
-                        className="w-[--radix-popover-trigger-width] p-0 border-border/50" 
+                        className="w-[--radix-popover-trigger-width] p-0" 
                         align="start"
-                        style={{ backgroundColor: 'hsl(var(--card))', opacity: 1 }}
+                        style={{ 
+                          backgroundColor: '#1a1a2e', 
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          color: '#e5e5e5'
+                        }}
                       >
-                        <Command className="bg-card">
+                        <Command style={{ backgroundColor: 'transparent' }}>
                           <CommandInput 
                             placeholder={`Search ${getStateLabel(formData.country).toLowerCase()}...`} 
-                            className="bg-card text-foreground"
+                            style={{ 
+                              backgroundColor: '#252540', 
+                              color: '#e5e5e5',
+                              borderBottom: '1px solid rgba(255,255,255,0.1)'
+                            }}
                           />
-                          <CommandList className="bg-card max-h-[200px]">
-                            <CommandEmpty className="text-muted-foreground">No {getStateLabel(formData.country).toLowerCase()} found.</CommandEmpty>
+                          <CommandList 
+                            className="scrollbar-thin" 
+                            style={{ 
+                              backgroundColor: 'transparent', 
+                              maxHeight: '200px',
+                              color: '#e5e5e5'
+                            }}
+                          >
+                            <CommandEmpty style={{ color: '#888' }}>No {getStateLabel(formData.country).toLowerCase()} found.</CommandEmpty>
                             <CommandGroup>
                               {getStatesForCountry(formData.country).map((state) => (
                                 <CommandItem
@@ -1773,12 +1788,13 @@ export const CheckoutStep = ({
                                     setFormData(prev => ({ ...prev, state: state.code }));
                                     setStatePickerOpen(false);
                                   }}
-                                  className="cursor-pointer text-foreground hover:bg-accent/20 data-[selected=true]:bg-accent/30"
+                                  style={{ color: '#e5e5e5', cursor: 'pointer' }}
+                                  className="hover:bg-white/10 data-[selected=true]:bg-white/15"
                                 >
                                   <span className={cn(
-                                    "mr-2 h-4 w-4 flex items-center justify-center text-accent",
+                                    "mr-2 h-4 w-4 flex items-center justify-center",
                                     formData.state === state.code ? "opacity-100" : "opacity-0"
-                                  )}>
+                                  )} style={{ color: '#D4A853' }}>
                                     ✓
                                   </span>
                                   {state.name}
