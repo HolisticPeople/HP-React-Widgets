@@ -1752,11 +1752,18 @@ export const CheckoutStep = ({
                           </svg>
                         </button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                        <Command>
-                          <CommandInput placeholder={`Search ${getStateLabel(formData.country).toLowerCase()}...`} />
-                          <CommandList>
-                            <CommandEmpty>No {getStateLabel(formData.country).toLowerCase()} found.</CommandEmpty>
+                      <PopoverContent 
+                        className="w-[--radix-popover-trigger-width] p-0 border-border/50" 
+                        align="start"
+                        style={{ backgroundColor: 'hsl(var(--card))', opacity: 1 }}
+                      >
+                        <Command className="bg-card">
+                          <CommandInput 
+                            placeholder={`Search ${getStateLabel(formData.country).toLowerCase()}...`} 
+                            className="bg-card text-foreground"
+                          />
+                          <CommandList className="bg-card max-h-[200px]">
+                            <CommandEmpty className="text-muted-foreground">No {getStateLabel(formData.country).toLowerCase()} found.</CommandEmpty>
                             <CommandGroup>
                               {getStatesForCountry(formData.country).map((state) => (
                                 <CommandItem
@@ -1766,10 +1773,10 @@ export const CheckoutStep = ({
                                     setFormData(prev => ({ ...prev, state: state.code }));
                                     setStatePickerOpen(false);
                                   }}
-                                  className="cursor-pointer"
+                                  className="cursor-pointer text-foreground hover:bg-accent/20 data-[selected=true]:bg-accent/30"
                                 >
                                   <span className={cn(
-                                    "mr-2 h-4 w-4 flex items-center justify-center",
+                                    "mr-2 h-4 w-4 flex items-center justify-center text-accent",
                                     formData.state === state.code ? "opacity-100" : "opacity-0"
                                   )}>
                                     ✓

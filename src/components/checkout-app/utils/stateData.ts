@@ -15,9 +15,22 @@ export interface StateOption {
 }
 
 /**
+ * Countries that have subdivisions in the library but shouldn't show a dropdown
+ * (e.g., subdivisions not commonly used in addresses)
+ */
+const COUNTRIES_WITHOUT_STATE_DROPDOWN = [
+  'IL', // Israel - districts not used in addresses
+  'SG', // Singapore - no subdivisions needed
+  'HK', // Hong Kong - no subdivisions needed
+];
+
+/**
  * Get states for a country using country-state-city library
  */
 export function getStatesForCountry(countryCode: string): StateOption[] {
+  if (COUNTRIES_WITHOUT_STATE_DROPDOWN.includes(countryCode)) {
+    return [];
+  }
   const states = State.getStatesOfCountry(countryCode);
   return states.map((state: IState) => ({
     code: state.isoCode,
@@ -29,6 +42,9 @@ export function getStatesForCountry(countryCode: string): StateOption[] {
  * Check if a country has defined states/provinces
  */
 export function countryHasStates(countryCode: string): boolean {
+  if (COUNTRIES_WITHOUT_STATE_DROPDOWN.includes(countryCode)) {
+    return false;
+  }
   const states = State.getStatesOfCountry(countryCode);
   return states.length > 0;
 }
