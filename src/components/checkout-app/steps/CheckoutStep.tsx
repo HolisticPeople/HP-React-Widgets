@@ -1724,7 +1724,7 @@ export const CheckoutStep = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className={cn("grid gap-4", countryHasStates(formData.country) ? "grid-cols-2" : "grid-cols-1")}>
                 <div>
                   <Label htmlFor="city" className="text-foreground">City</Label>
                   <Input
@@ -1736,9 +1736,9 @@ export const CheckoutStep = ({
                     className="bg-input text-foreground border-border/50"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="state" className="text-foreground">{getStateLabel(formData.country)}</Label>
-                  {countryHasStates(formData.country) ? (
+                {countryHasStates(formData.country) && (
+                  <div>
+                    <Label htmlFor="state" className="text-foreground">{getStateLabel(formData.country)}</Label>
                     <Popover open={statePickerOpen} onOpenChange={setStatePickerOpen}>
                       <PopoverTrigger asChild>
                         <button
@@ -1787,16 +1787,8 @@ export const CheckoutStep = ({
                         </Command>
                       </PopoverContent>
                     </Popover>
-                  ) : (
-                    <Input
-                      id="state"
-                      name="state"
-                      value={formData.state}
-                      onChange={handleInputChange}
-                      className="bg-input text-foreground border-border/50"
-                    />
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
