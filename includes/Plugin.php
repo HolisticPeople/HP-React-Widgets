@@ -700,19 +700,22 @@ class Plugin
 
         // Get the current slug from database (may have been updated by AJAX)
         $currentSlug = get_post_field('post_name', $postId);
-        if (empty($currentSlug)) {
-            return $data;
-        }
-
+        
         // Check what's being submitted
         $submittedSlug = $data['post_name'] ?? '';
         
-        // If the submitted slug is empty, auto-generated from title, or matches
-        // the sanitized version of the old title, preserve the database slug
-        if (empty($submittedSlug) || $submittedSlug === sanitize_title($data['post_title'])) {
-            // Check if user explicitly edited via the permalink editor
-            // The permalink AJAX already saved to DB, so we should use that value
+        // DEBUG: Log what's happening
+        error_log("[HP-RW Slug Debug] Post ID: $postId");
+        error_log("[HP-RW Slug Debug] Current DB slug: $currentSlug");
+        error_log("[HP-RW Slug Debug] Submitted slug: $submittedSlug");
+        error_log("[HP-RW Slug Debug] POST post_name: " . ($_POST['post_name'] ?? 'NOT SET'));
+        error_log("[HP-RW Slug Debug] postarr post_name: " . ($postarr['post_name'] ?? 'NOT SET'));
+        
+        // ALWAYS preserve the current database slug for hp-funnel posts
+        // The permalink editor saves via AJAX, so the DB already has the correct value
+        if (!empty($currentSlug)) {
             $data['post_name'] = $currentSlug;
+            error_log("[HP-RW Slug Debug] Preserving DB slug: $currentSlug");
         }
 
         return $data;
