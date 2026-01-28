@@ -7,6 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { countryHasStates, getStatesForCountry, getStateLabel } from '../utils/stateData';
 import { useCustomerLookup } from '../hooks/useCustomerLookup';
 import { useCheckoutApi } from '../hooks/useCheckoutApi';
 import { useStripePayment } from '../hooks/useStripePayment';
@@ -323,6 +326,9 @@ export const CheckoutStep = ({
   
   // Legal popup state
   const [legalPopupType, setLegalPopupType] = useState<'terms' | 'privacy' | null>(null);
+  
+  // State picker popover state
+  const [statePickerOpen, setStatePickerOpen] = useState(false);
   
   // Address picker modal state
   const [showAddressPicker, setShowAddressPicker] = useState(false);
@@ -954,9 +960,27 @@ export const CheckoutStep = ({
   }, [enableCustomerLookup, formData.email, customerLookup]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    
+    // When country changes and new country has states, clear state to force re-selection
+    if (name === 'country') {
+      const newCountryHasStates = countryHasStates(value);
+      const oldCountryHasStates = countryHasStates(formData.country);
+      
+      // If switching between countries with different state requirements, clear state
+      if (newCountryHasStates !== oldCountryHasStates || (newCountryHasStates && value !== formData.country)) {
+        setFormData(prev => ({
+          ...prev,
+          country: value,
+          state: '', // Clear state when country changes
+        }));
+        return;
+      }
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: value,
     }));
   };
 
@@ -1713,14 +1737,65 @@ export const CheckoutStep = ({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="state" className="text-foreground">State</Label>
-                  <Input
-                    id="state"
-                    name="state"
-                    value={formData.state}
-                    onChange={handleInputChange}
-                    className="bg-input text-foreground border-border/50"
-                  />
+                  <Label htmlFor="state" className="text-foreground">{getStateLabel(formData.country)}</Label>
+                  {countryHasStates(formData.country) ? (
+                    <Popover open={statePickerOpen} onOpenChange={setStatePickerOpen}>
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          role="combobox"
+                          aria-expanded={statePickerOpen}
+                          className="w-full h-10 px-3 text-left rounded-md bg-input text-foreground border border-border/50 flex items-center justify-between"
+                        >
+                          <span className={formData.state ? '' : 'text-muted-foreground'}>
+                            {formData.state 
+                              ? getStatesForCountry(formData.country).find(s => s.code === formData.state)?.name || formData.state
+                              : `Select ${getStateLabel(formData.country).toLowerCase()}...`}
+                          </span>
+                          <svg className="w-4 h-4 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="m7 15 5 5 5-5M7 9l5-5 5 5"/>
+                          </svg>
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder={`Search ${getStateLabel(formData.country).toLowerCase()}...`} />
+                          <CommandList>
+                            <CommandEmpty>No {getStateLabel(formData.country).toLowerCase()} found.</CommandEmpty>
+                            <CommandGroup>
+                              {getStatesForCountry(formData.country).map((state) => (
+                                <CommandItem
+                                  key={state.code}
+                                  value={state.name}
+                                  onSelect={() => {
+                                    setFormData(prev => ({ ...prev, state: state.code }));
+                                    setStatePickerOpen(false);
+                                  }}
+                                  className="cursor-pointer"
+                                >
+                                  <span className={cn(
+                                    "mr-2 h-4 w-4 flex items-center justify-center",
+                                    formData.state === state.code ? "opacity-100" : "opacity-0"
+                                  )}>
+                                    ✓
+                                  </span>
+                                  {state.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  ) : (
+                    <Input
+                      id="state"
+                      name="state"
+                      value={formData.state}
+                      onChange={handleInputChange}
+                      className="bg-input text-foreground border-border/50"
+                    />
+                  )}
                 </div>
               </div>
 
