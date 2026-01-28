@@ -1719,7 +1719,7 @@ export const CheckoutStep = ({
               </div>
 
               <div className={cn("grid grid-cols-2 gap-4", !countryHasStates(formData.country) && "grid-cols-1")}>
-                <div>
+                <div className="min-w-0">
                   <Label htmlFor="city" className="text-foreground">City</Label>
                   <Input
                     id="city"
@@ -1731,7 +1731,7 @@ export const CheckoutStep = ({
                   />
                 </div>
                 {countryHasStates(formData.country) && (
-                  <div>
+                  <div className="min-w-0">
                     <Label htmlFor="state" className="text-foreground">{getStateLabel(formData.country)}</Label>
                     <Popover open={statePickerOpen} onOpenChange={setStatePickerOpen}>
                       <PopoverTrigger asChild>
@@ -1739,9 +1739,9 @@ export const CheckoutStep = ({
                           type="button"
                           role="combobox"
                           aria-expanded={statePickerOpen}
-                          className="flex h-10 w-full rounded-md border border-border/50 bg-input px-3 py-2 text-base text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
+                          className="flex h-10 w-full items-center justify-between overflow-hidden rounded-md border border-border/50 bg-input px-3 py-2 text-base text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
                         >
-                          <span className={cn("flex-1 truncate text-left", !formData.state && "text-muted-foreground")}>
+                          <span className={cn("min-w-0 truncate text-left", !formData.state && "text-muted-foreground")}>
                             {(() => {
                               const matchedState = getStatesForCountry(formData.country).find(s => s.code === formData.state);
                               return matchedState ? matchedState.name : `Select ${getStateLabel(formData.country).toLowerCase()}...`;
