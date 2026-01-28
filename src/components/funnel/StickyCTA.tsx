@@ -6,7 +6,7 @@
  * 
  * @package HP-React-Widgets
  * @since 2.32.0
- * @version 2.32.9 - Finalized position (bottom: 80), removed debug logs
+ * @version 2.43.39 - Lowered position (bottom: 8) after footer menu removal
  * @author Amnon Manneberg
  */
 
@@ -175,8 +175,8 @@ export const StickyCTA = ({
       className={`hp-sticky-cta-container ${className}`}
       style={{
         position: 'fixed',
-        // Position above the mobile sticky footer
-        bottom: 80,
+        // Position near bottom of screen (footer menu removed)
+        bottom: 8,
         left: 0,
         right: 0,
         zIndex: 9998,
