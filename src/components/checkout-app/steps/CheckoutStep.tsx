@@ -1718,8 +1718,8 @@ export const CheckoutStep = ({
                 />
               </div>
 
-              <div className={cn("grid gap-4", countryHasStates(formData.country) ? "grid-cols-2" : "grid-cols-1")} style={{ gridTemplateColumns: countryHasStates(formData.country) ? '1fr 1fr' : '1fr' }}>
-                <div className="min-w-0 overflow-hidden">
+              <div className={cn("grid grid-cols-2 gap-4", !countryHasStates(formData.country) && "grid-cols-1")}>
+                <div>
                   <Label htmlFor="city" className="text-foreground">City</Label>
                   <Input
                     id="city"
@@ -1731,23 +1731,23 @@ export const CheckoutStep = ({
                   />
                 </div>
                 {countryHasStates(formData.country) && (
-                  <div className="min-w-0 overflow-hidden">
-                    <Label htmlFor="state" className="block text-foreground">{getStateLabel(formData.country)}</Label>
+                  <div>
+                    <Label htmlFor="state" className="text-foreground">{getStateLabel(formData.country)}</Label>
                     <Popover open={statePickerOpen} onOpenChange={setStatePickerOpen}>
                       <PopoverTrigger asChild>
                         <button
                           type="button"
                           role="combobox"
                           aria-expanded={statePickerOpen}
-                          className="w-full h-10 px-3 rounded-md bg-input text-foreground border border-border/50 flex items-center justify-between gap-2 overflow-hidden"
+                          className="flex h-10 w-full rounded-md border border-border/50 bg-input px-3 py-2 text-base text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:text-sm"
                         >
-                          <span className={`flex-1 min-w-0 truncate text-left ${formData.state && getStatesForCountry(formData.country).find(s => s.code === formData.state) ? '' : 'text-muted-foreground'}`}>
+                          <span className={cn("flex-1 truncate text-left", !formData.state && "text-muted-foreground")}>
                             {(() => {
                               const matchedState = getStatesForCountry(formData.country).find(s => s.code === formData.state);
                               return matchedState ? matchedState.name : `Select ${getStateLabel(formData.country).toLowerCase()}...`;
                             })()}
                           </span>
-                          <svg className="w-4 h-4 opacity-50 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <svg className="ml-2 h-4 w-4 shrink-0 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="m6 9 6 6 6-6"/>
                           </svg>
                         </button>
