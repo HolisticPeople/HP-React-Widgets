@@ -1731,13 +1731,13 @@ export const CheckoutStep = ({
                   />
                 </div>
                 {countryHasStates(formData.country) && (
-                  <div className="min-w-0">
-                    <Label htmlFor="state" className="text-foreground block">{getStateLabel(formData.country)}</Label>
+                  <div className="min-w-0 flex flex-col">
+                    <Label htmlFor="state" className="text-foreground">{getStateLabel(formData.country)}</Label>
                     <Popover open={statePickerOpen} onOpenChange={setStatePickerOpen}>
                       <PopoverTrigger asChild>
                         <select
                           id="state"
-                          className="w-full max-w-full h-10 px-3 rounded-md bg-input text-foreground border border-border/50 cursor-pointer truncate text-left"
+                          className="w-full max-w-full h-10 px-3 mt-2 rounded-md bg-input text-foreground border border-border/50 cursor-pointer truncate text-left"
                           value={formData.state || ''}
                           onClick={(e) => {
                             e.preventDefault();
