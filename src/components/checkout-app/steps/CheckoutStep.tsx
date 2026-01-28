@@ -1719,7 +1719,7 @@ export const CheckoutStep = ({
               </div>
 
               <div className={cn("grid gap-4", countryHasStates(formData.country) ? "grid-cols-2" : "grid-cols-1")}>
-                <div>
+                <div className="min-w-0">
                   <Label htmlFor="city" className="text-foreground">City</Label>
                   <Input
                     id="city"
@@ -1731,7 +1731,7 @@ export const CheckoutStep = ({
                   />
                 </div>
                 {countryHasStates(formData.country) && (
-                  <div>
+                  <div className="min-w-0">
                     <Label htmlFor="state" className="block text-foreground">{getStateLabel(formData.country)}</Label>
                     <Popover open={statePickerOpen} onOpenChange={setStatePickerOpen}>
                       <PopoverTrigger asChild>
@@ -1739,7 +1739,7 @@ export const CheckoutStep = ({
                           type="button"
                           role="combobox"
                           aria-expanded={statePickerOpen}
-                          className="w-full h-10 px-3 rounded-md bg-input text-foreground border border-border/50 flex items-center justify-between gap-2 overflow-hidden"
+                          className="w-full h-10 px-3 rounded-md bg-input text-foreground border border-border/50 flex items-center justify-between gap-2"
                         >
                           <span className={`min-w-0 truncate text-left ${formData.state && getStatesForCountry(formData.country).find(s => s.code === formData.state) ? '' : 'text-muted-foreground'}`}>
                             {(() => {
