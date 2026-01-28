@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -6,6 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { countryHasStates, getStatesForCountry, getStateLabel } from '../utils/stateData';
 import { useCustomerLookup } from '../hooks/useCustomerLookup';
 import { useCheckoutApi } from '../hooks/useCheckoutApi';
 import { useStripePayment } from '../hooks/useStripePayment';
@@ -252,6 +256,8 @@ interface CheckoutStepProps {
   // Legal page IDs for TOS/Privacy popups
   tosPageId?: number;
   privacyPageId?: number;
+  // Accent color for buttons
+  accentColor?: string;
 }
 
 export const CheckoutStep = ({
@@ -290,6 +296,7 @@ export const CheckoutStep = ({
   pageSubtitle = 'Choose your preferred package and complete your purchase',
   tosPageId,
   privacyPageId,
+  accentColor = '#D4A853',
 }: CheckoutStepProps) => {
   // Ensure offers is always an array
   const offers = Array.isArray(rawOffers) ? rawOffers : [];
@@ -319,6 +326,9 @@ export const CheckoutStep = ({
   
   // Legal popup state
   const [legalPopupType, setLegalPopupType] = useState<'terms' | 'privacy' | null>(null);
+  
+  // State picker popover state
+  const [statePickerOpen, setStatePickerOpen] = useState(false);
   
   // Address picker modal state
   const [showAddressPicker, setShowAddressPicker] = useState(false);
@@ -950,9 +960,21 @@ export const CheckoutStep = ({
   }, [enableCustomerLookup, formData.email, customerLookup]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    
+    // When country changes, always clear the state since it won't be valid for the new country
+    if (name === 'country' && value !== formData.country) {
+      setFormData(prev => ({
+        ...prev,
+        country: value,
+        state: '', // Clear state when country changes
+      }));
+      return;
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: value,
     }));
   };
 
@@ -1696,8 +1718,8 @@ export const CheckoutStep = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+              <div className={cn("grid grid-cols-2 gap-4", !countryHasStates(formData.country) && "grid-cols-1")}>
+                <div className="min-w-0">
                   <Label htmlFor="city" className="text-foreground">City</Label>
                   <Input
                     id="city"
@@ -1708,16 +1730,84 @@ export const CheckoutStep = ({
                     className="bg-input text-foreground border-border/50"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="state" className="text-foreground">State</Label>
-                  <Input
-                    id="state"
-                    name="state"
-                    value={formData.state}
-                    onChange={handleInputChange}
-                    className="bg-input text-foreground border-border/50"
-                  />
-                </div>
+                {countryHasStates(formData.country) && (
+                  <div className="min-w-0 flex flex-col">
+                    <Label htmlFor="state" className="text-foreground">{getStateLabel(formData.country)}</Label>
+                    <Popover open={statePickerOpen} onOpenChange={setStatePickerOpen}>
+                      <PopoverTrigger asChild>
+                        <select
+                          id="state"
+                          className="w-full max-w-full h-10 px-3 mt-2 rounded-md bg-input text-foreground border border-border/50 cursor-pointer truncate text-left"
+                          value={formData.state || ''}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setStatePickerOpen(true);
+                          }}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onChange={() => {}}
+                        >
+                          <option value="">Select {getStateLabel(formData.country).toLowerCase()}...</option>
+                          {formData.state && (() => {
+                            const matchedState = getStatesForCountry(formData.country).find(s => s.code === formData.state);
+                            return matchedState ? <option value={formData.state}>{matchedState.name}</option> : null;
+                          })()}
+                        </select>
+                      </PopoverTrigger>
+                      <PopoverContent 
+                        className="w-[--radix-popover-trigger-width] p-0" 
+                        align="start"
+                        style={{ 
+                          backgroundColor: '#1a1a2e', 
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          color: '#e5e5e5'
+                        }}
+                      >
+                        <Command style={{ backgroundColor: 'transparent' }}>
+                          <CommandInput 
+                            placeholder={`Search ${getStateLabel(formData.country).toLowerCase()}...`} 
+                            style={{ 
+                              backgroundColor: '#252540', 
+                              color: '#e5e5e5',
+                              borderBottom: '1px solid rgba(255,255,255,0.1)'
+                            }}
+                          />
+                          <CommandList 
+                            className="scrollbar-thin" 
+                            style={{ 
+                              backgroundColor: 'transparent', 
+                              maxHeight: '200px',
+                              color: '#e5e5e5'
+                            }}
+                          >
+                            <CommandEmpty style={{ color: '#888' }}>No {getStateLabel(formData.country).toLowerCase()} found.</CommandEmpty>
+                            <CommandGroup>
+                              {getStatesForCountry(formData.country).map((state) => (
+                                <CommandItem
+                                  key={state.code}
+                                  value={state.name}
+                                  onSelect={() => {
+                                    setFormData(prev => ({ ...prev, state: state.code }));
+                                    setStatePickerOpen(false);
+                                  }}
+                                  style={{ color: '#e5e5e5', cursor: 'pointer' }}
+                                  className="hover:bg-white/10 data-[selected=true]:bg-white/15"
+                                >
+                                  <span className={cn(
+                                    "mr-2 h-4 w-4 flex items-center justify-center",
+                                    formData.state === state.code ? "opacity-100" : "opacity-0"
+                                  )} style={{ color: '#D4A853' }}>
+                                    ✓
+                                  </span>
+                                  {state.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -1920,42 +2010,112 @@ export const CheckoutStep = ({
                 )}
               </div>
 
-              <button
-                type="submit"
-                disabled={isSubmitting || isCalculating || stripePayment.isProcessing || !stripePayment.isReady}
-                className="h-16 font-bold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+              {/* Desktop pay button - hidden on mobile where sticky version is used */}
+              {!isMobile && (
+                <button
+                  type="submit"
+                  disabled={isSubmitting || isCalculating || stripePayment.isProcessing || !stripePayment.isReady}
+                  className="h-16 font-bold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                  style={{
+                    width: '100%',
+                    borderRadius: '9999px',
+                    backgroundColor: 'hsl(var(--accent))',
+                    color: 'hsl(var(--accent-foreground))',
+                    border: 'none',
+                    outline: 'none',
+                    boxShadow: 'none',
+                    fontSize: '1.25rem',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!e.currentTarget.disabled) {
+                      e.currentTarget.style.boxShadow = '0 0 30px hsl(45 95% 60% / 0.6)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                >
+                  {isSubmitting || stripePayment.isProcessing ? (
+                    <div className="flex items-center justify-center">
+                      <LoaderIcon className="w-7 h-7" />
+                      <span className="ml-3">Processing...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2">
+                      <LockIcon />
+                      <span>Pay ${displayTotal.toFixed(2)}</span>
+                    </div>
+                  )}
+                </button>
+              )}
+            </form>
+
+            {/* Mobile sticky pay button - fixed at bottom of screen */}
+            {isMobile && typeof document !== 'undefined' && createPortal(
+              <div
                 style={{
-                  width: '100%',
-                  borderRadius: '9999px',
-                  backgroundColor: 'hsl(var(--accent))',
-                  color: 'hsl(var(--accent-foreground))',
-                  border: 'none',
-                  outline: 'none',
-                  boxShadow: 'none',
-                  fontSize: '1.25rem',
-                }}
-                onMouseEnter={(e) => {
-                  if (!e.currentTarget.disabled) {
-                    e.currentTarget.style.boxShadow = '0 0 30px hsl(45 95% 60% / 0.6)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = 'none';
+                  position: 'fixed',
+                  bottom: 8,
+                  left: 0,
+                  right: 0,
+                  zIndex: 9998,
+                  padding: '8px 16px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  background: 'transparent',
                 }}
               >
-                {isSubmitting || stripePayment.isProcessing ? (
-                  <div className="flex items-center justify-center">
-                    <LoaderIcon className="w-7 h-7" />
-                    <span className="ml-3">Processing...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-2">
-                    <LockIcon />
-                    <span>Pay ${displayTotal.toFixed(2)}</span>
-                  </div>
-                )}
-              </button>
-            </form>
+                <button
+                  type="button"
+                  onClick={() => {
+                    // Find and submit the checkout form
+                    const form = document.querySelector('form') as HTMLFormElement;
+                    if (form) {
+                      form.requestSubmit();
+                    }
+                  }}
+                  disabled={isSubmitting || isCalculating || stripePayment.isProcessing || !stripePayment.isReady}
+                  style={{
+                    padding: '14px 48px',
+                    fontSize: '20px',
+                    fontWeight: 700,
+                    border: 'none',
+                    borderRadius: '9999px',
+                    cursor: isSubmitting || isCalculating || stripePayment.isProcessing || !stripePayment.isReady ? 'not-allowed' : 'pointer',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(212, 168, 83, 0.4)',
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease',
+                    whiteSpace: 'nowrap',
+                    backgroundColor: accentColor,
+                    color: '#1a1a1a',
+                    opacity: isSubmitting || isCalculating || stripePayment.isProcessing || !stripePayment.isReady ? 0.5 : 1,
+                  }}
+                  onTouchStart={(e) => {
+                    if (!e.currentTarget.disabled) {
+                      (e.currentTarget as HTMLElement).style.transform = 'scale(0.98)';
+                    }
+                  }}
+                  onTouchEnd={(e) => {
+                    (e.currentTarget as HTMLElement).style.transform = 'scale(1)';
+                  }}
+                >
+                  {isSubmitting || stripePayment.isProcessing ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <LoaderIcon className="w-5 h-5" />
+                      Processing...
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                      <LockIcon />
+                      Pay ${displayTotal.toFixed(2)}
+                    </span>
+                  )}
+                </button>
+              </div>,
+              document.body
+            )}
 
             {/* Security Badges */}
             <div className="flex flex-col items-center gap-2 mt-4">

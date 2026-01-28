@@ -586,6 +586,7 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
             pageSubtitle={props.pageSubtitle}
             tosPageId={props.tosPageId}
             privacyPageId={props.privacyPageId}
+            accentColor={accentColor}
           />
         )}
 
