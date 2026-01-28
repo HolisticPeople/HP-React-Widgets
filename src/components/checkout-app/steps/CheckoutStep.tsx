@@ -2077,8 +2077,8 @@ export const CheckoutStep = ({
                   }}
                   disabled={isSubmitting || isCalculating || stripePayment.isProcessing || !stripePayment.isReady}
                   style={{
-                    padding: '14px 48px',
-                    fontSize: '20px',
+                    padding: '14px 32px',
+                    fontSize: '18px',
                     fontWeight: 700,
                     border: 'none',
                     borderRadius: '9999px',
@@ -2109,7 +2109,7 @@ export const CheckoutStep = ({
                   ) : (
                     <span className="flex items-center justify-center gap-2">
                       <LockIcon />
-                      Pay ${displayTotal.toFixed(2)}
+                      ORDER NOW ${displayTotal.toFixed(2)}
                     </span>
                   )}
                 </button>
