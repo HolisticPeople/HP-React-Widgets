@@ -1739,16 +1739,16 @@ export const CheckoutStep = ({
                           type="button"
                           role="combobox"
                           aria-expanded={statePickerOpen}
-                          className="w-full h-10 px-3 text-left rounded-md bg-input text-foreground border border-border/50 flex items-center justify-between"
+                          className="w-full h-10 px-3 rounded-md bg-input text-foreground border border-border/50 flex items-center justify-between gap-2 overflow-hidden"
                         >
-                          <span className={formData.state && getStatesForCountry(formData.country).find(s => s.code === formData.state) ? '' : 'text-muted-foreground'}>
+                          <span className={`min-w-0 truncate text-left ${formData.state && getStatesForCountry(formData.country).find(s => s.code === formData.state) ? '' : 'text-muted-foreground'}`}>
                             {(() => {
                               const matchedState = getStatesForCountry(formData.country).find(s => s.code === formData.state);
                               return matchedState ? matchedState.name : `Select ${getStateLabel(formData.country).toLowerCase()}...`;
                             })()}
                           </span>
-                          <svg className="w-4 h-4 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="m7 15 5 5 5-5M7 9l5-5 5 5"/>
+                          <svg className="w-4 h-4 opacity-50 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="m6 9 6 6 6-6"/>
                           </svg>
                         </button>
                       </PopoverTrigger>
