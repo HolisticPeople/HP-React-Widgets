@@ -1719,7 +1719,7 @@ export const CheckoutStep = ({
               </div>
 
               <div className={cn("grid grid-cols-2 gap-4", !countryHasStates(formData.country) && "grid-cols-1")}>
-                <div>
+                <div className="min-w-0">
                   <Label htmlFor="city" className="text-foreground">City</Label>
                   <Input
                     id="city"
@@ -1731,13 +1731,13 @@ export const CheckoutStep = ({
                   />
                 </div>
                 {countryHasStates(formData.country) && (
-                  <div>
+                  <div className="min-w-0">
                     <Label htmlFor="state" className="text-foreground">{getStateLabel(formData.country)}</Label>
                     <Popover open={statePickerOpen} onOpenChange={setStatePickerOpen}>
                       <PopoverTrigger asChild>
                         <select
                           id="state"
-                          className="w-full h-10 px-3 rounded-md bg-input text-foreground border border-border/50 cursor-pointer appearance-none"
+                          className="w-full max-w-full h-10 px-3 rounded-md bg-input text-foreground border border-border/50 cursor-pointer appearance-none truncate"
                           style={{ 
                             backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
                             backgroundRepeat: 'no-repeat',
