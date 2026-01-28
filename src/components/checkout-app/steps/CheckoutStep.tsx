@@ -1743,7 +1743,7 @@ export const CheckoutStep = ({
                               return matchedState ? matchedState.name : '';
                             })()}
                             placeholder={`Select ${getStateLabel(formData.country).toLowerCase()}...`}
-                            className="bg-input text-foreground border-border/50 cursor-pointer pr-8"
+                            className="bg-input text-foreground border-border/50 cursor-pointer pr-8 focus-visible:ring-0 focus-visible:ring-offset-0"
                             onClick={() => setStatePickerOpen(true)}
                           />
                           <svg 
