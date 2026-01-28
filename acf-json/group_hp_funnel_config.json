@@ -4392,9 +4392,13 @@
                 "id": ""
             },
             "default_value": "/thank-you/",
+            "maxlength": "",
             "placeholder": "",
+            "prepend": "",
+            "append": "",
             "_name": "thankyou_url",
-            "_valid": 1
+            "_valid": 1,
+            "readonly": 0
         },
         {
             "ID": 125126,
@@ -5888,10 +5892,14 @@
                         "id": ""
                     },
                     "default_value": "",
+                    "maxlength": "",
                     "placeholder": "",
+                    "prepend": "",
+                    "append": "",
                     "_name": "url",
                     "_valid": 1,
-                    "parent_repeater": "field_footer_links"
+                    "parent_repeater": "field_footer_links",
+                    "readonly": 0
                 }
             ]
         },
