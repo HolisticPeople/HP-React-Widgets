@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -1920,42 +1921,112 @@ export const CheckoutStep = ({
                 )}
               </div>
 
-              <button
-                type="submit"
-                disabled={isSubmitting || isCalculating || stripePayment.isProcessing || !stripePayment.isReady}
-                className="h-16 font-bold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+              {/* Desktop pay button - hidden on mobile where sticky version is used */}
+              {!isMobile && (
+                <button
+                  type="submit"
+                  disabled={isSubmitting || isCalculating || stripePayment.isProcessing || !stripePayment.isReady}
+                  className="h-16 font-bold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                  style={{
+                    width: '100%',
+                    borderRadius: '9999px',
+                    backgroundColor: 'hsl(var(--accent))',
+                    color: 'hsl(var(--accent-foreground))',
+                    border: 'none',
+                    outline: 'none',
+                    boxShadow: 'none',
+                    fontSize: '1.25rem',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!e.currentTarget.disabled) {
+                      e.currentTarget.style.boxShadow = '0 0 30px hsl(45 95% 60% / 0.6)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                >
+                  {isSubmitting || stripePayment.isProcessing ? (
+                    <div className="flex items-center justify-center">
+                      <LoaderIcon className="w-7 h-7" />
+                      <span className="ml-3">Processing...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2">
+                      <LockIcon />
+                      <span>Pay ${displayTotal.toFixed(2)}</span>
+                    </div>
+                  )}
+                </button>
+              )}
+            </form>
+
+            {/* Mobile sticky pay button - fixed at bottom of screen */}
+            {isMobile && typeof document !== 'undefined' && createPortal(
+              <div
                 style={{
-                  width: '100%',
-                  borderRadius: '9999px',
-                  backgroundColor: 'hsl(var(--accent))',
-                  color: 'hsl(var(--accent-foreground))',
-                  border: 'none',
-                  outline: 'none',
-                  boxShadow: 'none',
-                  fontSize: '1.25rem',
-                }}
-                onMouseEnter={(e) => {
-                  if (!e.currentTarget.disabled) {
-                    e.currentTarget.style.boxShadow = '0 0 30px hsl(45 95% 60% / 0.6)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = 'none';
+                  position: 'fixed',
+                  bottom: 8,
+                  left: 0,
+                  right: 0,
+                  zIndex: 9998,
+                  padding: '8px 16px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  background: 'transparent',
                 }}
               >
-                {isSubmitting || stripePayment.isProcessing ? (
-                  <div className="flex items-center justify-center">
-                    <LoaderIcon className="w-7 h-7" />
-                    <span className="ml-3">Processing...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-2">
-                    <LockIcon />
-                    <span>Pay ${displayTotal.toFixed(2)}</span>
-                  </div>
-                )}
-              </button>
-            </form>
+                <button
+                  type="button"
+                  onClick={() => {
+                    // Find and submit the checkout form
+                    const form = document.querySelector('form') as HTMLFormElement;
+                    if (form) {
+                      form.requestSubmit();
+                    }
+                  }}
+                  disabled={isSubmitting || isCalculating || stripePayment.isProcessing || !stripePayment.isReady}
+                  style={{
+                    padding: '14px 48px',
+                    fontSize: '20px',
+                    fontWeight: 700,
+                    border: 'none',
+                    borderRadius: '9999px',
+                    cursor: isSubmitting || isCalculating || stripePayment.isProcessing || !stripePayment.isReady ? 'not-allowed' : 'pointer',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(212, 168, 83, 0.4)',
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease',
+                    whiteSpace: 'nowrap',
+                    backgroundColor: 'hsl(var(--accent))',
+                    color: 'hsl(var(--accent-foreground))',
+                    opacity: isSubmitting || isCalculating || stripePayment.isProcessing || !stripePayment.isReady ? 0.5 : 1,
+                  }}
+                  onTouchStart={(e) => {
+                    if (!e.currentTarget.disabled) {
+                      (e.currentTarget as HTMLElement).style.transform = 'scale(0.98)';
+                    }
+                  }}
+                  onTouchEnd={(e) => {
+                    (e.currentTarget as HTMLElement).style.transform = 'scale(1)';
+                  }}
+                >
+                  {isSubmitting || stripePayment.isProcessing ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <LoaderIcon className="w-5 h-5" />
+                      Processing...
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                      <LockIcon />
+                      Pay ${displayTotal.toFixed(2)}
+                    </span>
+                  )}
+                </button>
+              </div>,
+              document.body
+            )}
 
             {/* Security Badges */}
             <div className="flex flex-col items-center gap-2 mt-4">
