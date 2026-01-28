@@ -347,7 +347,7 @@ class FunnelExportImport
                             </thead>
                             <tbody>
                                 <?php foreach ($funnels as $funnel): 
-                                    $slug = get_field('funnel_slug', $funnel->ID) ?: $funnel->post_name;
+                                    $slug = $funnel->post_name; // Single source of truth: WordPress permalink
                                     $status = get_field('funnel_status', $funnel->ID) ?: 'active';
                                     $exportUrl = wp_nonce_url(
                                         add_query_arg([

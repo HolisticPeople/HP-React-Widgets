@@ -52,7 +52,7 @@ class FunnelTestingMetabox
     {
         $postId = $post->ID;
         $permalink = get_permalink($postId);
-        $funnelSlug = get_post_meta($postId, 'funnel_slug', true) ?: $post->post_name;
+        $funnelSlug = $post->post_name; // Single source of truth: WordPress permalink
 
         // Get stored SEO values
         $minPrice = get_post_meta($postId, 'funnel_min_price', true);

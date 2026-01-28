@@ -104,6 +104,7 @@ class FunnelImporter
                 wp_update_post([
                     'ID' => $postId,
                     'post_title' => $funnel['name'],
+                    'post_name' => $slug, // Single source of truth: WordPress permalink
                     'post_status' => 'publish',
                 ]);
 
@@ -337,20 +338,20 @@ class FunnelImporter
 
     /**
      * Import funnel core fields.
+     * Note: slug is handled via post_name in wp_insert_post/wp_update_post, not here.
      */
     private static function importFunnelFields(int $postId, array $funnel): void
     {
         if (!function_exists('update_field')) {
-            self::updateMeta($postId, 'funnel_slug', $funnel['slug']);
+            // Slug is managed via post_name (WordPress permalink), not post meta
             self::updateMeta($postId, 'funnel_status', $funnel['status'] ?? null);
             self::updateMeta($postId, 'stripe_mode', $funnel['stripe_mode'] ?? null);
             return;
         }
 
-        update_field('funnel_slug', $funnel['slug'], $postId);
+        // Slug is managed via post_name (WordPress permalink), not ACF field
         update_field('funnel_status', $funnel['status'] ?? null, $postId);
         update_field('stripe_mode', $funnel['stripe_mode'] ?? null, $postId);
-        // Round 2
         update_field('enable_scroll_navigation', !empty($funnel['enable_scroll_navigation']), $postId);
     }
 

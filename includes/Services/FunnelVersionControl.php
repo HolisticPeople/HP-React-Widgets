@@ -297,7 +297,7 @@ class FunnelVersionControl
 
         foreach ($funnels as $postId) {
             $activities = get_post_meta($postId, self::META_AI_ACTIVITY, true) ?: [];
-            $funnelSlug = get_field('funnel_slug', $postId) ?: get_post_field('post_name', $postId);
+            $funnelSlug = get_post_field('post_name', $postId); // Single source of truth: WordPress permalink
             $funnelName = get_the_title($postId);
 
             foreach ($activities as $activity) {

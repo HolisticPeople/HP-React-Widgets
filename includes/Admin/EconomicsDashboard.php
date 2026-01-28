@@ -79,7 +79,7 @@ class EconomicsDashboard
             $funnelData = [
                 'id' => $funnel->ID,
                 'title' => $funnel->post_title,
-                'slug' => get_field('funnel_slug', $funnel->ID) ?: $funnel->post_name,
+                'slug' => $funnel->post_name, // Single source of truth: WordPress permalink
                 'status' => 'healthy',
                 'offers' => [],
                 'total_products' => 0,

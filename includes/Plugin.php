@@ -430,6 +430,12 @@ class Plugin
         add_filter('manage_' . self::FUNNEL_POST_TYPE . '_posts_columns', [self::class, 'addFunnelColumns']);
         add_action('manage_' . self::FUNNEL_POST_TYPE . '_posts_custom_column', [self::class, 'renderFunnelColumn'], 10, 2);
 
+        // Hook into sample-permalink AJAX to capture user's intended slug
+        add_action('wp_ajax_sample-permalink', [self::class, 'captureIntendedSlug'], 1);
+        
+        // Apply the intended slug during save
+        add_filter('wp_insert_post_data', [self::class, 'applyIntendedSlug'], 1, 2);
+
         // Clear cache on save
         add_action('save_post_' . self::FUNNEL_POST_TYPE, [self::class, 'onFunnelSave'], 10, 3);
 
@@ -439,6 +445,7 @@ class Plugin
                 Services\FunnelConfigLoader::autoPopulateSectionBackgrounds($post_id);
             }
         }, 20);
+
 
         // Add rewrite rules for funnel sub-routes (checkout, thankyou, etc.)
         add_action('init', [self::class, 'addFunnelRewriteRules'], 10);
@@ -667,6 +674,75 @@ class Plugin
                 }
                 break;
         }
+    }
+
+    /**
+     * Preserve funnel slug during save.
+     * 
+     * In the Classic Editor, when editing the permalink and clicking OK, WordPress
+     * saves the new slug via AJAX. But when the form is submitted, the hidden 
+     * post_name field may contain the old value or be empty, causing the slug to revert.
+     * 
+     * This filter preserves the database slug unless explicitly changed via POST.
+     *
+     * @param array $data Post data to be saved
+     * @param array $postarr Raw POST data
+     * @return array Modified post data
+     */
+    /**
+     * Capture the user's intended slug when they click OK on the permalink editor.
+     * 
+     * This hooks into the sample-permalink AJAX action (priority 1, before WP processes).
+     * When the user edits the permalink and clicks OK, we store the new slug so it
+     * can be applied when the post is saved.
+     */
+    public static function captureIntendedSlug(): void
+    {
+        $postId = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
+        $newSlug = isset($_POST['new_slug']) ? sanitize_title($_POST['new_slug']) : '';
+        
+        if (!$postId || !$newSlug) {
+            return;
+        }
+        
+        // Check if this is an hp-funnel post
+        if (get_post_type($postId) !== self::FUNNEL_POST_TYPE) {
+            return;
+        }
+        
+        // Store the intended slug with a short expiration (5 minutes)
+        set_transient('hp_funnel_intended_slug_' . $postId, $newSlug, 5 * MINUTE_IN_SECONDS);
+    }
+
+    /**
+     * Apply the user's intended slug during post save.
+     * 
+     * This retrieves the slug stored by captureIntendedSlug() and applies it.
+     * Runs with priority 1 to set the slug before WordPress processes it.
+     */
+    public static function applyIntendedSlug(array $data, array $postarr): array
+    {
+        // Only apply to hp-funnel post type
+        if (($data['post_type'] ?? '') !== self::FUNNEL_POST_TYPE) {
+            return $data;
+        }
+
+        $postId = $postarr['ID'] ?? 0;
+        if (!$postId) {
+            return $data;
+        }
+
+        // Check if we have a stored intended slug
+        $intendedSlug = get_transient('hp_funnel_intended_slug_' . $postId);
+        
+        if ($intendedSlug) {
+            // Apply the intended slug
+            $data['post_name'] = $intendedSlug;
+            // Delete the transient so it doesn't persist
+            delete_transient('hp_funnel_intended_slug_' . $postId);
+        }
+
+        return $data;
     }
 
     /**

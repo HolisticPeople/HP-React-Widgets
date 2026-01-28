@@ -29,7 +29,7 @@ class FunnelMetaBoxes
      */
     public static function removeRedundantMetaBoxes(): void
     {
-        // Remove the native slug meta box as it is redundant with the ACF funnel_slug field
+        // Native slug metabox removed - slug is managed via WordPress permalink editor below title
         remove_meta_box('slugdiv', 'hp-funnel', 'normal');
     }
 
@@ -80,7 +80,7 @@ class FunnelMetaBoxes
      */
     public static function renderSeoAuditMetaBox(\WP_Post $post): void
     {
-        $slug = get_field('funnel_slug', $post->ID) ?: $post->post_name;
+        $slug = $post->post_name; // Single source of truth: WordPress permalink
         ?>
         <div class="hp-seo-audit-metabox">
             <p class="description"><?php esc_html_e('Run a deep audit of your funnel content against SEO and Readability standards.', 'hp-react-widgets'); ?></p>

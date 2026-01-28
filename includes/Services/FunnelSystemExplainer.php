@@ -38,7 +38,7 @@ class FunnelSystemExplainer
     {
         return [
             'post_type' => 'hp-funnel',
-            'slug_field' => 'funnel_slug',
+            'slug_field' => 'post_name', // WordPress permalink slug is the single source of truth
             'url_pattern' => '/express-shop/{slug}/',
             'sub_routes' => [
                 [
