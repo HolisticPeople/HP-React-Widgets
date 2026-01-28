@@ -149,6 +149,25 @@ class FunnelOfferFields
                 }
             });
             
+            // CRITICAL: Sync the visible slug input to hidden form field before submission
+            // WordPress Classic Editor doesn't sync #new-post-slug to #post_name automatically
+            $(document).on('click', '#edit-slug-buttons .save', function() {
+                setTimeout(function() {
+                    var newSlug = $('#new-post-slug').val();
+                    if (newSlug) {
+                        $('#post_name').val(newSlug);
+                    }
+                }, 100);
+            });
+            
+            // Also sync on form submit as a safety net
+            $('#post').on('submit', function() {
+                var $newSlug = $('#new-post-slug');
+                if ($newSlug.length && $newSlug.val()) {
+                    $('#post_name').val($newSlug.val());
+                }
+            });
+            
             // Run on page load (with delay to let ACF initialize)
             setTimeout(function() {
                 var $tyField = getThankYouField();
