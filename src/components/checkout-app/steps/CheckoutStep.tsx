@@ -253,6 +253,8 @@ interface CheckoutStepProps {
   // Legal page IDs for TOS/Privacy popups
   tosPageId?: number;
   privacyPageId?: number;
+  // Accent color for buttons
+  accentColor?: string;
 }
 
 export const CheckoutStep = ({
@@ -291,6 +293,7 @@ export const CheckoutStep = ({
   pageSubtitle = 'Choose your preferred package and complete your purchase',
   tosPageId,
   privacyPageId,
+  accentColor = '#D4A853',
 }: CheckoutStepProps) => {
   // Ensure offers is always an array
   const offers = Array.isArray(rawOffers) ? rawOffers : [];
@@ -1999,8 +2002,8 @@ export const CheckoutStep = ({
                     boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(212, 168, 83, 0.4)',
                     transition: 'transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease',
                     whiteSpace: 'nowrap',
-                    backgroundColor: 'hsl(var(--accent))',
-                    color: 'hsl(var(--accent-foreground))',
+                    backgroundColor: accentColor,
+                    color: '#1a1a1a',
                     opacity: isSubmitting || isCalculating || stripePayment.isProcessing || !stripePayment.isReady ? 0.5 : 1,
                   }}
                   onTouchStart={(e) => {
