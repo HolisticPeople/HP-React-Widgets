@@ -276,7 +276,7 @@ class AiFunnelApi
 
         $funnels = [];
         foreach ($posts as $post) {
-            $slug = FunnelConfigLoader::getFieldValue('funnel_slug', $post->ID) ?: $post->post_name;
+            $slug = $post->post_name; // Single source of truth: WordPress permalink
             $status = FunnelConfigLoader::getFieldValue('funnel_status', $post->ID) ?: 'active';
             
             // Get version count

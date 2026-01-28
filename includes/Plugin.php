@@ -430,6 +430,9 @@ class Plugin
         add_filter('manage_' . self::FUNNEL_POST_TYPE . '_posts_columns', [self::class, 'addFunnelColumns']);
         add_action('manage_' . self::FUNNEL_POST_TYPE . '_posts_custom_column', [self::class, 'renderFunnelColumn'], 10, 2);
 
+        // Preserve permalink slug during save (fixes Classic Editor + ACF issue)
+        add_filter('wp_insert_post_data', [self::class, 'preserveFunnelSlug'], 10, 2);
+
         // Clear cache on save
         add_action('save_post_' . self::FUNNEL_POST_TYPE, [self::class, 'onFunnelSave'], 10, 3);
 
@@ -667,6 +670,52 @@ class Plugin
                 }
                 break;
         }
+    }
+
+    /**
+     * Preserve funnel slug during save.
+     * 
+     * In the Classic Editor, when editing the permalink and clicking OK, WordPress
+     * saves the new slug via AJAX. But when the form is submitted, the hidden 
+     * post_name field may contain the old value or be empty, causing the slug to revert.
+     * 
+     * This filter preserves the database slug unless explicitly changed via POST.
+     *
+     * @param array $data Post data to be saved
+     * @param array $postarr Raw POST data
+     * @return array Modified post data
+     */
+    public static function preserveFunnelSlug(array $data, array $postarr): array
+    {
+        // Only apply to hp-funnel post type
+        if (($data['post_type'] ?? '') !== self::FUNNEL_POST_TYPE) {
+            return $data;
+        }
+
+        // Only apply when updating existing posts
+        $postId = $postarr['ID'] ?? 0;
+        if (!$postId) {
+            return $data;
+        }
+
+        // Get the current slug from database (may have been updated by AJAX)
+        $currentSlug = get_post_field('post_name', $postId);
+        if (empty($currentSlug)) {
+            return $data;
+        }
+
+        // Check what's being submitted
+        $submittedSlug = $data['post_name'] ?? '';
+        
+        // If the submitted slug is empty, auto-generated from title, or matches
+        // the sanitized version of the old title, preserve the database slug
+        if (empty($submittedSlug) || $submittedSlug === sanitize_title($data['post_title'])) {
+            // Check if user explicitly edited via the permalink editor
+            // The permalink AJAX already saved to DB, so we should use that value
+            $data['post_name'] = $currentSlug;
+        }
+
+        return $data;
     }
 
     /**

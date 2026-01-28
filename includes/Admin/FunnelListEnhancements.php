@@ -37,7 +37,7 @@ class FunnelListEnhancements
             return $actions;
         }
 
-        $slug = get_field('funnel_slug', $post->ID) ?: $post->post_name;
+        $slug = $post->post_name; // Single source of truth: WordPress permalink
 
         $actions['seo_audit'] = sprintf(
             '<a href="#" class="hp-run-seo-audit" data-post-id="%d" data-slug="%s">%s</a>',
