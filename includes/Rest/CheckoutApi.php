@@ -299,8 +299,10 @@ class CheckoutApi
             'amount'                                               => $amountCents,
             'currency'                                             => strtolower(get_woocommerce_currency() ?: 'usd'),
             'customer'                                             => $stripeCustomerId,
+            // Enable automatic payment methods (Card, Apple Pay, Google Pay, Link, etc.)
+            // allow_redirects: 'always' ensures 3DS verification works for Apple Pay
             'automatic_payment_methods[enabled]'                   => 'true',
-            'automatic_payment_methods[allow_redirects]'           => 'never',
+            'automatic_payment_methods[allow_redirects]'           => 'always',
             'payment_method_options[card][setup_future_usage]'     => 'off_session',
             'description'                                          => 'HolisticPeople - ' . $funnelName,
             'metadata[order_draft_id]'                             => $draftId,
