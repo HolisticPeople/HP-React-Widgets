@@ -100,10 +100,21 @@ class PayPalApi
         $name = trim(($customer['first_name'] ?? '') . ' ' . ($customer['last_name'] ?? ''));
         $user = get_user_by('email', $email);
 
+        // Get funnel slug for redirect after payment
+        $funnelSlug = '';
+        $funnelPostId = absint($funnelId);
+        if ($funnelPostId > 0) {
+            $funnelPost = get_post($funnelPostId);
+            if ($funnelPost) {
+                $funnelSlug = $funnelPost->post_name;
+            }
+        }
+        
         // Create draft order data
         $draftData = [
             'funnel_id'               => $funnelId,
             'funnel_name'             => $funnelName,
+            'funnel_slug'             => $funnelSlug,
             'payment_method'          => 'paypal',
             'paypal_mode'             => $paypalMode,
             'customer'                => ['email' => $email, 'name' => $name, 'user_id' => $user ? (int) $user->ID : 0],

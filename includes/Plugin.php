@@ -451,6 +451,9 @@ class Plugin
         add_action('init', [self::class, 'addFunnelRewriteRules'], 10);
         add_filter('query_vars', [self::class, 'addFunnelQueryVars']);
         add_action('template_redirect', [self::class, 'handleFunnelSubRoutes']);
+        
+        // Handle PayPal redirect returns (mobile flow)
+        add_action('template_redirect', [self::class, 'handlePayPalReturn'], 5);
     }
     
     /**
@@ -479,6 +482,19 @@ class Plugin
             'index.php?hp_funnel_route=thankyou&hp_funnel_slug=$matches[1]',
             'top'
         );
+        
+        // PayPal return/cancel handlers for redirect-based mobile flows
+        // PayPal adds ?token={order_id} to return URL
+        add_rewrite_rule(
+            '^checkout/paypal-return/?$',
+            'index.php?hp_paypal_action=return',
+            'top'
+        );
+        add_rewrite_rule(
+            '^checkout/paypal-cancel/?$',
+            'index.php?hp_paypal_action=cancel',
+            'top'
+        );
     }
     
     /**
@@ -488,6 +504,7 @@ class Plugin
     {
         $vars[] = 'hp_funnel_route';
         $vars[] = 'hp_funnel_slug';
+        $vars[] = 'hp_paypal_action';
         return $vars;
     }
     
@@ -573,6 +590,97 @@ class Plugin
         }
     }
     
+    /**
+     * Handle PayPal redirect returns from mobile flows.
+     * 
+     * When PayPal uses redirect flow (common on mobile), the user is redirected to
+     * /checkout/paypal-return?token={paypal_order_id}. This handler captures the
+     * payment and redirects to the thank you page.
+     */
+    public static function handlePayPalReturn(): void
+    {
+        $action = get_query_var('hp_paypal_action');
+        
+        if (empty($action)) {
+            return;
+        }
+        
+        // Handle cancel - just redirect to home
+        if ($action === 'cancel') {
+            wp_safe_redirect(home_url('/'));
+            exit;
+        }
+        
+        // Handle return - capture payment
+        if ($action !== 'return') {
+            return;
+        }
+        
+        // Get PayPal order ID from token parameter (PayPal adds this)
+        $paypalOrderId = isset($_GET['token']) ? sanitize_text_field($_GET['token']) : '';
+        
+        if (empty($paypalOrderId)) {
+            error_log('[HP-RW] PayPal return: No token parameter found');
+            wp_safe_redirect(home_url('/'));
+            exit;
+        }
+        
+        error_log('[HP-RW] PayPal return: Processing order ' . $paypalOrderId);
+        
+        // Call the capture endpoint internally
+        $checkoutService = new Services\CheckoutService();
+        
+        // Find draft by PayPal order ID
+        $draftData = $checkoutService->findDraftByPayPalOrderId($paypalOrderId);
+        if (!$draftData) {
+            error_log('[HP-RW] PayPal return: Draft not found for order ' . $paypalOrderId);
+            wp_safe_redirect(home_url('/'));
+            exit;
+        }
+        
+        // Make internal REST request to capture the order
+        $request = new \WP_REST_Request('POST', '/hp-rw/v1/paypal/capture-order');
+        $request->set_body_params(['paypal_order_id' => $paypalOrderId]);
+        
+        $response = rest_do_request($request);
+        $data = $response->get_data();
+        
+        if (!empty($data['success']) && !empty($data['order_id'])) {
+            // Success - redirect to thank you page
+            $orderId = (int) $data['order_id'];
+            $funnelSlug = $draftData['funnel_slug'] ?? '';
+            
+            // Try to find the funnel slug from funnel_id if not in draft
+            if (empty($funnelSlug) && !empty($draftData['funnel_id'])) {
+                $funnelPost = get_post(absint($draftData['funnel_id']));
+                if ($funnelPost) {
+                    $funnelSlug = $funnelPost->post_name;
+                }
+            }
+            
+            // Build thank you URL
+            if ($funnelSlug) {
+                $thankYouUrl = home_url("/express-shop/{$funnelSlug}/thank-you/?order_id={$orderId}&pi_id=paypal_{$orderId}");
+            } else {
+                // Fallback to WooCommerce order received page
+                $order = wc_get_order($orderId);
+                $thankYouUrl = $order ? $order->get_checkout_order_received_url() : home_url('/');
+            }
+            
+            error_log('[HP-RW] PayPal return: Success, redirecting to ' . $thankYouUrl);
+            wp_safe_redirect($thankYouUrl);
+            exit;
+        }
+        
+        // Error occurred
+        $errorMessage = $data['message'] ?? 'Payment capture failed';
+        error_log('[HP-RW] PayPal return: Capture failed - ' . $errorMessage);
+        
+        // Redirect to home with error (could improve this with a proper error page)
+        wp_safe_redirect(home_url('/?paypal_error=1'));
+        exit;
+    }
+
     /**
      * Get the template file for a funnel route.
      */
