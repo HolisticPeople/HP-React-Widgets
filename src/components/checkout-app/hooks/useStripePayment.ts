@@ -295,10 +295,21 @@ export function useStripePayment(options: UseStripePaymentOptions) {
         expressReadyTimeoutRef.current = null;
       }
       
+      // Debug: Log what payment methods Stripe detected
+      console.log('[HP Checkout] Express Checkout ready event:', {
+        availablePaymentMethods: event.availablePaymentMethods,
+        applePay: event.availablePaymentMethods?.applePay ?? false,
+        googlePay: event.availablePaymentMethods?.googlePay ?? false,
+        link: event.availablePaymentMethods?.link ?? false,
+        userAgent: navigator.userAgent,
+        isSafari: /^((?!chrome|android).)*safari/i.test(navigator.userAgent),
+      });
+      
       if (event.availablePaymentMethods) {
         setExpressCheckoutAvailable(event.availablePaymentMethods);
       } else {
         // No wallets available on this device
+        console.log('[HP Checkout] No payment methods available - device may not support wallets or user has none configured');
         setExpressCheckoutAvailable({ applePay: false, googlePay: false, link: false });
       }
     });
@@ -386,11 +397,14 @@ export function useStripePayment(options: UseStripePaymentOptions) {
     
     // Handle loaderror event for better debugging
     expressCheckoutRef.current.on('loaderror', (event: { error?: { message?: string } }) => {
-      console.warn('[useStripePayment] Express Checkout load error:', event.error?.message);
+      console.error('[HP Checkout] Express Checkout load error:', event.error?.message, event);
       setIsExpressCheckoutLoading(false);
       // Set explicitly to false to indicate no wallets available due to error
       setExpressCheckoutAvailable({ applePay: false, googlePay: false, link: false });
     });
+    
+    // Log when Express Checkout is mounted
+    console.log('[HP Checkout] Express Checkout Element mounted, waiting for ready event...');
   }, []);
 
   // Unmount Express Checkout Element only
