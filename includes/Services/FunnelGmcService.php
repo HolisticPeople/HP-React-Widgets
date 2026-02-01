@@ -59,8 +59,13 @@ class FunnelGmcService
             $customLabels[] = $label;
         }
 
+        // Get shipping weight override
+        $shippingWeightOverride = get_field('funnel_gmc_shipping_weight', $funnelId);
+
         // Calculate derived values
         $lowestPrice = self::getLowestOfferPrice($funnelId);
+        $lowestOfferIndex = self::getLowestOfferIndex($funnelId);
+        $shippingWeight = $shippingWeightOverride ?: self::calculateOfferShippingWeight($config, $lowestOfferIndex);
         $brand = $brandOverride ?: self::detectBrandFromProducts($config);
         $availability = self::calculateAvailability($config);
 
@@ -93,6 +98,8 @@ class FunnelGmcService
             'condition' => 'new',
             'availability' => $availability,
             'google_product_category' => $category,
+            'shipping_weight' => $shippingWeight,
+            'shipping_weight_formatted' => self::formatShippingWeight($shippingWeight),
             
             // Custom labels
             'custom_label_0' => $customLabels[0] ?? '',
@@ -469,5 +476,173 @@ class FunnelGmcService
             'warnings' => $warnings,
             'data' => $data,
         ];
+    }
+
+    /**
+     * Get the index of the lowest-priced offer.
+     *
+     * @param int $funnelId Funnel post ID
+     * @return int Index of lowest offer or 0
+     */
+    public static function getLowestOfferIndex(int $funnelId): int
+    {
+        $config = FunnelConfigLoader::get($funnelId);
+        $offers = $config['offers'] ?? [];
+        
+        if (empty($offers)) {
+            return 0;
+        }
+
+        $lowestPrice = PHP_FLOAT_MAX;
+        $lowestIndex = 0;
+
+        foreach ($offers as $index => $offer) {
+            if (isset($offer['offerPrice']) && $offer['offerPrice'] !== null && $offer['offerPrice'] !== '') {
+                $price = (float) $offer['offerPrice'];
+            } else {
+                $price = self::calculateOfferPrice($offer, $config);
+            }
+
+            if ($price > 0 && $price < $lowestPrice) {
+                $lowestPrice = $price;
+                $lowestIndex = $index;
+            }
+        }
+
+        return $lowestIndex;
+    }
+
+    /**
+     * Calculate shipping weight for an offer from its products.
+     * Returns weight in lb (converts from WooCommerce unit if needed).
+     *
+     * @param array $config Funnel config
+     * @param int $offerIndex Index of the offer
+     * @return float Weight in lb
+     */
+    private static function calculateOfferShippingWeight(array $config, int $offerIndex): float
+    {
+        $offers = $config['offers'] ?? [];
+        if (!isset($offers[$offerIndex])) {
+            return 0.0;
+        }
+
+        $offer = $offers[$offerIndex];
+        $totalWeight = 0.0;
+
+        // Get products from the 'products' array
+        $products = $offer['products'] ?? [];
+
+        if (!empty($products)) {
+            foreach ($products as $product) {
+                $sku = $product['sku'] ?? '';
+                $qty = (int) ($product['qty'] ?? 1);
+                $productWeight = self::getProductWeightBySku($sku);
+                $totalWeight += $productWeight * $qty;
+            }
+        } else {
+            // Fallback to legacy fields
+            $offerType = $offer['type'] ?? 'single';
+            
+            if ($offerType === 'single') {
+                $sku = $offer['productSku'] ?? $offer['product_sku'] ?? '';
+                $qty = (int) ($offer['quantity'] ?? 1);
+                $totalWeight = self::getProductWeightBySku($sku) * $qty;
+            } elseif ($offerType === 'fixed_bundle') {
+                foreach ($offer['bundleItems'] ?? $offer['bundle_items'] ?? [] as $item) {
+                    $sku = $item['sku'] ?? '';
+                    $qty = (int) ($item['qty'] ?? 1);
+                    $totalWeight += self::getProductWeightBySku($sku) * $qty;
+                }
+            } elseif ($offerType === 'customizable_kit') {
+                foreach ($offer['kitProducts'] ?? $offer['kit_products'] ?? [] as $item) {
+                    $sku = $item['sku'] ?? '';
+                    $qty = (int) ($item['qty'] ?? 1);
+                    $totalWeight += self::getProductWeightBySku($sku) * $qty;
+                }
+            }
+        }
+
+        // Convert to lb if WooCommerce uses different unit
+        $weightInLb = self::convertToLb($totalWeight);
+
+        return round($weightInLb, 2);
+    }
+
+    /**
+     * Convert weight from WooCommerce unit to lb.
+     *
+     * @param float $weight Weight in WooCommerce unit
+     * @return float Weight in lb
+     */
+    private static function convertToLb(float $weight): float
+    {
+        if ($weight <= 0) {
+            return 0.0;
+        }
+
+        $wcUnit = get_option('woocommerce_weight_unit', 'lbs');
+
+        // Conversion factors to lb
+        switch ($wcUnit) {
+            case 'oz':
+                return $weight / 16; // 16 oz = 1 lb
+            case 'g':
+                return $weight / 453.592; // 453.592 g = 1 lb
+            case 'kg':
+            case 'kgs':
+                return $weight * 2.20462; // 1 kg = 2.20462 lb
+            case 'lbs':
+            case 'lb':
+            default:
+                return $weight; // Already in lb
+        }
+    }
+
+    /**
+     * Get product weight by SKU.
+     *
+     * @param string $sku Product SKU
+     * @return float Weight in WooCommerce weight unit or 0
+     */
+    private static function getProductWeightBySku(string $sku): float
+    {
+        if (empty($sku)) {
+            return 0.0;
+        }
+
+        $productId = wc_get_product_id_by_sku($sku);
+        if (!$productId) {
+            return 0.0;
+        }
+
+        $product = wc_get_product($productId);
+        if (!$product) {
+            return 0.0;
+        }
+
+        $weight = $product->get_weight();
+        return $weight ? (float) $weight : 0.0;
+    }
+
+    /**
+     * Format shipping weight for GMC.
+     * 
+     * GMC requires singular unit names: lb, oz, g, kg
+     * For funnels, we always use lb for consistency with the main product feed.
+     *
+     * @param float $weight Weight value in lb
+     * @return string Formatted weight (e.g., "0.50 lb") or empty
+     */
+    private static function formatShippingWeight(float $weight): string
+    {
+        if ($weight <= 0) {
+            return '';
+        }
+
+        // Always use lb for GMC consistency (2 decimal precision)
+        $formattedWeight = number_format($weight, 2, '.', '');
+
+        return $formattedWeight . ' lb';
     }
 }
