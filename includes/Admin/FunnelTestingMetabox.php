@@ -216,7 +216,7 @@ class FunnelTestingMetabox
      */
     public static function injectStyles(): void
     {
-        $screen = get_current_screen();
+        $screen = \get_current_screen();
         if (!$screen || $screen->post_type !== 'hp-funnel') {
             return;
         }

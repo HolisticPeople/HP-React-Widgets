@@ -261,7 +261,7 @@ class FunnelListEnhancements
      */
     public static function addStyles(): void
     {
-        $screen = get_current_screen();
+        $screen = \get_current_screen();
         if (!$screen || $screen->post_type !== 'hp-funnel') {
             return;
         }
@@ -328,7 +328,7 @@ class FunnelListEnhancements
      */
     public static function renderAuditModal(): void
     {
-        $screen = get_current_screen();
+        $screen = \get_current_screen();
         if (!$screen || $screen->post_type !== 'hp-funnel') {
             return;
         }

@@ -1322,7 +1322,7 @@ class Plugin
      */
     public static function outputCategoryIconAdminScript(): void
     {
-        $screen = get_current_screen();
+        $screen = \get_current_screen();
         if (!$screen || $screen->post_type !== 'hp-funnel') {
             return;
         }

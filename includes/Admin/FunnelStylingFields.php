@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
  * Funnel Configuration field group (group_hp_funnel_config.json).
  * 
  * @since 2.33.2
- * @version 2.43.40 - Removed legacy metabox code and field-hiding filters
+ * @version 2.43.69 - Fixed namespace issue: added backslash to get_current_screen()
  */
 class FunnelStylingFields
 {
@@ -33,7 +33,7 @@ class FunnelStylingFields
      */
     public static function enqueueSectionBackgroundAdmin(): void
     {
-        $screen = get_current_screen();
+        $screen = \get_current_screen();
         if ($screen && $screen->post_type === 'hp-funnel') {
             wp_enqueue_script(
                 'hp-rw-section-bg-admin',
