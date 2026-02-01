@@ -73,6 +73,15 @@ class FunnelMetaBoxes
             'side',
             'default'
         );
+
+        add_meta_box(
+            'hp-funnel-gmc-status',
+            __('Google Merchant Center', 'hp-react-widgets'),
+            [self::class, 'renderGmcStatusMetaBox'],
+            'hp-funnel',
+            'side',
+            'default'
+        );
     }
 
     /**
@@ -275,6 +284,106 @@ class FunnelMetaBoxes
     }
 
     /**
+     * Render GMC status meta box.
+     */
+    public static function renderGmcStatusMetaBox(\WP_Post $post): void
+    {
+        $gmcEnabled = (bool) get_field('funnel_gmc_enabled', $post->ID);
+        
+        if (!$gmcEnabled) {
+            ?>
+            <div class="hp-gmc-metabox">
+                <p class="hp-gmc-disabled">
+                    <span class="dashicons dashicons-warning" style="color: #d0d0d0;"></span>
+                    <?php esc_html_e('GMC sync is disabled for this funnel.', 'hp-react-widgets'); ?>
+                </p>
+                <p class="description">
+                    <?php esc_html_e('Enable "GMC Sync" in the GMC tab to push this funnel to Google Merchant Center.', 'hp-react-widgets'); ?>
+                </p>
+            </div>
+            <?php
+            return;
+        }
+
+        // Get GMC data and validation
+        $gmcData = \HP_RW\Services\FunnelGmcService::getFunnelGmcData($post->ID);
+        $validation = \HP_RW\Services\FunnelGmcService::validateForGmc($post->ID);
+        
+        ?>
+        <div class="hp-gmc-metabox">
+            <?php if ($validation['valid']): ?>
+                <div class="hp-gmc-status hp-gmc-ready">
+                    <span class="dashicons dashicons-yes-alt" style="color: #00a32a;"></span>
+                    <strong><?php esc_html_e('Ready for GMC', 'hp-react-widgets'); ?></strong>
+                </div>
+            <?php else: ?>
+                <div class="hp-gmc-status hp-gmc-issues">
+                    <span class="dashicons dashicons-warning" style="color: #d63638;"></span>
+                    <strong><?php esc_html_e('Issues Found', 'hp-react-widgets'); ?></strong>
+                </div>
+                <ul class="hp-gmc-errors">
+                    <?php foreach ($validation['errors'] as $error): ?>
+                        <li><?php echo esc_html($error); ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+
+            <?php if (!empty($validation['warnings'])): ?>
+                <div class="hp-gmc-warnings">
+                    <strong><?php esc_html_e('Warnings:', 'hp-react-widgets'); ?></strong>
+                    <ul>
+                        <?php foreach ($validation['warnings'] as $warning): ?>
+                            <li><?php echo esc_html($warning); ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php endif; ?>
+
+            <hr>
+            
+            <table class="hp-gmc-preview">
+                <tr>
+                    <th><?php esc_html_e('Price:', 'hp-react-widgets'); ?></th>
+                    <td>$<?php echo esc_html(number_format($gmcData['price'] ?? 0, 2)); ?></td>
+                </tr>
+                <tr>
+                    <th><?php esc_html_e('Brand:', 'hp-react-widgets'); ?></th>
+                    <td><?php echo esc_html($gmcData['brand'] ?? '-'); ?></td>
+                </tr>
+                <tr>
+                    <th><?php esc_html_e('Availability:', 'hp-react-widgets'); ?></th>
+                    <td>
+                        <?php 
+                        $avail = $gmcData['availability'] ?? 'unknown';
+                        $availColors = [
+                            'in_stock' => '#00a32a',
+                            'out_of_stock' => '#d63638',
+                            'preorder' => '#dba617',
+                        ];
+                        $color = $availColors[$avail] ?? '#666';
+                        ?>
+                        <span style="color: <?php echo esc_attr($color); ?>;">
+                            <?php echo esc_html(ucwords(str_replace('_', ' ', $avail))); ?>
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <th><?php esc_html_e('Category:', 'hp-react-widgets'); ?></th>
+                    <td><?php echo esc_html($gmcData['google_product_category'] ?? 469); ?></td>
+                </tr>
+            </table>
+
+            <?php if (!empty($gmcData['image_link'])): ?>
+                <div class="hp-gmc-image-preview">
+                    <strong><?php esc_html_e('GMC Image:', 'hp-react-widgets'); ?></strong>
+                    <img src="<?php echo esc_url($gmcData['image_link']); ?>" alt="GMC Image" style="max-width: 100%; height: auto; margin-top: 5px; border-radius: 3px;">
+                </div>
+            <?php endif; ?>
+        </div>
+        <?php
+    }
+
+    /**
      * Enqueue scripts and styles.
      */
     public static function enqueueScripts(string $hook): void
@@ -398,6 +507,60 @@ class FunnelMetaBoxes
             .hp-audit-problem { color: #d63638; }
             .hp-audit-improvement { color: #92400e; }
             .hp-audit-good { color: #00a32a; }
+            
+            /* GMC Metabox Styles */
+            .hp-gmc-metabox .hp-gmc-status {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px;
+                border-radius: 4px;
+                margin-bottom: 10px;
+            }
+            .hp-gmc-metabox .hp-gmc-ready {
+                background: #f0fff0;
+                border: 1px solid #00a32a;
+            }
+            .hp-gmc-metabox .hp-gmc-issues {
+                background: #fff5f5;
+                border: 1px solid #d63638;
+            }
+            .hp-gmc-metabox .hp-gmc-errors {
+                margin: 0 0 10px;
+                padding-left: 20px;
+                color: #d63638;
+                font-size: 12px;
+            }
+            .hp-gmc-metabox .hp-gmc-warnings {
+                font-size: 12px;
+                color: #92400e;
+            }
+            .hp-gmc-metabox .hp-gmc-warnings ul {
+                margin: 5px 0 0;
+                padding-left: 20px;
+            }
+            .hp-gmc-metabox .hp-gmc-preview {
+                width: 100%;
+                font-size: 12px;
+            }
+            .hp-gmc-metabox .hp-gmc-preview th {
+                text-align: left;
+                padding: 3px 10px 3px 0;
+                font-weight: 600;
+                width: 80px;
+            }
+            .hp-gmc-metabox .hp-gmc-preview td {
+                padding: 3px 0;
+            }
+            .hp-gmc-metabox .hp-gmc-image-preview {
+                margin-top: 10px;
+            }
+            .hp-gmc-metabox .hp-gmc-disabled {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                color: #666;
+            }
         ';
     }
 

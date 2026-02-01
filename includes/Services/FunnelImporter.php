@@ -155,6 +155,7 @@ class FunnelImporter
             self::importSeo($postId, $data['seo'] ?? []);
             self::importResponsive($postId, $data['responsive'] ?? []);
             self::importInfographics($postId, $data['infographics'] ?? []);
+            self::importGmc($postId, $data['gmc'] ?? []);
 
             // Clear cache
             FunnelConfigLoader::clearCache($postId);
@@ -1037,6 +1038,39 @@ class FunnelImporter
         }
 
         return '/';
+    }
+
+    /**
+     * Import GMC (Google Merchant Center) settings.
+     *
+     * @param int $postId Funnel post ID
+     * @param array $gmc GMC data
+     */
+    private static function importGmc(int $postId, array $gmc): void
+    {
+        if (empty($gmc)) {
+            return; // No GMC data to import
+        }
+
+        // Basic fields
+        self::setField($postId, 'funnel_gmc_enabled', !empty($gmc['enabled']));
+        self::setField($postId, 'funnel_gmc_title_override', $gmc['title_override'] ?? '');
+        self::setField($postId, 'funnel_gmc_description_override', $gmc['description_override'] ?? '');
+        self::setField($postId, 'funnel_gmc_category', (int) ($gmc['category'] ?? 469));
+        self::setField($postId, 'funnel_gmc_brand', $gmc['brand'] ?? '');
+
+        // Handle image override (URL to attachment)
+        if (!empty($gmc['image_override'])) {
+            // For simplicity, store as URL - ACF image fields accept URLs
+            self::setField($postId, 'funnel_gmc_image_override', $gmc['image_override']);
+        }
+
+        // Custom labels (array of 5 labels)
+        $labels = $gmc['custom_labels'] ?? [];
+        for ($i = 0; $i < 5; $i++) {
+            $labelValue = $labels[$i] ?? '';
+            self::setField($postId, "funnel_gmc_custom_label_{$i}", $labelValue);
+        }
     }
 
     /**

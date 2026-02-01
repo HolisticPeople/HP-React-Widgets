@@ -1,0 +1,341 @@
+{
+    "key": "group_funnel_gmc_settings",
+    "title": "Google Merchant Center",
+    "fields": [
+        {
+            "key": "field_funnel_gmc_tab",
+            "label": "GMC",
+            "name": "",
+            "aria-label": "",
+            "type": "tab",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "placement": "top",
+            "endpoint": 0
+        },
+        {
+            "key": "field_funnel_gmc_enabled",
+            "label": "Enable GMC Sync",
+            "name": "funnel_gmc_enabled",
+            "aria-label": "",
+            "type": "true_false",
+            "instructions": "When enabled, this funnel will be included in the Google Merchant Center product feed for advertising.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "message": "",
+            "default_value": 0,
+            "ui": 1,
+            "ui_on_text": "Enabled",
+            "ui_off_text": "Disabled"
+        },
+        {
+            "key": "field_funnel_gmc_title_override",
+            "label": "GMC Title Override",
+            "name": "funnel_gmc_title_override",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "Optional. Override the hero title for Google Merchant Center. Leave blank to use hero title. Max 150 characters recommended.",
+            "required": 0,
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_funnel_gmc_enabled",
+                        "operator": "==",
+                        "value": "1"
+                    }
+                ]
+            ],
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": 150,
+            "placeholder": "e.g., Illumodine Protocol - Complete Detox Bundle"
+        },
+        {
+            "key": "field_funnel_gmc_description_override",
+            "label": "GMC Description Override",
+            "name": "funnel_gmc_description_override",
+            "aria-label": "",
+            "type": "textarea",
+            "instructions": "Optional. Override the description for Google Merchant Center. Leave blank to use hero description. Max 5000 characters.",
+            "required": 0,
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_funnel_gmc_enabled",
+                        "operator": "==",
+                        "value": "1"
+                    }
+                ]
+            ],
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": 5000,
+            "rows": 4,
+            "placeholder": "Describe the funnel bundle for Shopping ads..."
+        },
+        {
+            "key": "field_funnel_gmc_image_override",
+            "label": "GMC Image Override",
+            "name": "funnel_gmc_image_override",
+            "aria-label": "",
+            "type": "image",
+            "instructions": "Optional. Specific image for Google Shopping ads. Recommended: 1200x628 pixels. Leave blank to use hero image.",
+            "required": 0,
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_funnel_gmc_enabled",
+                        "operator": "==",
+                        "value": "1"
+                    }
+                ]
+            ],
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "return_format": "array",
+            "library": "all",
+            "min_width": 100,
+            "min_height": 100,
+            "max_width": "",
+            "max_height": "",
+            "mime_types": "jpg, jpeg, png, webp",
+            "preview_size": "medium"
+        },
+        {
+            "key": "field_funnel_gmc_category",
+            "label": "Google Product Category",
+            "name": "funnel_gmc_category",
+            "aria-label": "",
+            "type": "number",
+            "instructions": "Google product category ID. Default: 469 (Health > Health Conditions > Detox & Cleansing). See: <a href=\"https://www.google.com/basepages/producttype/taxonomy-with-ids.en-US.txt\" target=\"_blank\">Google Taxonomy</a>",
+            "required": 0,
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_funnel_gmc_enabled",
+                        "operator": "==",
+                        "value": "1"
+                    }
+                ]
+            ],
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": 469,
+            "min": 1,
+            "max": 999999,
+            "step": 1,
+            "placeholder": "469"
+        },
+        {
+            "key": "field_funnel_gmc_brand",
+            "label": "Brand Override",
+            "name": "funnel_gmc_brand",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "Optional. Override brand name. Leave blank to auto-detect from products or use site name.",
+            "required": 0,
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_funnel_gmc_enabled",
+                        "operator": "==",
+                        "value": "1"
+                    }
+                ]
+            ],
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": 70,
+            "placeholder": "e.g., Holistic People"
+        },
+        {
+            "key": "field_funnel_gmc_custom_labels_group",
+            "label": "Custom Labels",
+            "name": "",
+            "aria-label": "",
+            "type": "group",
+            "instructions": "Custom labels for campaign segmentation and filtering in Google Ads. Up to 5 labels.",
+            "required": 0,
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_funnel_gmc_enabled",
+                        "operator": "==",
+                        "value": "1"
+                    }
+                ]
+            ],
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "layout": "row",
+            "sub_fields": [
+                {
+                    "key": "field_funnel_gmc_custom_label_0",
+                    "label": "Label 0",
+                    "name": "funnel_gmc_custom_label_0",
+                    "aria-label": "",
+                    "type": "text",
+                    "instructions": "",
+                    "required": 0,
+                    "conditional_logic": 0,
+                    "wrapper": {
+                        "width": "20",
+                        "class": "",
+                        "id": ""
+                    },
+                    "default_value": "",
+                    "maxlength": 100,
+                    "placeholder": "e.g., featured"
+                },
+                {
+                    "key": "field_funnel_gmc_custom_label_1",
+                    "label": "Label 1",
+                    "name": "funnel_gmc_custom_label_1",
+                    "aria-label": "",
+                    "type": "text",
+                    "instructions": "",
+                    "required": 0,
+                    "conditional_logic": 0,
+                    "wrapper": {
+                        "width": "20",
+                        "class": "",
+                        "id": ""
+                    },
+                    "default_value": "",
+                    "maxlength": 100,
+                    "placeholder": "e.g., protocol"
+                },
+                {
+                    "key": "field_funnel_gmc_custom_label_2",
+                    "label": "Label 2",
+                    "name": "funnel_gmc_custom_label_2",
+                    "aria-label": "",
+                    "type": "text",
+                    "instructions": "",
+                    "required": 0,
+                    "conditional_logic": 0,
+                    "wrapper": {
+                        "width": "20",
+                        "class": "",
+                        "id": ""
+                    },
+                    "default_value": "",
+                    "maxlength": 100,
+                    "placeholder": ""
+                },
+                {
+                    "key": "field_funnel_gmc_custom_label_3",
+                    "label": "Label 3",
+                    "name": "funnel_gmc_custom_label_3",
+                    "aria-label": "",
+                    "type": "text",
+                    "instructions": "",
+                    "required": 0,
+                    "conditional_logic": 0,
+                    "wrapper": {
+                        "width": "20",
+                        "class": "",
+                        "id": ""
+                    },
+                    "default_value": "",
+                    "maxlength": 100,
+                    "placeholder": ""
+                },
+                {
+                    "key": "field_funnel_gmc_custom_label_4",
+                    "label": "Label 4",
+                    "name": "funnel_gmc_custom_label_4",
+                    "aria-label": "",
+                    "type": "text",
+                    "instructions": "",
+                    "required": 0,
+                    "conditional_logic": 0,
+                    "wrapper": {
+                        "width": "20",
+                        "class": "",
+                        "id": ""
+                    },
+                    "default_value": "",
+                    "maxlength": 100,
+                    "placeholder": ""
+                }
+            ]
+        },
+        {
+            "key": "field_funnel_gmc_status_display",
+            "label": "GMC Status",
+            "name": "funnel_gmc_status",
+            "aria-label": "",
+            "type": "message",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_funnel_gmc_enabled",
+                        "operator": "==",
+                        "value": "1"
+                    }
+                ]
+            ],
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "message": "<div id=\"hp-funnel-gmc-status-container\"><em>Status will be displayed after sync.</em></div>",
+            "new_lines": "",
+            "esc_html": 0
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "hp-funnel"
+            }
+        ]
+    ],
+    "menu_order": 50,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "Google Merchant Center settings for funnel advertising",
+    "show_in_rest": 1
+}
