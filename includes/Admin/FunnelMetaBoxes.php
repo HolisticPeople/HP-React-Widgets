@@ -22,6 +22,13 @@ class FunnelMetaBoxes
         add_action('add_meta_boxes', [self::class, 'registerMetaBoxes']);
         add_action('add_meta_boxes', [self::class, 'removeRedundantMetaBoxes'], 99);
         add_action('admin_enqueue_scripts', [self::class, 'enqueueScripts']);
+
+        // GMC field enhancements - inject current values into field instructions
+        add_filter('acf/prepare_field/key=field_funnel_gmc_title_override', [self::class, 'prepareGmcTitleField']);
+        add_filter('acf/prepare_field/key=field_funnel_gmc_description_override', [self::class, 'prepareGmcDescriptionField']);
+        add_filter('acf/prepare_field/key=field_funnel_gmc_image_override', [self::class, 'prepareGmcImageField']);
+        add_filter('acf/prepare_field/key=field_funnel_gmc_brand', [self::class, 'prepareGmcBrandField']);
+        add_filter('acf/prepare_field/key=field_funnel_gmc_status_display', [self::class, 'prepareGmcStatusField']);
     }
 
     /**
@@ -73,15 +80,7 @@ class FunnelMetaBoxes
             'side',
             'default'
         );
-
-        add_meta_box(
-            'hp-funnel-gmc-status',
-            __('Google Merchant Center', 'hp-react-widgets'),
-            [self::class, 'renderGmcStatusMetaBox'],
-            'hp-funnel',
-            'side',
-            'default'
-        );
+        // GMC metabox removed - consolidated into ACF GMC tab (v2.43.73)
     }
 
     /**
@@ -284,42 +283,182 @@ class FunnelMetaBoxes
     }
 
     /**
-     * Render GMC status meta box.
+     * Get GMC data for current post (cached per request).
+     *
+     * @return array|null GMC data or null if not available
      */
-    public static function renderGmcStatusMetaBox(\WP_Post $post): void
+    private static function getGmcDataForCurrentPost(): ?array
     {
-        $gmcEnabled = (bool) get_field('funnel_gmc_enabled', $post->ID);
-        
-        if (!$gmcEnabled) {
-            ?>
-            <div class="hp-gmc-metabox">
-                <p class="hp-gmc-disabled">
-                    <span class="dashicons dashicons-warning" style="color: #d0d0d0;"></span>
-                    <?php esc_html_e('GMC sync is disabled for this funnel.', 'hp-react-widgets'); ?>
-                </p>
-                <p class="description">
-                    <?php esc_html_e('Enable "GMC Sync" in the GMC tab to push this funnel to Google Merchant Center.', 'hp-react-widgets'); ?>
-                </p>
-            </div>
-            <?php
-            return;
+        static $cache = [];
+        global $post;
+
+        if (!$post || $post->post_type !== 'hp-funnel') {
+            return null;
         }
 
-        // Get GMC data and validation
+        if (!isset($cache[$post->ID])) {
+            if (class_exists('\HP_RW\Services\FunnelGmcService')) {
+                $cache[$post->ID] = \HP_RW\Services\FunnelGmcService::getFunnelGmcData($post->ID);
+            } else {
+                $cache[$post->ID] = null;
+            }
+        }
+
+        return $cache[$post->ID];
+    }
+
+    /**
+     * Prepare GMC Title Override field - inject current value into instructions.
+     *
+     * @param array $field ACF field config
+     * @return array Modified field config
+     */
+    public static function prepareGmcTitleField(array $field): array
+    {
+        $gmcData = self::getGmcDataForCurrentPost();
+        if (!$gmcData) {
+            return $field;
+        }
+
+        $currentTitle = $gmcData['title'] ?? '';
+        $overrides = $gmcData['overrides'] ?? [];
+        $source = !empty($overrides['title']) ? 'override' : 'hero';
+
+        $currentHtml = sprintf(
+            '<div class="hp-gmc-current-value"><strong>Current:</strong> <code>%s</code> <em>(%s)</em></div>',
+            esc_html(mb_strimwidth($currentTitle, 0, 80, '...')),
+            esc_html($source)
+        );
+
+        $field['instructions'] = $currentHtml . '<br>' . $field['instructions'];
+        return $field;
+    }
+
+    /**
+     * Prepare GMC Description Override field - inject current value into instructions.
+     *
+     * @param array $field ACF field config
+     * @return array Modified field config
+     */
+    public static function prepareGmcDescriptionField(array $field): array
+    {
+        $gmcData = self::getGmcDataForCurrentPost();
+        if (!$gmcData) {
+            return $field;
+        }
+
+        $currentDesc = $gmcData['description'] ?? '';
+        $overrides = $gmcData['overrides'] ?? [];
+        $source = !empty($overrides['description']) ? 'override' : 'hero';
+
+        $currentHtml = sprintf(
+            '<div class="hp-gmc-current-value"><strong>Current:</strong> <code>%s</code> <em>(%s)</em></div>',
+            esc_html(mb_strimwidth($currentDesc, 0, 100, '...')),
+            esc_html($source)
+        );
+
+        $field['instructions'] = $currentHtml . '<br>' . $field['instructions'];
+        return $field;
+    }
+
+    /**
+     * Prepare GMC Image Override field - inject current value into instructions.
+     *
+     * @param array $field ACF field config
+     * @return array Modified field config
+     */
+    public static function prepareGmcImageField(array $field): array
+    {
+        $gmcData = self::getGmcDataForCurrentPost();
+        if (!$gmcData) {
+            return $field;
+        }
+
+        global $post;
+        $imageLink = $gmcData['image_link'] ?? '';
+        $hasOverride = !empty(get_field('funnel_gmc_image_override', $post->ID));
+        $source = $hasOverride ? 'override' : 'hero';
+
+        if (!empty($imageLink)) {
+            $currentHtml = sprintf(
+                '<div class="hp-gmc-current-value"><strong>Current image</strong> <em>(%s)</em>:<br><img src="%s" style="max-width: 200px; max-height: 100px; margin-top: 5px; border-radius: 3px;"></div>',
+                esc_html($source),
+                esc_url($imageLink)
+            );
+        } else {
+            $currentHtml = '<div class="hp-gmc-current-value"><strong>Current:</strong> <em>No image set</em></div>';
+        }
+
+        $field['instructions'] = $currentHtml . '<br>' . $field['instructions'];
+        return $field;
+    }
+
+    /**
+     * Prepare GMC Brand field - inject current value into instructions.
+     *
+     * @param array $field ACF field config
+     * @return array Modified field config
+     */
+    public static function prepareGmcBrandField(array $field): array
+    {
+        $gmcData = self::getGmcDataForCurrentPost();
+        if (!$gmcData) {
+            return $field;
+        }
+
+        $currentBrand = $gmcData['brand'] ?? '';
+        $overrides = $gmcData['overrides'] ?? [];
+        $source = !empty($overrides['brand']) ? 'override' : 'auto-detected';
+
+        $currentHtml = sprintf(
+            '<div class="hp-gmc-current-value"><strong>Current:</strong> <code>%s</code> <em>(%s)</em></div>',
+            esc_html($currentBrand),
+            esc_html($source)
+        );
+
+        $field['instructions'] = $currentHtml . '<br>' . $field['instructions'];
+        return $field;
+    }
+
+    /**
+     * Prepare GMC Status display field - inject validation status and summary.
+     *
+     * @param array $field ACF field config
+     * @return array Modified field config
+     */
+    public static function prepareGmcStatusField(array $field): array
+    {
+        global $post;
+        if (!$post || $post->post_type !== 'hp-funnel') {
+            return $field;
+        }
+
+        if (!class_exists('\HP_RW\Services\FunnelGmcService')) {
+            $field['message'] = '<em>GMC Service not available.</em>';
+            return $field;
+        }
+
         $gmcData = \HP_RW\Services\FunnelGmcService::getFunnelGmcData($post->ID);
         $validation = \HP_RW\Services\FunnelGmcService::validateForGmc($post->ID);
-        
+
+        if (!$gmcData) {
+            $field['message'] = '<em>Unable to load GMC data.</em>';
+            return $field;
+        }
+
+        // Build status HTML
+        ob_start();
         ?>
-        <div class="hp-gmc-metabox">
+        <div class="hp-gmc-status-inline">
             <?php if ($validation['valid']): ?>
-                <div class="hp-gmc-status hp-gmc-ready">
-                    <span class="dashicons dashicons-yes-alt" style="color: #00a32a;"></span>
-                    <strong><?php esc_html_e('Ready for GMC', 'hp-react-widgets'); ?></strong>
+                <div class="hp-gmc-status-badge hp-gmc-ready">
+                    <span class="dashicons dashicons-yes-alt"></span>
+                    <strong>Ready for GMC</strong>
                 </div>
             <?php else: ?>
-                <div class="hp-gmc-status hp-gmc-issues">
-                    <span class="dashicons dashicons-warning" style="color: #d63638;"></span>
-                    <strong><?php esc_html_e('Issues Found', 'hp-react-widgets'); ?></strong>
+                <div class="hp-gmc-status-badge hp-gmc-issues">
+                    <span class="dashicons dashicons-warning"></span>
+                    <strong>Issues Found</strong>
                 </div>
                 <ul class="hp-gmc-errors">
                     <?php foreach ($validation['errors'] as $error): ?>
@@ -329,105 +468,41 @@ class FunnelMetaBoxes
             <?php endif; ?>
 
             <?php if (!empty($validation['warnings'])): ?>
-                <div class="hp-gmc-warnings">
-                    <strong><?php esc_html_e('Warnings:', 'hp-react-widgets'); ?></strong>
-                    <ul>
-                        <?php foreach ($validation['warnings'] as $warning): ?>
-                            <li><?php echo esc_html($warning); ?></li>
-                        <?php endforeach; ?>
-                    </ul>
-                </div>
+                <ul class="hp-gmc-warnings">
+                    <?php foreach ($validation['warnings'] as $warning): ?>
+                        <li><?php echo esc_html($warning); ?></li>
+                    <?php endforeach; ?>
+                </ul>
             <?php endif; ?>
 
-            <hr>
-            
-            <div class="hp-gmc-section-title">
-                <strong><?php esc_html_e('Values to be sent:', 'hp-react-widgets'); ?></strong>
-            </div>
-
-            <?php
-            // Determine sources
-            $overrides = $gmcData['overrides'] ?? [];
-            $titleSource = !empty($overrides['title']) ? 'override' : 'hero';
-            $descSource = !empty($overrides['description']) ? 'override' : 'hero';
-            $imageSource = !empty($overrides['image']) && !empty(get_field('funnel_gmc_image_override', $post->ID)) ? 'override' : 'hero';
-            $brandSource = !empty($overrides['brand']) ? 'override' : 'auto';
-            ?>
-            
-            <div class="hp-gmc-value-row">
-                <div class="hp-gmc-value-label">
-                    <?php esc_html_e('Title:', 'hp-react-widgets'); ?>
-                    <span class="hp-gmc-source hp-gmc-source-<?php echo esc_attr($titleSource); ?>">
-                        (<?php echo esc_html($titleSource); ?>)
-                    </span>
-                </div>
-                <div class="hp-gmc-value-content" title="<?php echo esc_attr($gmcData['title'] ?? ''); ?>">
-                    <?php echo esc_html(mb_strimwidth($gmcData['title'] ?? '-', 0, 60, '...')); ?>
-                </div>
-            </div>
-
-            <div class="hp-gmc-value-row">
-                <div class="hp-gmc-value-label">
-                    <?php esc_html_e('Description:', 'hp-react-widgets'); ?>
-                    <span class="hp-gmc-source hp-gmc-source-<?php echo esc_attr($descSource); ?>">
-                        (<?php echo esc_html($descSource); ?>)
-                    </span>
-                </div>
-                <div class="hp-gmc-value-content" title="<?php echo esc_attr($gmcData['description'] ?? ''); ?>">
-                    <?php echo esc_html(mb_strimwidth($gmcData['description'] ?? '-', 0, 80, '...')); ?>
-                </div>
-            </div>
-
-            <hr style="margin: 8px 0;">
-            
-            <table class="hp-gmc-preview">
+            <table class="hp-gmc-summary">
                 <tr>
-                    <th><?php esc_html_e('Price:', 'hp-react-widgets'); ?></th>
-                    <td>$<?php echo esc_html(number_format($gmcData['price'] ?? 0, 2)); ?></td>
-                </tr>
-                <tr>
-                    <th><?php esc_html_e('Brand:', 'hp-react-widgets'); ?></th>
-                    <td>
-                        <?php echo esc_html($gmcData['brand'] ?? '-'); ?>
-                        <span class="hp-gmc-source hp-gmc-source-<?php echo esc_attr($brandSource); ?>">
-                            (<?php echo esc_html($brandSource); ?>)
-                        </span>
-                    </td>
-                </tr>
-                <tr>
-                    <th><?php esc_html_e('Availability:', 'hp-react-widgets'); ?></th>
+                    <th>Price:</th>
+                    <td><strong>$<?php echo esc_html(number_format($gmcData['price'] ?? 0, 2)); ?></strong></td>
+                    <th>Availability:</th>
                     <td>
                         <?php 
                         $avail = $gmcData['availability'] ?? 'unknown';
-                        $availColors = [
-                            'in_stock' => '#00a32a',
-                            'out_of_stock' => '#d63638',
-                            'preorder' => '#dba617',
-                        ];
+                        $availColors = ['in_stock' => '#00a32a', 'out_of_stock' => '#d63638', 'preorder' => '#dba617'];
                         $color = $availColors[$avail] ?? '#666';
                         ?>
-                        <span style="color: <?php echo esc_attr($color); ?>;">
+                        <span style="color: <?php echo esc_attr($color); ?>; font-weight: 600;">
                             <?php echo esc_html(ucwords(str_replace('_', ' ', $avail))); ?>
                         </span>
                     </td>
                 </tr>
                 <tr>
-                    <th><?php esc_html_e('Category:', 'hp-react-widgets'); ?></th>
+                    <th>Brand:</th>
+                    <td><?php echo esc_html($gmcData['brand'] ?? '-'); ?></td>
+                    <th>Category:</th>
                     <td><?php echo esc_html($gmcData['google_product_category'] ?? 469); ?></td>
                 </tr>
             </table>
-
-            <?php if (!empty($gmcData['image_link'])): ?>
-                <div class="hp-gmc-image-preview">
-                    <strong><?php esc_html_e('GMC Image:', 'hp-react-widgets'); ?></strong>
-                    <span class="hp-gmc-source hp-gmc-source-<?php echo esc_attr($imageSource); ?>">
-                        (<?php echo esc_html($imageSource); ?>)
-                    </span>
-                    <img src="<?php echo esc_url($gmcData['image_link']); ?>" alt="GMC Image" style="max-width: 100%; height: auto; margin-top: 5px; border-radius: 3px;">
-                </div>
-            <?php endif; ?>
         </div>
         <?php
+        $field['message'] = ob_get_clean();
+
+        return $field;
     }
 
     /**
@@ -555,93 +630,75 @@ class FunnelMetaBoxes
             .hp-audit-improvement { color: #92400e; }
             .hp-audit-good { color: #00a32a; }
             
-            /* GMC Metabox Styles */
-            .hp-gmc-metabox .hp-gmc-status {
-                display: flex;
+            /* GMC Inline Styles (v2.43.73 - consolidated into ACF tab) */
+            .hp-gmc-current-value {
+                background: #f0f6fc;
+                border: 1px solid #c3d4e6;
+                border-radius: 4px;
+                padding: 8px 12px;
+                margin-bottom: 8px;
+                font-size: 13px;
+            }
+            .hp-gmc-current-value code {
+                background: #fff;
+                padding: 2px 6px;
+                border-radius: 3px;
+                font-size: 12px;
+            }
+            .hp-gmc-current-value em {
+                color: #666;
+                font-size: 11px;
+            }
+            .hp-gmc-status-inline {
+                background: #fff;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                padding: 12px;
+            }
+            .hp-gmc-status-badge {
+                display: inline-flex;
                 align-items: center;
                 gap: 6px;
-                padding: 8px;
+                padding: 8px 12px;
                 border-radius: 4px;
                 margin-bottom: 10px;
             }
-            .hp-gmc-metabox .hp-gmc-ready {
+            .hp-gmc-status-badge.hp-gmc-ready {
                 background: #f0fff0;
                 border: 1px solid #00a32a;
+                color: #00a32a;
             }
-            .hp-gmc-metabox .hp-gmc-issues {
+            .hp-gmc-status-badge.hp-gmc-issues {
                 background: #fff5f5;
                 border: 1px solid #d63638;
+                color: #d63638;
             }
-            .hp-gmc-metabox .hp-gmc-errors {
+            .hp-gmc-status-inline .hp-gmc-errors {
                 margin: 0 0 10px;
                 padding-left: 20px;
                 color: #d63638;
                 font-size: 12px;
             }
-            .hp-gmc-metabox .hp-gmc-warnings {
-                font-size: 12px;
-                color: #92400e;
-            }
-            .hp-gmc-metabox .hp-gmc-warnings ul {
-                margin: 5px 0 0;
+            .hp-gmc-status-inline .hp-gmc-warnings {
+                margin: 0 0 10px;
                 padding-left: 20px;
-            }
-            .hp-gmc-metabox .hp-gmc-preview {
-                width: 100%;
+                color: #92400e;
                 font-size: 12px;
             }
-            .hp-gmc-metabox .hp-gmc-preview th {
+            .hp-gmc-summary {
+                width: 100%;
+                font-size: 13px;
+                border-collapse: collapse;
+            }
+            .hp-gmc-summary th {
                 text-align: left;
-                padding: 3px 10px 3px 0;
-                font-weight: 600;
-                width: 80px;
-            }
-            .hp-gmc-metabox .hp-gmc-preview td {
-                padding: 3px 0;
-            }
-            .hp-gmc-metabox .hp-gmc-image-preview {
-                margin-top: 10px;
-            }
-            .hp-gmc-metabox .hp-gmc-section-title {
-                margin-bottom: 8px;
-                padding-bottom: 4px;
-            }
-            .hp-gmc-metabox .hp-gmc-value-row {
-                margin-bottom: 8px;
-                padding: 6px;
-                background: #f9f9f9;
-                border-radius: 3px;
-            }
-            .hp-gmc-metabox .hp-gmc-value-label {
-                font-size: 11px;
+                padding: 4px 8px 4px 0;
                 font-weight: 600;
                 color: #555;
-                margin-bottom: 2px;
+                width: 90px;
             }
-            .hp-gmc-metabox .hp-gmc-value-content {
-                font-size: 12px;
-                color: #1d2327;
-                word-wrap: break-word;
-            }
-            .hp-gmc-metabox .hp-gmc-source {
-                font-size: 10px;
-                font-weight: normal;
-                font-style: italic;
-            }
-            .hp-gmc-metabox .hp-gmc-source-override {
-                color: #2271b1;
-            }
-            .hp-gmc-metabox .hp-gmc-source-hero {
-                color: #666;
-            }
-            .hp-gmc-metabox .hp-gmc-source-auto {
-                color: #666;
-            }
-            .hp-gmc-metabox .hp-gmc-disabled {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                color: #666;
+            .hp-gmc-summary td {
+                padding: 4px 16px 4px 0;
             }
         ';
     }
