@@ -178,6 +178,34 @@
             "placeholder": "e.g., Holistic People"
         },
         {
+            "key": "field_funnel_gmc_shipping_weight",
+            "label": "Shipping Weight (lb)",
+            "name": "funnel_gmc_shipping_weight",
+            "aria-label": "",
+            "type": "number",
+            "instructions": "Shipping weight for the lowest-priced offer in pounds (lb). Leave blank to auto-calculate from products. Example: 0.5 lb bottle = 0.5",
+            "required": 0,
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_funnel_gmc_enabled",
+                        "operator": "==",
+                        "value": "1"
+                    }
+                ]
+            ],
+            "wrapper": {
+                "width": "50",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "min": 0,
+            "max": 9999,
+            "step": 0.01,
+            "placeholder": "e.g., 0.5"
+        },
+        {
             "key": "field_funnel_gmc_custom_labels_group",
             "label": "Custom Labels",
             "name": "",
