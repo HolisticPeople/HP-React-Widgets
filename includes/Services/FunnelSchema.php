@@ -361,6 +361,24 @@ class FunnelSchema
                         ],
                     ],
                 ],
+                'gmc' => [
+                    'type' => 'object',
+                    'description' => 'Google Merchant Center settings for advertising',
+                    'properties' => [
+                        'enabled' => ['type' => 'boolean', 'default' => false, 'description' => 'Enable GMC sync for this funnel'],
+                        'title_override' => ['type' => 'string', 'description' => 'Override hero title for GMC (max 150 chars)'],
+                        'description_override' => ['type' => 'string', 'description' => 'Override description for GMC (max 5000 chars)'],
+                        'image_override' => ['type' => 'string', 'format' => 'uri', 'description' => 'Override image for GMC (1200x628 recommended)'],
+                        'category' => ['type' => 'integer', 'default' => 469, 'description' => 'Google product category ID'],
+                        'brand' => ['type' => 'string', 'description' => 'Brand name override'],
+                        'custom_labels' => [
+                            'type' => 'array',
+                            'items' => ['type' => 'string'],
+                            'maxItems' => 5,
+                            'description' => 'Custom labels for campaign segmentation (max 5)',
+                        ],
+                    ],
+                ],
             ],
         ];
     }

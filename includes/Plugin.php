@@ -886,6 +886,13 @@ class Plugin
         if (class_exists('HP_RW\\Services\\FunnelConfigLoader')) {
             Services\FunnelConfigLoader::clearCache($post_id, $oldSlug ?: '');
         }
+
+        // Fire action for other plugins (e.g., HP-GMC-Manager) to know a funnel was saved
+        do_action('hp_funnel_saved', $post_id, $post, $update);
+
+        // Check if GMC settings were updated
+        $gmcEnabled = (bool) get_field('funnel_gmc_enabled', $post_id);
+        do_action('hp_funnel_gmc_settings_updated', $post_id, $gmcEnabled);
     }
 
     /**

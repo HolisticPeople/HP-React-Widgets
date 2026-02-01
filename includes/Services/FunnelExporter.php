@@ -108,6 +108,7 @@ class FunnelExporter
             'science' => self::exportScience($postId),
             'responsive' => self::exportResponsive($postId),
             'infographics' => self::exportInfographics($postId),
+            'gmc' => self::exportGmc($postId),
         ];
 
         // Remove empty sections
@@ -698,6 +699,35 @@ class FunnelExporter
         }
 
         return '';
+    }
+
+    /**
+     * Export GMC (Google Merchant Center) settings.
+     */
+    private static function exportGmc(int $postId): array
+    {
+        // Get custom labels from group field or individual fields
+        $customLabelsGroup = get_field('field_funnel_gmc_custom_labels_group', $postId);
+        $customLabels = [];
+        for ($i = 0; $i < 5; $i++) {
+            $label = '';
+            if (is_array($customLabelsGroup)) {
+                $label = $customLabelsGroup["funnel_gmc_custom_label_{$i}"] ?? '';
+            } else {
+                $label = FunnelConfigLoader::getFieldValue("funnel_gmc_custom_label_{$i}", $postId) ?: '';
+            }
+            $customLabels[] = $label;
+        }
+
+        return [
+            'enabled' => (bool) FunnelConfigLoader::getFieldValue('funnel_gmc_enabled', $postId),
+            'title_override' => FunnelConfigLoader::getFieldValue('funnel_gmc_title_override', $postId) ?: '',
+            'description_override' => FunnelConfigLoader::getFieldValue('funnel_gmc_description_override', $postId) ?: '',
+            'image_override' => self::resolveImageUrl(FunnelConfigLoader::getFieldValue('funnel_gmc_image_override', $postId)),
+            'category' => (int) (FunnelConfigLoader::getFieldValue('funnel_gmc_category', $postId) ?: 469),
+            'brand' => FunnelConfigLoader::getFieldValue('funnel_gmc_brand', $postId) ?: '',
+            'custom_labels' => array_filter($customLabels),
+        ];
     }
 
     /**
