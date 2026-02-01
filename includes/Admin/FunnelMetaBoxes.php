@@ -341,6 +341,45 @@ class FunnelMetaBoxes
 
             <hr>
             
+            <div class="hp-gmc-section-title">
+                <strong><?php esc_html_e('Values to be sent:', 'hp-react-widgets'); ?></strong>
+            </div>
+
+            <?php
+            // Determine sources
+            $overrides = $gmcData['overrides'] ?? [];
+            $titleSource = !empty($overrides['title']) ? 'override' : 'hero';
+            $descSource = !empty($overrides['description']) ? 'override' : 'hero';
+            $imageSource = !empty($overrides['image']) && !empty(get_field('funnel_gmc_image_override', $post->ID)) ? 'override' : 'hero';
+            $brandSource = !empty($overrides['brand']) ? 'override' : 'auto';
+            ?>
+            
+            <div class="hp-gmc-value-row">
+                <div class="hp-gmc-value-label">
+                    <?php esc_html_e('Title:', 'hp-react-widgets'); ?>
+                    <span class="hp-gmc-source hp-gmc-source-<?php echo esc_attr($titleSource); ?>">
+                        (<?php echo esc_html($titleSource); ?>)
+                    </span>
+                </div>
+                <div class="hp-gmc-value-content" title="<?php echo esc_attr($gmcData['title'] ?? ''); ?>">
+                    <?php echo esc_html(mb_strimwidth($gmcData['title'] ?? '-', 0, 60, '...')); ?>
+                </div>
+            </div>
+
+            <div class="hp-gmc-value-row">
+                <div class="hp-gmc-value-label">
+                    <?php esc_html_e('Description:', 'hp-react-widgets'); ?>
+                    <span class="hp-gmc-source hp-gmc-source-<?php echo esc_attr($descSource); ?>">
+                        (<?php echo esc_html($descSource); ?>)
+                    </span>
+                </div>
+                <div class="hp-gmc-value-content" title="<?php echo esc_attr($gmcData['description'] ?? ''); ?>">
+                    <?php echo esc_html(mb_strimwidth($gmcData['description'] ?? '-', 0, 80, '...')); ?>
+                </div>
+            </div>
+
+            <hr style="margin: 8px 0;">
+            
             <table class="hp-gmc-preview">
                 <tr>
                     <th><?php esc_html_e('Price:', 'hp-react-widgets'); ?></th>
@@ -348,7 +387,12 @@ class FunnelMetaBoxes
                 </tr>
                 <tr>
                     <th><?php esc_html_e('Brand:', 'hp-react-widgets'); ?></th>
-                    <td><?php echo esc_html($gmcData['brand'] ?? '-'); ?></td>
+                    <td>
+                        <?php echo esc_html($gmcData['brand'] ?? '-'); ?>
+                        <span class="hp-gmc-source hp-gmc-source-<?php echo esc_attr($brandSource); ?>">
+                            (<?php echo esc_html($brandSource); ?>)
+                        </span>
+                    </td>
                 </tr>
                 <tr>
                     <th><?php esc_html_e('Availability:', 'hp-react-widgets'); ?></th>
@@ -376,6 +420,9 @@ class FunnelMetaBoxes
             <?php if (!empty($gmcData['image_link'])): ?>
                 <div class="hp-gmc-image-preview">
                     <strong><?php esc_html_e('GMC Image:', 'hp-react-widgets'); ?></strong>
+                    <span class="hp-gmc-source hp-gmc-source-<?php echo esc_attr($imageSource); ?>">
+                        (<?php echo esc_html($imageSource); ?>)
+                    </span>
                     <img src="<?php echo esc_url($gmcData['image_link']); ?>" alt="GMC Image" style="max-width: 100%; height: auto; margin-top: 5px; border-radius: 3px;">
                 </div>
             <?php endif; ?>
@@ -554,6 +601,41 @@ class FunnelMetaBoxes
             }
             .hp-gmc-metabox .hp-gmc-image-preview {
                 margin-top: 10px;
+            }
+            .hp-gmc-metabox .hp-gmc-section-title {
+                margin-bottom: 8px;
+                padding-bottom: 4px;
+            }
+            .hp-gmc-metabox .hp-gmc-value-row {
+                margin-bottom: 8px;
+                padding: 6px;
+                background: #f9f9f9;
+                border-radius: 3px;
+            }
+            .hp-gmc-metabox .hp-gmc-value-label {
+                font-size: 11px;
+                font-weight: 600;
+                color: #555;
+                margin-bottom: 2px;
+            }
+            .hp-gmc-metabox .hp-gmc-value-content {
+                font-size: 12px;
+                color: #1d2327;
+                word-wrap: break-word;
+            }
+            .hp-gmc-metabox .hp-gmc-source {
+                font-size: 10px;
+                font-weight: normal;
+                font-style: italic;
+            }
+            .hp-gmc-metabox .hp-gmc-source-override {
+                color: #2271b1;
+            }
+            .hp-gmc-metabox .hp-gmc-source-hero {
+                color: #666;
+            }
+            .hp-gmc-metabox .hp-gmc-source-auto {
+                color: #666;
             }
             .hp-gmc-metabox .hp-gmc-disabled {
                 display: flex;

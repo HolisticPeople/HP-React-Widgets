@@ -132,9 +132,9 @@ class FunnelGmcService
         $lowestPrice = PHP_FLOAT_MAX;
 
         foreach ($offers as $offer) {
-            // Use explicit offer_price if set
-            if (isset($offer['offer_price']) && $offer['offer_price'] !== null && $offer['offer_price'] !== '') {
-                $price = (float) $offer['offer_price'];
+            // Use explicit offerPrice if set (camelCase from FunnelConfigLoader)
+            if (isset($offer['offerPrice']) && $offer['offerPrice'] !== null && $offer['offerPrice'] !== '') {
+                $price = (float) $offer['offerPrice'];
             } else {
                 // Calculate from products if no explicit price
                 $price = self::calculateOfferPrice($offer, $config);
@@ -160,20 +160,34 @@ class FunnelGmcService
         $total = 0.0;
         $offerType = $offer['type'] ?? 'single';
 
-        if ($offerType === 'single') {
-            $sku = $offer['product_sku'] ?? '';
+        // Get products from the 'products' array populated by FunnelConfigLoader
+        $products = $offer['products'] ?? [];
+
+        if (!empty($products)) {
+            // Use the products array directly (already enriched by FunnelConfigLoader)
+            foreach ($products as $product) {
+                $sku = $product['sku'] ?? '';
+                $qty = (int) ($product['qty'] ?? 1);
+                $productPrice = self::getProductPriceBySku($sku);
+                $total += $productPrice * $qty;
+            }
+        } elseif ($offerType === 'single') {
+            // Fallback to legacy single product fields
+            $sku = $offer['productSku'] ?? $offer['product_sku'] ?? '';
             $qty = (int) ($offer['quantity'] ?? 1);
             $productPrice = self::getProductPriceBySku($sku);
             $total = $productPrice * $qty;
         } elseif ($offerType === 'fixed_bundle') {
-            foreach ($offer['bundle_items'] ?? [] as $item) {
+            // Fallback to legacy bundle_items
+            foreach ($offer['bundleItems'] ?? $offer['bundle_items'] ?? [] as $item) {
                 $sku = $item['sku'] ?? '';
                 $qty = (int) ($item['qty'] ?? 1);
                 $productPrice = self::getProductPriceBySku($sku);
                 $total += $productPrice * $qty;
             }
         } elseif ($offerType === 'customizable_kit') {
-            foreach ($offer['kit_products'] ?? [] as $item) {
+            // Fallback to legacy kit_products
+            foreach ($offer['kitProducts'] ?? $offer['kit_products'] ?? [] as $item) {
                 $sku = $item['sku'] ?? '';
                 $qty = (int) ($item['qty'] ?? 1);
                 $productPrice = self::getProductPriceBySku($sku);
@@ -181,9 +195,9 @@ class FunnelGmcService
             }
         }
 
-        // Apply discount if configured
-        $discountType = $offer['discount_type'] ?? 'none';
-        $discountValue = (float) ($offer['discount_value'] ?? 0);
+        // Apply discount if configured (camelCase from FunnelConfigLoader)
+        $discountType = $offer['discountType'] ?? $offer['discount_type'] ?? 'none';
+        $discountValue = (float) ($offer['discountValue'] ?? $offer['discount_value'] ?? 0);
 
         if ($discountType === 'percent_off' && $discountValue > 0) {
             $total = $total * (1 - ($discountValue / 100));
