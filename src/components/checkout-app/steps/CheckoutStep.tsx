@@ -332,10 +332,40 @@ export const CheckoutStep = ({
   
   // Address picker modal state
   const [showAddressPicker, setShowAddressPicker] = useState(false);
-  // Load saved addresses from initialUserData (passed from PHP)
+  // Load saved addresses from initialUserData (passed from PHP) or customerData (from email lookup)
   const [savedAddresses, setSavedAddresses] = useState<PickerAddress[]>(
     (initialUserData?.savedAddresses || []) as PickerAddress[]
   );
+  
+  // Update savedAddresses when customerData changes (email lookup returns addresses)
+  useEffect(() => {
+    if (customerData?.allAddresses?.shipping && customerData.allAddresses.shipping.length > 0) {
+      // Convert customerData addresses to PickerAddress format
+      const addresses = customerData.allAddresses.shipping.map((addr: {
+        firstName?: string;
+        lastName?: string;
+        address1?: string;
+        address2?: string;
+        city?: string;
+        state?: string;
+        postcode?: string;
+        country?: string;
+        phone?: string;
+      }) => ({
+        id: `${addr.address1}-${addr.postcode}`, // Generate a simple ID
+        firstName: addr.firstName || '',
+        lastName: addr.lastName || '',
+        address1: addr.address1 || '',
+        address2: addr.address2 || '',
+        city: addr.city || '',
+        state: addr.state || '',
+        postcode: addr.postcode || '',
+        country: addr.country || 'US',
+        phone: addr.phone || '',
+      })) as PickerAddress[];
+      setSavedAddresses(addresses);
+    }
+  }, [customerData?.allAddresses?.shipping]);
   
   // Store draft ID across attempts
   const orderDraftIdRef = useRef<string | null>(null);
