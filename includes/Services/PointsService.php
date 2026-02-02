@@ -83,26 +83,19 @@ class PointsService
             return false;
         }
 
-        // Try YITH ywpar_decrease_points function (creates history entry)
+        // Use exact same pattern as EAO for YITH points integration
+        $reasonText = $reason ?: 'Points redeemed via HP React Widgets';
+        
+        // Primary: ywpar_decrease_points (creates proper history entry)
         if (function_exists('ywpar_decrease_points')) {
-            ywpar_decrease_points($userId, $points, $reason ?: 'Points redeemed via HP React Widgets', $orderId);
+            ywpar_decrease_points($userId, $points, $reasonText, $orderId);
             return true;
         }
-
-        // Fallback: Try YITH customer object
-        if (function_exists('ywpar_get_customer')) {
-            try {
-                $customer = ywpar_get_customer($userId);
-                if ($customer && method_exists($customer, 'update_points')) {
-                    $customer->update_points(-1 * $points, 'order_redeem', [
-                        'description' => $reason ?: 'Points redeemed via HP React Widgets',
-                        'order_id' => $orderId,
-                    ]);
-                    return true;
-                }
-            } catch (\Throwable $e) {
-                // Fall through to manual deduction
-            }
+        
+        // Fallback: ywpar_increase_points with negative value (same as EAO)
+        if (function_exists('ywpar_increase_points')) {
+            ywpar_increase_points($userId, -1 * $points, $reasonText, $orderId);
+            return true;
         }
 
         // Manual fallback - update the meta directly (no history)
