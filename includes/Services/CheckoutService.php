@@ -418,18 +418,8 @@ class CheckoutService
         $order->calculate_totals(false);
         $order->save();
         
-        // NOW deduct points from customer's balance (after order is saved)
-        if ($pointsApplied && $pointsToRedeem > 0) {
-            $customerId = $order->get_customer_id();
-            if ($customerId > 0) {
-                $pointsService = new PointsService();
-                $pointsService->deductPoints(
-                    $customerId,
-                    $pointsToRedeem,
-                    sprintf('Points redeemed for Order #%d', $order->get_id())
-                );
-            }
-        }
+        // Points deduction is now handled by Plugin::maybeDeductPointsOnProcessing hook
+        // triggered by the status change to 'processing' above
 
         // Update Stripe PaymentIntent description to include order number
         if (!empty($stripePaymentIntentId)) {
