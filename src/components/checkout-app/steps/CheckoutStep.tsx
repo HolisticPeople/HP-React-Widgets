@@ -1673,7 +1673,7 @@ export const CheckoutStep = ({
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form id="hp-rw-checkout-form" onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="email" className="text-foreground">Email</Label>
                 <Input
@@ -2162,8 +2162,8 @@ export const CheckoutStep = ({
                 <button
                   type="button"
                   onClick={() => {
-                    // Find and submit the checkout form
-                    const form = document.querySelector('form') as HTMLFormElement;
+                    // Find and submit our specific checkout form
+                    const form = document.getElementById('hp-rw-checkout-form') as HTMLFormElement;
                     if (form) {
                       form.requestSubmit();
                     }
