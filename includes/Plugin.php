@@ -243,6 +243,9 @@ class Plugin
         // Register the HP Funnel custom post type (fallback if not registered by ACF Pro)
         FunnelPostType::init();
         
+        // Initialize ShipStation export filter (to show funnel orders correctly in ShipStation)
+        ShipStation\ExportFilter::init();
+        
         // Schedule upgrade check for later (after WP is fully initialized)
         add_action('init', [self::class, 'checkForUpgrade'], 99);
 

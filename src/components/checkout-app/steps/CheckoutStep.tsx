@@ -339,6 +339,9 @@ export const CheckoutStep = ({
   
   // Store draft ID across attempts
   const orderDraftIdRef = useRef<string | null>(null);
+  
+  // Form validation error state
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const stripeContainerRef = useRef<HTMLDivElement>(null);
   const expressCheckoutContainerRef = useRef<HTMLDivElement>(null);
@@ -971,8 +974,59 @@ export const CheckoutStep = ({
     }
   }, [enableCustomerLookup, formData.email, customerLookup]);
 
+  // Email validation helper
+  const isValidEmail = (email: string): boolean => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  // Form validation function - validates all required fields
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    
+    if (!formData.firstName.trim()) errors.firstName = 'First name is required';
+    if (!formData.lastName.trim()) errors.lastName = 'Last name is required';
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!isValidEmail(formData.email)) {
+      errors.email = 'Valid email is required';
+    }
+    if (!formData.phone.trim()) errors.phone = 'Phone number is required';
+    if (!formData.address.trim()) errors.address = 'Street address is required';
+    if (!formData.city.trim()) errors.city = 'City is required';
+    if (countryHasStates(formData.country) && !formData.state.trim()) {
+      errors.state = `${getStateLabel(formData.country)} is required`;
+    }
+    if (!formData.zipCode.trim()) errors.zipCode = 'Zip/Postal code is required';
+    
+    setFieldErrors(errors);
+    
+    // Scroll to first error
+    const errorOrder = ['firstName', 'lastName', 'email', 'phone', 'country', 'address', 'city', 'state', 'zipCode'];
+    for (const field of errorOrder) {
+      if (errors[field]) {
+        document.getElementById(field)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Focus the field after scrolling
+        setTimeout(() => {
+          document.getElementById(field)?.focus();
+        }, 300);
+        return false;
+      }
+    }
+    
+    return Object.keys(errors).length === 0;
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    
+    // Clear field error when user types in that field
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => {
+        const updated = { ...prev };
+        delete updated[name];
+        return updated;
+      });
+    }
     
     // When country changes, always clear the state since it won't be valid for the new country
     if (name === 'country' && value !== formData.country) {
@@ -981,6 +1035,14 @@ export const CheckoutStep = ({
         country: value,
         state: '', // Clear state when country changes
       }));
+      // Also clear state error since it might not be required for new country
+      if (fieldErrors.state) {
+        setFieldErrors(prev => {
+          const updated = { ...prev };
+          delete updated.state;
+          return updated;
+        });
+      }
       return;
     }
     
@@ -994,8 +1056,8 @@ export const CheckoutStep = ({
     e.preventDefault();
     setError(null);
 
-    if (!formData.phone.trim()) {
-      setError('Phone number is required for shipping updates.');
+    // Validate all form fields first
+    if (!validateForm()) {
       return;
     }
 
@@ -1677,8 +1739,11 @@ export const CheckoutStep = ({
                     value={formData.firstName}
                     onChange={handleInputChange}
                     required
-                    className="bg-input text-foreground border-border/50"
+                    className={cn("bg-input text-foreground border-border/50", fieldErrors.firstName && "border-red-500 border-2")}
                   />
+                  {fieldErrors.firstName && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.firstName}</p>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="lastName" className="text-foreground">Last Name</Label>
@@ -1688,8 +1753,11 @@ export const CheckoutStep = ({
                     value={formData.lastName}
                     onChange={handleInputChange}
                     required
-                    className="bg-input text-foreground border-border/50"
+                    className={cn("bg-input text-foreground border-border/50", fieldErrors.lastName && "border-red-500 border-2")}
                   />
+                  {fieldErrors.lastName && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.lastName}</p>
+                  )}
                 </div>
               </div>
 
@@ -1702,8 +1770,51 @@ export const CheckoutStep = ({
                   value={formData.phone}
                   onChange={handleInputChange}
                   required
-                  className="bg-input text-foreground border-border/50"
+                  className={cn("bg-input text-foreground border-border/50", fieldErrors.phone && "border-red-500 border-2")}
                 />
+                {fieldErrors.phone && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.phone}</p>
+                )}
+              </div>
+
+              {/* Country - placed early so it dictates state field visibility */}
+              <div>
+                <Label htmlFor="country" className="text-foreground">Country</Label>
+                <select
+                  id="country"
+                  name="country"
+                  value={formData.country}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full h-10 px-3 rounded-md bg-input text-foreground border border-border/50"
+                >
+                  <option value="US">United States</option>
+                  <option value="CA">Canada</option>
+                  <option value="GB">United Kingdom</option>
+                  <option value="AU">Australia</option>
+                  <option value="NZ">New Zealand</option>
+                  <option value="DE">Germany</option>
+                  <option value="FR">France</option>
+                  <option value="IT">Italy</option>
+                  <option value="ES">Spain</option>
+                  <option value="NL">Netherlands</option>
+                  <option value="BE">Belgium</option>
+                  <option value="AT">Austria</option>
+                  <option value="CH">Switzerland</option>
+                  <option value="SE">Sweden</option>
+                  <option value="NO">Norway</option>
+                  <option value="DK">Denmark</option>
+                  <option value="FI">Finland</option>
+                  <option value="IE">Ireland</option>
+                  <option value="PT">Portugal</option>
+                  <option value="PL">Poland</option>
+                  <option value="IL">Israel</option>
+                  <option value="JP">Japan</option>
+                  <option value="SG">Singapore</option>
+                  <option value="HK">Hong Kong</option>
+                  <option value="MX">Mexico</option>
+                  <option value="BR">Brazil</option>
+                </select>
               </div>
 
               <div>
@@ -1726,8 +1837,11 @@ export const CheckoutStep = ({
                   value={formData.address}
                   onChange={handleInputChange}
                   required
-                  className="bg-input text-foreground border-border/50"
+                  className={cn("bg-input text-foreground border-border/50", fieldErrors.address && "border-red-500 border-2")}
                 />
+                {fieldErrors.address && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.address}</p>
+                )}
               </div>
 
               <div className={cn("grid grid-cols-2 gap-4", !countryHasStates(formData.country) && "grid-cols-1")}>
@@ -1739,8 +1853,11 @@ export const CheckoutStep = ({
                     value={formData.city}
                     onChange={handleInputChange}
                     required
-                    className="bg-input text-foreground border-border/50"
+                    className={cn("bg-input text-foreground border-border/50", fieldErrors.city && "border-red-500 border-2")}
                   />
+                  {fieldErrors.city && (
+                    <p className="text-red-500 text-xs mt-1">{fieldErrors.city}</p>
+                  )}
                 </div>
                 {countryHasStates(formData.country) && (
                   <div className="min-w-0 flex flex-col">
@@ -1749,7 +1866,7 @@ export const CheckoutStep = ({
                       <PopoverTrigger asChild>
                         <select
                           id="state"
-                          className="w-full max-w-full h-10 px-3 mt-2 rounded-md bg-input text-foreground border border-border/50 cursor-pointer truncate text-left"
+                          className={cn("w-full max-w-full h-10 px-3 mt-2 rounded-md bg-input text-foreground border cursor-pointer truncate text-left", fieldErrors.state ? "border-red-500 border-2" : "border-border/50")}
                           value={formData.state || ''}
                           onClick={(e) => {
                             e.preventDefault();
@@ -1800,6 +1917,14 @@ export const CheckoutStep = ({
                                   onSelect={() => {
                                     setFormData(prev => ({ ...prev, state: state.code }));
                                     setStatePickerOpen(false);
+                                    // Clear state error when user selects a state
+                                    if (fieldErrors.state) {
+                                      setFieldErrors(prev => {
+                                        const updated = { ...prev };
+                                        delete updated.state;
+                                        return updated;
+                                      });
+                                    }
                                   }}
                                   style={{ color: '#e5e5e5', cursor: 'pointer' }}
                                   className="hover:bg-white/10 data-[selected=true]:bg-white/15"
@@ -1818,60 +1943,27 @@ export const CheckoutStep = ({
                         </Command>
                       </PopoverContent>
                     </Popover>
+                    {fieldErrors.state && (
+                      <p className="text-red-500 text-xs mt-1">{fieldErrors.state}</p>
+                    )}
                   </div>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="zipCode" className="text-foreground">ZIP Code</Label>
-                  <Input
-                    id="zipCode"
-                    name="zipCode"
-                    value={formData.zipCode}
-                    onChange={handleInputChange}
-                    required
-                    className="bg-input text-foreground border-border/50"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="country" className="text-foreground">Country</Label>
-                  <select
-                    id="country"
-                    name="country"
-                    value={formData.country}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full h-10 px-3 rounded-md bg-input text-foreground border border-border/50"
-                  >
-                    <option value="US">United States</option>
-                    <option value="CA">Canada</option>
-                    <option value="GB">United Kingdom</option>
-                    <option value="AU">Australia</option>
-                    <option value="NZ">New Zealand</option>
-                    <option value="DE">Germany</option>
-                    <option value="FR">France</option>
-                    <option value="IT">Italy</option>
-                    <option value="ES">Spain</option>
-                    <option value="NL">Netherlands</option>
-                    <option value="BE">Belgium</option>
-                    <option value="AT">Austria</option>
-                    <option value="CH">Switzerland</option>
-                    <option value="SE">Sweden</option>
-                    <option value="NO">Norway</option>
-                    <option value="DK">Denmark</option>
-                    <option value="FI">Finland</option>
-                    <option value="IE">Ireland</option>
-                    <option value="PT">Portugal</option>
-                    <option value="PL">Poland</option>
-                    <option value="IL">Israel</option>
-                    <option value="JP">Japan</option>
-                    <option value="SG">Singapore</option>
-                    <option value="HK">Hong Kong</option>
-                    <option value="MX">Mexico</option>
-                    <option value="BR">Brazil</option>
-                  </select>
-                </div>
+              {/* ZIP Code - standalone since Country moved up */}
+              <div>
+                <Label htmlFor="zipCode" className="text-foreground">ZIP Code</Label>
+                <Input
+                  id="zipCode"
+                  name="zipCode"
+                  value={formData.zipCode}
+                  onChange={handleInputChange}
+                  required
+                  className={cn("bg-input text-foreground border-border/50", fieldErrors.zipCode && "border-red-500 border-2")}
+                />
+                {fieldErrors.zipCode && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.zipCode}</p>
+                )}
               </div>
 
               {/* Shipping Rate Selection */}
