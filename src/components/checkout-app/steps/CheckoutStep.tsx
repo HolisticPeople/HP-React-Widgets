@@ -1489,7 +1489,7 @@ export const CheckoutStep = ({
   };
 
   return (
-    <div className="max-w-6xl mx-auto overflow-x-hidden">
+    <div className="max-w-6xl mx-auto">
       {/* Header */}
       <div className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-accent via-accent to-foreground bg-clip-text text-transparent">
