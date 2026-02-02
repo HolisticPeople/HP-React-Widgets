@@ -38,6 +38,8 @@ declare global {
 interface UseStripePaymentOptions {
   publishableKey: string;
   stripeMode?: string;
+  /** Initial amount in cents for Express Checkout display. Use 0 or undefined if not yet known. */
+  initialAmountCents?: number;
   onPaymentSuccess?: (paymentIntentId: string) => void;
   onPaymentError?: (error: string) => void;
   onExpressCheckoutClick?: (resolve: (params: { lineItems?: any[] }) => void) => void;
@@ -115,7 +117,10 @@ function loadStripeSingleton(publishableKey: string): Promise<Stripe | null> {
 }
 
 export function useStripePayment(options: UseStripePaymentOptions) {
-  const { publishableKey, stripeMode, onPaymentSuccess, onPaymentError, onExpressCheckoutClick, onExpressCheckoutConfirm } = options;
+  const { publishableKey, stripeMode, initialAmountCents, onPaymentSuccess, onPaymentError, onExpressCheckoutClick, onExpressCheckoutConfirm } = options;
+  
+  // Track the current amount in cents for Elements updates
+  const currentAmountRef = useRef<number>(initialAmountCents || 100); // Minimum 100 cents ($1) for Stripe
   
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -203,9 +208,13 @@ export function useStripePayment(options: UseStripePaymentOptions) {
 
     // Create Elements instance with deferred PaymentIntent mode
     // 'mode: payment' allows us to collect payment details before creating a PaymentIntent
+    // Use the initial amount if provided, otherwise use minimum $1 (100 cents)
+    const elementAmount = Math.max(currentAmountRef.current, 100);
+    console.log('[HP Checkout] Creating Elements with amount:', elementAmount, 'cents ($' + (elementAmount / 100).toFixed(2) + ')');
+    
     elementsRef.current = stripeRef.current.elements({
       mode: 'payment',
-      amount: 1000, // Placeholder - will be updated when we have final amount
+      amount: elementAmount,
       currency: 'usd',
       appearance: {
         theme: 'night',
@@ -553,6 +562,20 @@ export function useStripePayment(options: UseStripePaymentOptions) {
 
   const isReady = !isLoading && !!stripeRef.current;
 
+  // Update the amount shown in Express Checkout (Apple Pay/Google Pay) when cart total changes
+  const updateAmount = useCallback((newAmountCents: number) => {
+    const amount = Math.max(newAmountCents, 100); // Stripe minimum is 100 cents
+    if (amount === currentAmountRef.current) {
+      return; // No change needed
+    }
+    currentAmountRef.current = amount;
+    
+    if (elementsRef.current) {
+      console.log('[HP Checkout] Updating Elements amount to:', amount, 'cents ($' + (amount / 100).toFixed(2) + ')');
+      elementsRef.current.update({ amount });
+    }
+  }, []);
+
   // Check if any Express Checkout wallet is available
   const hasExpressCheckout = expressCheckoutAvailable 
     && (expressCheckoutAvailable.applePay || expressCheckoutAvailable.googlePay || expressCheckoutAvailable.link);
@@ -574,6 +597,8 @@ export function useStripePayment(options: UseStripePaymentOptions) {
     expressCheckoutAvailable,
     hasExpressCheckout,
     isExpressCheckoutLoading,
-  }), [isLoading, isProcessing, isCardComplete, error, mountCardElement, unmountCardElement, confirmPayment, isReady, mountExpressCheckout, unmountExpressCheckout, retryExpressCheckout, expressCheckoutAvailable, hasExpressCheckout, isExpressCheckoutLoading]);
+    // Amount update for Express Checkout
+    updateAmount,
+  }), [isLoading, isProcessing, isCardComplete, error, mountCardElement, unmountCardElement, confirmPayment, isReady, mountExpressCheckout, unmountExpressCheckout, retryExpressCheckout, expressCheckoutAvailable, hasExpressCheckout, isExpressCheckoutLoading, updateAmount]);
 }
 
