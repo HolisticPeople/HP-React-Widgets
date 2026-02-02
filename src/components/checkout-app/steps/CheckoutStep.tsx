@@ -323,6 +323,8 @@ export const CheckoutStep = ({
   const [isFetchingShipping, setIsFetchingShipping] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Scroll trigger counter - incremented to force scroll useEffect to run even when error message is same
+  const [scrollTrigger, setScrollTrigger] = useState(0);
   
   // Legal popup state
   const [legalPopupType, setLegalPopupType] = useState<'terms' | 'privacy' | null>(null);
@@ -332,10 +334,40 @@ export const CheckoutStep = ({
   
   // Address picker modal state
   const [showAddressPicker, setShowAddressPicker] = useState(false);
-  // Load saved addresses from initialUserData (passed from PHP)
+  // Load saved addresses from initialUserData (passed from PHP) or customerData (from email lookup)
   const [savedAddresses, setSavedAddresses] = useState<PickerAddress[]>(
     (initialUserData?.savedAddresses || []) as PickerAddress[]
   );
+  
+  // Update savedAddresses when customerData changes (email lookup returns addresses)
+  useEffect(() => {
+    if (customerData?.allAddresses?.shipping && customerData.allAddresses.shipping.length > 0) {
+      // Convert customerData addresses to PickerAddress format
+      const addresses = customerData.allAddresses.shipping.map((addr: {
+        firstName?: string;
+        lastName?: string;
+        address1?: string;
+        address2?: string;
+        city?: string;
+        state?: string;
+        postcode?: string;
+        country?: string;
+        phone?: string;
+      }) => ({
+        id: `${addr.address1}-${addr.postcode}`, // Generate a simple ID
+        firstName: addr.firstName || '',
+        lastName: addr.lastName || '',
+        address1: addr.address1 || '',
+        address2: addr.address2 || '',
+        city: addr.city || '',
+        state: addr.state || '',
+        postcode: addr.postcode || '',
+        country: addr.country || 'US',
+        phone: addr.phone || '',
+      })) as PickerAddress[];
+      setSavedAddresses(addresses);
+    }
+  }, [customerData?.allAddresses?.shipping]);
   
   // Store draft ID across attempts
   const orderDraftIdRef = useRef<string | null>(null);
@@ -733,17 +765,41 @@ export const CheckoutStep = ({
   }, [paypalEnabled, paypalClientId]);
 
   // Scroll to payment section when an error is set
+  // scrollTrigger forces re-run even when error message is unchanged (e.g., after address selection)
   useEffect(() => {
     if (error) {
-      // Small delay to ensure the error element is rendered
+      // Delay to ensure the error element is rendered (longer for mobile)
       setTimeout(() => {
+        const paymentError = document.getElementById('hp-rw-payment-error');
         const paymentSection = document.getElementById('hp-rw-payment-section');
-        if (paymentSection) {
-          paymentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const targetElement = paymentError || paymentSection;
+        
+        if (targetElement) {
+          // Get the element's position relative to the viewport
+          const rect = targetElement.getBoundingClientRect();
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+          // Scroll to element with some offset from top (accounting for fixed headers)
+          const targetY = scrollTop + rect.top - 100;
+          
+          // Use window.scrollTo for better mobile compatibility
+          window.scrollTo({
+            top: targetY,
+            behavior: 'smooth'
+          });
+          
+          // Fallback for browsers that don't support smooth scroll
+          // Also helps iOS Safari which sometimes ignores smooth scroll
+          setTimeout(() => {
+            const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+            // If we haven't scrolled close to target, force scroll
+            if (Math.abs(currentScroll - targetY) > 200) {
+              window.scrollTo(0, targetY);
+            }
+          }, 500);
         }
-      }, 100);
+      }, 150);
     }
-  }, [error]);
+  }, [error, scrollTrigger]);
 
   // Refs to avoid dependency loops - these hold current values without triggering re-renders
   const selectedRateRef = useRef(selectedRate);
@@ -1075,6 +1131,7 @@ export const CheckoutStep = ({
     }
 
     if (!stripePayment.isCardComplete) {
+      setScrollTrigger(prev => prev + 1); // Force scroll even if error message is same
       setError('Please complete your payment information.');
       return;
     }
