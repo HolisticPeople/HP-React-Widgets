@@ -155,11 +155,25 @@ export function useStripePayment(options: UseStripePaymentOptions) {
 
     let cancelled = false;
 
+    // Determine if test or live based on key prefix
+    const isTestKey = publishableKey.startsWith('pk_test_');
+    const isLiveKey = publishableKey.startsWith('pk_live_');
+    
+    console.log('[HP Checkout] Loading Stripe:', {
+      mode: stripeMode,
+      keyType: isTestKey ? 'TEST' : isLiveKey ? 'LIVE' : 'UNKNOWN',
+      keyPrefix: publishableKey.substring(0, 12) + '...',
+    });
+    
     loadStripeSingleton(publishableKey).then((stripe) => {
       if (cancelled) return;
       
       if (stripe) {
         stripeRef.current = stripe;
+        console.log('[HP Checkout] Stripe loaded successfully:', {
+          mode: stripeMode,
+          keyType: isTestKey ? 'TEST' : isLiveKey ? 'LIVE' : 'UNKNOWN',
+        });
       } else {
         setError('Failed to load payment system');
       }
@@ -296,7 +310,11 @@ export function useStripePayment(options: UseStripePaymentOptions) {
       }
       
       // Debug: Log what payment methods Stripe detected
+      const isTestKey = publishableKey.startsWith('pk_test_');
+      const isLiveKey = publishableKey.startsWith('pk_live_');
       console.log('[HP Checkout] Express Checkout ready event:', {
+        stripeMode: stripeMode,
+        keyType: isTestKey ? 'TEST' : isLiveKey ? 'LIVE' : 'UNKNOWN',
         availablePaymentMethods: event.availablePaymentMethods,
         applePay: event.availablePaymentMethods?.applePay ?? false,
         googlePay: event.availablePaymentMethods?.googlePay ?? false,
