@@ -4,12 +4,37 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 interface Stripe {
   elements: (options?: any) => StripeElements;
   confirmPayment: (options: any) => Promise<{ error?: any; paymentIntent?: any }>;
+  paymentRequest: (options: PaymentRequestOptions) => StripePaymentRequest;
+  createPaymentMethod: (options: any) => Promise<{ error?: any; paymentMethod?: any }>;
+}
+
+interface PaymentRequestOptions {
+  country: string;
+  currency: string;
+  total: {
+    label: string;
+    amount: number;
+    pending?: boolean;
+  };
+  requestPayerName?: boolean;
+  requestPayerEmail?: boolean;
+  requestPayerPhone?: boolean;
+  requestShipping?: boolean;
+  disableWallets?: string[];
+}
+
+interface StripePaymentRequest {
+  canMakePayment: () => Promise<{ applePay?: boolean; googlePay?: boolean } | null>;
+  show: () => void;
+  update: (options: any) => void;
+  on: (event: string, handler: (event: any) => void) => void;
 }
 
 interface StripeElements {
   create: (type: string, options?: any) => StripeElement;
   getElement: (type: string) => StripeElement | null;
   submit: () => Promise<{ error?: any }>;
+  update: (options: any) => void;
 }
 
 interface ExpressCheckoutAvailablePaymentMethods {
@@ -40,10 +65,16 @@ interface UseStripePaymentOptions {
   stripeMode?: string;
   /** Initial amount in cents for Express Checkout display. Use 0 or undefined if not yet known. */
   initialAmountCents?: number;
+  /** Country code for payment request (default: 'US') */
+  countryCode?: string;
   onPaymentSuccess?: (paymentIntentId: string) => void;
   onPaymentError?: (error: string) => void;
   onExpressCheckoutClick?: (resolve: (params: { lineItems?: any[] }) => void) => void;
   onExpressCheckoutConfirm?: () => Promise<{ clientSecret: string; billingDetails: any } | null>;
+  /** Called when Apple Pay button is clicked via paymentRequest API */
+  onApplePayClick?: () => void;
+  /** Called when payment method is received from Apple Pay via paymentRequest API */
+  onApplePayPaymentMethod?: (paymentMethodId: string) => void;
 }
 
 // Detect if we're on a mobile device
@@ -117,7 +148,7 @@ function loadStripeSingleton(publishableKey: string): Promise<Stripe | null> {
 }
 
 export function useStripePayment(options: UseStripePaymentOptions) {
-  const { publishableKey, stripeMode, initialAmountCents, onPaymentSuccess, onPaymentError, onExpressCheckoutClick, onExpressCheckoutConfirm } = options;
+  const { publishableKey, stripeMode, initialAmountCents, countryCode = 'US', onPaymentSuccess, onPaymentError, onExpressCheckoutClick, onExpressCheckoutConfirm, onApplePayClick, onApplePayPaymentMethod } = options;
   
   // Track the current amount in cents for Elements updates
   const currentAmountRef = useRef<number>(initialAmountCents || 100); // Minimum 100 cents ($1) for Stripe
@@ -129,6 +160,10 @@ export function useStripePayment(options: UseStripePaymentOptions) {
   const [expressCheckoutAvailable, setExpressCheckoutAvailable] = useState<ExpressCheckoutAvailablePaymentMethods | null>(null);
   // Track Express Checkout loading state separately for better UX on mobile
   const [isExpressCheckoutLoading, setIsExpressCheckoutLoading] = useState(true);
+  
+  // Apple Pay via paymentRequest API (works on Chrome iOS)
+  const [applePayAvailable, setApplePayAvailable] = useState(false);
+  const paymentRequestRef = useRef<StripePaymentRequest | null>(null);
   
   const stripeRef = useRef<Stripe | null>(null);
   const elementsRef = useRef<StripeElements | null>(null);
@@ -144,10 +179,14 @@ export function useStripePayment(options: UseStripePaymentOptions) {
   const onPaymentErrorRef = useRef(onPaymentError);
   const onExpressCheckoutClickRef = useRef(onExpressCheckoutClick);
   const onExpressCheckoutConfirmRef = useRef(onExpressCheckoutConfirm);
+  const onApplePayClickRef = useRef(onApplePayClick);
+  const onApplePayPaymentMethodRef = useRef(onApplePayPaymentMethod);
   onPaymentSuccessRef.current = onPaymentSuccess;
   onPaymentErrorRef.current = onPaymentError;
   onExpressCheckoutClickRef.current = onExpressCheckoutClick;
   onExpressCheckoutConfirmRef.current = onExpressCheckoutConfirm;
+  onApplePayClickRef.current = onApplePayClick;
+  onApplePayPaymentMethodRef.current = onApplePayPaymentMethod;
 
   // Load Stripe.js using singleton pattern
   useEffect(() => {
@@ -175,6 +214,152 @@ export function useStripePayment(options: UseStripePaymentOptions) {
       cancelled = true;
     };
   }, [publishableKey]);
+
+  // Initialize Apple Pay via paymentRequest API (works on Chrome iOS unlike Express Checkout Element)
+  // This is the same approach used by Payment Plugins for Stripe
+  useEffect(() => {
+    if (!stripeRef.current || isLoading) return;
+    
+    const stripe = stripeRef.current;
+    const amount = Math.max(currentAmountRef.current, 100);
+    
+    try {
+      // Create payment request with Apple Pay enabled (disable Google Pay - we use Express Checkout for that)
+      const paymentRequest = stripe.paymentRequest({
+        country: countryCode,
+        currency: 'usd',
+        total: {
+          label: 'Total',
+          amount: amount,
+          pending: true,
+        },
+        requestPayerName: true,
+        requestPayerEmail: true,
+        requestPayerPhone: false,
+        disableWallets: ['googlePay', 'link'], // Only detect Apple Pay here
+      });
+      
+      paymentRequestRef.current = paymentRequest;
+      
+      // Check if Apple Pay is available
+      paymentRequest.canMakePayment().then((result) => {
+        if (result && result.applePay) {
+          setApplePayAvailable(true);
+        } else {
+          setApplePayAvailable(false);
+        }
+      }).catch(() => {
+        setApplePayAvailable(false);
+      });
+      
+      // Listen for payment method received - this is called when user authorizes in Apple Pay sheet
+      paymentRequest.on('paymentmethod', async (event: any) => {
+        try {
+          // Get the payment method from Apple Pay
+          const paymentMethodId = event.paymentMethod?.id;
+          if (!paymentMethodId) {
+            event.complete('fail');
+            return;
+          }
+          
+          // Notify parent that we received a payment method (for logging/tracking)
+          if (onApplePayPaymentMethodRef.current) {
+            onApplePayPaymentMethodRef.current(paymentMethodId);
+          }
+          
+          // Get client secret and billing details from parent (same as Express Checkout flow)
+          if (!onExpressCheckoutConfirmRef.current) {
+            event.complete('fail');
+            return;
+          }
+          
+          const result = await onExpressCheckoutConfirmRef.current();
+          if (!result) {
+            event.complete('fail');
+            return;
+          }
+          
+          const { clientSecret } = result;
+          
+          // Confirm the payment with the payment method from Apple Pay
+          const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
+            clientSecret,
+            confirmParams: {
+              payment_method: paymentMethodId,
+              return_url: window.location.href,
+            },
+            redirect: 'if_required',
+          });
+          
+          if (confirmError) {
+            event.complete('fail');
+            if (onPaymentErrorRef.current) {
+              onPaymentErrorRef.current(confirmError.message || 'Payment failed');
+            }
+            return;
+          }
+          
+          if (paymentIntent?.status === 'succeeded') {
+            event.complete('success');
+            if (onPaymentSuccessRef.current) {
+              onPaymentSuccessRef.current(paymentIntent.id);
+            }
+          } else {
+            event.complete('fail');
+          }
+        } catch (err: any) {
+          event.complete('fail');
+          if (onPaymentErrorRef.current) {
+            onPaymentErrorRef.current(err.message || 'Apple Pay payment failed');
+          }
+        }
+      });
+    } catch (err) {
+      // PaymentRequest creation can fail on unsupported browsers
+      setApplePayAvailable(false);
+    }
+  }, [isLoading, countryCode]);
+  
+  // Update paymentRequest amount when it changes
+  useEffect(() => {
+    if (paymentRequestRef.current && currentAmountRef.current > 0) {
+      try {
+        paymentRequestRef.current.update({
+          total: {
+            label: 'Total',
+            amount: Math.max(currentAmountRef.current, 100),
+            pending: false,
+          },
+        });
+      } catch (err) {
+        // Ignore errors during update
+      }
+    }
+  }, [initialAmountCents]);
+  
+  // Show Apple Pay sheet (called when user clicks the Apple Pay button)
+  const showApplePay = useCallback(() => {
+    if (!paymentRequestRef.current) return;
+    
+    if (onApplePayClickRef.current) {
+      onApplePayClickRef.current();
+    }
+    
+    // Update amount before showing
+    try {
+      paymentRequestRef.current.update({
+        total: {
+          label: 'Total',
+          amount: Math.max(currentAmountRef.current, 100),
+          pending: false,
+        },
+      });
+    } catch (err) {
+      // Ignore
+    }
+    
+    paymentRequestRef.current.show();
+  }, []);
 
   // Track if already mounted to prevent duplicate mounts
   const isMountedRef = useRef(false);
@@ -544,6 +729,9 @@ export function useStripePayment(options: UseStripePaymentOptions) {
     && (expressCheckoutAvailable.applePay || expressCheckoutAvailable.googlePay || expressCheckoutAvailable.link);
 
   // Memoize return object to prevent unnecessary re-renders in consumers
+  // Combined check: Apple Pay via paymentRequest API OR via Express Checkout Element
+  const hasApplePay = applePayAvailable || (expressCheckoutAvailable?.applePay ?? false);
+  
   return useMemo(() => ({
     isLoading,
     isProcessing,
@@ -562,6 +750,10 @@ export function useStripePayment(options: UseStripePaymentOptions) {
     isExpressCheckoutLoading,
     // Amount update for Express Checkout
     updateAmount,
-  }), [isLoading, isProcessing, isCardComplete, error, mountCardElement, unmountCardElement, confirmPayment, isReady, mountExpressCheckout, unmountExpressCheckout, retryExpressCheckout, expressCheckoutAvailable, hasExpressCheckout, isExpressCheckoutLoading, updateAmount]);
+    // Apple Pay via paymentRequest API (works on Chrome iOS)
+    applePayAvailable,
+    showApplePay,
+    hasApplePay,
+  }), [isLoading, isProcessing, isCardComplete, error, mountCardElement, unmountCardElement, confirmPayment, isReady, mountExpressCheckout, unmountExpressCheckout, retryExpressCheckout, expressCheckoutAvailable, hasExpressCheckout, isExpressCheckoutLoading, updateAmount, applePayAvailable, showApplePay, hasApplePay]);
 }
 
