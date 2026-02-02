@@ -74,25 +74,27 @@ export const ThankYouStep = ({
           {/* Items */}
           <div className="space-y-4 mb-6">
             {orderSummary.items.map((item, idx) => (
-              <div key={idx} className="flex items-center gap-4 p-4 bg-background/50 rounded-lg">
+              <div key={idx} className="flex gap-3 p-4 bg-background/50 rounded-lg">
                 {item.image && (
                   <img 
                     src={item.image} 
                     alt={item.name} 
-                    className="w-16 h-16 object-cover rounded flex-shrink-0"
+                    className="w-14 h-14 object-cover rounded flex-shrink-0"
                   />
                 )}
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground break-words">{item.name}</h3>
-                  <p className="text-sm text-muted-foreground">Qty: {item.qty}</p>
-                </div>
-                <div className="text-right flex-shrink-0 ml-2">
-                  <p className="font-semibold text-foreground whitespace-nowrap">${item.total.toFixed(2)}</p>
-                  {item.subtotal * item.qty !== item.total && (
-                    <p className="text-sm text-muted-foreground line-through whitespace-nowrap">
-                      ${(item.subtotal * item.qty).toFixed(2)}
-                    </p>
-                  )}
+                <div className="flex-1 min-w-0 flex flex-col justify-between">
+                  <h3 className="text-sm font-medium text-foreground line-clamp-2">{item.name}</h3>
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-sm text-muted-foreground">Qty: {item.qty}</p>
+                    <div className="text-right">
+                      <span className="text-sm font-semibold text-foreground">${item.total.toFixed(2)}</span>
+                      {item.subtotal * item.qty !== item.total && (
+                        <span className="text-xs text-muted-foreground line-through ml-2">
+                          ${(item.subtotal * item.qty).toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
