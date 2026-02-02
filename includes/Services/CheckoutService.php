@@ -386,7 +386,11 @@ class CheckoutService
             }
         }
 
-        if ($pointsToRedeem > 0) $this->applyPointsRedemption($order, $pointsToRedeem);
+        // Apply points coupon (but don't deduct yet - need order to be saved first)
+        $pointsApplied = false;
+        if ($pointsToRedeem > 0) {
+            $pointsApplied = $this->applyPointsCoupon($order, $pointsToRedeem);
+        }
 
         // Store Stripe metadata (if this is a Stripe order)
         if (!empty($stripePaymentIntentId)) {
@@ -413,6 +417,19 @@ class CheckoutService
         $order->set_status('processing');
         $order->calculate_totals(false);
         $order->save();
+        
+        // NOW deduct points from customer's balance (after order is saved)
+        if ($pointsApplied && $pointsToRedeem > 0) {
+            $customerId = $order->get_customer_id();
+            if ($customerId > 0) {
+                $pointsService = new PointsService();
+                $pointsService->deductPoints(
+                    $customerId,
+                    $pointsToRedeem,
+                    sprintf('Points redeemed for Order #%d', $order->get_id())
+                );
+            }
+        }
 
         // Update Stripe PaymentIntent description to include order number
         if (!empty($stripePaymentIntentId)) {
@@ -439,11 +456,16 @@ class CheckoutService
         return $order;
     }
 
-    private function applyPointsRedemption(WC_Order $order, int $points): void
+    /**
+     * Apply points as a coupon discount to the order.
+     * Returns true if the coupon was successfully applied.
+     * Note: Points deduction from customer balance should be done AFTER order is saved.
+     */
+    private function applyPointsCoupon(WC_Order $order, int $points): bool
     {
         $pointsService = new PointsService();
         $discountAmount = $pointsService->pointsToMoney($points);
-        if ($discountAmount <= 0) return;
+        if ($discountAmount <= 0) return false;
 
         $order->calculate_totals(false);
         $maxDiscount = (float) $order->get_total();
@@ -466,15 +488,7 @@ class CheckoutService
         $order->update_meta_data('_ywpar_coupon_points', $points);
         $order->update_meta_data('_ywpar_coupon_amount', $discountAmount);
         
-        // Actually deduct points from customer's balance
-        $customerId = $order->get_customer_id();
-        if ($customerId > 0) {
-            $pointsService->deductPoints(
-                $customerId, 
-                $points, 
-                sprintf('Points redeemed for Order #%d', $order->get_id())
-            );
-        }
+        return true;
     }
 
     public function addItemsToOrder(WC_Order $order, array $items): float
