@@ -98,6 +98,27 @@ class PointsService
             return true;
         }
 
+        // Fallback: Use YITH customer object with update_points (same as EAO pattern)
+        if (function_exists('ywpar_get_customer')) {
+            try {
+                $customer = ywpar_get_customer($userId);
+                if ($customer && method_exists($customer, 'update_points')) {
+                    // Use negative value to deduct, 'redeemed_points' action type
+                    $customer->update_points(
+                        -1 * $points,
+                        'redeemed_points',
+                        array(
+                            'order_id' => $orderId,
+                            'description' => $reasonText
+                        )
+                    );
+                    return true;
+                }
+            } catch (\Throwable $e) {
+                // Fall through to manual fallback
+            }
+        }
+
         // Manual fallback - update the meta directly (no history)
         $current = $this->getCustomerPoints($userId);
         $newBalance = max(0, $current - $points);
