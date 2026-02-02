@@ -346,6 +346,9 @@ class CheckoutService
             $order->update_meta_data('_hp_rw_offer_discount_amount', $offerDiscount);
         }
 
+        // Debug log: what address data is being applied
+        error_log('[HP-RW Checkout] Applying shipping address: ' . wp_json_encode($shippingAddress));
+        
         $this->applyAddress($order, 'billing', array_merge($shippingAddress, ['email' => $email]));
         $this->applyAddress($order, 'shipping', $shippingAddress);
 
@@ -508,11 +511,22 @@ class CheckoutService
     private function applyAddress($order, string $type, array $addr): void
     {
         $map = ['first_name', 'last_name', 'company', 'address_1', 'address_2', 'city', 'state', 'postcode', 'country', 'phone', 'email'];
+        $applied = [];
+        $missing = [];
+        
         foreach ($map as $key) {
             $method = "set_{$type}_{$key}";
-            if (method_exists($order, $method) && isset($addr[$key])) {
+            if (method_exists($order, $method) && isset($addr[$key]) && $addr[$key] !== '') {
                 $order->{$method}((string) $addr[$key]);
+                $applied[$key] = $addr[$key];
+            } elseif (in_array($key, ['first_name', 'last_name', 'address_1', 'city', 'postcode', 'country'])) {
+                // Track important missing fields
+                $missing[] = $key;
             }
+        }
+        
+        if (!empty($missing)) {
+            error_log("[HP-RW Checkout] Missing {$type} address fields: " . implode(', ', $missing) . ' | Received keys: ' . implode(', ', array_keys($addr)));
         }
     }
 }

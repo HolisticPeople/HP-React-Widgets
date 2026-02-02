@@ -247,6 +247,9 @@ class CheckoutApi
         $customer = (array) $request->get_param('customer');
         $address = (array) $request->get_param('shipping_address');
         $items = (array) $request->get_param('items');
+        
+        // Debug log: what address data is received from frontend
+        error_log('[HP-RW API] create_intent received shipping_address: ' . wp_json_encode($address));
         $selectedRate = $request->get_param('selected_rate');
         $pointsToRedeem = (int) ($request->get_param('points_to_redeem') ?? 0);
         $analytics = (array) ($request->get_param('analytics') ?? []);

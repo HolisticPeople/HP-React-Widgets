@@ -96,12 +96,13 @@ class ExportFilter
                 }
             }
 
-            // Track items to remove (fees/discounts)
+            // Track items to remove (fees/discounts) by numeric index
             $itemsToRemove = [];
+            $itemIndex = 0;
 
             // Process XML items
             if (isset($xml->Items) && isset($xml->Items->Item)) {
-                foreach ($xml->Items->Item as $key => $item) {
+                foreach ($xml->Items->Item as $item) {
                     $sku = (string) ($item->SKU ?? '');
                     $name = (string) ($item->Name ?? '');
                     $unitPrice = (float) ($item->UnitPrice ?? 0);
@@ -116,21 +117,22 @@ class ExportFilter
                     );
                     
                     if ($isFeeItem) {
-                        $itemsToRemove[] = $key;
-                        continue;
+                        $itemsToRemove[] = $itemIndex;
+                    } else {
+                        // Look up discount for this item
+                        $discountPercent = 0;
+                        if ($sku && isset($itemDiscounts['sku:' . $sku])) {
+                            $discountPercent = $itemDiscounts['sku:' . $sku];
+                        }
+                        
+                        // Apply discount to unit price if found
+                        if ($discountPercent > 0 && $unitPrice > 0) {
+                            $discountedPrice = $unitPrice * (1 - ($discountPercent / 100));
+                            $item->UnitPrice = number_format($discountedPrice, 2, '.', '');
+                        }
                     }
                     
-                    // Look up discount for this item
-                    $discountPercent = 0;
-                    if ($sku && isset($itemDiscounts['sku:' . $sku])) {
-                        $discountPercent = $itemDiscounts['sku:' . $sku];
-                    }
-                    
-                    // Apply discount to unit price if found
-                    if ($discountPercent > 0 && $unitPrice > 0) {
-                        $discountedPrice = $unitPrice * (1 - ($discountPercent / 100));
-                        $item->UnitPrice = number_format($discountedPrice, 2, '.', '');
-                    }
+                    $itemIndex++;
                 }
             }
 
@@ -155,7 +157,7 @@ class ExportFilter
                         }
                     }
                     
-                    // Remove items in reverse order
+                    // Remove items in reverse order to preserve indices
                     rsort($itemsToRemove);
                     foreach ($itemsToRemove as $index) {
                         if (isset($itemElements[$index])) {
