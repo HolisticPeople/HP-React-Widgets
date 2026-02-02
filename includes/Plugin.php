@@ -432,7 +432,8 @@ class Plugin
         $pointsService->deductPoints(
             $customerId,
             $pointsToRedeem,
-            sprintf('Points redeemed for Order #%d', $order->get_id())
+            sprintf('Points redeemed for Order #%d', $order->get_id()),
+            $order->get_id()
         );
 
         // Mark as deducted to prevent double-deduction

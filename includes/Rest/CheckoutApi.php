@@ -512,25 +512,42 @@ class CheckoutApi
             }
         }
 
-        // Also check for item-level discounts (subtotal - total)
-        // These would exist if individual items have discounts applied
-        if ($itemLevelDiscount > 0 && $offerSavings == 0) {
-            $offerSavings = $itemLevelDiscount;
-        }
-
-        // Scan coupons for non-points discounts (exclude YITH points coupons)
+        // Calculate points coupon discount from item-level changes
+        // Points coupons reduce item totals, which shows up in itemLevelDiscount
+        $pointsCouponDiscount = 0.0;
         foreach ($order->get_coupon_codes() as $code) {
             try {
                 $coupon = new \WC_Coupon($code);
                 $isPointsCoupon = ($coupon->get_meta('ywpar_coupon') || $coupon->get_meta('_ywpar_coupon') || str_starts_with($code, 'ywpar_discount_'));
-                if ($isPointsCoupon) continue;
-                foreach ($order->get_items('coupon') as $orderCoupon) {
-                    if ($orderCoupon->get_code() === $code) $otherDiscounts += (float) $orderCoupon->get_discount();
+                if ($isPointsCoupon) {
+                    // Get the discount amount this coupon applied
+                    foreach ($order->get_items('coupon') as $orderCoupon) {
+                        if ($orderCoupon->get_code() === $code) {
+                            $pointsCouponDiscount += (float) $orderCoupon->get_discount();
+                        }
+                    }
+                } else {
+                    // Non-points coupon discount
+                    foreach ($order->get_items('coupon') as $orderCoupon) {
+                        if ($orderCoupon->get_code() === $code) {
+                            $otherDiscounts += (float) $orderCoupon->get_discount();
+                        }
+                    }
                 }
             } catch (\Throwable $e) { continue; }
         }
 
-        // Total product discount = offer savings + other non-points discounts
+        // Item-level discount excluding points coupon discount
+        // (Points coupon is tracked separately in pointsRedeemed)
+        $nonPointsItemDiscount = max(0, $itemLevelDiscount - $pointsCouponDiscount);
+        
+        // Also check for item-level discounts (subtotal - total) that aren't from coupons
+        // These would exist if individual items have sale prices or offer discounts applied
+        if ($nonPointsItemDiscount > 0 && $offerSavings == 0) {
+            $offerSavings = $nonPointsItemDiscount;
+        }
+
+        // Total product discount = offer savings + other non-points discounts (NOT including points)
         $totalDiscount = $offerSavings + $otherDiscounts;
         
         $shippingTotal = (float) $order->get_shipping_total();

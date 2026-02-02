@@ -74,31 +74,38 @@ class PointsService
      * @param int $userId WordPress user ID
      * @param int $points Number of points to deduct
      * @param string $reason Reason for deduction
+     * @param int $orderId Optional order ID for history tracking
      * @return bool Success status
      */
-    public function deductPoints(int $userId, int $points, string $reason = ''): bool
+    public function deductPoints(int $userId, int $points, string $reason = '', int $orderId = 0): bool
     {
         if ($userId <= 0 || $points <= 0) {
             return false;
         }
 
-        // Try YITH API if available
-        if (function_exists('YITH_WC_Points_Rewards')) {
+        // Try YITH ywpar_decrease_points function (creates history entry)
+        if (function_exists('ywpar_decrease_points')) {
+            ywpar_decrease_points($userId, $points, $reason ?: 'Points redeemed via HP React Widgets', $orderId);
+            return true;
+        }
+
+        // Fallback: Try YITH customer object
+        if (function_exists('ywpar_get_customer')) {
             try {
-                $yith = YITH_WC_Points_Rewards();
-                if (method_exists($yith, 'get_points_manager')) {
-                    $manager = $yith->get_points_manager();
-                    if ($manager && method_exists($manager, 'remove_points')) {
-                        $manager->remove_points($userId, $points, $reason ?: 'Points redeemed via HP React Widgets');
-                        return true;
-                    }
+                $customer = ywpar_get_customer($userId);
+                if ($customer && method_exists($customer, 'update_points')) {
+                    $customer->update_points(-1 * $points, 'order_redeem', [
+                        'description' => $reason ?: 'Points redeemed via HP React Widgets',
+                        'order_id' => $orderId,
+                    ]);
+                    return true;
                 }
             } catch (\Throwable $e) {
                 // Fall through to manual deduction
             }
         }
 
-        // Manual fallback - update the meta directly
+        // Manual fallback - update the meta directly (no history)
         $current = $this->getCustomerPoints($userId);
         $newBalance = max(0, $current - $points);
         update_user_meta($userId, '_ywpar_user_total_points', $newBalance);
