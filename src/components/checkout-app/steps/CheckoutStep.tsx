@@ -732,6 +732,19 @@ export const CheckoutStep = ({
     };
   }, [paypalEnabled, paypalClientId]);
 
+  // Scroll to payment section when an error is set
+  useEffect(() => {
+    if (error) {
+      // Small delay to ensure the error element is rendered
+      setTimeout(() => {
+        const paymentSection = document.getElementById('hp-rw-payment-section');
+        if (paymentSection) {
+          paymentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+  }, [error]);
+
   // Refs to avoid dependency loops - these hold current values without triggering re-renders
   const selectedRateRef = useRef(selectedRate);
   const onSelectRateRef = useRef(onSelectRate);
@@ -1667,12 +1680,6 @@ export const CheckoutStep = ({
           <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
             <h3 className="text-xl font-bold mb-6 text-accent">Shipping Information</h3>
 
-            {error && (
-              <div className="mb-4 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">
-                {error}
-              </div>
-            )}
-
             <form id="hp-rw-checkout-form" onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="email" className="text-foreground">Email</Label>
@@ -1987,7 +1994,7 @@ export const CheckoutStep = ({
               )}
 
               {/* Payment Section - Visually Separated */}
-              <div className="pt-6 mt-6 border-t border-border/30">
+              <div id="hp-rw-payment-section" className="pt-6 mt-6 border-t border-border/30">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="text-lg font-semibold text-accent">Payment Details</h4>
                   {stripeMode === 'test' && (
@@ -1996,6 +2003,13 @@ export const CheckoutStep = ({
                     </span>
                   )}
                 </div>
+
+                {/* Payment Error Display */}
+                {error && (
+                  <div id="hp-rw-payment-error" className="mb-4 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">
+                    {error}
+                  </div>
+                )}
 
                 {/* Express Checkout - Apple Pay / Google Pay / PayPal */}
                 {/* Always render container on mobile to ensure wallet detection works */}
