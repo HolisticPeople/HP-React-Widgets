@@ -1502,7 +1502,7 @@ export const CheckoutStep = ({
         )}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8 overflow-hidden">
+      <div className="grid lg:grid-cols-2 gap-8">
         {/* Left Column - Offer Selection */}
         <div className="space-y-6 lg:sticky lg:top-4 lg:self-start min-w-0">
           <Card className="p-6 pt-8 bg-card/50 backdrop-blur-sm border-border/50">
@@ -1698,37 +1698,7 @@ export const CheckoutStep = ({
                 )}
               </div>
 
-              {/* Address Picker for returning customers with multiple addresses */}
-              {customerData && customerData.allAddresses && customerData.allAddresses.shipping.length > 1 && (
-                <>
-                  <div className="mb-4 p-4 bg-accent/10 rounded-lg border border-accent/30">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-foreground">Select from your saved addresses:</span>
-                    </div>
-                    <AddressPicker
-                      addresses={customerData.allAddresses.shipping}
-                      selectedAddress={formData.address}
-                      selectedZip={formData.zipCode}
-                      onSelect={(addr) => {
-                        setFormData(prev => ({
-                          ...prev,
-                          firstName: addr.firstName || prev.firstName,
-                          lastName: addr.lastName || prev.lastName,
-                          phone: addr.phone || prev.phone,
-                          address: addr.address1 || '',
-                          city: addr.city || '',
-                          state: addr.state || '',
-                          zipCode: addr.postcode || '',
-                          country: addr.country || 'US',
-                        }));
-                      }}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1 mb-4">
-                    Or enter a new address below:
-                  </p>
-                </>
-              )}
+              {/* Address picker is now accessible via "Select Different Address" link on the Address field */}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
