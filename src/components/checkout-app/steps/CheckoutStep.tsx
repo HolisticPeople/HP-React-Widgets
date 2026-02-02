@@ -323,6 +323,8 @@ export const CheckoutStep = ({
   const [isFetchingShipping, setIsFetchingShipping] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Scroll trigger counter - incremented to force scroll useEffect to run even when error message is same
+  const [scrollTrigger, setScrollTrigger] = useState(0);
   
   // Legal popup state
   const [legalPopupType, setLegalPopupType] = useState<'terms' | 'privacy' | null>(null);
@@ -763,6 +765,7 @@ export const CheckoutStep = ({
   }, [paypalEnabled, paypalClientId]);
 
   // Scroll to payment section when an error is set
+  // scrollTrigger forces re-run even when error message is unchanged (e.g., after address selection)
   useEffect(() => {
     if (error) {
       // Delay to ensure the error element is rendered (longer for mobile)
@@ -796,7 +799,7 @@ export const CheckoutStep = ({
         }
       }, 150);
     }
-  }, [error]);
+  }, [error, scrollTrigger]);
 
   // Refs to avoid dependency loops - these hold current values without triggering re-renders
   const selectedRateRef = useRef(selectedRate);
@@ -1128,6 +1131,7 @@ export const CheckoutStep = ({
     }
 
     if (!stripePayment.isCardComplete) {
+      setScrollTrigger(prev => prev + 1); // Force scroll even if error message is same
       setError('Please complete your payment information.');
       return;
     }
