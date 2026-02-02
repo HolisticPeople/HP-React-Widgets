@@ -465,6 +465,16 @@ class CheckoutService
         $order->apply_coupon($couponCode);
         $order->update_meta_data('_ywpar_coupon_points', $points);
         $order->update_meta_data('_ywpar_coupon_amount', $discountAmount);
+        
+        // Actually deduct points from customer's balance
+        $customerId = $order->get_customer_id();
+        if ($customerId > 0) {
+            $pointsService->deductPoints(
+                $customerId, 
+                $points, 
+                sprintf('Points redeemed for Order #%d', $order->get_id())
+            );
+        }
     }
 
     public function addItemsToOrder(WC_Order $order, array $items): float
@@ -510,7 +520,7 @@ class CheckoutService
         $map = ['first_name', 'last_name', 'company', 'address_1', 'address_2', 'city', 'state', 'postcode', 'country', 'phone', 'email'];
         foreach ($map as $key) {
             $method = "set_{$type}_{$key}";
-            if (method_exists($order, $method) && isset($addr[$key])) {
+            if (method_exists($order, $method) && isset($addr[$key]) && $addr[$key] !== '') {
                 $order->{$method}((string) $addr[$key]);
             }
         }
