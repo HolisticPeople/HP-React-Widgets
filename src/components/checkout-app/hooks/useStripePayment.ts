@@ -160,25 +160,11 @@ export function useStripePayment(options: UseStripePaymentOptions) {
 
     let cancelled = false;
 
-    // Determine if test or live based on key prefix
-    const isTestKey = publishableKey.startsWith('pk_test_');
-    const isLiveKey = publishableKey.startsWith('pk_live_');
-    
-    console.log('[HP Checkout] Loading Stripe:', {
-      mode: stripeMode,
-      keyType: isTestKey ? 'TEST' : isLiveKey ? 'LIVE' : 'UNKNOWN',
-      keyPrefix: publishableKey.substring(0, 12) + '...',
-    });
-    
     loadStripeSingleton(publishableKey).then((stripe) => {
       if (cancelled) return;
       
       if (stripe) {
         stripeRef.current = stripe;
-        console.log('[HP Checkout] Stripe loaded successfully:', {
-          mode: stripeMode,
-          keyType: isTestKey ? 'TEST' : isLiveKey ? 'LIVE' : 'UNKNOWN',
-        });
       } else {
         setError('Failed to load payment system');
       }
@@ -210,7 +196,6 @@ export function useStripePayment(options: UseStripePaymentOptions) {
     // 'mode: payment' allows us to collect payment details before creating a PaymentIntent
     // Use the initial amount if provided, otherwise use minimum $1 (100 cents)
     const elementAmount = Math.max(currentAmountRef.current, 100);
-    console.log('[HP Checkout] Creating Elements with amount:', elementAmount, 'cents ($' + (elementAmount / 100).toFixed(2) + ')');
     
     elementsRef.current = stripeRef.current.elements({
       mode: 'payment',
@@ -318,25 +303,9 @@ export function useStripePayment(options: UseStripePaymentOptions) {
         expressReadyTimeoutRef.current = null;
       }
       
-      // Debug: Log what payment methods Stripe detected
-      const isTestKey = publishableKey.startsWith('pk_test_');
-      const isLiveKey = publishableKey.startsWith('pk_live_');
-      console.log('[HP Checkout] Express Checkout ready event:', {
-        stripeMode: stripeMode,
-        keyType: isTestKey ? 'TEST' : isLiveKey ? 'LIVE' : 'UNKNOWN',
-        availablePaymentMethods: event.availablePaymentMethods,
-        applePay: event.availablePaymentMethods?.applePay ?? false,
-        googlePay: event.availablePaymentMethods?.googlePay ?? false,
-        link: event.availablePaymentMethods?.link ?? false,
-        userAgent: navigator.userAgent,
-        isSafari: /^((?!chrome|android).)*safari/i.test(navigator.userAgent),
-      });
-      
       if (event.availablePaymentMethods) {
         setExpressCheckoutAvailable(event.availablePaymentMethods);
       } else {
-        // No wallets available on this device
-        console.log('[HP Checkout] No payment methods available - device may not support wallets or user has none configured');
         setExpressCheckoutAvailable({ applePay: false, googlePay: false, link: false });
       }
     });
@@ -422,16 +391,11 @@ export function useStripePayment(options: UseStripePaymentOptions) {
       }
     });
     
-    // Handle loaderror event for better debugging
-    expressCheckoutRef.current.on('loaderror', (event: { error?: { message?: string } }) => {
-      console.error('[HP Checkout] Express Checkout load error:', event.error?.message, event);
+    // Handle loaderror event
+    expressCheckoutRef.current.on('loaderror', () => {
       setIsExpressCheckoutLoading(false);
-      // Set explicitly to false to indicate no wallets available due to error
       setExpressCheckoutAvailable({ applePay: false, googlePay: false, link: false });
     });
-    
-    // Log when Express Checkout is mounted
-    console.log('[HP Checkout] Express Checkout Element mounted, waiting for ready event...');
   }, []);
 
   // Unmount Express Checkout Element only
@@ -571,7 +535,6 @@ export function useStripePayment(options: UseStripePaymentOptions) {
     currentAmountRef.current = amount;
     
     if (elementsRef.current) {
-      console.log('[HP Checkout] Updating Elements amount to:', amount, 'cents ($' + (amount / 100).toFixed(2) + ')');
       elementsRef.current.update({ amount });
     }
   }, []);
