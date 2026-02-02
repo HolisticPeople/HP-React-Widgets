@@ -447,14 +447,29 @@ export const FunnelCheckoutApp = (props: FunnelCheckoutAppProps) => {
     setCurrentStep('processing');
     
     try {
-      // 1. Explicitly complete the order on the backend
-      const result = await api.completeOrder(orderDraftId, piId);
-      if (result.success) {
-        setOrderId(result.orderId);
+      let fetchedOrderId = 0;
+      
+      // Check if this is a PayPal order (format: paypal_{orderId})
+      // PayPal orders are already created by the capture endpoint, no need to call completeOrder
+      const isPayPal = piId.startsWith('paypal_');
+      
+      if (isPayPal) {
+        // Extract order ID from PayPal reference
+        fetchedOrderId = parseInt(piId.substring(7), 10) || 0;
+        if (fetchedOrderId > 0) {
+          setOrderId(fetchedOrderId);
+        }
+      } else {
+        // Stripe: explicitly complete the order on the backend
+        const result = await api.completeOrder(orderDraftId, piId);
+        if (result.success) {
+          fetchedOrderId = result.orderId;
+          setOrderId(result.orderId);
+        }
       }
 
-      // 2. Fetch order summary
-      const summary = await api.getOrderSummary(result.orderId, piId);
+      // Fetch order summary
+      const summary = await api.getOrderSummary(fetchedOrderId || undefined, piId);
       if (summary) {
         setOrderSummary(summary);
         
