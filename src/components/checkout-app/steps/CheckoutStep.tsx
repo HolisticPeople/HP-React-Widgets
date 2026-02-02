@@ -377,6 +377,9 @@ export const CheckoutStep = ({
   const stripePayment = useStripePayment({
     publishableKey: stripePublishableKey,
     stripeMode,
+    // Pass initial amount in cents for Express Checkout display
+    // Use offer price as initial estimate (will be updated when totals are calculated)
+    initialAmountCents: Math.round(offerPrice.discounted * 100),
     onPaymentSuccess: (piId) => {
       const address: Address = {
         firstName: formData.firstName,
@@ -819,6 +822,15 @@ export const CheckoutStep = ({
   useEffect(() => {
     debouncedFetchTotals();
   }, [selectedOfferId, kitSelection, offerQuantity, offerPrice.discounted, pointsToRedeem, selectedRate, debouncedFetchTotals]);
+
+  // Update Stripe Express Checkout amount when totals change
+  // This ensures Apple Pay / Google Pay shows the correct amount
+  useEffect(() => {
+    if (totals && totals.grandTotal > 0 && stripePayment.updateAmount) {
+      const amountCents = Math.round(totals.grandTotal * 100);
+      stripePayment.updateAmount(amountCents);
+    }
+  }, [totals?.grandTotal, stripePayment.updateAmount]);
 
   // Create a shipping key to track when we need to refetch rates
   const shippingKeyRef = useRef<string>('');

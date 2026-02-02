@@ -414,6 +414,28 @@ class CheckoutService
         $order->calculate_totals(false);
         $order->save();
 
+        // Update Stripe PaymentIntent description to include order number
+        if (!empty($stripePaymentIntentId)) {
+            try {
+                $stripeMode = $draftData['stripe_mode'] ?? 'live';
+                $stripe = new StripeService($stripeMode);
+                $orderNumber = $order->get_order_number();
+                $updatedDescription = sprintf(
+                    'HolisticPeople - %s (Order #%s)',
+                    $funnelName,
+                    $orderNumber
+                );
+                $stripe->updatePaymentIntent($stripePaymentIntentId, [
+                    'description' => $updatedDescription,
+                    'metadata[order_id]' => $order->get_id(),
+                    'metadata[order_number]' => $orderNumber,
+                ]);
+            } catch (\Exception $e) {
+                // Log but don't fail - the order is already created
+                error_log('[HP-RW] Failed to update Stripe PI description: ' . $e->getMessage());
+            }
+        }
+
         return $order;
     }
 
