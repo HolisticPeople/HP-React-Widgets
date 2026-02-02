@@ -297,10 +297,10 @@ export function useStripePayment(options: UseStripePaymentOptions) {
         applePay: 'black',
         googlePay: 'black',
       },
-      // Ensure layout works well on mobile
+      // Ensure layout works well on mobile - show all available wallets
       layout: {
         maxColumns: 1,
-        maxRows: 2,
+        maxRows: 3, // Allow Apple Pay, Google Pay, and Link to all show
       },
     });
 
