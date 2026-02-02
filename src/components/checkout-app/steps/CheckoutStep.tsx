@@ -765,13 +765,36 @@ export const CheckoutStep = ({
   // Scroll to payment section when an error is set
   useEffect(() => {
     if (error) {
-      // Small delay to ensure the error element is rendered
+      // Delay to ensure the error element is rendered (longer for mobile)
       setTimeout(() => {
+        const paymentError = document.getElementById('hp-rw-payment-error');
         const paymentSection = document.getElementById('hp-rw-payment-section');
-        if (paymentSection) {
-          paymentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const targetElement = paymentError || paymentSection;
+        
+        if (targetElement) {
+          // Get the element's position relative to the viewport
+          const rect = targetElement.getBoundingClientRect();
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+          // Scroll to element with some offset from top (accounting for fixed headers)
+          const targetY = scrollTop + rect.top - 100;
+          
+          // Use window.scrollTo for better mobile compatibility
+          window.scrollTo({
+            top: targetY,
+            behavior: 'smooth'
+          });
+          
+          // Fallback for browsers that don't support smooth scroll
+          // Also helps iOS Safari which sometimes ignores smooth scroll
+          setTimeout(() => {
+            const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+            // If we haven't scrolled close to target, force scroll
+            if (Math.abs(currentScroll - targetY) > 200) {
+              window.scrollTo(0, targetY);
+            }
+          }, 500);
         }
-      }, 100);
+      }, 150);
     }
   }, [error]);
 
