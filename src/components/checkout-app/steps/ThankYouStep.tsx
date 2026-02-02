@@ -79,21 +79,21 @@ export const ThankYouStep = ({
                   <img 
                     src={item.image} 
                     alt={item.name} 
-                    className="w-16 h-16 object-cover rounded"
+                    className="w-16 h-16 object-cover rounded flex-shrink-0"
                   />
                 )}
-                <div className="flex-1">
-                  <h3 className="font-semibold text-foreground">{item.name}</h3>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-foreground break-words">{item.name}</h3>
                   <p className="text-sm text-muted-foreground">Qty: {item.qty}</p>
                 </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-foreground">${item.total.toFixed(2)}</p>
-                          {item.subtotal * item.qty !== item.total && (
-                            <p className="text-sm text-muted-foreground line-through">
-                              ${(item.subtotal * item.qty).toFixed(2)}
-                            </p>
-                          )}
-                        </div>
+                <div className="text-right flex-shrink-0 ml-2">
+                  <p className="font-semibold text-foreground whitespace-nowrap">${item.total.toFixed(2)}</p>
+                  {item.subtotal * item.qty !== item.total && (
+                    <p className="text-sm text-muted-foreground line-through whitespace-nowrap">
+                      ${(item.subtotal * item.qty).toFixed(2)}
+                    </p>
+                  )}
+                </div>
               </div>
             ))}
           </div>
