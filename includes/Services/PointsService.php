@@ -74,31 +74,52 @@ class PointsService
      * @param int $userId WordPress user ID
      * @param int $points Number of points to deduct
      * @param string $reason Reason for deduction
+     * @param int $orderId Optional order ID for history tracking
      * @return bool Success status
      */
-    public function deductPoints(int $userId, int $points, string $reason = ''): bool
+    public function deductPoints(int $userId, int $points, string $reason = '', int $orderId = 0): bool
     {
         if ($userId <= 0 || $points <= 0) {
             return false;
         }
 
-        // Try YITH API if available
-        if (function_exists('YITH_WC_Points_Rewards')) {
+        // Use exact same pattern as EAO for YITH points integration
+        $reasonText = $reason ?: 'Points redeemed via HP React Widgets';
+        
+        // Primary: ywpar_decrease_points (creates proper history entry)
+        if (function_exists('ywpar_decrease_points')) {
+            ywpar_decrease_points($userId, $points, $reasonText, $orderId);
+            return true;
+        }
+        
+        // Fallback: ywpar_increase_points with negative value (same as EAO)
+        if (function_exists('ywpar_increase_points')) {
+            ywpar_increase_points($userId, -1 * $points, $reasonText, $orderId);
+            return true;
+        }
+
+        // Fallback: Use YITH customer object with update_points (same as EAO pattern)
+        if (function_exists('ywpar_get_customer')) {
             try {
-                $yith = YITH_WC_Points_Rewards();
-                if (method_exists($yith, 'get_points_manager')) {
-                    $manager = $yith->get_points_manager();
-                    if ($manager && method_exists($manager, 'remove_points')) {
-                        $manager->remove_points($userId, $points, $reason ?: 'Points redeemed via HP React Widgets');
-                        return true;
-                    }
+                $customer = ywpar_get_customer($userId);
+                if ($customer && method_exists($customer, 'update_points')) {
+                    // Use negative value to deduct, 'redeemed_points' action type
+                    $customer->update_points(
+                        -1 * $points,
+                        'redeemed_points',
+                        array(
+                            'order_id' => $orderId,
+                            'description' => $reasonText
+                        )
+                    );
+                    return true;
                 }
             } catch (\Throwable $e) {
-                // Fall through to manual deduction
+                // Fall through to manual fallback
             }
         }
 
-        // Manual fallback - update the meta directly
+        // Manual fallback - update the meta directly (no history)
         $current = $this->getCustomerPoints($userId);
         $newBalance = max(0, $current - $points);
         update_user_meta($userId, '_ywpar_user_total_points', $newBalance);

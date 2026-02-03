@@ -301,6 +301,9 @@ class Plugin
 
         // Register Express Shop payment gateways (for refund support)
         add_filter('woocommerce_payment_gateways', [self::class, 'registerExpressShopGateways']);
+        
+        // Deduct points when funnel order moves to "processing" status
+        add_action('woocommerce_order_status_processing', [self::class, 'maybeDeductPointsOnProcessing'], 10, 2);
 
         // Register upsell REST API endpoints.
         $upsellApi = new Rest\UpsellApi();
@@ -381,6 +384,61 @@ class Plugin
         $gateways[] = Gateway\PayPalExpressGateway::class;
         $gateways[] = Gateway\StripeExpressGateway::class;
         return $gateways;
+    }
+
+    /**
+     * Deduct points from customer's balance when a funnel order moves to "processing".
+     * Works for both PayPal and Stripe orders.
+     *
+     * @param int $order_id The order ID.
+     * @param \WC_Order $order The order object.
+     */
+    public static function maybeDeductPointsOnProcessing(int $order_id, $order = null): void
+    {
+        // Get order if not passed
+        if (!$order) {
+            $order = wc_get_order($order_id);
+        }
+        if (!$order) {
+            return;
+        }
+
+        // Only process funnel orders (have funnel ID meta)
+        $funnelId = $order->get_meta('_hp_rw_funnel_id');
+        if (empty($funnelId)) {
+            return;
+        }
+
+        // Check if points were used on this order
+        $pointsToRedeem = (int) $order->get_meta('_ywpar_coupon_points');
+        if ($pointsToRedeem <= 0) {
+            return;
+        }
+
+        // Check if points were already deducted (prevent double-deduction)
+        $alreadyDeducted = $order->get_meta('_hp_rw_points_deducted');
+        if ($alreadyDeducted === 'yes') {
+            return;
+        }
+
+        // Get customer ID
+        $customerId = $order->get_customer_id();
+        if ($customerId <= 0) {
+            return;
+        }
+
+        // Deduct points using PointsService
+        $pointsService = new Services\PointsService();
+        $pointsService->deductPoints(
+            $customerId,
+            $pointsToRedeem,
+            sprintf('Points redeemed for Order #%d', $order->get_id()),
+            $order->get_id()
+        );
+
+        // Mark as deducted to prevent double-deduction
+        $order->update_meta_data('_hp_rw_points_deducted', 'yes');
+        $order->save();
     }
 
     /**

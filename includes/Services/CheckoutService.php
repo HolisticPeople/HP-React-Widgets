@@ -386,7 +386,11 @@ class CheckoutService
             }
         }
 
-        if ($pointsToRedeem > 0) $this->applyPointsRedemption($order, $pointsToRedeem);
+        // Apply points coupon (but don't deduct yet - need order to be saved first)
+        $pointsApplied = false;
+        if ($pointsToRedeem > 0) {
+            $pointsApplied = $this->applyPointsCoupon($order, $pointsToRedeem);
+        }
 
         // Store Stripe metadata (if this is a Stripe order)
         if (!empty($stripePaymentIntentId)) {
@@ -413,6 +417,9 @@ class CheckoutService
         $order->set_status('processing');
         $order->calculate_totals(false);
         $order->save();
+        
+        // Points deduction is now handled by Plugin::maybeDeductPointsOnProcessing hook
+        // triggered by the status change to 'processing' above
 
         // Update Stripe PaymentIntent description to include order number
         if (!empty($stripePaymentIntentId)) {
@@ -439,11 +446,16 @@ class CheckoutService
         return $order;
     }
 
-    private function applyPointsRedemption(WC_Order $order, int $points): void
+    /**
+     * Apply points as a coupon discount to the order.
+     * Returns true if the coupon was successfully applied.
+     * Note: Points deduction from customer balance should be done AFTER order is saved.
+     */
+    private function applyPointsCoupon(WC_Order $order, int $points): bool
     {
         $pointsService = new PointsService();
         $discountAmount = $pointsService->pointsToMoney($points);
-        if ($discountAmount <= 0) return;
+        if ($discountAmount <= 0) return false;
 
         $order->calculate_totals(false);
         $maxDiscount = (float) $order->get_total();
@@ -466,15 +478,7 @@ class CheckoutService
         $order->update_meta_data('_ywpar_coupon_points', $points);
         $order->update_meta_data('_ywpar_coupon_amount', $discountAmount);
         
-        // Actually deduct points from customer's balance
-        $customerId = $order->get_customer_id();
-        if ($customerId > 0) {
-            $pointsService->deductPoints(
-                $customerId, 
-                $points, 
-                sprintf('Points redeemed for Order #%d', $order->get_id())
-            );
-        }
+        return true;
     }
 
     public function addItemsToOrder(WC_Order $order, array $items): float
@@ -517,11 +521,23 @@ class CheckoutService
 
     private function applyAddress($order, string $type, array $addr): void
     {
+        // Normalize address keys: accept both camelCase (frontend) and snake_case (API)
+        $normalized = [];
+        foreach ($addr as $key => $value) {
+            // Convert camelCase to snake_case
+            $snakeKey = strtolower(preg_replace('/([a-z])([A-Z])/', '$1_$2', $key));
+            // Handle special cases: address1 -> address_1, zipCode -> postcode
+            if ($snakeKey === 'address1') $snakeKey = 'address_1';
+            if ($snakeKey === 'address2') $snakeKey = 'address_2';
+            if ($snakeKey === 'zip_code' || $snakeKey === 'zipcode') $snakeKey = 'postcode';
+            $normalized[$snakeKey] = $value;
+        }
+        
         $map = ['first_name', 'last_name', 'company', 'address_1', 'address_2', 'city', 'state', 'postcode', 'country', 'phone', 'email'];
         foreach ($map as $key) {
             $method = "set_{$type}_{$key}";
-            if (method_exists($order, $method) && isset($addr[$key]) && $addr[$key] !== '') {
-                $order->{$method}((string) $addr[$key]);
+            if (method_exists($order, $method) && isset($normalized[$key]) && $normalized[$key] !== '') {
+                $order->{$method}((string) $normalized[$key]);
             }
         }
     }
