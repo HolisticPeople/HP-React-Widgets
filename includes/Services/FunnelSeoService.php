@@ -95,6 +95,9 @@ class FunnelSeoService
             add_action('wp_footer', [self::class, 'injectAnalyticsScripts']);
         }
 
+        // MODULE B.4: GOOGLE ADS CONVERSION TRACKING (Illumodine funnel)
+        add_action('wp_footer', [self::class, 'injectGoogleAdsConversion'], 20);
+
         // MODULE C: TRAFFIC CONTROL (Canonicals & Admin Columns)
         if ($settings['enable_canonical_swaps']) {
             add_filter('wpseo_canonical', [self::class, 'handleCanonicalSwaps']);
@@ -904,6 +907,164 @@ class FunnelSeoService
                     });
                 }
             });
+        })();
+        </script>
+        <?php
+    }
+
+    /**
+     * Inject Google Ads conversion tracking for specific funnels.
+     * 
+     * Currently configured for Illumodine funnel only.
+     * Fires on thank-you page with actual order data (value, transaction_id, new_customer).
+     * 
+     * Conversion details:
+     * - Conversion ID: AW-16792589382
+     * - Conversion Label: s3ewCKKBke4ZEMaoqsc-
+     * - Account: [154b] Google for WooCommerce purchase action
+     * 
+     * @since 2.44.1
+     */
+    public static function injectGoogleAdsConversion(): void
+    {
+        // Check if we're on a funnel thank-you page
+        $funnelSlug = get_query_var('hp_funnel_slug');
+        $funnelRoute = get_query_var('hp_funnel_route');
+
+        // Only fire on thank-you pages
+        if ($funnelRoute !== 'thankyou' && $funnelRoute !== 'thank-you') {
+            return;
+        }
+
+        // Configuration: Funnels with Google Ads conversion tracking
+        // Key = funnel slug, Value = ['conversion_id' => '...', 'conversion_label' => '...']
+        $funnelConversions = [
+            'illumodine' => [
+                'conversion_id'    => 'AW-16792589382',
+                'conversion_label' => 's3ewCKKBke4ZEMaoqsc-',
+            ],
+            // Add more funnels here as needed
+        ];
+
+        // Check if this funnel has conversion tracking configured
+        if (!isset($funnelConversions[$funnelSlug])) {
+            return;
+        }
+
+        $conversionConfig = $funnelConversions[$funnelSlug];
+        $sendTo = $conversionConfig['conversion_id'] . '/' . $conversionConfig['conversion_label'];
+
+        // Get order ID from URL params (support both formats)
+        $orderId = isset($_GET['order_id']) ? absint($_GET['order_id']) : 0;
+        if (!$orderId) {
+            $orderId = isset($_GET['orderId']) ? absint($_GET['orderId']) : 0;
+        }
+
+        // Default values (used if order not found)
+        $orderValue = 0.0;
+        $currency = 'USD';
+        $transactionId = $orderId ?: ('HP-' . time());
+        $isNewCustomer = true; // Default to true if we can't determine
+
+        // Fetch actual order data if order ID is available
+        if ($orderId && function_exists('wc_get_order')) {
+            $order = wc_get_order($orderId);
+            
+            if ($order && $order instanceof \WC_Order) {
+                // Get actual order total
+                $orderValue = (float) $order->get_total();
+                
+                // Get currency from order
+                $currency = $order->get_currency() ?: 'USD';
+                
+                // Use order number as transaction ID (more meaningful than internal ID)
+                $transactionId = $order->get_order_number();
+                
+                // Determine if customer is new (first order)
+                $customerId = $order->get_customer_id();
+                if ($customerId) {
+                    // Count previous completed orders for this customer
+                    $previousOrders = wc_get_orders([
+                        'customer_id' => $customerId,
+                        'status'      => ['completed', 'processing'],
+                        'exclude'     => [$orderId],
+                        'limit'       => 1,
+                        'return'      => 'ids',
+                    ]);
+                    $isNewCustomer = empty($previousOrders);
+                } else {
+                    // Guest checkout - check by billing email
+                    $billingEmail = $order->get_billing_email();
+                    if ($billingEmail) {
+                        $previousOrders = wc_get_orders([
+                            'billing_email' => $billingEmail,
+                            'status'        => ['completed', 'processing'],
+                            'exclude'       => [$orderId],
+                            'limit'         => 1,
+                            'return'        => 'ids',
+                        ]);
+                        $isNewCustomer = empty($previousOrders);
+                    }
+                }
+
+                // Log successful conversion tracking
+                error_log(json_encode([
+                    'event'          => 'google_ads.conversion.fired',
+                    'funnel_slug'    => $funnelSlug,
+                    'order_id'       => $orderId,
+                    'transaction_id' => $transactionId,
+                    'value'          => $orderValue,
+                    'currency'       => $currency,
+                    'new_customer'   => $isNewCustomer,
+                    'timestamp'      => current_time('mysql'),
+                ]));
+            } else {
+                // Log warning - order not found
+                error_log(json_encode([
+                    'event'       => 'google_ads.conversion.order_not_found',
+                    'funnel_slug' => $funnelSlug,
+                    'order_id'    => $orderId,
+                    'timestamp'   => current_time('mysql'),
+                ]));
+            }
+        }
+
+        // Ensure gtag is available (Google Ads tag should already be on site)
+        ?>
+        <!-- Google Ads Conversion Tracking - <?php echo esc_html($funnelSlug); ?> funnel -->
+        <script>
+        (function() {
+            // Wait for gtag to be available
+            function fireConversion() {
+                if (typeof gtag === 'function') {
+                    gtag('event', 'conversion', {
+                        'send_to': '<?php echo esc_js($sendTo); ?>',
+                        'value': <?php echo esc_js($orderValue); ?>,
+                        'currency': '<?php echo esc_js($currency); ?>',
+                        'transaction_id': '<?php echo esc_js($transactionId); ?>',
+                        'new_customer': <?php echo $isNewCustomer ? 'true' : 'false'; ?>
+                    });
+                    if (window.hpFunnelSettings && window.hpFunnelSettings.debugMode) {
+                        console.log('HP Google Ads Conversion:', {
+                            send_to: '<?php echo esc_js($sendTo); ?>',
+                            value: <?php echo esc_js($orderValue); ?>,
+                            currency: '<?php echo esc_js($currency); ?>',
+                            transaction_id: '<?php echo esc_js($transactionId); ?>',
+                            new_customer: <?php echo $isNewCustomer ? 'true' : 'false'; ?>
+                        });
+                    }
+                } else {
+                    // Retry after a short delay (gtag might load async)
+                    setTimeout(fireConversion, 500);
+                }
+            }
+            
+            // Fire on DOM ready
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                fireConversion();
+            } else {
+                document.addEventListener('DOMContentLoaded', fireConversion);
+            }
         })();
         </script>
         <?php
