@@ -620,46 +620,15 @@ $billing = [
 ### Reading ThemeHigh Multi-Address Data
 
 ```php
-$thwma = get_user_meta($user_id, 'thwma_custom_address', true);
-
-if (is_array($thwma) && isset($thwma[$type])) {
-    foreach ($thwma[$type] as $key => $entry) {
-        $addresses[] = [
-            'id'        => "th_{$type}_{$key}",
-            'firstName' => $entry["{$type}_first_name"] ?? '',
-            'lastName'  => $entry["{$type}_last_name"] ?? '',
-            'company'   => $entry["{$type}_company"] ?? '',
-            'address1'  => $entry["{$type}_address_1"] ?? '',
-            'address2'  => $entry["{$type}_address_2"] ?? '',
-            'city'      => $entry["{$type}_city"] ?? '',
-            'state'     => $entry["{$type}_state"] ?? '',
-            'postcode'  => $entry["{$type}_postcode"] ?? '',
-            'country'   => $entry["{$type}_country"] ?? '',
-            'phone'     => $entry["{$type}_phone"] ?? '',
-            'email'     => $type === 'billing' ? ($entry['billing_email'] ?? '') : '',
-            'isDefault' => false,
-            'label'     => '#' . ($counter++),
-        ];
-    }
-}
+$service = \HP_Core\Plugin::get_service('address');
+$addresses = $service->get_hydrated_addresses($user_id, $type);
 ```
 
 ### Writing ThemeHigh Addresses
 
 ```php
-$thwma = get_user_meta($user_id, 'thwma_custom_address', true);
-if (!is_array($thwma)) {
-    $thwma = [];
-}
-
-// Add new entry
-$thwma[$type][] = [
-    "{$type}_first_name" => $data['firstName'],
-    "{$type}_last_name"  => $data['lastName'],
-    // ... all fields with type prefix
-];
-
-update_user_meta($user_id, 'thwma_custom_address', $thwma);
+$service = \HP_Core\Plugin::get_service('address');
+$service->save_address($user_id, $prefixed_address, $type);
 ```
 
 ---

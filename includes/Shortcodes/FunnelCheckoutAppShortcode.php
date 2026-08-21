@@ -365,9 +365,18 @@ class FunnelCheckoutAppShortcode
             }
         }
         
-        // Also try ThemeHigh Multi-Address format
-        $thwmaAddresses = get_user_meta($userId, 'thwma_custom_address', true);
-        if (is_array($thwmaAddresses) && isset($thwmaAddresses[$type])) {
+        // HP Core is the canonical address-book provider. Legacy ThemeHigh
+        // storage remains a fail-soft compatibility path for hosts without it.
+        $addressService = \HP_RW\AddressApi::get_address_service();
+        if ($addressService) {
+            foreach ($addressService->get_hydrated_addresses($userId, $type) as $address) {
+                if (empty($address['isDefault']) && !$this->isSameAddress($addresses[0] ?? array(), $address)) {
+                    $addresses[] = $address;
+                }
+            }
+        } else {
+            $thwmaAddresses = get_user_meta($userId, 'thwma_custom_address', true);
+            if (is_array($thwmaAddresses) && isset($thwmaAddresses[$type])) {
             foreach ($thwmaAddresses[$type] as $key => $addr) {
                 $address = [
                     'id'        => 'thwma_' . $key,
@@ -397,6 +406,7 @@ class FunnelCheckoutAppShortcode
                 if (!$isDuplicate && (!empty($address['address1']) || !empty($address['firstName']))) {
                     $addresses[] = $address;
                 }
+            }
             }
         }
         
@@ -498,4 +508,3 @@ class FunnelCheckoutAppShortcode
         ];
     }
 }
-

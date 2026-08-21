@@ -76,6 +76,10 @@ class AddressCardPickerShortcode
      */
     public function get_user_addresses(int $user_id, string $type): array
     {
+        $service = \HP_RW\AddressApi::get_address_service();
+        if ($service) {
+            return $service->get_hydrated_addresses($user_id, $type);
+        }
         $addresses = [];
         $customer = new \WC_Customer($user_id);
 
