@@ -67,12 +67,10 @@ class AddressCardPickerShortcode
     }
 
     /**
-     * Get user addresses from WooCommerce + ThemeHigh Multi-Address meta.
-     */
-    /**
      * Retrieve all addresses for a given user + type.
      *
-     * Made public so REST handlers can reuse the same normalization logic.
+     * HP Core owns additional-address persistence and hydration. If it is not
+     * active, the widget fails softly to the native WooCommerce address only.
      */
     public function get_user_addresses(int $user_id, string $type): array
     {
@@ -89,135 +87,7 @@ class AddressCardPickerShortcode
             $addresses[] = $primary;
         }
 
-        // 2. Additional addresses from custom storage (compatible with ThemeHigh data structure)
-        // Structure: ['billing' => ['key' => [...fields...]], 'shipping' => [...]]
-        $meta_key = apply_filters('hp_rw_address_meta_key', 'thwma_custom_address');
-        $th_addresses = get_user_meta($user_id, $meta_key, true);
-
-        if (is_array($th_addresses) && !empty($th_addresses[$type])) {
-            $counter = 1;
-            $needs_repair = false;
-            
-            // Get primary address name as fallback for addresses missing names
-            $primary = $this->format_wc_address($customer, $type, false);
-            $fallback_first = $primary['firstName'] ?? '';
-            $fallback_last  = $primary['lastName'] ?? '';
-            $fallback_phone = $primary['phone'] ?? '';
-            $fallback_email = $primary['email'] ?? '';
-            
-            foreach ($th_addresses[$type] as $key => $addr_data) {
-                // Determine prefix based on type (ThemeHigh usually prefixes fields with billing_ or shipping_)
-                $prefix = $type . '_';
-
-                // Sanitize all fields - ensure they are strings, not arrays
-                $sanitized = $this->sanitize_address_data($addr_data, $prefix);
-                
-                // Check if we had to repair any data
-                if ($sanitized !== $addr_data) {
-                    $th_addresses[$type][$key] = $sanitized;
-                    $needs_repair = true;
-                }
-
-                // Skip if main address fields are missing
-                if (empty($sanitized[$prefix . 'address_1']) && empty($sanitized[$prefix . 'first_name'])) {
-                    continue;
-                }
-
-                $country_code = $sanitized[$prefix . 'country'] ?? '';
-                
-                // Use stored name, or fall back to primary address name
-                $first_name = !empty($sanitized[$prefix . 'first_name']) 
-                    ? $sanitized[$prefix . 'first_name'] 
-                    : $fallback_first;
-                $last_name = !empty($sanitized[$prefix . 'last_name']) 
-                    ? $sanitized[$prefix . 'last_name'] 
-                    : $fallback_last;
-                    
-                // Also fall back for phone and email
-                $phone = !empty($sanitized[$prefix . 'phone']) 
-                    ? $sanitized[$prefix . 'phone'] 
-                    : $fallback_phone;
-                $email = !empty($sanitized[$prefix . 'email']) 
-                    ? $sanitized[$prefix . 'email'] 
-                    : $fallback_email;
-
-                $addresses[] = [
-                    'id'        => "th_{$type}_{$key}",
-                    'firstName' => $first_name,
-                    'lastName'  => $last_name,
-                    'company'   => $sanitized[$prefix . 'company'] ?? '',
-                    'address1'  => $sanitized[$prefix . 'address_1'] ?? '',
-                    'address2'  => $sanitized[$prefix . 'address_2'] ?? '',
-                    'city'      => $sanitized[$prefix . 'city'] ?? '',
-                    'state'     => $sanitized[$prefix . 'state'] ?? '',
-                    'postcode'  => $sanitized[$prefix . 'postcode'] ?? '',
-                    'country'   => $this->get_country_name($country_code),
-                    'phone'     => $phone,
-                    'email'     => $email,
-                    'isDefault' => false,
-                    'label'     => sprintf('#%d', $counter++),
-                ];
-            }
-            
-            // Auto-repair corrupted data in database
-            if ($needs_repair) {
-                update_user_meta($user_id, $meta_key, $th_addresses);
-            }
-        }
-
         return $addresses;
-    }
-    
-    /**
-     * Sanitize and normalize address data.
-     * - Ensures all values are strings (not arrays)
-     * - Handles both prefixed (shipping_first_name) and non-prefixed (first_name) field names
-     * - Normalizes to prefixed format for consistent access
-     */
-    private function sanitize_address_data(array $addr_data, string $prefix): array
-    {
-        $fields = [
-            'first_name', 'last_name', 'company', 'address_1', 'address_2',
-            'city', 'state', 'postcode', 'country', 'phone', 'email'
-        ];
-        
-        foreach ($fields as $field) {
-            $prefixed_key = $prefix . $field;
-            
-            // Check for the prefixed version first
-            if (isset($addr_data[$prefixed_key])) {
-                $addr_data[$prefixed_key] = $this->ensure_string($addr_data[$prefixed_key]);
-            }
-            // Fall back to non-prefixed version (some old ThemeHigh data uses this)
-            elseif (isset($addr_data[$field])) {
-                // Copy the value to the prefixed key for consistent access
-                $addr_data[$prefixed_key] = $this->ensure_string($addr_data[$field]);
-            }
-        }
-        
-        return $addr_data;
-    }
-    
-    /**
-     * Ensure a value is a string (not an array or object).
-     */
-    private function ensure_string($value): string
-    {
-        if (is_array($value)) {
-            // If it's an array, try to get the first string element or return empty
-            foreach ($value as $v) {
-                if (is_string($v) && !empty($v)) {
-                    return $v;
-                }
-            }
-            return '';
-        }
-
-        if (is_object($value)) {
-            return '';
-        }
-
-        return (string) $value;
     }
 
     /**

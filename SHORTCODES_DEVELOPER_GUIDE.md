@@ -14,7 +14,7 @@ This document provides comprehensive guidance for AI developers (like Lovable, C
 6. [TypeScript Interfaces](#6-typescript-interfaces)
 7. [React Component Patterns](#7-react-component-patterns)
 8. [REST API Endpoints](#8-rest-api-endpoints)
-9. [WooCommerce & ThemeHigh Integration](#9-woocommerce--themehigh-integration)
+9. [WooCommerce & HP Core Address Integration](#9-woocommerce--hp-core-address-integration)
 10. [Adding a New Widget - Step by Step](#10-adding-a-new-widget---step-by-step)
 11. [Build Process & Versioning](#11-build-process--versioning)
 12. [Testing & Debugging](#12-testing--debugging)
@@ -521,10 +521,11 @@ All endpoints require user authentication (`is_user_logged_in()`).
 
 | Endpoint | Method | Parameters | Description |
 |----------|--------|------------|-------------|
-| `/address/delete` | POST | `type`, `id` | Delete a ThemeHigh address |
+| `/address/delete` | POST | `type`, `id` | Delete an HP Core-owned additional address |
 | `/address/set-default` | POST | `type`, `id` | Promote address to WooCommerce default |
-| `/address/copy` | POST | `type`, `id` | Copy address to opposite type (creates new TH entry) |
+| `/address/copy` | POST | `fromType`, `toType`, `id` | Copy an address through HP Core |
 | `/address/update` | POST | `type`, `id`, `address` | Update address fields |
+| `/address/create` | POST | `type`, address fields | Create an additional address through HP Core |
 
 ### Response Format
 
@@ -583,7 +584,7 @@ public function handle_action(WP_REST_Request $request)
 
 ---
 
-## 9. WooCommerce & ThemeHigh Integration
+## 9. WooCommerce & HP Core Address Integration
 
 ### Address ID Conventions
 
@@ -591,8 +592,8 @@ public function handle_action(WP_REST_Request $request)
 |-----------|--------|---------|
 | `billing_primary` | WooCommerce default billing | — |
 | `shipping_primary` | WooCommerce default shipping | — |
-| `th_billing_0` | ThemeHigh additional billing #1 | — |
-| `th_shipping_2` | ThemeHigh additional shipping #3 | — |
+| `th_billing_0` | HP Core additional billing #1 (stable legacy ID shape) | — |
+| `th_shipping_2` | HP Core additional shipping #3 (stable legacy ID shape) | — |
 
 ### Reading WooCommerce Addresses
 
@@ -617,19 +618,23 @@ $billing = [
 // Note: shipping has get_shipping_phone() but no email
 ```
 
-### Reading ThemeHigh Multi-Address Data
+### Reading Additional Addresses
 
 ```php
 $service = \HP_Core\Plugin::get_service('address');
 $addresses = $service->get_hydrated_addresses($user_id, $type);
 ```
 
-### Writing ThemeHigh Addresses
+### Writing Additional Addresses
 
 ```php
 $service = \HP_Core\Plugin::get_service('address');
 $service->save_address($user_id, $prefixed_address, $type);
 ```
+
+HP React Widgets must not read or write the underlying user-meta key. If HP
+Core is absent, readers show only the native WooCommerce address and
+additional-address mutations return a soft `503` error.
 
 ---
 

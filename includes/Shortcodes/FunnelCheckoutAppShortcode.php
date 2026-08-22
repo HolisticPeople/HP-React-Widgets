@@ -295,7 +295,7 @@ class FunnelCheckoutAppShortcode
     }
     
     /**
-     * Get saved addresses for a user from HP-Multi-Address or ThemeHigh.
+     * Get saved addresses from native WooCommerce plus HP Core.
      *
      * @param int    $userId User ID
      * @param string $type   Address type ('shipping' or 'billing')
@@ -304,8 +304,6 @@ class FunnelCheckoutAppShortcode
     private function getSavedAddresses(int $userId, string $type = 'shipping'): array
     {
         $addresses = [];
-        $prefix = $type . '_';
-        
         // First add the default WooCommerce address
         if (class_exists('WC_Customer')) {
             $customer = new \WC_Customer($userId);
@@ -331,82 +329,14 @@ class FunnelCheckoutAppShortcode
             }
         }
         
-        // Try to get additional addresses from HP-Multi-Address
-        if (defined('HP_MA_ADDRESS_KEY')) {
-            $savedAddresses = get_user_meta($userId, HP_MA_ADDRESS_KEY, true);
-            if (is_array($savedAddresses) && isset($savedAddresses[$type])) {
-                foreach ($savedAddresses[$type] as $key => $addr) {
-                    // Skip if it matches the primary address
-                    $address = [
-                        'id'        => $key,
-                        'firstName' => $addr[$prefix . 'first_name'] ?? '',
-                        'lastName'  => $addr[$prefix . 'last_name'] ?? '',
-                        'company'   => $addr[$prefix . 'company'] ?? '',
-                        'address1'  => $addr[$prefix . 'address_1'] ?? '',
-                        'address2'  => $addr[$prefix . 'address_2'] ?? '',
-                        'city'      => $addr[$prefix . 'city'] ?? '',
-                        'state'     => $addr[$prefix . 'state'] ?? '',
-                        'postcode'  => $addr[$prefix . 'postcode'] ?? '',
-                        'country'   => $addr[$prefix . 'country'] ?? '',
-                        'phone'     => $addr[$prefix . 'phone'] ?? '',
-                        'email'     => $addr['billing_email'] ?? '',
-                        'isDefault' => false,
-                    ];
-                    
-                    // Check if this is a duplicate of the primary
-                    if (!empty($addresses) && $this->isSameAddress($addresses[0], $address)) {
-                        continue;
-                    }
-                    
-                    if (!empty($address['address1']) || !empty($address['firstName'])) {
-                        $addresses[] = $address;
-                    }
-                }
-            }
-        }
-        
-        // HP Core is the canonical address-book provider. Legacy ThemeHigh
-        // storage remains a fail-soft compatibility path for hosts without it.
+        // HP Core is the only additional-address provider. Without it, retain
+        // the native WooCommerce address and omit additional addresses.
         $addressService = \HP_RW\AddressApi::get_address_service();
         if ($addressService) {
             foreach ($addressService->get_hydrated_addresses($userId, $type) as $address) {
                 if (empty($address['isDefault']) && !$this->isSameAddress($addresses[0] ?? array(), $address)) {
                     $addresses[] = $address;
                 }
-            }
-        } else {
-            $thwmaAddresses = get_user_meta($userId, 'thwma_custom_address', true);
-            if (is_array($thwmaAddresses) && isset($thwmaAddresses[$type])) {
-            foreach ($thwmaAddresses[$type] as $key => $addr) {
-                $address = [
-                    'id'        => 'thwma_' . $key,
-                    'firstName' => $addr[$prefix . 'first_name'] ?? '',
-                    'lastName'  => $addr[$prefix . 'last_name'] ?? '',
-                    'company'   => $addr[$prefix . 'company'] ?? '',
-                    'address1'  => $addr[$prefix . 'address_1'] ?? '',
-                    'address2'  => $addr[$prefix . 'address_2'] ?? '',
-                    'city'      => $addr[$prefix . 'city'] ?? '',
-                    'state'     => $addr[$prefix . 'state'] ?? '',
-                    'postcode'  => $addr[$prefix . 'postcode'] ?? '',
-                    'country'   => $addr[$prefix . 'country'] ?? '',
-                    'phone'     => $addr[$prefix . 'phone'] ?? '',
-                    'email'     => $addr['billing_email'] ?? '',
-                    'isDefault' => false,
-                ];
-                
-                // Check for duplicates
-                $isDuplicate = false;
-                foreach ($addresses as $existing) {
-                    if ($this->isSameAddress($existing, $address)) {
-                        $isDuplicate = true;
-                        break;
-                    }
-                }
-                
-                if (!$isDuplicate && (!empty($address['address1']) || !empty($address['firstName']))) {
-                    $addresses[] = $address;
-                }
-            }
             }
         }
         

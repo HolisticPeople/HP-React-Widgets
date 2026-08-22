@@ -1,7 +1,6 @@
 <?php
 namespace HP_RW;
 
-use HP_RW\Shortcodes\AddressCardPickerShortcode;
 use WP_Error;
 use WP_REST_Request;
 
@@ -11,19 +10,11 @@ use WP_REST_Request;
 class AddressApi
 {
     /**
-     * Get the user meta key for storing custom addresses.
-     * 
-     * Uses 'thwma_custom_address' for backward compatibility with ThemeHigh plugin data.
-     * Can be filtered via 'hp_rw_address_meta_key' for future migration.
+     * Return HP Core's address-book service when the provider is active.
      *
-     * @return string
+     * HP React Widgets is a contract consumer. It never reads or writes the
+     * underlying additional-address storage directly.
      */
-    public static function get_address_meta_key(): string
-    {
-        return apply_filters('hp_rw_address_meta_key', 'thwma_custom_address');
-    }
-
-    /** Return HP Core's canonical address-book service when the provider is active. */
     public static function get_address_service(): ?object
     {
         if (!class_exists('\\HP_Core\\Plugin') || !method_exists('\\HP_Core\\Plugin', 'get_service')) {
@@ -31,6 +22,36 @@ class AddressApi
         }
         $service = \HP_Core\Plugin::get_service('address');
         return ($service && method_exists($service, 'get_hydrated_addresses')) ? $service : null;
+    }
+
+    /** Return a stable fail-soft error when HP Core cannot serve an action. */
+    private function address_service_unavailable(): WP_Error
+    {
+        return new WP_Error(
+            'hp_rw_address_service_unavailable',
+            'Additional address management is temporarily unavailable.',
+            ['status' => 503]
+        );
+    }
+
+    /** Map the widget's normalized payload to HP Core's prefixed contract. */
+    private function to_service_address(array $payload, string $type): array
+    {
+        $prefix = $type . '_';
+
+        return [
+            $prefix . 'first_name' => $this->ensure_string($payload['firstName'] ?? ''),
+            $prefix . 'last_name'  => $this->ensure_string($payload['lastName'] ?? ''),
+            $prefix . 'company'    => $this->ensure_string($payload['company'] ?? ''),
+            $prefix . 'address_1'  => $this->ensure_string($payload['address1'] ?? ''),
+            $prefix . 'address_2'  => $this->ensure_string($payload['address2'] ?? ''),
+            $prefix . 'city'       => $this->ensure_string($payload['city'] ?? ''),
+            $prefix . 'state'      => $this->ensure_string($payload['state'] ?? ''),
+            $prefix . 'postcode'   => $this->ensure_string($payload['postcode'] ?? ''),
+            $prefix . 'country'    => $this->get_country_code($payload['country'] ?? ''),
+            $prefix . 'phone'      => $this->ensure_string($payload['phone'] ?? ''),
+            $prefix . 'email'      => $this->ensure_string($payload['email'] ?? ''),
+        ];
     }
 
     /**
@@ -165,9 +186,7 @@ class AddressApi
         );
     }
 
-    /**
-     * Delete a ThemeHigh additional address for the current user.
-     */
+    /** Delete an HP Core-owned additional address for the current user. */
     public function handle_delete(WP_REST_Request $request)
     {
         $user_id = get_current_user_id();
@@ -178,35 +197,26 @@ class AddressApi
         $type = (string) $request->get_param('type');
         $id   = (string) $request->get_param('id');
 
-        // Only allow deleting ThemeHigh-style additional addresses: th_billing_{key} / th_shipping_{key}
+        // Preserve the established browser-facing ID contract.
         if (!preg_match('/^th_' . preg_quote($type, '/') . '_(.+)$/', $id, $matches)) {
             return new WP_Error('hp_rw_invalid_id', 'This address cannot be deleted from the slider.', ['status' => 400]);
         }
 
-        $key      = $matches[1];
-        $service  = self::get_address_service();
-        if ($service && method_exists($service, 'delete_address')) {
-            $service->delete_address($user_id, $type, $key);
-            $addresses = $service->get_hydrated_addresses($user_id, $type);
-            return [ 'success' => true, 'type' => $type, 'addresses' => $addresses, 'selectedId' => $service->get_default_address_id($addresses) ];
+        $service = self::get_address_service();
+        if (!$service || !method_exists($service, 'delete_address') || !method_exists($service, 'get_default_address_id')) {
+            return $this->address_service_unavailable();
         }
-        $meta_key = self::get_address_meta_key();
-        $meta     = get_user_meta($user_id, $meta_key, true);
-
-        if (is_array($meta) && isset($meta[$type][$key])) {
-            unset($meta[$type][$key]);
-            update_user_meta($user_id, $meta_key, $meta);
+        if (!$service->delete_address($user_id, $type, $matches[1])) {
+            return new WP_Error('hp_rw_not_found', 'Address not found.', ['status' => 404]);
         }
 
-        $hydrator  = new AddressCardPickerShortcode();
-        $addresses = $hydrator->get_user_addresses($user_id, $type);
-        $selected  = $hydrator->get_default_address_id($addresses);
+        $addresses = $service->get_hydrated_addresses($user_id, $type);
 
         return [
             'success'    => true,
             'type'       => $type,
             'addresses'  => $addresses,
-            'selectedId' => $selected,
+            'selectedId' => $service->get_default_address_id($addresses),
         ];
     }
 
@@ -227,8 +237,10 @@ class AddressApi
             return new WP_Error('hp_rw_invalid_type', 'Invalid address type.', ['status' => 400]);
         }
 
-        $hydrator  = new AddressCardPickerShortcode();
-        $addresses = $hydrator->get_user_addresses($user_id, $type);
+        $service = self::get_address_service();
+        $addresses = $service
+            ? $service->get_hydrated_addresses($user_id, $type)
+            : $this->get_native_woo_addresses($user_id, $type);
 
         $chosen   = null;
         $current  = null;
@@ -245,43 +257,22 @@ class AddressApi
             return new WP_Error('hp_rw_not_found', 'Address not found.', ['status' => 404]);
         }
 
-        // If the chosen address comes from ThemeHigh (th_{type}_{key}), perform a true swap:
-        //  - Chosen address becomes the new WooCommerce default
-        //  - Previous default is written back into the same ThemeHigh slot
+        // Additional-address promotion is owned atomically by HP Core.
         if ($current && isset($chosen['id']) && preg_match('/^th_' . preg_quote($type, '/') . '_(.+)$/', (string) $chosen['id'], $m)) {
-            $service = self::get_address_service();
-            if ($service && method_exists($service, 'set_default_address')) {
-                $service->set_default_address($user_id, $type, $m[1]);
-                $addresses = $service->get_hydrated_addresses($user_id, $type);
-                return [ 'success' => true, 'type' => $type, 'addresses' => $addresses, 'selectedId' => $service->get_default_address_id($addresses) ];
+            if (!$service || !method_exists($service, 'set_default_address') || !method_exists($service, 'get_default_address_id')) {
+                return $this->address_service_unavailable();
             }
-            $th_key   = $m[1];
-            $meta_key = self::get_address_meta_key();
-            $meta     = get_user_meta($user_id, $meta_key, true);
-
-            if (is_array($meta) && isset($meta[$type][$th_key])) {
-                $prefix = $type . '_';
-
-                // Build a ThemeHigh-style entry from the current default address.
-                // Note: Convert country name back to code if needed
-                $entry = [
-                    $prefix . 'first_name' => $this->ensure_string($current['firstName'] ?? ''),
-                    $prefix . 'last_name'  => $this->ensure_string($current['lastName'] ?? ''),
-                    $prefix . 'company'    => $this->ensure_string($current['company'] ?? ''),
-                    $prefix . 'address_1'  => $this->ensure_string($current['address1'] ?? ''),
-                    $prefix . 'address_2'  => $this->ensure_string($current['address2'] ?? ''),
-                    $prefix . 'city'       => $this->ensure_string($current['city'] ?? ''),
-                    $prefix . 'state'      => $this->ensure_string($current['state'] ?? ''),
-                    $prefix . 'postcode'   => $this->ensure_string($current['postcode'] ?? ''),
-                    $prefix . 'country'    => $this->get_country_code($current['country'] ?? ''),
-                    $prefix . 'phone'      => $this->ensure_string($current['phone'] ?? ''),
-                    $prefix . 'email'      => $this->ensure_string($current['email'] ?? ''),
-                ];
-
-                // Replace, instead of appending, so the total number of addresses stays constant.
-                $meta[$type][$th_key] = $entry;
-                update_user_meta($user_id, $meta_key, $meta);
+            if (!$service->set_default_address($user_id, $type, $m[1])) {
+                return new WP_Error('hp_rw_not_found', 'Address not found.', ['status' => 404]);
             }
+
+            $addresses = $service->get_hydrated_addresses($user_id, $type);
+            return [
+                'success'    => true,
+                'type'       => $type,
+                'addresses'  => $addresses,
+                'selectedId' => $service->get_default_address_id($addresses),
+            ];
         }
 
         // Map normalized address array for the newly chosen default back into WooCommerce user meta fields.
@@ -318,8 +309,12 @@ class AddressApi
         }
 
         // Re-hydrate updated list.
-        $addresses = $hydrator->get_user_addresses($user_id, $type);
-        $selected  = $hydrator->get_default_address_id($addresses);
+        $addresses = $service
+            ? $service->get_hydrated_addresses($user_id, $type)
+            : $this->get_native_woo_addresses($user_id, $type);
+        $selected = $service && method_exists($service, 'get_default_address_id')
+            ? $service->get_default_address_id($addresses)
+            : ($addresses[0]['id'] ?? null);
 
         return [
             'success'    => true,
@@ -347,8 +342,11 @@ class AddressApi
             return new WP_Error('hp_rw_invalid_type', 'Invalid address type.', ['status' => 400]);
         }
 
-        $hydrator  = new AddressCardPickerShortcode();
-        $addresses = $hydrator->get_user_addresses($user_id, $fromType);
+        $service = self::get_address_service();
+        if (!$service || !method_exists($service, 'save_address') || !method_exists($service, 'get_default_address_id')) {
+            return $this->address_service_unavailable();
+        }
+        $addresses = $service->get_hydrated_addresses($user_id, $fromType);
 
         $chosen = null;
         foreach ($addresses as $address) {
@@ -362,66 +360,24 @@ class AddressApi
             return new WP_Error('hp_rw_not_found', 'Source address not found.', ['status' => 404]);
         }
 
-        $service = self::get_address_service();
-        if ($service && method_exists($service, 'copy_address') && preg_match('/^th_' . preg_quote($fromType, '/') . '_(.+)$/', $id, $matches)) {
-            $service->copy_address($user_id, $fromType, $matches[1]);
-            $targetAddresses = $service->get_hydrated_addresses($user_id, $toType);
-            return [ 'success' => true, 'fromType' => $fromType, 'toType' => $toType, 'addresses' => $targetAddresses, 'selectedId' => $service->get_default_address_id($targetAddresses) ];
+        $new_key = $service->save_address($user_id, $this->to_service_address($chosen, $toType), $toType);
+        if ($new_key === false) {
+            return new WP_Error('hp_rw_address_save_failed', 'Unable to copy address.', ['status' => 400]);
         }
 
-        // Compatibility fallback for hosts without HP Core.
-        // without touching the target's current default WooCommerce address.
-        $meta_key = self::get_address_meta_key();
-        $meta     = get_user_meta($user_id, $meta_key, true);
-        if (!is_array($meta)) {
-            $meta = [
-                'billing'  => [],
-                'shipping' => [],
-            ];
-        }
-
-        if (!isset($meta[$toType]) || !is_array($meta[$toType])) {
-            $meta[$toType] = [];
-        }
-
-        $prefix = $toType . '_';
-
-        // Map normalized address fields into ThemeHigh-style keys.
-        // Note: Convert country name back to code for THWMA storage
-        $entry = [
-            $prefix . 'first_name' => $this->ensure_string($chosen['firstName'] ?? ''),
-            $prefix . 'last_name'  => $this->ensure_string($chosen['lastName'] ?? ''),
-            $prefix . 'company'    => $this->ensure_string($chosen['company'] ?? ''),
-            $prefix . 'address_1'  => $this->ensure_string($chosen['address1'] ?? ''),
-            $prefix . 'address_2'  => $this->ensure_string($chosen['address2'] ?? ''),
-            $prefix . 'city'       => $this->ensure_string($chosen['city'] ?? ''),
-            $prefix . 'state'      => $this->ensure_string($chosen['state'] ?? ''),
-            $prefix . 'postcode'   => $this->ensure_string($chosen['postcode'] ?? ''),
-            $prefix . 'country'    => $this->get_country_code($chosen['country'] ?? ''),
-            $prefix . 'phone'      => $this->ensure_string($chosen['phone'] ?? ''),
-            $prefix . 'email'      => $this->ensure_string($chosen['email'] ?? ''),
-        ];
-
-        // Generate a unique key (NOT numeric!) for the new address
-        $new_key = 'addr_' . time() . '_' . wp_rand(1000, 9999);
-        $meta[$toType][$new_key] = $entry;
-        update_user_meta($user_id, $meta_key, $meta);
-
-        // Return updated target-type addresses (Woo default + ThemeHigh list).
-        $targetAddresses = $hydrator->get_user_addresses($user_id, $toType);
-        $selected        = $hydrator->get_default_address_id($targetAddresses);
+        $targetAddresses = $service->get_hydrated_addresses($user_id, $toType);
 
         return [
             'success'    => true,
             'fromType'   => $fromType,
             'toType'     => $toType,
             'addresses'  => $targetAddresses,
-            'selectedId' => $selected,
+            'selectedId' => 'th_' . $toType . '_' . $new_key,
         ];
     }
 
     /**
-     * Update an existing address (either the primary Woo address or a ThemeHigh entry).
+     * Update an existing address (native Woo or HP Core-owned additional entry).
      */
     public function handle_update(WP_REST_Request $request)
     {
@@ -509,49 +465,32 @@ class AddressApi
 
             $customer->save();
         } elseif (preg_match('/^th_' . preg_quote($type, '/') . '_(.+)$/', $id, $m)) {
-            // Update ThemeHigh entry for this user.
-            $th_key   = $m[1];
-            $service  = self::get_address_service();
-            if ($service && method_exists($service, 'update_address')) {
-                $prefix = $type . '_';
-                $entry = [ $prefix . 'first_name' => $this->ensure_string($payload['firstName']), $prefix . 'last_name' => $this->ensure_string($payload['lastName']), $prefix . 'company' => $this->ensure_string($payload['company']), $prefix . 'address_1' => $this->ensure_string($payload['address1']), $prefix . 'address_2' => $this->ensure_string($payload['address2']), $prefix . 'city' => $this->ensure_string($payload['city']), $prefix . 'state' => $this->ensure_string($payload['state']), $prefix . 'postcode' => $this->ensure_string($payload['postcode']), $prefix . 'country' => $this->get_country_code($payload['country']), $prefix . 'phone' => $this->ensure_string($payload['phone']), $prefix . 'email' => $this->ensure_string($payload['email']) ];
-                if (!$service->update_address($user_id, $entry, $type, $th_key)) return new WP_Error('hp_rw_not_found', 'Address not found.', ['status' => 404]);
-                $addresses = $service->get_hydrated_addresses($user_id, $type);
-                return [ 'success' => true, 'type' => $type, 'addresses' => $addresses, 'selectedId' => $service->get_default_address_id($addresses) ];
+            $service = self::get_address_service();
+            if (!$service || !method_exists($service, 'update_address') || !method_exists($service, 'get_default_address_id')) {
+                return $this->address_service_unavailable();
             }
-            $meta_key = self::get_address_meta_key();
-            $meta     = get_user_meta($user_id, $meta_key, true);
-
-            if (!is_array($meta) || !isset($meta[$type][$th_key])) {
+            if (!$service->update_address($user_id, $this->to_service_address($payload, $type), $type, $m[1])) {
                 return new WP_Error('hp_rw_not_found', 'Address not found.', ['status' => 404]);
             }
-
-            $prefix = $type . '_';
-
-            $entry = [
-                $prefix . 'first_name' => $this->ensure_string($payload['firstName']),
-                $prefix . 'last_name'  => $this->ensure_string($payload['lastName']),
-                $prefix . 'company'    => $this->ensure_string($payload['company']),
-                $prefix . 'address_1'  => $this->ensure_string($payload['address1']),
-                $prefix . 'address_2'  => $this->ensure_string($payload['address2']),
-                $prefix . 'city'       => $this->ensure_string($payload['city']),
-                $prefix . 'state'      => $this->ensure_string($payload['state']),
-                $prefix . 'postcode'   => $this->ensure_string($payload['postcode']),
-                $prefix . 'country'    => $this->get_country_code($payload['country']),
-                $prefix . 'phone'      => $this->ensure_string($payload['phone']),
-                $prefix . 'email'      => $this->ensure_string($payload['email']),
+            $addresses = $service->get_hydrated_addresses($user_id, $type);
+            return [
+                'success'    => true,
+                'type'       => $type,
+                'addresses'  => $addresses,
+                'selectedId' => $service->get_default_address_id($addresses),
             ];
-
-            $meta[$type][$th_key] = $entry;
-            update_user_meta($user_id, $meta_key, $meta);
         } else {
             return new WP_Error('hp_rw_invalid_id', 'Unsupported address ID format.', ['status' => 400]);
         }
 
         // Re-hydrate updated list.
-        $hydrator  = new AddressCardPickerShortcode();
-        $addresses = $hydrator->get_user_addresses($user_id, $type);
-        $selected  = $hydrator->get_default_address_id($addresses);
+        $service = self::get_address_service();
+        $addresses = $service
+            ? $service->get_hydrated_addresses($user_id, $type)
+            : $this->get_native_woo_addresses($user_id, $type);
+        $selected = $service && method_exists($service, 'get_default_address_id')
+            ? $service->get_default_address_id($addresses)
+            : ($addresses[0]['id'] ?? null);
 
         return [
             'success'    => true,
@@ -561,9 +500,7 @@ class AddressApi
         ];
     }
 
-    /**
-     * Create a new ThemeHigh additional address for the current user.
-     */
+    /** Create a new HP Core-owned additional address for the current user. */
     public function handle_create(WP_REST_Request $request)
     {
         $user_id = get_current_user_id();
@@ -598,59 +535,54 @@ class AddressApi
         }
 
         $service = self::get_address_service();
-        if ($service && method_exists($service, 'save_address')) {
-            $prefix = $type . '_';
-            $entry = [ $prefix . 'first_name' => $this->ensure_string($payload['firstName']), $prefix . 'last_name' => $this->ensure_string($payload['lastName']), $prefix . 'company' => $this->ensure_string($payload['company']), $prefix . 'address_1' => $this->ensure_string($payload['address1']), $prefix . 'address_2' => $this->ensure_string($payload['address2']), $prefix . 'city' => $this->ensure_string($payload['city']), $prefix . 'state' => $this->ensure_string($payload['state']), $prefix . 'postcode' => $this->ensure_string($payload['postcode']), $prefix . 'country' => $this->get_country_code($payload['country']), $prefix . 'phone' => $this->ensure_string($payload['phone']), $prefix . 'email' => $this->ensure_string($payload['email']) ];
-            $key = $service->save_address($user_id, $entry, $type);
-            if ($key === false) return new WP_Error('hp_rw_address_save_failed', 'Unable to save address.', ['status' => 400]);
-            $addresses = $service->get_hydrated_addresses($user_id, $type);
-            return [ 'success' => true, 'type' => $type, 'addresses' => $addresses, 'selectedId' => 'th_' . $type . '_' . $key ];
+        if (!$service || !method_exists($service, 'save_address')) {
+            return $this->address_service_unavailable();
         }
 
-        // Compatibility fallback for hosts without HP Core.
-        $meta_key = self::get_address_meta_key();
-        $meta     = get_user_meta($user_id, $meta_key, true);
-
-        if (!is_array($meta)) {
-            $meta = [];
+        $new_key = $service->save_address($user_id, $this->to_service_address($payload, $type), $type);
+        if ($new_key === false) {
+            return new WP_Error('hp_rw_address_save_failed', 'Unable to save address.', ['status' => 400]);
         }
-        if (!isset($meta[$type])) {
-            $meta[$type] = [];
-        }
-
-        // Generate a unique key for the new address using timestamp + random.
-        $new_key = 'addr_' . time() . '_' . wp_rand(1000, 9999);
-
-        $prefix = $type . '_';
-
-        $entry = [
-            $prefix . 'first_name' => $this->ensure_string($payload['firstName']),
-            $prefix . 'last_name'  => $this->ensure_string($payload['lastName']),
-            $prefix . 'company'    => $this->ensure_string($payload['company']),
-            $prefix . 'address_1'  => $this->ensure_string($payload['address1']),
-            $prefix . 'address_2'  => $this->ensure_string($payload['address2']),
-            $prefix . 'city'       => $this->ensure_string($payload['city']),
-            $prefix . 'state'      => $this->ensure_string($payload['state']),
-            $prefix . 'postcode'   => $this->ensure_string($payload['postcode']),
-            $prefix . 'country'    => $this->get_country_code($payload['country']),
-            $prefix . 'phone'      => $this->ensure_string($payload['phone']),
-            $prefix . 'email'      => $this->ensure_string($payload['email']),
-        ];
-
-        $meta[$type][$new_key] = $entry;
-        update_user_meta($user_id, $meta_key, $meta);
-
-        // Re-hydrate updated list and return the newly created address ID.
-        $hydrator     = new AddressCardPickerShortcode();
-        $addresses    = $hydrator->get_user_addresses($user_id, $type);
-        $new_addr_id  = 'th_' . $type . '_' . $new_key;
+        $addresses = $service->get_hydrated_addresses($user_id, $type);
 
         return [
             'success'    => true,
             'type'       => $type,
             'addresses'  => $addresses,
-            'selectedId' => $new_addr_id,
+            'selectedId' => 'th_' . $type . '_' . $new_key,
         ];
+    }
+
+    /** Return only native WooCommerce data when HP Core is unavailable. */
+    private function get_native_woo_addresses(int $user_id, string $type): array
+    {
+        if (!class_exists('WC_Customer')) {
+            return [];
+        }
+
+        $customer = new \WC_Customer($user_id);
+        $getter = $type === 'billing' ? 'get_billing_' : 'get_shipping_';
+        $first_name = (string) call_user_func([$customer, $getter . 'first_name']);
+        $address_1 = (string) call_user_func([$customer, $getter . 'address_1']);
+        if ($first_name === '' && $address_1 === '') {
+            return [];
+        }
+
+        return [[
+            'id'        => $type . '_primary',
+            'firstName' => $first_name,
+            'lastName'  => (string) call_user_func([$customer, $getter . 'last_name']),
+            'company'   => (string) call_user_func([$customer, $getter . 'company']),
+            'address1'  => $address_1,
+            'address2'  => (string) call_user_func([$customer, $getter . 'address_2']),
+            'city'      => (string) call_user_func([$customer, $getter . 'city']),
+            'state'     => (string) call_user_func([$customer, $getter . 'state']),
+            'postcode'  => (string) call_user_func([$customer, $getter . 'postcode']),
+            'country'   => (string) call_user_func([$customer, $getter . 'country']),
+            'phone'     => $type === 'billing' ? $customer->get_billing_phone() : $customer->get_shipping_phone(),
+            'email'     => $type === 'billing' ? $customer->get_billing_email() : '',
+            'isDefault' => true,
+        ]];
     }
 
     /**
