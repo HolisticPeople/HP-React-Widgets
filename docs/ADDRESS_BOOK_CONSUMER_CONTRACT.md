@@ -20,13 +20,11 @@ HP-Multi-Address plugins.
   additional-address mutations return `hp_rw_address_service_unavailable`
   with HTTP status `503`.
 
-## Historical references
+## Historical source retirement
 
-`wpcode-snippets/thwma-shortcode-display-type.php` and its README section are
-deprecated, non-loaded migration evidence. They are not registered by the
-plugin bootstrap and are not part of the address runtime. Their later archive
-or deletion belongs to the repository-retirement cleanup, not this contract
-change.
+The obsolete ThemeHigh WPCode integration was removed from this repository.
+Historical source attribution remains in the database-audit evidence rather
+than in a deployable consumer repository.
 
 The static contract test rejects legacy storage-key or HP-Multi-Address
 constant usage in the active address runtime files.
