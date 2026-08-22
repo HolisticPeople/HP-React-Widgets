@@ -220,7 +220,7 @@ export const AddressCardPicker = ({
     setActiveId(address.id);
     onSelect?.(address);
     
-    // Dispatch custom event for external integrations (e.g., THWMA checkout integration)
+    // Preserve the public selection event for checkout and other consumers.
     window.dispatchEvent(
       new CustomEvent('hpAddressSelected', {
         detail: {
@@ -672,5 +672,4 @@ export const AddressCardPicker = ({
 };
 
 export default AddressCardPicker;
-
 

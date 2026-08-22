@@ -13,7 +13,7 @@ export interface Address {
   email?: string;
   isDefault: boolean;
   /**
-   * Optional human-friendly label/number (for example ThemeHigh address index).
+   * Optional human-friendly label/number for an additional address.
    */
   label?: string;
 }
@@ -37,6 +37,5 @@ export interface AddressCardPickerProps {
    */
   editUrl?: string;
 }
-
 
 
