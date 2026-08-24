@@ -80,8 +80,12 @@ class ShippingService
             }
 
             // Iterate carriers
-            $default_carriers = ['stamps_com', 'ups_walleted'];
-            $carriers_to_try = apply_filters('eao_shipstation_carriers_to_query', $default_carriers);
+            $default_carriers = function_exists('hp_ss_get_enabled_carrier_codes')
+                ? hp_ss_get_enabled_carrier_codes()
+                : ['stamps_com', 'ups_walleted'];
+            $shared_carriers = apply_filters('hp_shipstation_carriers_to_query', $default_carriers);
+            $shared_carriers = is_array($shared_carriers) ? $shared_carriers : $default_carriers;
+            $carriers_to_try = apply_filters('eao_shipstation_carriers_to_query', $shared_carriers);
             if (!is_array($carriers_to_try)) {
                 $carriers_to_try = $default_carriers;
             }

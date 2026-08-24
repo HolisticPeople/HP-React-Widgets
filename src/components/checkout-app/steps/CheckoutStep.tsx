@@ -2008,6 +2008,7 @@ export const CheckoutStep = ({
                     {shippingRates.map((rate, idx) => {
                       const rateAny = rate as Record<string, unknown>;
                       const serviceName = rate.serviceName || (rateAny.service_name as string) || 'Shipping';
+                      const carrierCode = String(rateAny.carrier_code || rateAny.carrierCode || '');
                       const totalCost = extractShippingCost(rate);
                       
                       const rateServiceCode = getServiceCode(rate);
@@ -2036,7 +2037,7 @@ export const CheckoutStep = ({
                               className="sr-only"
                             />
                             <div className="flex items-center gap-2">
-                              <span className="flex-shrink-0">{getCarrierLogo(serviceName)}</span>
+                              <span className="flex-shrink-0">{getCarrierLogo(serviceName, carrierCode)}</span>
                               <span className={isSelected ? "text-foreground" : "text-gray-400"}>{serviceName}</span>
                             </div>
                           </div>
