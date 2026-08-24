@@ -17,10 +17,10 @@ export const UPSLogo = () => (
 
 // FedEx Logo - Purple and orange (keeping SVG as no badge available)
 export const FedExLogo = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="2" y="4" width="20" height="16" rx="2" fill="#4D148C"/>
-    <text x="8" y="14" fontSize="5" fill="white" fontWeight="bold">Fed</text>
-    <text x="17" y="14" fontSize="5" fill="#FF6600" fontWeight="bold">Ex</text>
+  <svg width="46" height="30" viewBox="0 0 90 36" role="img" aria-label="FedEx" xmlns="http://www.w3.org/2000/svg">
+    <rect width="90" height="36" rx="4" fill="#fff"/>
+    <text x="8" y="25" fontFamily="Arial, Helvetica, sans-serif" fontSize="24" fill="#4D148C" fontWeight="700" letterSpacing="-2">Fed</text>
+    <text x="46" y="25" fontFamily="Arial, Helvetica, sans-serif" fontSize="24" fill="#FF6600" fontWeight="700" letterSpacing="-2">Ex</text>
   </svg>
 );
 
@@ -45,8 +45,8 @@ export const TruckIcon = () => (
 // Carrier logo detection and mapping
 export type CarrierType = 'usps' | 'ups' | 'fedex' | 'dhl' | 'generic';
 
-export const detectCarrier = (serviceName: string): CarrierType => {
-  const name = serviceName.toLowerCase();
+export const detectCarrier = (serviceName: string, carrierCode = ''): CarrierType => {
+  const name = `${carrierCode} ${serviceName}`.toLowerCase();
   if (name.includes('usps') || name.includes('postal') || name.includes('priority mail')) return 'usps';
   if (name.includes('ups') || name.includes('united parcel')) return 'ups';
   if (name.includes('fedex') || name.includes('federal express')) return 'fedex';
@@ -54,8 +54,8 @@ export const detectCarrier = (serviceName: string): CarrierType => {
   return 'generic';
 };
 
-export const getCarrierLogo = (serviceName: string): React.ReactNode => {
-  const carrier = detectCarrier(serviceName);
+export const getCarrierLogo = (serviceName: string, carrierCode = ''): React.ReactNode => {
+  const carrier = detectCarrier(serviceName, carrierCode);
   
   switch (carrier) {
     case 'usps':
